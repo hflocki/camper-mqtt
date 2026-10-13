@@ -58,7 +58,7 @@ Die Sensoren dazu:
 
 - Level: Fork des Projekts [ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT) von klehnst (ESP32 + Adafruit BNO085)
 - Wasser: [camper_waterlevel](https://github.com/hflocki/camper_waterlevel) (ESP32-C3 + Votronic Tankgeber)
-- Gas: camper_gaslevel (ESP32-C3, passives BLE-Advertising)
+- Gas: [camper_gaslevel] (https://github.com/hflocki/camper-gaslevel) (ESP32-C3, passives BLE-Advertising)
 
 ---
 
