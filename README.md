@@ -4,6 +4,19 @@ Kleines Touch-Display für das Wohnmobil auf Basis des **M5Stack Core2**. Es zei
 
 ---
 
+## Wähle deine Entwicklungsumgebung
+
+Der Code ist in beiden Varianten identisch, du hast die Wahl:
+
+| Ordner | Für wen | Anleitung |
+| ------ | ------- | --------- |
+| [`_arduino/`](_arduino/) | Arduino IDE (1.x und 2.x) | [Anleitung Arduino](_arduino/README.md) |
+| [`_platformio/`](_platformio/) | PlatformIO (VS Code oder CLI) | [Anleitung PlatformIO](_platformio/README.md) |
+
+In beiden Varianten brauchst du eine eigene `config.h` mit WLAN- und MQTT-Zugangsdaten. Als Vorlage liegt jeweils eine `config.example.h` bei, deine `config.h` ist per `.gitignore` vom Git ausgeschlossen.
+
+---
+
 ## Seiten
 
 Die Seiten werden mit den beiden äußeren Touch-Tasten (links/rechts) umgeschaltet. Die mittlere Taste schaltet das Display aus.
@@ -31,7 +44,6 @@ Werte, die länger als 30 Sekunden nicht aktualisiert wurden (Level-Sensor), wer
 - **Aufwecken:** Berührung irgendwo auf dem Display. Das Gerät startet neu, verbindet WLAN und MQTT und zeigt die zuletzt geöffnete Seite. Die weckende Berührung löst keinen Seitenwechsel aus.
 - Das Display kann auch manuell mit der mittleren Taste ausgeschaltet werden, der Schlaf-Timer läuft dann ab diesem Moment.
 - Zusätzlich weckt ein Timer das Gerät alle 24 Stunden, es schläft sofort wieder ein (Sicherheitsnetz, kostet praktisch keinen Strom).
-- Die Zeiten lassen sich oben im Sketch anpassen: `DISPLAY_TIMEOUT_MS` und `SLEEP_DELAY_MS`.
 
 ---
 
@@ -52,43 +64,19 @@ Das Display ist reiner Empfänger und fragt nichts ab, die Aktualisierungsrate b
 | `camper/gaslevel/ble_state` | `OK`, sonst wird „BLE“ als Warnung gezeigt |
 | `camper/gaslevel/status` | `online` / `offline` (Last Will) |
 
-Weitere Topics unter diesen Präfixen (z. B. `rssi`, `voltage`, `raw_level`) werden ignoriert. Die Topics für Wasser und Gas stehen als Konstanten am Anfang von `roadbuddy.ino`, das Level-Topic in `config.h`.
+Weitere Topics unter diesen Präfixen (z. B. `rssi`, `voltage`, `raw_level`) werden ignoriert. Die Topics für Wasser und Gas stehen als Konstanten am Anfang des Sketches, das Level-Topic in `config.h`.
 
 Die Sensoren dazu:
 
 - Level: Fork des Projekts [ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT) von klehnst (ESP32 + Adafruit BNO085)
 - Wasser: [camper_waterlevel](https://github.com/hflocki/camper_waterlevel) (ESP32-C3 + Votronic Tankgeber)
-- Gas: [camper_gaslevel](https://github.com/hflocki/camper-gaslevel) (ESP32-C3, passives BLE-Advertising)
-
----
-
-## Installation (Arduino IDE)
-
-1. **Board-Paket** „M5Stack“ von M5Stack über den Boardverwalter installieren und als Board **M5Core2** wählen.
-2. **Bibliotheken** über den Bibliotheksverwalter:
-   - **M5Unified** (zieht **M5GFX** automatisch mit)
-   - **PubSubClient** von Nick O'Leary
-3. Falls vorhanden, die alte Bibliothek **M5Core2** entfernen, sonst kommt der Fehler `rom/miniz.h: No such file or directory`.
-4. `config.example.h` nach `config.h` kopieren und die eigenen Zugangsdaten eintragen.
-5. Der Ordner muss genauso heißen wie die Hauptdatei (`roadbuddy/roadbuddy.ino`), sonst findet die Arduino IDE den Sketch nicht.
-6. Kompilieren und hochladen.
-
-### Projektstruktur
-
-```
-roadbuddy/
-├── roadbuddy.ino        – kompletter Sketch (UI, MQTT, Sleep)
-├── config.example.h     – Vorlage für WLAN- und MQTT-Daten
-├── config.h             – eigene Zugangsdaten (nicht im Git)
-├── .gitignore
-└── README.md
-```
+- Gas: camper_gaslevel (ESP32-C3, passives BLE-Advertising)
 
 ---
 
 ## Anpassungen
 
-Alle Einstellungen stehen am Anfang von `roadbuddy.ino`:
+Alle Einstellungen stehen am Anfang des Sketches (`roadbuddy.ino` bzw. `main.cpp`):
 
 | Konstante | Wirkung |
 | --------- | ------- |
@@ -105,15 +93,29 @@ WLAN-Hostname und MQTT-Client-ID beginnen mit `roadbuddy`.
 
 ---
 
-## Fehlersuche
+## Projektstruktur
 
-- **Display zeigt falsche Pitch-/Roll-Werte:** Im Serial Monitor (115200 Baud) wird jedes eingehende Topic mit Wert ausgegeben. So lässt sich prüfen, welche Topics wirklich ankommen.
-- **Gerät wacht nicht auf:** Display kurz antippen. Hilft das nicht, den Power-Knopf links am Gehäuse drücken, um das Gerät neu zu starten.
-- **Seite zeigt `--`:** Es wurde noch kein Wert empfangen. Prüfen, ob der Sensor mit `retain` sendet, sonst erscheint der Wert erst bei der nächsten Meldung.
+```
+m5core2-roadbuddy/
+├── README.md                    – diese Übersicht
+├── .gitignore
+├── _arduino/
+│   ├── README.md                – Anleitung für die Arduino IDE
+│   └── roadbuddy/
+│       ├── roadbuddy.ino        – kompletter Sketch
+│       └── config.example.h     – Vorlage für WLAN- und MQTT-Daten
+└── _platformio/
+    ├── README.md                – Anleitung für PlatformIO
+    ├── platformio.ini
+    ├── src/main.cpp             – kompletter Sketch (identisch zu roadbuddy.ino)
+    └── include/config.example.h – Vorlage für WLAN- und MQTT-Daten
+```
+
+**Hinweis für Entwickler:** `roadbuddy.ino` und `main.cpp` sind inhaltlich identisch. Wer am Code ändert, sollte beide Dateien synchron halten, zum Beispiel mit `diff _arduino/roadbuddy/roadbuddy.ino _platformio/src/main.cpp`.
 
 ---
 
 ## Hinweise
 
-- Zugangsdaten gehören nur in `config.h`. Diese Datei ist in `.gitignore` eingetragen.
+- Zugangsdaten gehören nur in `config.h`, diese Datei ist in `.gitignore` eingetragen und darf nie committet werden.
 - Der Prozentwert des Core2-Akkus ist nur eine Schätzung aus der Spannung.
