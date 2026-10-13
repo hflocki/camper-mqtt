@@ -107,8 +107,6 @@ WLAN-Hostname und MQTT-Client-ID beginnen mit `roadbuddy`.
 
 ## Fehlersuche
 
-- **`rom/miniz.h: No such file or directory`:** Die alte `M5Core2`-Bibliothek ist noch installiert, siehe Installation Punkt 3.
-- **„Multiple libraries were found for WiFi.h“:** Nur eine Warnung. Die WiFi-Bibliothek aus dem ESP32-Core wird verwendet. Eine zusätzliche `WiFi`-Bibliothek in `Documents/Arduino/libraries` kann gelöscht werden.
 - **Display zeigt falsche Pitch-/Roll-Werte:** Im Serial Monitor (115200 Baud) wird jedes eingehende Topic mit Wert ausgegeben. So lässt sich prüfen, welche Topics wirklich ankommen.
 - **Gerät wacht nicht auf:** Display kurz antippen. Hilft das nicht, den Power-Knopf links am Gehäuse drücken, um das Gerät neu zu starten.
 - **Seite zeigt `--`:** Es wurde noch kein Wert empfangen. Prüfen, ob der Sensor mit `retain` sendet, sonst erscheint der Wert erst bei der nächsten Meldung.
