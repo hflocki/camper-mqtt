@@ -1,5 +1,6 @@
 #include "wifi_manager.h"
 #include <WiFi.h>
+#include <esp_mac.h>
 
 static WiFiState wifiState = WIFI_STATE_INIT;
 static unsigned long lastReconnectAttempt = 0;
@@ -183,7 +184,7 @@ void startAP(int channel) {
     Serial.printf("[WiFi] Starting AP CH %d...\n", channel);
     
     if (strlen(config.ap_ssid) == 0) {
-        strlcpy(config.ap_ssid, DEFAULT_AP_SSID, sizeof(config.ap_ssid));
+        strlcpy(config.ap_ssid, defaultApSsid(), sizeof(config.ap_ssid));
     }
     if (strlen(config.ap_pass) < 8) {
         strlcpy(config.ap_pass, DEFAULT_AP_PASSWORD, sizeof(config.ap_pass));
@@ -210,4 +211,15 @@ void connectToWiFi() {
     WiFi.begin(config.wifi_ssid, config.wifi_pass);
     lastReconnectAttempt = millis();
     wifiState = WIFI_STATE_RECONNECTING;
+}
+
+const char* defaultApSsid() {
+    static char ssid[32] = "";
+    if (ssid[0] == '\0') {
+        // Station MAC (works before WiFi is started); same address the router shows
+        uint8_t mac[6] = {0};
+        esp_read_mac(mac, ESP_MAC_WIFI_STA);
+        snprintf(ssid, sizeof(ssid), "%s-%02X%02X%02X", DEFAULT_AP_SSID, mac[3], mac[4], mac[5]);
+    }
+    return ssid;
 }

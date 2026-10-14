@@ -21,4 +21,7 @@ bool isConnected();
 void startAP(int channel = 1);
 void connectToWiFi();
 
+// Default access point name: DEFAULT_AP_SSID + "-" + last 6 hex digits of the WiFi MAC
+const char* defaultApSsid();
+
 #endif // WIFI_MANAGER_H

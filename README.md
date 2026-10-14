@@ -78,7 +78,7 @@ Der LittleFS-Upload überschreibt die gespeicherte Konfiguration. Spätere Firmw
 
 ## Erstbenutzung
 
-1. Beim ersten Start läuft nur der Access Point **`Camper-Tanklevel`** (Passwort aus `config.h`).
+1. Beim ersten Start läuft nur der Access Point **`Camper-Tanklevel-XXXXXX`** (Passwort aus `config.h`). `XXXXXX` sind die letzten 6 Stellen der WLAN-MAC des ESP, so lassen sich mehrere Geräte auseinanderhalten. Der Name ist im Tab WiFi änderbar.
 2. Verbinden und `http://192.168.4.1` öffnen.
 3. Tab **WiFi**: WLAN eintragen → Neustart.
 4. Tab **MQTT**: Broker eintragen → Neustart.

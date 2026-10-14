@@ -46,7 +46,7 @@ static void setDefaultCalib() {
 }
 
 static void setDefaults() {
-    strlcpy(config.ap_ssid, DEFAULT_AP_SSID, sizeof(config.ap_ssid));
+    strlcpy(config.ap_ssid, defaultApSsid(), sizeof(config.ap_ssid));
     strlcpy(config.ap_pass, DEFAULT_AP_PASSWORD, sizeof(config.ap_pass));
     memset(config.wifi_ssid, 0, sizeof(config.wifi_ssid));
     memset(config.wifi_pass, 0, sizeof(config.wifi_pass));
@@ -450,7 +450,7 @@ void loadConfig() {
 
     strlcpy(config.wifi_ssid,   doc["wifi_ssid"]   | "",                  sizeof(config.wifi_ssid));
     strlcpy(config.wifi_pass,   doc["wifi_pass"]   | "",                  sizeof(config.wifi_pass));
-    strlcpy(config.ap_ssid,     doc["ap_ssid"]     | DEFAULT_AP_SSID,     sizeof(config.ap_ssid));
+    strlcpy(config.ap_ssid,     doc["ap_ssid"]     | defaultApSsid(),     sizeof(config.ap_ssid));
     strlcpy(config.ap_pass,     doc["ap_pass"]     | DEFAULT_AP_PASSWORD, sizeof(config.ap_pass));
     strlcpy(config.mqtt_server, doc["mqtt_server"] | DEFAULT_MQTT_SERVER, sizeof(config.mqtt_server));
     config.mqtt_port = doc["mqtt_port"] | DEFAULT_MQTT_PORT;
