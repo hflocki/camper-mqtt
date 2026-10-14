@@ -56,6 +56,9 @@ static void setDefaults() {
     memset(config.mqtt_pass, 0, sizeof(config.mqtt_pass));
     strlcpy(config.mqtt_prefix, DEFAULT_MQTT_PREFIX, sizeof(config.mqtt_prefix));
 
+    config.water_enabled = (WATER_ENABLED != 0);
+    config.gas_enabled = (GAS_ENABLED != 0);
+
     // Fresh water
     config.tank_size = DEFAULT_TANK_SIZE;
     config.filter_active = true;
@@ -177,7 +180,8 @@ void webserverInit() {
     // Nearby BLE devices (for picking the gas sensor MAC in the web UI)
     server.on("/api/scan", HTTP_GET, [](AsyncWebServerRequest* request) {
         JsonDocument doc;
-        gasFillSeenList(doc["devices"].to<JsonArray>());
+        JsonArray arr = doc["devices"].to<JsonArray>();
+        if (config.gas_enabled) gasFillSeenList(arr);
         String response;
         serializeJson(doc, response);
         request->send(200, "application/json", response);
@@ -279,6 +283,8 @@ static void handleApiGetConfig(AsyncWebServerRequest* request) {
     doc["mqtt_pass_set"] = strlen(config.mqtt_pass) > 0;
     doc["mqtt_prefix"] = (const char*)config.mqtt_prefix;
     doc["version"] = FW_VERSION;
+    doc["water_enabled"] = config.water_enabled;
+    doc["gas_enabled"] = config.gas_enabled;
 
     // Fresh water. "l" holds the fill level in % (key kept for compatibility with stored configs)
     doc["tank_size"] = config.tank_size;
@@ -400,6 +406,10 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
         config.mqtt_port = (port > 0 && port <= 65535) ? (uint16_t)port : DEFAULT_MQTT_PORT;
     }
 
+    // Enabling/disabling a sensor takes effect after a restart (the web UI restarts the device)
+    if (doc["water_enabled"].is<bool>()) config.water_enabled = doc["water_enabled"].as<bool>();
+    if (doc["gas_enabled"].is<bool>())   config.gas_enabled = doc["gas_enabled"].as<bool>();
+
     if (hasTank) config.tank_size = newTank;
     if (doc["filter_active"].is<bool>()) config.filter_active = doc["filter_active"].as<bool>();
     if (hasCalib) applyCalib(tmp, tmpCount);
@@ -458,6 +468,9 @@ void loadConfig() {
     strlcpy(config.mqtt_pass,   doc["mqtt_pass"]   | "",                  sizeof(config.mqtt_pass));
     strlcpy(config.mqtt_prefix, doc["mqtt_prefix"] | DEFAULT_MQTT_PREFIX, sizeof(config.mqtt_prefix));
 
+    config.water_enabled = doc["water_enabled"] | (WATER_ENABLED != 0);
+    config.gas_enabled = doc["gas_enabled"] | (GAS_ENABLED != 0);
+
     // Fresh water
     config.filter_active = doc["filter_active"] | true;
     float storedTank = doc["tank_size"] | DEFAULT_TANK_SIZE;
@@ -495,6 +508,9 @@ void saveConfig() {
     doc["mqtt_user"] = (const char*)config.mqtt_user;
     doc["mqtt_pass"] = (const char*)config.mqtt_pass;
     doc["mqtt_prefix"] = (const char*)config.mqtt_prefix;
+
+    doc["water_enabled"] = config.water_enabled;
+    doc["gas_enabled"] = config.gas_enabled;
 
     // Fresh water
     doc["filter_active"] = config.filter_active;

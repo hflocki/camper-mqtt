@@ -9,9 +9,17 @@ Beide Werte gehen per **MQTT** (mit Home-Assistant-Discovery) raus und sind in e
 
 ## Web-Oberfläche
 
-| Live | Wasser | Gas |
+**Live**
+
+| Wasser + Gas | Nur Wasser | Nur Gas |
 | --- | --- | --- |
-| <img src="images/tab-live.png" width="240"> | <img src="images/tab-water.png" width="240"> | <img src="images/tab-gas.png" width="240"> |
+| <img src="images/tab-live.png" width="240"> | <img src="images/tab-live-water-only.png" width="240"> | <img src="images/tab-live-gas-only.png" width="240"> |
+
+**Einstellungen**
+
+| Wasser | Gas |
+| --- | --- |
+| <img src="images/tab-water.png" width="240"> | <img src="images/tab-gas.png" width="240"> |
 
 | MQTT | WiFi |
 | --- | --- |
@@ -102,6 +110,19 @@ Prefix (Web-UI) Standard `camper/tanklevel`:
 In Home Assistant erscheint **ein** Gerät „Camper Tanklevel“ mit allen Entitäten.
 
 **Umstieg von den Einzelprojekten:** Die alten Geräte „Camper Wasserlevel Sensor“ und „Camper Gaslevel Sensor“ bleiben in HA stehen, weil ihre Discovery-Nachrichten retained sind. Zum Entfernen in HA unter *Einstellungen → Geräte* löschen oder die Topics `homeassistant/sensor/camper_water/#`, `homeassistant/switch/camper_water/#` und `homeassistant/sensor/camper_gaslevel/#` mit leerer Nachricht (retained) überschreiben.
+
+## Nur einen Sensor nutzen
+
+Beide Sensoren sind standardmäßig an. Wer nur Wasser oder nur Gas will, kann die Firmware trotzdem unverändert nutzen:
+
+- **In `config.h`** (Werkseinstellung beim ersten Start):
+  ```cpp
+  #define WATER_ENABLED         1      // 1 = on, 0 = off
+  #define GAS_ENABLED           1      // 1 = on, 0 = off
+  ```
+- **In der Web-UI:** oben im Tab **Wasser** bzw. **Gas** gibt es einen Schalter. Danach startet das Gerät neu.
+
+Ein ausgeschalteter Sensor verschwindet von der Live-Seite und aus Home Assistant (die Entitäten werden per MQTT entfernt). Ist Gas aus, wird Bluetooth gar nicht gestartet.
 
 ## Anderer Gassensor
 

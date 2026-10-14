@@ -143,6 +143,15 @@ body {
 .legend.lv { background: var(--gas); } .legend.bt { background: var(--success); }
 code { font-family: ui-monospace, Menlo, monospace; }
 .hidden { display: none !important; }
+.gauges.single { grid-template-columns: 1fr; }
+.enable-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.toggle { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle span { position: absolute; inset: 0; background: var(--border); border-radius: 13px; cursor: pointer; transition: 0.2s; }
+.toggle span::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: var(--text-primary); border-radius: 50%; transition: 0.2s; }
+.toggle input:checked + span { background: var(--water); }
+.toggle.gas input:checked + span { background: var(--gas); }
+.toggle input:checked + span::before { transform: translateX(20px); }
 
 .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--bg-card); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 20px; font-size: 0.85rem; color: var(--accent); opacity: 0; transition: all 0.3s; z-index: 999; }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
@@ -155,7 +164,7 @@ code { font-family: ui-monospace, Menlo, monospace; }
     <div class="header">
         <h1>🚐 Camper Tanklevel</h1>
         <div class="status-dots">
-            <span><span class="status-dot" id="dot-ble"></span>BLE</span>
+            <span id="ble-indicator"><span class="status-dot" id="dot-ble"></span>BLE</span>
             <span><span class="status-dot" id="dot-wifi"></span>WiFi</span>
             <span><span class="status-dot" id="dot-mqtt"></span>MQTT</span>
         </div>
@@ -172,8 +181,8 @@ code { font-family: ui-monospace, Menlo, monospace; }
     <!-- LIVE TAB -->
     <div class="tab-content active" id="tab-live">
         <div class="card">
-            <div class="gauges">
-                <div class="gauge">
+            <div class="gauges" id="gauges">
+                <div class="gauge" id="gauge-water">
                     <div class="gauge-title water">Frischwasser</div>
                     <div class="tank">
                         <div class="tank-fill" id="tank-fill"></div>
@@ -181,7 +190,7 @@ code { font-family: ui-monospace, Menlo, monospace; }
                     </div>
                     <div class="gauge-sub"><span id="w-liters">--</span> <small>Liter</small></div>
                 </div>
-                <div class="gauge">
+                <div class="gauge" id="gauge-gas">
                     <div class="gauge-title gas">Gas</div>
                     <div class="bottle">
                         <div class="bottle-valve"></div>
@@ -196,12 +205,16 @@ code { font-family: ui-monospace, Menlo, monospace; }
             </div>
         </div>
 
-        <div class="card">
+        <div class="card hidden" id="live-none">
+            <div class="empty">Kein Sensor aktiv. In den Tabs Wasser oder Gas einschalten.</div>
+        </div>
+
+        <div class="card" id="live-water">
             <div class="card-title water">Frischwasser</div>
             <div class="info-row"><span class="info-label">Spannung</span><span id="w-voltage">--</span></div>
         </div>
 
-        <div class="card">
+        <div class="card" id="live-gas">
             <div class="card-title gas">Gas</div>
             <div class="info-row"><span class="info-label">Rohwert Sensor</span><span id="g-raw">--</span></div>
             <div class="info-row"><span class="info-label">Batterie Sensor</span><span id="g-battery">--</span></div>
@@ -212,6 +225,17 @@ code { font-family: ui-monospace, Menlo, monospace; }
 
     <!-- WATER TAB -->
     <div class="tab-content" id="tab-water">
+        <div class="card">
+            <div class="enable-row">
+                <div>
+                    <div class="card-title water" style="margin-bottom:4px">Frischwasser-Sensor</div>
+                    <div class="form-hint" style="margin-top:0">Votronic-Tankgeber am analogen Eingang</div>
+                </div>
+                <label class="toggle"><input type="checkbox" id="cfg-water-enabled" onchange="setEnabled('water', this)"><span></span></label>
+            </div>
+        </div>
+
+        <div id="water-settings">
         <div class="card">
             <div class="card-title water">Tankgröße</div>
             <div class="form-group"><label>Fassungsvermögen (Liter)</label><input type="number" id="cfg-tank-size" min="1" max="5000" step="0.1"></div>
@@ -235,12 +259,24 @@ code { font-family: ui-monospace, Menlo, monospace; }
             <button class="btn btn-secondary" onclick="addMatrixRow()">+ Punkt hinzufügen</button>
             <div class="btn-row"><button class="btn btn-primary" onclick="saveMatrix()">💾 Matrix speichern</button></div>
         </div>
+        </div>
     </div>
 
     <!-- GAS TAB -->
     <div class="tab-content" id="tab-gas">
         <div class="card">
-            <div class="card-title gas">Gassensor</div>
+            <div class="enable-row">
+                <div>
+                    <div class="card-title gas" style="margin-bottom:4px">Gassensor</div>
+                    <div class="form-hint" style="margin-top:0">Aus = Bluetooth wird nicht gestartet</div>
+                </div>
+                <label class="toggle gas"><input type="checkbox" id="cfg-gas-enabled" onchange="setEnabled('gas', this)"><span></span></label>
+            </div>
+        </div>
+
+        <div id="gas-settings">
+        <div class="card">
+            <div class="card-title gas">Sensor-MAC</div>
             <div class="form-group">
                 <label>MAC-Adresse</label>
                 <input type="text" id="cfg-mac" placeholder="AA:BB:CC:11:22:33" autocapitalize="characters" spellcheck="false">
@@ -285,6 +321,7 @@ code { font-family: ui-monospace, Menlo, monospace; }
             <div class="card-title gas">Sensor-Definition (config.h)</div>
             <div id="def-rows"></div>
             <div class="form-hint" style="margin-top:8px">Für andere Sensoren den Block <b>GAS SENSOR DEFINITION</b> in <code>config.h</code> anpassen und neu flashen.</div>
+        </div>
         </div>
     </div>
 
@@ -345,6 +382,7 @@ let currentMac = '';
 let def = null;          // Compile-time gas sensor definition from the device
 let scanTimer = null;
 let lastRawHex = null;
+let waterEnabled = true, gasEnabled = true;
 
 const $ = (id) => document.getElementById(id);
 
@@ -356,7 +394,7 @@ document.querySelectorAll('.tab').forEach(tab => {
         $('tab-' + tab.dataset.tab).classList.add('active');
         // Poll the nearby BLE device list only while the gas tab is open
         clearInterval(scanTimer);
-        if (tab.dataset.tab === 'gas') { loadScan(); scanTimer = setInterval(loadScan, 5000); }
+        if (tab.dataset.tab === 'gas' && gasEnabled) { loadScan(); scanTimer = setInterval(loadScan, 5000); }
     });
 });
 
@@ -451,6 +489,11 @@ async function loadSetup() {
         $('cfg-ap-ssid').value = cfg.ap_ssid || '';
         $('fw-version').textContent = cfg.version || '--';
 
+        // Enabled sensors
+        waterEnabled = cfg.water_enabled !== false;
+        gasEnabled = cfg.gas_enabled !== false;
+        applyEnabled();
+
         // Fresh water
         $('cfg-tank-size').value = cfg.tank_size || 100;
         calibData = cfg.calib || [];
@@ -467,6 +510,44 @@ async function loadSetup() {
         renderDef();
         renderRawBytes(lastRawHex);
     } catch (e) { showToast('Fehler beim Laden'); }
+}
+
+// ---------- Enabled sensors ----------
+
+// Shows/hides everything that belongs to a disabled sensor
+function applyEnabled() {
+    $('cfg-water-enabled').checked = waterEnabled;
+    $('cfg-gas-enabled').checked = gasEnabled;
+    $('water-settings').classList.toggle('hidden', !waterEnabled);
+    $('gas-settings').classList.toggle('hidden', !gasEnabled);
+    $('gauge-water').classList.toggle('hidden', !waterEnabled);
+    $('gauge-gas').classList.toggle('hidden', !gasEnabled);
+    $('live-water').classList.toggle('hidden', !waterEnabled);
+    $('live-gas').classList.toggle('hidden', !gasEnabled);
+    $('ble-indicator').classList.toggle('hidden', !gasEnabled);
+    $('gauges').classList.toggle('single', waterEnabled !== gasEnabled);
+    $('gauges').parentElement.classList.toggle('hidden', !waterEnabled && !gasEnabled);
+    $('live-none').classList.toggle('hidden', waterEnabled || gasEnabled);
+}
+
+// Saves the switch and restarts the device (Bluetooth is only started at boot)
+async function setEnabled(kind, el) {
+    const on = el.checked;
+    const label = kind === 'water' ? 'Frischwasser-Sensor' : 'Gassensor';
+    if (!confirm(label + (on ? ' einschalten' : ' ausschalten') + '? Das Gerät startet neu.')) {
+        el.checked = !on;
+        return;
+    }
+    try {
+        await postConfig({ [kind + '_enabled']: on });
+        if (kind === 'water') waterEnabled = on; else gasEnabled = on;
+        applyEnabled();
+        showToast('✓ Gespeichert - Neustart...');
+        setTimeout(() => restartDevice(), 1000);
+    } catch (e) {
+        el.checked = !on;
+        showToast('Fehler: ' + e.message);
+    }
 }
 
 // ---------- Fresh water ----------

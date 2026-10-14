@@ -35,6 +35,7 @@ static void publishSwitch(const char* name, const char* id, const char* topic,
                           const char* icon, const char* cmdTopic);
 static void addDeviceBlock(JsonDocument& doc, bool withAvailability);
 static void publishJson(const String& topic, JsonDocument& doc, const char* id);
+static void removeEntity(const char* component, const char* id);
 
 static String topic(const char* sub) {
     return String(config.mqtt_prefix) + "/" + sub;
@@ -101,10 +102,10 @@ void mqttLoop() {
         discoveryPublished = true;
     }
 
-    // Fresh water: periodically
+    // Fresh water: periodically (also carries WiFi RSSI and status)
     if (lastWaterPublish == 0 || millis() - lastWaterPublish > MQTT_WATER_MS) {
         lastWaterPublish = millis();
-        publishWaterState();
+        if (config.water_enabled) publishWaterState();
 
         char buf[8];
         itoa(sensorData.rssi, buf, 10);
@@ -114,7 +115,7 @@ void mqttLoop() {
 
     // Gas: immediately when a new BLE reading arrived, otherwise periodically
     bool newGas = (sensorData.gas.updates != lastPublishedGasUpdate);
-    if (newGas || lastGasPublish == 0 || millis() - lastGasPublish > MQTT_GAS_MS) {
+    if (config.gas_enabled && (newGas || lastGasPublish == 0 || millis() - lastGasPublish > MQTT_GAS_MS)) {
         lastGasPublish = millis();
         lastPublishedGasUpdate = sensorData.gas.updates;
         publishGasState();
@@ -136,7 +137,7 @@ static void mqttCallback(char* topicName, byte* payload, unsigned int length) {
     payloadStr.trim();
     payloadStr.toLowerCase();
 
-    if (topicStr == topic("cmd/water/filter/set")) {
+    if (config.water_enabled && topicStr == topic("cmd/water/filter/set")) {
         bool newState;
         if (payloadStr == "toggle") newState = !config.filter_active;
         else newState = (payloadStr == "on" || payloadStr == "true" || payloadStr == "1");
@@ -195,21 +196,36 @@ void mqttPublishDiscovery() {
     Serial.println("[MQTT] Publishing HA Discovery...");
 
     // Fresh water. No device_class for percent values: "battery" would show a battery icon in HA
-    publishSensor("Frischwasser Inhalt",  "water_liters",  "water/liters",  "L",   "volume_storage", "mdi:water",         true, true);
-    publishSensor("Frischwasser Prozent", "water_percent", "water/percent", "%",   "None",           "mdi:water-percent", true, true);
-    publishSensor("Frischwasser Spannung","water_voltage", "water/voltage", "V",   "voltage",        "mdi:current-dc",    true, true);
-    publishSwitch("Frischwasser Glättungsfilter", "water_filter", "water/filter_active", "mdi:blur",
-                  topic("cmd/water/filter/set").c_str());
+    if (config.water_enabled) {
+        publishSensor("Frischwasser Inhalt",  "water_liters",  "water/liters",  "L", "volume_storage", "mdi:water",         true, true);
+        publishSensor("Frischwasser Prozent", "water_percent", "water/percent", "%", "None",           "mdi:water-percent", true, true);
+        publishSensor("Frischwasser Spannung","water_voltage", "water/voltage", "V", "voltage",        "mdi:current-dc",    true, true);
+        publishSwitch("Frischwasser Glättungsfilter", "water_filter", "water/filter_active", "mdi:blur",
+                      topic("cmd/water/filter/set").c_str());
+    } else {
+        // Disabled: remove the entities from Home Assistant
+        removeEntity("sensor", "water_liters");
+        removeEntity("sensor", "water_percent");
+        removeEntity("sensor", "water_voltage");
+        removeEntity("switch", "water_filter");
+    }
 
     // Gas
-    publishSensor("Gas Füllstand",         "gas_level",     "gas/level",     "%",   "None",            "mdi:gauge",             true,  true);
-    publishSensor("Gas Füllstand Rohwert", "gas_raw_level", "gas/raw_level", "%",   "None",            "mdi:gauge-low",         true,  true);
-    publishSensor("Gas Inhalt",            "gas_content",   "gas/content",   "L",   "volume_storage",  "mdi:gas-cylinder",      true,  true);
-    if (BATTERY_ENABLED) {
-        publishSensor("Gassensor Batterie", "gas_battery",  "gas/battery",   "%",   "battery",         "mdi:battery",           true,  true);
+    if (config.gas_enabled) {
+        publishSensor("Gas Füllstand",         "gas_level",     "gas/level",     "%",   "None",            "mdi:gauge",             true,  true);
+        publishSensor("Gas Füllstand Rohwert", "gas_raw_level", "gas/raw_level", "%",   "None",            "mdi:gauge-low",         true,  true);
+        publishSensor("Gas Inhalt",            "gas_content",   "gas/content",   "L",   "volume_storage",  "mdi:gas-cylinder",      true,  true);
+        if (BATTERY_ENABLED) {
+            publishSensor("Gassensor Batterie", "gas_battery",  "gas/battery",   "%",   "battery",         "mdi:battery",           true,  true);
+        } else {
+            removeEntity("sensor", "gas_battery");
+        }
+        publishSensor("Gassensor Signal",      "gas_ble_rssi",  "gas/ble_rssi",  "dBm", "signal_strength", "mdi:bluetooth",         true,  false);
+        publishSensor("Gassensor Status",      "gas_ble_state", "gas/ble_state", "",    "None",            "mdi:bluetooth-connect", false, false);
+    } else {
+        const char* gasIds[] = {"gas_level", "gas_raw_level", "gas_content", "gas_battery", "gas_ble_rssi", "gas_ble_state"};
+        for (const char* id : gasIds) removeEntity("sensor", id);
     }
-    publishSensor("Gassensor Signal",      "gas_ble_rssi",  "gas/ble_rssi",  "dBm", "signal_strength", "mdi:bluetooth",         true,  false);
-    publishSensor("Gassensor Status",      "gas_ble_state", "gas/ble_state", "",    "None",            "mdi:bluetooth-connect", false, false);
 
     // Device
     publishSensor("WLAN Signal", "rssi",   "rssi",   "dBm", "signal_strength", "mdi:wifi",         true,  false);
@@ -276,4 +292,10 @@ static void publishSwitch(const char* name, const char* id, const char* stateTop
 
     addDeviceBlock(doc, true);
     publishJson(String("homeassistant/switch/" HA_NODE_ID "/") + id + "/config", doc, id);
+}
+
+// An empty retained discovery message removes the entity from Home Assistant
+static void removeEntity(const char* component, const char* id) {
+    String configTopic = String("homeassistant/") + component + "/" HA_NODE_ID "/" + id + "/config";
+    mqtt.publish(configTopic.c_str(), "", true);
 }

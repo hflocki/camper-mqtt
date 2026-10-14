@@ -73,14 +73,22 @@ void setup() {
     // Phase 1: load config & mount LittleFS
     webserverInit();
 
+    Serial.printf("[MAIN] Water sensor: %s | Gas sensor: %s\n",
+        config.water_enabled ? "on" : "off", config.gas_enabled ? "on" : "off");
+
     // Phase 2: fresh water ADC
-    waterInit();
+    if (config.water_enabled) waterInit();
 
     // Phase 3: WiFi (blocking connect or AP fallback)
     wifiManagerInit();
 
     // Phase 4: Bluetooth LE scanner (after WiFi, both share the radio)
-    gasInit();
+    if (config.gas_enabled) {
+        gasInit();
+    } else {
+        sensorData.gas.battery = NAN;
+        strlcpy(sensorData.gas.ble_state, "Deaktiviert", sizeof(sensorData.gas.ble_state));
+    }
 
     // Phase 5: start web server
     webserverStart();
@@ -96,8 +104,8 @@ void loop() {
     wifiManagerLoop();
     ArduinoOTA.handle();
 
-    waterLoop();
-    gasLoop();
+    if (config.water_enabled) waterLoop();
+    if (config.gas_enabled) gasLoop();
     mqttLoop();
     webserverLoop();
 
@@ -107,7 +115,8 @@ void loop() {
         if (cmd == "read") {
             printRead();
         } else if (cmd == "scan") {
-            gasPrintSeenList();
+            if (config.gas_enabled) gasPrintSeenList();
+            else Serial.println("[CMD] Gas sensor is disabled");
         } else if (cmd == "filter") {
             config.filter_active = !config.filter_active;
             saveConfig();

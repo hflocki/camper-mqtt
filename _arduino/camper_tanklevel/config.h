@@ -23,6 +23,16 @@
 #define MQTT_GAS_MS           30000  // Gas: periodic publish (also published immediately on new data)
 #define WS_UPDATE_MS          1000   // Web UI live update interval
 
+// ============================================================
+// SENSORS ON/OFF  (1 = on, 0 = off) - both on by default
+// ------------------------------------------------------------
+// Factory default for the first boot (and after a LittleFS upload).
+// Afterwards each sensor can also be switched in the web UI (tabs "Wasser" / "Gas");
+// the device then restarts. Gas off = Bluetooth is not started at all.
+// ============================================================
+#define WATER_ENABLED         1      // Fresh water level (Votronic tank sender)
+#define GAS_ENABLED           1      // Gas level (BLE sensor)
+
 #define CONFIG_FILE           "/config.json"
 #define OTA_HOSTNAME          "camper-tanklevel"
 
@@ -146,6 +156,10 @@ struct AppConfig {
     char mqtt_user[32];
     char mqtt_pass[32];
     char mqtt_prefix[32];
+
+    // Enabled sensors (applied at boot)
+    bool water_enabled;
+    bool gas_enabled;
 
     // Fresh water
     float tank_size;       // Tank capacity in liters
