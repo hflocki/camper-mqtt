@@ -518,10 +518,11 @@ void drawPageGas() {
 void render() {
   if (!display_on) return;
   canvas.fillSprite(COL_BG);
+  // Page order: 1 = level, 2 = water, 3 = gas, 4 = system (WiFi / MQTT)
   if (current_page == 1) drawPageLevel();
-  else if (current_page == 2) drawPageSystem();
-  else if (current_page == 3) drawPageWater();
-  else drawPageGas();
+  else if (current_page == 2) drawPageWater();
+  else if (current_page == 3) drawPageGas();
+  else drawPageSystem();
   drawFooter();
   canvas.pushSprite(0, 0);
   dirty = false;
@@ -701,7 +702,7 @@ void loop() {
   // Redraw on new data (at most every 150 ms); the water page animates, the others refresh once per second
   if (display_on) {
     unsigned long since = millis() - lastRedraw;
-    unsigned long interval = (current_page == 3) ? 120 : 1000;
+    unsigned long interval = (current_page == 2) ? 120 : 1000;
     if ((dirty && since >= 150) || since >= interval) {
       render();
     }
