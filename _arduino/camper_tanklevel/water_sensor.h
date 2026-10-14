@@ -4,7 +4,8 @@
 #include <Arduino.h>
 #include "config.h"
 
-// Fresh water level: Votronic analog tank sender on ADC_PIN
+// Fresh and grey water level: Votronic analog tank senders on ADC_PIN / GREY_ADC_PIN.
+// Only the tanks enabled in the config are read.
 bool waterInit();
 void waterLoop();
 

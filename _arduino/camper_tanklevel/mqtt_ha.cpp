@@ -10,8 +10,10 @@
 //   <prefix>/status                 online / offline (last will)
 //   <prefix>/rssi                   WiFi signal
 //   <prefix>/water/<value>          fresh water values
+//   <prefix>/grey/<value>           grey water values (optional)
 //   <prefix>/gas/<value>            gas values
-//   <prefix>/cmd/water/filter/set   ON / OFF / TOGGLE
+//   <prefix>/cmd/water/filter/set   ON / OFF / TOGGLE (fresh water filter)
+//   <prefix>/cmd/grey/filter/set    ON / OFF / TOGGLE (grey water filter)
 //
 // Home Assistant: one device "Camper Tanklevel" with all entities.
 
@@ -27,7 +29,7 @@ static bool discoveryPublished = false;
 static uint32_t lastPublishedGasUpdate = 0;
 
 static void mqttCallback(char* topic, byte* payload, unsigned int length);
-static void publishWaterState();
+static void publishTankState(const char* sub, const WaterData& w, const TankConfig& t);
 static void publishGasState();
 static void publishSensor(const char* name, const char* id, const char* topic, const char* unit,
                           const char* devClass, const char* icon, bool measurement, bool keepLastValue);
@@ -105,7 +107,8 @@ void mqttLoop() {
     // Fresh water: periodically (also carries WiFi RSSI and status)
     if (lastWaterPublish == 0 || millis() - lastWaterPublish > MQTT_WATER_MS) {
         lastWaterPublish = millis();
-        if (config.water_enabled) publishWaterState();
+        if (config.water_enabled) publishTankState("water", sensorData.water, config.fresh);
+        if (config.grey_enabled)  publishTankState("grey", sensorData.grey, config.grey);
 
         char buf[8];
         itoa(sensorData.rssi, buf, 10);
@@ -137,34 +140,40 @@ static void mqttCallback(char* topicName, byte* payload, unsigned int length) {
     payloadStr.trim();
     payloadStr.toLowerCase();
 
-    if (config.water_enabled && topicStr == topic("cmd/water/filter/set")) {
+    // Smoothing filter of the fresh or grey water tank
+    struct { bool enabled; const char* cmd; const char* state; TankConfig* t; } tanks[] = {
+        {config.water_enabled, "cmd/water/filter/set", "water/filter_active", &config.fresh},
+        {config.grey_enabled,  "cmd/grey/filter/set",  "grey/filter_active",  &config.grey},
+    };
+    for (auto& tk : tanks) {
+        if (!tk.enabled || topicStr != topic(tk.cmd)) continue;
         bool newState;
-        if (payloadStr == "toggle") newState = !config.filter_active;
+        if (payloadStr == "toggle") newState = !tk.t->filter_active;
         else newState = (payloadStr == "on" || payloadStr == "true" || payloadStr == "1");
 
         // Only write to flash if the value really changed (reduces flash wear)
-        if (newState != config.filter_active) {
-            config.filter_active = newState;
+        if (newState != tk.t->filter_active) {
+            tk.t->filter_active = newState;
             saveConfig();
         }
-        mqtt.publish(topic("water/filter_active").c_str(), config.filter_active ? "ON" : "OFF", true);
+        mqtt.publish(topic(tk.state).c_str(), tk.t->filter_active ? "ON" : "OFF", true);
     }
 }
 
-static void publishWaterState() {
-    const WaterData& w = sensorData.water;
+static void publishTankState(const char* sub, const WaterData& w, const TankConfig& t) {
+    String base = String(sub) + "/";
     char buf[16];
 
     dtostrf(w.avg_voltage, 1, 3, buf);
-    mqtt.publish(topic("water/voltage").c_str(), buf, true);
+    mqtt.publish(topic((base + "voltage").c_str()).c_str(), buf, true);
 
     dtostrf(w.liters, 1, 1, buf);
-    mqtt.publish(topic("water/liters").c_str(), buf, true);
+    mqtt.publish(topic((base + "liters").c_str()).c_str(), buf, true);
 
     dtostrf(w.percent, 1, 0, buf);
-    mqtt.publish(topic("water/percent").c_str(), buf, true);
+    mqtt.publish(topic((base + "percent").c_str()).c_str(), buf, true);
 
-    mqtt.publish(topic("water/filter_active").c_str(), config.filter_active ? "ON" : "OFF", true);
+    mqtt.publish(topic((base + "filter_active").c_str()).c_str(), t.filter_active ? "ON" : "OFF", true);
 }
 
 static void publishGasState() {
@@ -210,6 +219,20 @@ void mqttPublishDiscovery() {
         removeEntity("switch", "water_filter");
     }
 
+    // Grey water (optional)
+    if (config.grey_enabled) {
+        publishSensor("Grauwasser Inhalt",   "grey_liters",  "grey/liters",  "L", "volume_storage", "mdi:water-opacity",  true, true);
+        publishSensor("Grauwasser Prozent",  "grey_percent", "grey/percent", "%", "None",           "mdi:water-percent",  true, true);
+        publishSensor("Grauwasser Spannung", "grey_voltage", "grey/voltage", "V", "voltage",        "mdi:current-dc",     true, true);
+        publishSwitch("Grauwasser Glättungsfilter", "grey_filter", "grey/filter_active", "mdi:blur",
+                      topic("cmd/grey/filter/set").c_str());
+    } else {
+        removeEntity("sensor", "grey_liters");
+        removeEntity("sensor", "grey_percent");
+        removeEntity("sensor", "grey_voltage");
+        removeEntity("switch", "grey_filter");
+    }
+
     // Gas
     if (config.gas_enabled) {
         publishSensor("Gas Füllstand",         "gas_level",     "gas/level",     "%",   "None",            "mdi:gauge",             true,  true);
@@ -238,7 +261,7 @@ static void addDeviceBlock(JsonDocument& doc, bool withAvailability) {
     JsonObject device = doc["device"].to<JsonObject>();
     device["identifiers"][0] = HA_NODE_ID;
     device["name"] = "Camper Tanklevel";
-    device["model"] = "ESP32 Water + Gas (" SENSOR_MODEL ")";
+    device["model"] = "ESP32 Tank Level (" SENSOR_MODEL ")";
     device["manufacturer"] = "DIY";
     device["sw_version"] = FW_VERSION;
 

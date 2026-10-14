@@ -31,18 +31,34 @@ static void handleApiRestart(AsyncWebServerRequest* request);
 // Helpers
 // ============================================================
 
-// Default Votronic reference points (fill level in % per voltage)
-static void setDefaultCalib() {
-    config.calibTable[0] = {0.130f, 0.0f};
-    config.calibTable[1] = {0.137f, 10.0f};
-    config.calibTable[2] = {0.973f, 20.0f};
-    config.calibTable[3] = {1.040f, 30.0f};
-    config.calibTable[4] = {1.350f, 40.0f};
-    config.calibTable[5] = {1.515f, 50.0f};
-    config.calibTable[6] = {1.770f, 60.0f};
-    config.calibTable[7] = {2.178f, 80.0f};
-    config.calibTable[8] = {2.386f, 100.0f};
-    config.calibCount = 9;
+// Default table of a Votronic tank electrode (fill level in % per voltage)
+static void setElectrodeCalib(TankConfig& t) {
+    static const CalibPoint VOTRONIC[] = {
+        {0.130f, 0.0f}, {0.137f, 10.0f}, {0.973f, 20.0f}, {1.040f, 30.0f}, {1.350f, 40.0f},
+        {1.515f, 50.0f}, {1.770f, 60.0f}, {2.178f, 80.0f}, {2.386f, 100.0f}
+    };
+    t.calibCount = 0;
+    for (uint8_t i = 0; i < sizeof(VOTRONIC) / sizeof(VOTRONIC[0]); i++) t.calibTable[i] = VOTRONIC[i];
+    t.calibCount = sizeof(VOTRONIC) / sizeof(VOTRONIC[0]);
+}
+
+// Linear two-point table of a Votronic Tank-Sensor FL (placeholder until empty/full are taught)
+static void setFlCalib(TankConfig& t) {
+    t.calibCount = 0;
+    t.calibTable[0] = {FL_DEFAULT_EMPTY_V, 0.0f};
+    t.calibTable[1] = {FL_DEFAULT_FULL_V, 100.0f};
+    t.calibCount = 2;
+}
+
+static void setTypeCalib(TankConfig& t, uint8_t type) {
+    if (type == GREY_TYPE_FL) setFlCalib(t);
+    else setElectrodeCalib(t);
+}
+
+static void setDefaultTank(TankConfig& t, float size) {
+    t.tank_size = size;
+    t.filter_active = true;
+    setElectrodeCalib(t);
 }
 
 static void setDefaults() {
@@ -57,18 +73,24 @@ static void setDefaults() {
     strlcpy(config.mqtt_prefix, DEFAULT_MQTT_PREFIX, sizeof(config.mqtt_prefix));
 
     config.water_enabled = (WATER_ENABLED != 0);
+    config.grey_enabled = (GREY_ENABLED != 0);
     config.gas_enabled = (GAS_ENABLED != 0);
 
-    // Fresh water
-    config.tank_size = DEFAULT_TANK_SIZE;
-    config.filter_active = true;
-    setDefaultCalib();
+    // Water tanks
+    setDefaultTank(config.fresh, DEFAULT_TANK_SIZE);
+    setDefaultTank(config.grey, DEFAULT_GREY_SIZE);
+    config.grey_type = GREY_SENSOR_TYPE;
+    setTypeCalib(config.grey, config.grey_type);
 
     // Gas
     memset(config.sensor_mac, 0, sizeof(config.sensor_mac));
     config.capacity = DEFAULT_CAPACITY;
     config.fill_stop_on = DEFAULT_FILL_STOP_ON;
     config.fill_stop = DEFAULT_FILL_STOP;
+}
+
+static bool isNumber(JsonVariantConst v) {
+    return v.is<float>() || v.is<int>();
 }
 
 // Parses a JSON calibration array into a local table, sorted by voltage.
@@ -96,10 +118,78 @@ static bool parseCalib(JsonArrayConst arr, CalibPoint* out, uint8_t& count) {
 }
 
 // Copies the table first and sets the count last, so the sensor loop never sees a half-written table
-static void applyCalib(const CalibPoint* tbl, uint8_t count) {
-    config.calibCount = 0;
-    for (uint8_t i = 0; i < count; i++) config.calibTable[i] = tbl[i];
-    config.calibCount = count;
+static void applyCalib(TankConfig& t, const CalibPoint* tbl, uint8_t count) {
+    t.calibCount = 0;
+    for (uint8_t i = 0; i < count; i++) t.calibTable[i] = tbl[i];
+    t.calibCount = count;
+}
+
+// JSON keys of a tank: fresh water uses "tank_size", "filter_active", "calib" (compatible with
+// older configs), grey water the same keys with the prefix "grey_".
+static String tankKey(const char* prefix, const char* key) {
+    return String(prefix) + key;
+}
+
+// Writes tank size, filter and table. "l" holds the fill level in % (key kept for compatibility)
+static void tankToJson(JsonDocument& doc, const char* prefix, const TankConfig& t) {
+    doc[tankKey(prefix, "tank_size")] = t.tank_size;
+    doc[tankKey(prefix, "filter_active")] = t.filter_active;
+    JsonArray arr = doc[tankKey(prefix, "calib")].to<JsonArray>();
+    for (int i = 0; i < t.calibCount; i++) {
+        JsonObject item = arr.add<JsonObject>();
+        item["v"] = t.calibTable[i].volt;
+        item["l"] = t.calibTable[i].percent;
+    }
+}
+
+// Reads a stored tank; invalid or missing values keep the defaults
+static void tankFromJson(JsonDocument& doc, const char* prefix, TankConfig& t) {
+    JsonVariant f = doc[tankKey(prefix, "filter_active")];
+    if (f.is<bool>()) t.filter_active = f.as<bool>();
+    JsonVariant s = doc[tankKey(prefix, "tank_size")];
+    if (s.is<float>() || s.is<int>()) {
+        float size = s.as<float>();
+        if (size >= 1.0f && size <= 5000.0f) t.tank_size = size;
+    }
+    CalibPoint tmp[MAX_CALIB_POINTS];
+    uint8_t tmpCount = 0;
+    if (parseCalib(doc[tankKey(prefix, "calib")].as<JsonArrayConst>(), tmp, tmpCount)) {
+        applyCalib(t, tmp, tmpCount);
+    }
+}
+
+// Validated tank update from the web UI
+struct TankUpdate {
+    bool hasCalib = false;
+    CalibPoint calib[MAX_CALIB_POINTS];
+    uint8_t calibCount = 0;
+    bool hasSize = false;
+    float size = 0.0f;
+    bool hasFilter = false;
+    bool filter = false;
+};
+
+// Returns an error message or nullptr if the values are valid
+static const char* validateTank(JsonDocument& doc, const char* prefix, TankUpdate& u) {
+    JsonVariant c = doc[tankKey(prefix, "calib")];
+    u.hasCalib = !c.isNull();
+    if (u.hasCalib && !parseCalib(c.as<JsonArrayConst>(), u.calib, u.calibCount)) {
+        return "At least 2 valid calibration points required";
+    }
+    JsonVariant s = doc[tankKey(prefix, "tank_size")];
+    u.hasSize = isNumber(s);
+    u.size = u.hasSize ? s.as<float>() : 0.0f;
+    if (u.hasSize && (u.size < 1.0f || u.size > 5000.0f)) return "Tank size must be 1-5000 L";
+    JsonVariant f = doc[tankKey(prefix, "filter_active")];
+    u.hasFilter = f.is<bool>();
+    u.filter = u.hasFilter ? f.as<bool>() : false;
+    return nullptr;
+}
+
+static void applyTank(TankConfig& t, const TankUpdate& u) {
+    if (u.hasSize) t.tank_size = u.size;
+    if (u.hasFilter) t.filter_active = u.filter;
+    if (u.hasCalib) applyCalib(t, u.calib, u.calibCount);
 }
 
 // Normalizes "aa-bb-cc-dd-ee-ff" / "aabbccddeeff" / "AA:BB:..." to "AA:BB:CC:DD:EE:FF".
@@ -120,10 +210,6 @@ static bool normalizeMac(const char* in, char* out, size_t size) {
         out[i * 3 + 2] = (i < 5) ? ':' : '\0';
     }
     return true;
-}
-
-static bool isNumber(JsonVariantConst v) {
-    return v.is<float>() || v.is<int>();
 }
 
 static void copyIfPresent(JsonDocument& doc, const char* key, char* dest, size_t size, bool skipEmpty) {
@@ -169,12 +255,15 @@ void webserverInit() {
     server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL, handleApiSaveConfig);
     server.on("/api/restart", HTTP_POST, handleApiRestart);
 
-    // Fresh water smoothing filter (state-changing endpoint, so POST instead of GET)
+    // Toggle the smoothing filter (state-changing endpoint, so POST instead of GET).
+    // /api/filter = fresh water, /api/filter?tank=grey = grey water
     server.on("/api/filter", HTTP_POST, [](AsyncWebServerRequest* request) {
-        config.filter_active = !config.filter_active;
+        bool isGrey = request->hasParam("tank") && request->getParam("tank")->value() == "grey";
+        TankConfig& t = isGrey ? config.grey : config.fresh;
+        t.filter_active = !t.filter_active;
         configDirty = true;
         request->send(200, "application/json",
-            String("{\"filter\":\"") + (config.filter_active ? "ON" : "OFF") + "\"}");
+            String("{\"filter\":\"") + (t.filter_active ? "ON" : "OFF") + "\"}");
     });
 
     // Nearby BLE devices (for picking the gas sensor MAC in the web UI)
@@ -233,7 +322,14 @@ void wsSendSensorData() {
     wo["voltage"] = round(w.avg_voltage * 1000.0f) / 1000.0f;
     wo["liters"] = round(w.liters * 10.0f) / 10.0f;
     wo["percent"] = round(w.percent);
-    wo["filter"] = config.filter_active;
+    wo["filter"] = config.fresh.filter_active;
+
+    const WaterData& gr = sensorData.grey;
+    JsonObject gro = doc["grey"].to<JsonObject>();
+    gro["voltage"] = round(gr.avg_voltage * 1000.0f) / 1000.0f;
+    gro["liters"] = round(gr.liters * 10.0f) / 10.0f;
+    gro["percent"] = round(gr.percent);
+    gro["filter"] = config.grey.filter_active;
 
     JsonObject go = doc["gas"].to<JsonObject>();
     go["has_data"] = g.has_data;
@@ -253,7 +349,7 @@ void wsSendSensorData() {
     doc["wifi"] = getWiFiStateString();
     doc["mqtt"] = mqttIsConnected();
 
-    char buffer[768];
+    char buffer[1024];
     size_t len = serializeJson(doc, buffer, sizeof(buffer));
     if (len == 0 || len >= sizeof(buffer)) return;
     ws.textAll(buffer, len);
@@ -284,17 +380,13 @@ static void handleApiGetConfig(AsyncWebServerRequest* request) {
     doc["mqtt_prefix"] = (const char*)config.mqtt_prefix;
     doc["version"] = FW_VERSION;
     doc["water_enabled"] = config.water_enabled;
+    doc["grey_enabled"] = config.grey_enabled;
     doc["gas_enabled"] = config.gas_enabled;
 
-    // Fresh water. "l" holds the fill level in % (key kept for compatibility with stored configs)
-    doc["tank_size"] = config.tank_size;
-    doc["filter_active"] = config.filter_active;
-    JsonArray arr = doc["calib"].to<JsonArray>();
-    for (int i = 0; i < config.calibCount; i++) {
-        JsonObject item = arr.add<JsonObject>();
-        item["v"] = config.calibTable[i].volt;
-        item["l"] = config.calibTable[i].percent;
-    }
+    // Water tanks
+    tankToJson(doc, "", config.fresh);
+    tankToJson(doc, "grey_", config.grey);
+    doc["grey_type"] = config.grey_type;
 
     // Gas
     doc["sensor_mac"] = (const char*)config.sensor_mac;
@@ -359,17 +451,19 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
         if (apLen > 0 && apLen < 8) { sendError(request, "AP password needs at least 8 characters"); return; }
     }
 
-    // Fresh water
-    CalibPoint tmp[MAX_CALIB_POINTS];
-    uint8_t tmpCount = 0;
-    bool hasCalib = !doc["calib"].isNull();
-    if (hasCalib && !parseCalib(doc["calib"].as<JsonArrayConst>(), tmp, tmpCount)) {
-        sendError(request, "At least 2 valid calibration points required"); return;
-    }
+    // Water tanks (static: two tables are too big for the async web task stack)
+    static TankUpdate freshUpd, greyUpd;
+    freshUpd = TankUpdate();
+    greyUpd = TankUpdate();
+    const char* tankErr = validateTank(doc, "", freshUpd);
+    if (!tankErr) tankErr = validateTank(doc, "grey_", greyUpd);
+    if (tankErr) { sendError(request, tankErr); return; }
 
-    bool hasTank = isNumber(doc["tank_size"]);
-    float newTank = hasTank ? doc["tank_size"].as<float>() : 0.0f;
-    if (hasTank && (newTank < 1.0f || newTank > 5000.0f)) { sendError(request, "Tank size must be 1-5000 L"); return; }
+    bool hasGreyType = doc["grey_type"].is<int>();
+    int newGreyType = hasGreyType ? doc["grey_type"].as<int>() : 0;
+    if (hasGreyType && newGreyType != GREY_TYPE_ELECTRODE && newGreyType != GREY_TYPE_FL) {
+        sendError(request, "Unknown grey water sender type"); return;
+    }
 
     // Gas
     bool hasMac = doc["sensor_mac"].is<const char*>();
@@ -408,11 +502,16 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
 
     // Enabling/disabling a sensor takes effect after a restart (the web UI restarts the device)
     if (doc["water_enabled"].is<bool>()) config.water_enabled = doc["water_enabled"].as<bool>();
+    if (doc["grey_enabled"].is<bool>())  config.grey_enabled = doc["grey_enabled"].as<bool>();
     if (doc["gas_enabled"].is<bool>())   config.gas_enabled = doc["gas_enabled"].as<bool>();
 
-    if (hasTank) config.tank_size = newTank;
-    if (doc["filter_active"].is<bool>()) config.filter_active = doc["filter_active"].as<bool>();
-    if (hasCalib) applyCalib(tmp, tmpCount);
+    applyTank(config.fresh, freshUpd);
+    // Another sender type: load its default table (unless a table was sent along)
+    if (hasGreyType && newGreyType != config.grey_type) {
+        config.grey_type = (uint8_t)newGreyType;
+        if (!greyUpd.hasCalib) setTypeCalib(config.grey, config.grey_type);
+    }
+    applyTank(config.grey, greyUpd);
 
     if (hasMac && strcmp(newMac, config.sensor_mac) != 0) {
         strlcpy(config.sensor_mac, newMac, sizeof(config.sensor_mac));
@@ -469,19 +568,15 @@ void loadConfig() {
     strlcpy(config.mqtt_prefix, doc["mqtt_prefix"] | DEFAULT_MQTT_PREFIX, sizeof(config.mqtt_prefix));
 
     config.water_enabled = doc["water_enabled"] | (WATER_ENABLED != 0);
+    config.grey_enabled = doc["grey_enabled"] | (GREY_ENABLED != 0);
     config.gas_enabled = doc["gas_enabled"] | (GAS_ENABLED != 0);
 
-    // Fresh water
-    config.filter_active = doc["filter_active"] | true;
-    float storedTank = doc["tank_size"] | DEFAULT_TANK_SIZE;
-    config.tank_size = (storedTank >= 1.0f && storedTank <= 5000.0f) ? storedTank : DEFAULT_TANK_SIZE;
-
-    // Keep the factory table if the stored one is missing or invalid
-    CalibPoint tmp[MAX_CALIB_POINTS];
-    uint8_t tmpCount = 0;
-    if (parseCalib(doc["calib"].as<JsonArrayConst>(), tmp, tmpCount)) {
-        applyCalib(tmp, tmpCount);
-    }
+    // Water tanks (factory values are kept for anything missing or invalid)
+    tankFromJson(doc, "", config.fresh);
+    int greyType = doc["grey_type"] | GREY_SENSOR_TYPE;
+    config.grey_type = (greyType == GREY_TYPE_FL) ? GREY_TYPE_FL : GREY_TYPE_ELECTRODE;
+    setTypeCalib(config.grey, config.grey_type);   // Default table of this type, replaced by a stored one
+    tankFromJson(doc, "grey_", config.grey);
 
     // Gas
     char mac[18];
@@ -510,17 +605,13 @@ void saveConfig() {
     doc["mqtt_prefix"] = (const char*)config.mqtt_prefix;
 
     doc["water_enabled"] = config.water_enabled;
+    doc["grey_enabled"] = config.grey_enabled;
     doc["gas_enabled"] = config.gas_enabled;
 
-    // Fresh water
-    doc["filter_active"] = config.filter_active;
-    doc["tank_size"] = config.tank_size;
-    JsonArray arr = doc["calib"].to<JsonArray>();
-    for (int i = 0; i < config.calibCount; i++) {
-        JsonObject item = arr.add<JsonObject>();
-        item["v"] = config.calibTable[i].volt;
-        item["l"] = config.calibTable[i].percent;
-    }
+    // Water tanks
+    tankToJson(doc, "", config.fresh);
+    tankToJson(doc, "grey_", config.grey);
+    doc["grey_type"] = config.grey_type;
 
     // Gas
     doc["sensor_mac"] = (const char*)config.sensor_mac;

@@ -6,45 +6,62 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.0.0"
+#define FW_VERSION            "1.2.0"
 
 #define DEFAULT_AP_SSID       "Camper-Tanklevel" // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
 #define DEFAULT_AP_PASSWORD   "tanklevel1234"    // Test placeholder (min. 8 characters) - change in the web UI
 #define DEFAULT_OTA_PASSWORD  "tanklevel1234"    // Test placeholder - change before the first flash
 #define DEFAULT_MQTT_SERVER   ""                 // Set in the web UI
 #define DEFAULT_MQTT_PORT     1883
-#define DEFAULT_MQTT_PREFIX   "camper/tanklevel" // Topics: <prefix>/water/..., <prefix>/gas/..., <prefix>/status
+#define DEFAULT_MQTT_PREFIX   "camper/tanklevel" // Topics: <prefix>/water/..., <prefix>/grey/..., <prefix>/gas/..., <prefix>/status
 
 // WiFi TX power in 0.25 dBm steps: 70 = 17.5 dBm.
 // Full power (19.5 dBm) tends to be unstable on ESP32-C3 Super Mini boards.
 #define WIFI_TX_POWER         ((wifi_power_t)70)
 
-#define MQTT_WATER_MS         5000   // Fresh water: periodic publish interval
+#define MQTT_WATER_MS         5000   // Fresh / grey water: periodic publish interval
 #define MQTT_GAS_MS           30000  // Gas: periodic publish (also published immediately on new data)
 #define WS_UPDATE_MS          1000   // Web UI live update interval
 
 // ============================================================
-// SENSORS ON/OFF  (1 = on, 0 = off) - both on by default
+// SENSORS ON/OFF  (1 = on, 0 = off)
 // ------------------------------------------------------------
 // Factory default for the first boot (and after a LittleFS upload).
-// Afterwards each sensor can also be switched in the web UI (tabs "Wasser" / "Gas");
+// Afterwards each sensor can also be switched in the web UI (tabs "Wasser" / "Grau" / "Gas");
 // the device then restarts. Gas off = Bluetooth is not started at all.
 // ============================================================
 #define WATER_ENABLED         1      // Fresh water level (Votronic tank sender)
+#define GREY_ENABLED          0      // Grey water level (second Votronic tank sender) - optional
 #define GAS_ENABLED           1      // Gas level (BLE sensor)
 
 #define CONFIG_FILE           "/config.json"
 #define OTA_HOSTNAME          "camper-tanklevel"
 
 // ============================================================
-// FRESH WATER (Votronic analog tank sender)
+// FRESH / GREY WATER (Votronic analog tank senders)
+// Both inputs must be ADC1 pins (ADC2 does not work while WiFi is active).
 // ============================================================
-#define ADC_PIN               0      // ESP32-C3: GPIO0 (ADC1_CH0). Classic ESP32: use 34 (ADC1)
+#define ADC_PIN               0      // Fresh water. ESP32-C3: GPIO0 (ADC1_CH0). Classic ESP32: 34
+#define GREY_ADC_PIN          1      // Grey water.  ESP32-C3: GPIO1 (ADC1_CH1). Classic ESP32: 35
+                                     // (avoid GPIO2 on the C3: it is a boot strapping pin)
 #define ADC_SAMPLES           8      // Oversampling per measurement (reduces ADC noise)
-#define SENSOR_UPDATE_MS      1000   // Read the ADC every second
+#define SENSOR_UPDATE_MS      1000   // Read the ADCs every second
 #define FILTER_WINDOW_SIZE    75     // Moving average: 75 x 1 s = 75 s
-#define DEFAULT_TANK_SIZE     100.0f // Tank capacity in liters (web UI)
-#define MAX_CALIB_POINTS      15     // Max. number of calibration points
+#define DEFAULT_TANK_SIZE     100.0f // Fresh water tank capacity in liters (web UI)
+#define DEFAULT_GREY_SIZE     90.0f  // Grey water tank capacity in liters (web UI)
+
+// Grey water sender type (factory default, selectable in the web UI, tab "Grau"):
+//   GREY_TYPE_ELECTRODE : Votronic tank electrode, multi-point table like the fresh water tank
+//   GREY_TYPE_FL        : Votronic Tank-Sensor FL (capacitive), linear signal,
+//                         calibrated with "empty" / "full" in the web UI
+#define GREY_TYPE_ELECTRODE   0
+#define GREY_TYPE_FL          1
+#define GREY_SENSOR_TYPE      GREY_TYPE_ELECTRODE
+
+// FL placeholder until "empty" / "full" were taught in the web UI
+#define FL_DEFAULT_EMPTY_V    0.10f
+#define FL_DEFAULT_FULL_V     2.40f
+#define MAX_CALIB_POINTS      15     // Max. number of calibration points per tank
 
 // ============================================================
 // GAS (passive BLE advertising sensor)
@@ -142,6 +159,14 @@ struct ValueMap {
     float add;
 };
 
+// Settings of one water tank (fresh or grey)
+struct TankConfig {
+    float tank_size;       // Tank capacity in liters
+    bool filter_active;    // Moving-average filter on/off
+    CalibPoint calibTable[MAX_CALIB_POINTS];  // Volt-to-percent table, sorted by voltage
+    uint8_t calibCount;
+};
+
 // ============================================================
 // CONFIGURATION STRUCT (stored in /config.json)
 // ============================================================
@@ -159,13 +184,13 @@ struct AppConfig {
 
     // Enabled sensors (applied at boot)
     bool water_enabled;
+    bool grey_enabled;
     bool gas_enabled;
 
-    // Fresh water
-    float tank_size;       // Tank capacity in liters
-    bool filter_active;    // Moving-average filter on/off
-    CalibPoint calibTable[MAX_CALIB_POINTS];  // Volt-to-percent table, sorted by voltage
-    uint8_t calibCount;
+    // Water tanks
+    TankConfig fresh;
+    TankConfig grey;
+    uint8_t grey_type;     // GREY_TYPE_ELECTRODE or GREY_TYPE_FL
 
     // Gas (data mapping is defined at compile time, see GAS SENSOR DEFINITION)
     char sensor_mac[18];   // "AA:BB:CC:DD:EE:FF" (upper case), empty = no sensor
@@ -200,7 +225,8 @@ struct GasData {
 };
 
 struct SensorData {
-    WaterData water;
+    WaterData water;       // Fresh water
+    WaterData grey;        // Grey water
     GasData gas;
     int rssi;              // WiFi signal strength (written by wifi_manager)
 };

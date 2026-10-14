@@ -1,8 +1,9 @@
 /*
- * Camper Tanklevel - fresh water + gas level on one ESP32
- * =======================================================
+ * Camper Tanklevel - fresh water, grey water and gas level on one ESP32
+ * ======================================================================
  * Hardware: ESP32-C3 / ESP32
  *   - Fresh water: Votronic analog tank sender on ADC_PIN (ESP32-C3: GPIO0)
+ *   - Grey water (optional): second Votronic tank sender on GREY_ADC_PIN (ESP32-C3: GPIO1)
  *   - Gas: BLE gas level sensor, received passively via the built-in Bluetooth LE
  *          (default: Rotarex DIMES / SRG WAVE, see GAS SENSOR DEFINITION in config.h)
  *
@@ -50,9 +51,14 @@ void setupOTA() {
 
 static void printRead() {
     const WaterData& w = sensorData.water;
+    const WaterData& gr = sensorData.grey;
     const GasData& g = sensorData.gas;
     Serial.printf("[READ] Water: %.3f V | %.1f L | %.0f%% | Filter: %s\n",
-        w.avg_voltage, w.liters, w.percent, config.filter_active ? "ON" : "OFF");
+        w.avg_voltage, w.liters, w.percent, config.fresh.filter_active ? "ON" : "OFF");
+    if (config.grey_enabled) {
+        Serial.printf("[READ] Grey:  %.3f V | %.1f L | %.0f%% | Filter: %s\n",
+            gr.avg_voltage, gr.liters, gr.percent, config.grey.filter_active ? "ON" : "OFF");
+    }
     Serial.printf("[READ] Gas:   %.1f%% (raw %.1f%%) | %.1f L | Battery: %.0f%% | BLE: %s\n",
         g.level, g.raw_level, g.content, g.battery, g.ble_state);
 }
@@ -64,7 +70,7 @@ void setup() {
 
     Serial.println();
     Serial.println("========================================");
-    Serial.println("  Camper Tanklevel v" FW_VERSION " (Water + Gas)");
+    Serial.println("  Camper Tanklevel v" FW_VERSION);
     Serial.println("========================================");
     Serial.println();
 
@@ -73,11 +79,12 @@ void setup() {
     // Phase 1: load config & mount LittleFS
     webserverInit();
 
-    Serial.printf("[MAIN] Water sensor: %s | Gas sensor: %s\n",
-        config.water_enabled ? "on" : "off", config.gas_enabled ? "on" : "off");
+    Serial.printf("[MAIN] Fresh water: %s | Grey water: %s | Gas: %s\n",
+        config.water_enabled ? "on" : "off", config.grey_enabled ? "on" : "off",
+        config.gas_enabled ? "on" : "off");
 
-    // Phase 2: fresh water ADC
-    if (config.water_enabled) waterInit();
+    // Phase 2: water tank ADCs
+    if (config.water_enabled || config.grey_enabled) waterInit();
 
     // Phase 3: WiFi (blocking connect or AP fallback)
     wifiManagerInit();
@@ -104,7 +111,7 @@ void loop() {
     wifiManagerLoop();
     ArduinoOTA.handle();
 
-    if (config.water_enabled) waterLoop();
+    if (config.water_enabled || config.grey_enabled) waterLoop();
     if (config.gas_enabled) gasLoop();
     mqttLoop();
     webserverLoop();
@@ -118,9 +125,9 @@ void loop() {
             if (config.gas_enabled) gasPrintSeenList();
             else Serial.println("[CMD] Gas sensor is disabled");
         } else if (cmd == "filter") {
-            config.filter_active = !config.filter_active;
+            config.fresh.filter_active = !config.fresh.filter_active;
             saveConfig();
-            Serial.printf("[CMD] Water filter: %s\n", config.filter_active ? "ON" : "OFF");
+            Serial.printf("[CMD] Fresh water filter: %s\n", config.fresh.filter_active ? "ON" : "OFF");
         } else if (cmd == "help") {
             Serial.println("[CMD] Commands: read, scan, filter, help");
         }
@@ -128,8 +135,8 @@ void loop() {
 
     if (millis() - lastStatusPrint > 10000) {
         lastStatusPrint = millis();
-        Serial.printf("[STATUS] Water:%.1fL (%.0f%%) Gas:%.1f%% %s Adv:%lu WiFi:%s MQTT:%s Heap:%u\n",
-            sensorData.water.liters, sensorData.water.percent,
+        Serial.printf("[STATUS] Water:%.1fL (%.0f%%) Grey:%.1fL Gas:%.1f%% %s Adv:%lu WiFi:%s MQTT:%s Heap:%u\n",
+            sensorData.water.liters, sensorData.water.percent, sensorData.grey.liters,
             sensorData.gas.level, sensorData.gas.ble_state,
             (unsigned long)sensorData.gas.adv_count,
             getWiFiStateString().c_str(),

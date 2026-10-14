@@ -13,6 +13,7 @@
     --water: #00d4aa;
     --water-glow: rgba(0,212,170,0.3);
     --gas: #ff9f43;
+    --grey: #a3adb8;
     --accent: var(--water);
     --warning: #ffb800;
     --danger: #ff4757;
@@ -143,7 +144,19 @@ body {
 .legend.lv { background: var(--gas); } .legend.bt { background: var(--success); }
 code { font-family: ui-monospace, Menlo, monospace; }
 .hidden { display: none !important; }
-.gauges.single { grid-template-columns: 1fr; }
+.gauges.cols-1 { grid-template-columns: 1fr; }
+.gauges.cols-3 { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.tank-fill.grey { background: linear-gradient(180deg, #a3adb8 0%, #5a6672 100%); }
+.gauge-title.grey, .card-title.grey { color: var(--grey); }
+.tab.grey.active { color: var(--grey); border-bottom-color: var(--grey); background: rgba(163,173,184,0.06); }
+.btn-grey { background: var(--grey); color: var(--bg-primary); }
+.toggle.grey input:checked + span { background: var(--grey); }
+.form-group select {
+    width: 100%; padding: 10px 12px; background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-primary); font-size: 0.9rem; outline: none;
+}
+.teach-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.teach-grid .value-item { padding: 10px; }
 .enable-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .toggle { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
 .toggle input { opacity: 0; width: 0; height: 0; }
@@ -173,6 +186,7 @@ code { font-family: ui-monospace, Menlo, monospace; }
     <div class="tabs">
         <div class="tab active" data-tab="live">📊 Live</div>
         <div class="tab" data-tab="water">💧 Wasser</div>
+        <div class="tab grey" data-tab="grey">🚿 Grau</div>
         <div class="tab gas" data-tab="gas">🔥 Gas</div>
         <div class="tab" data-tab="mqtt">⚙️ MQTT</div>
         <div class="tab" data-tab="wifi">📶 WiFi</div>
@@ -190,6 +204,14 @@ code { font-family: ui-monospace, Menlo, monospace; }
                     </div>
                     <div class="gauge-sub"><span id="w-liters">--</span> <small>Liter</small></div>
                 </div>
+                <div class="gauge" id="gauge-grey">
+                    <div class="gauge-title grey">Grauwasser</div>
+                    <div class="tank">
+                        <div class="tank-fill grey" id="grey-tank-fill"></div>
+                        <div class="overlay"><span id="gr-percent">--</span></div>
+                    </div>
+                    <div class="gauge-sub"><span id="gr-liters">--</span> <small>Liter</small></div>
+                </div>
                 <div class="gauge" id="gauge-gas">
                     <div class="gauge-title gas">Gas</div>
                     <div class="bottle">
@@ -206,12 +228,17 @@ code { font-family: ui-monospace, Menlo, monospace; }
         </div>
 
         <div class="card hidden" id="live-none">
-            <div class="empty">Kein Sensor aktiv. In den Tabs Wasser oder Gas einschalten.</div>
+            <div class="empty">Kein Sensor aktiv. In den Tabs Wasser, Grau oder Gas einschalten.</div>
         </div>
 
         <div class="card" id="live-water">
             <div class="card-title water">Frischwasser</div>
             <div class="info-row"><span class="info-label">Spannung</span><span id="w-voltage">--</span></div>
+        </div>
+
+        <div class="card" id="live-grey">
+            <div class="card-title grey">Grauwasser</div>
+            <div class="info-row"><span class="info-label">Spannung</span><span id="gr-voltage">--</span></div>
         </div>
 
         <div class="card" id="live-gas">
@@ -239,14 +266,14 @@ code { font-family: ui-monospace, Menlo, monospace; }
         <div class="card">
             <div class="card-title water">Tankgröße</div>
             <div class="form-group"><label>Fassungsvermögen (Liter)</label><input type="number" id="cfg-tank-size" min="1" max="5000" step="0.1"></div>
-            <div class="btn-row"><button class="btn btn-primary" onclick="saveTankSize()">💾 Tankgröße speichern</button></div>
+            <div class="btn-row"><button class="btn btn-primary" onclick="saveTankSize('water')">💾 Tankgröße speichern</button></div>
         </div>
 
         <div class="card">
             <div class="card-title water">Glättungsfilter</div>
             <div class="info-row"><span class="info-label">Status</span><span id="w-filter">--</span></div>
             <div class="form-hint">Gleitender Mittelwert über 75 s, beruhigt die Anzeige beim Fahren.</div>
-            <div class="btn-row"><button class="btn btn-primary" onclick="toggleFilter()">🔀 Filter ein/aus</button></div>
+            <div class="btn-row"><button class="btn btn-primary" onclick="toggleFilter('water')">🔀 Filter ein/aus</button></div>
         </div>
 
         <div class="card">
@@ -256,8 +283,72 @@ code { font-family: ui-monospace, Menlo, monospace; }
                 <thead><tr><th>Spannung (V)</th><th>Füllstand (%)</th><th></th></tr></thead>
                 <tbody id="matrix-rows"></tbody>
             </table>
-            <button class="btn btn-secondary" onclick="addMatrixRow()">+ Punkt hinzufügen</button>
-            <div class="btn-row"><button class="btn btn-primary" onclick="saveMatrix()">💾 Matrix speichern</button></div>
+            <button class="btn btn-secondary" onclick="addMatrixRow('water')">+ Punkt hinzufügen</button>
+            <div class="btn-row"><button class="btn btn-primary" onclick="saveMatrix('water')">💾 Matrix speichern</button></div>
+        </div>
+        </div>
+    </div>
+
+    <!-- GREY WATER TAB -->
+    <div class="tab-content" id="tab-grey">
+        <div class="card">
+            <div class="enable-row">
+                <div>
+                    <div class="card-title grey" style="margin-bottom:4px">Grauwasser-Sensor</div>
+                    <div class="form-hint" style="margin-top:0">Zweiter Votronic-Tankgeber (GPIO1), optional</div>
+                </div>
+                <label class="toggle grey"><input type="checkbox" id="cfg-grey-enabled" onchange="setEnabled('grey', this)"><span></span></label>
+            </div>
+        </div>
+
+        <div id="grey-settings">
+        <div class="card">
+            <div class="card-title grey">Gebertyp</div>
+            <div class="form-group">
+                <select id="cfg-grey-type" onchange="setGreyType(this)">
+                    <option value="0">Votronic Tankelektrode (wie Frischwasser)</option>
+                    <option value="1">Votronic Tank-Sensor FL (kapazitiv)</option>
+                </select>
+                <div class="form-hint" id="grey-type-hint"></div>
+            </div>
+        </div>
+
+        <div class="card" id="grey-teach">
+            <div class="card-title grey">Leer / Voll einlernen (FL)</div>
+            <div class="info-row"><span class="info-label">Aktuelle Spannung</span><span id="gr-voltage3">--</span></div>
+            <div class="teach-grid">
+                <div class="value-item"><div class="value-label">Leer (0 %)</div><div class="value-num" id="teach-empty">--</div><div class="value-unit">Volt</div></div>
+                <div class="value-item"><div class="value-label">Voll (100 %)</div><div class="value-num" id="teach-full">--</div><div class="value-unit">Volt</div></div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-secondary" onclick="teachGrey('empty')">Leer übernehmen</button>
+                <button class="btn btn-secondary" onclick="teachGrey('full')">Voll übernehmen</button>
+            </div>
+            <div class="form-hint">Tank leeren bzw. füllen, warten bis die Spannung ruhig ist (Filter: bis 75 s), dann übernehmen. Der Füllstand dazwischen wird linear berechnet.</div>
+        </div>
+        <div class="card">
+            <div class="card-title grey">Tankgröße</div>
+            <div class="form-group"><label>Fassungsvermögen (Liter)</label><input type="number" id="cfg-grey-tank-size" min="1" max="5000" step="0.1"></div>
+            <div class="btn-row"><button class="btn btn-grey" onclick="saveTankSize('grey')">💾 Tankgröße speichern</button></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title grey">Glättungsfilter</div>
+            <div class="info-row"><span class="info-label">Status</span><span id="gr-filter">--</span></div>
+            <div class="form-hint">Gleitender Mittelwert über 75 s, beruhigt die Anzeige beim Fahren.</div>
+            <div class="btn-row"><button class="btn btn-grey" onclick="toggleFilter('grey')">🔀 Filter ein/aus</button></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title grey">Volt-zu-Füllstand Matrix</div>
+            <div class="form-hint" style="margin:-6px 0 8px">Wird beim Einlernen automatisch gesetzt (FL) oder hier von Hand angepasst.</div>
+            <div class="info-row"><span class="info-label">Aktuelle Spannung</span><span id="gr-voltage2">--</span></div>
+            <table class="calib-table">
+                <thead><tr><th>Spannung (V)</th><th>Füllstand (%)</th><th></th></tr></thead>
+                <tbody id="grey-matrix-rows"></tbody>
+            </table>
+            <button class="btn btn-secondary" onclick="addMatrixRow('grey')">+ Punkt hinzufügen</button>
+            <div class="btn-row"><button class="btn btn-grey" onclick="saveMatrix('grey')">💾 Matrix speichern</button></div>
         </div>
         </div>
     </div>
@@ -377,12 +468,16 @@ code { font-family: ui-monospace, Menlo, monospace; }
 const MAX_CALIB_POINTS = 15;
 const SRC_NAMES = ['Herstellerdaten (Advertising)', 'Service Data (Advertising)'];
 let ws = null;
-let calibData = [];
+// Calibration tables and element ids per water tank
+const TANKS = {
+    water: { key: '',      rows: 'matrix-rows',      size: 'cfg-tank-size',      filter: 'w-filter',  api: '/api/filter',           calib: [] },
+    grey:  { key: 'grey_', rows: 'grey-matrix-rows', size: 'cfg-grey-tank-size', filter: 'gr-filter', api: '/api/filter?tank=grey', calib: [] },
+};
 let currentMac = '';
 let def = null;          // Compile-time gas sensor definition from the device
 let scanTimer = null;
 let lastRawHex = null;
-let waterEnabled = true, gasEnabled = true;
+const enabled = { water: true, grey: false, gas: true };
 
 const $ = (id) => document.getElementById(id);
 
@@ -394,7 +489,7 @@ document.querySelectorAll('.tab').forEach(tab => {
         $('tab-' + tab.dataset.tab).classList.add('active');
         // Poll the nearby BLE device list only while the gas tab is open
         clearInterval(scanTimer);
-        if (tab.dataset.tab === 'gas' && gasEnabled) { loadScan(); scanTimer = setInterval(loadScan, 5000); }
+        if (tab.dataset.tab === 'gas' && enabled.gas) { loadScan(); scanTimer = setInterval(loadScan, 5000); }
     });
 });
 
@@ -414,17 +509,27 @@ function formatAge(s) {
     return 'vor ' + Math.floor(s / 3600) + ' h ' + Math.floor((s % 3600) / 60) + ' min';
 }
 
-function updateLiveData(d) {
-    // Fresh water
-    const w = d.water || {};
-    const wp = Math.max(0, Math.min(100, w.percent || 0));
-    $('tank-fill').style.height = wp + '%';
-    $('w-percent').textContent = Math.round(wp) + '%';
-    $('w-liters').textContent = (w.liters || 0).toFixed(1);
+let greyVoltage = null;   // Latest (filtered) grey water voltage, used for teaching empty/full
+
+function updateTank(w, fillId, p) {
+    const pct = Math.max(0, Math.min(100, w.percent || 0));
+    $(fillId).style.height = pct + '%';
+    $(p + '-percent').textContent = Math.round(pct) + '%';
+    $(p + '-liters').textContent = (w.liters || 0).toFixed(1);
     const volt = (w.voltage || 0).toFixed(3) + ' V';
-    $('w-voltage').textContent = volt;
-    $('w-voltage2').textContent = volt;
-    $('w-filter').textContent = w.filter ? 'AN' : 'AUS';
+    $(p + '-voltage').textContent = volt;
+    $(p + '-voltage2').textContent = volt;
+    $(p + '-filter').textContent = w.filter ? 'AN' : 'AUS';
+}
+
+function updateLiveData(d) {
+    // Fresh and grey water
+    updateTank(d.water || {}, 'tank-fill', 'w');
+    updateTank(d.grey || {}, 'grey-tank-fill', 'gr');
+    if (d.grey) {
+        greyVoltage = d.grey.voltage;
+        $('gr-voltage3').textContent = (greyVoltage || 0).toFixed(3) + ' V';
+    }
 
     // Gas
     const g = d.gas || {};
@@ -490,14 +595,20 @@ async function loadSetup() {
         $('fw-version').textContent = cfg.version || '--';
 
         // Enabled sensors
-        waterEnabled = cfg.water_enabled !== false;
-        gasEnabled = cfg.gas_enabled !== false;
+        enabled.water = cfg.water_enabled !== false;
+        enabled.grey = cfg.grey_enabled === true;
+        enabled.gas = cfg.gas_enabled !== false;
         applyEnabled();
 
-        // Fresh water
-        $('cfg-tank-size').value = cfg.tank_size || 100;
-        calibData = cfg.calib || [];
-        renderMatrix();
+        // Water tanks
+        for (const kind of ['water', 'grey']) {
+            const t = TANKS[kind];
+            $(t.size).value = cfg[t.key + 'tank_size'] || 100;
+            t.calib = cfg[t.key + 'calib'] || [];
+            renderMatrix(kind);
+        }
+        greyType = cfg.grey_type === 1 ? 1 : 0;
+        applyGreyType();
 
         // Gas
         $('cfg-mac').value = cfg.sensor_mac || '';
@@ -516,31 +627,34 @@ async function loadSetup() {
 
 // Shows/hides everything that belongs to a disabled sensor
 function applyEnabled() {
-    $('cfg-water-enabled').checked = waterEnabled;
-    $('cfg-gas-enabled').checked = gasEnabled;
-    $('water-settings').classList.toggle('hidden', !waterEnabled);
-    $('gas-settings').classList.toggle('hidden', !gasEnabled);
-    $('gauge-water').classList.toggle('hidden', !waterEnabled);
-    $('gauge-gas').classList.toggle('hidden', !gasEnabled);
-    $('live-water').classList.toggle('hidden', !waterEnabled);
-    $('live-gas').classList.toggle('hidden', !gasEnabled);
-    $('ble-indicator').classList.toggle('hidden', !gasEnabled);
-    $('gauges').classList.toggle('single', waterEnabled !== gasEnabled);
-    $('gauges').parentElement.classList.toggle('hidden', !waterEnabled && !gasEnabled);
-    $('live-none').classList.toggle('hidden', waterEnabled || gasEnabled);
+    for (const kind of ['water', 'grey', 'gas']) {
+        const on = enabled[kind];
+        $('cfg-' + kind + '-enabled').checked = on;
+        $(kind + '-settings').classList.toggle('hidden', !on);
+        $('gauge-' + kind).classList.toggle('hidden', !on);
+        $('live-' + kind).classList.toggle('hidden', !on);
+    }
+    const count = ['water', 'grey', 'gas'].filter(k => enabled[k]).length;
+    const gauges = $('gauges');
+    gauges.classList.toggle('cols-1', count === 1);
+    gauges.classList.toggle('cols-3', count === 3);
+    gauges.parentElement.classList.toggle('hidden', count === 0);
+    $('live-none').classList.toggle('hidden', count > 0);
+    $('ble-indicator').classList.toggle('hidden', !enabled.gas);
 }
 
-// Saves the switch and restarts the device (Bluetooth is only started at boot)
+const SENSOR_LABELS = { water: 'Frischwasser-Sensor', grey: 'Grauwasser-Sensor', gas: 'Gassensor' };
+
+// Saves the switch and restarts the device (sensors are only started at boot)
 async function setEnabled(kind, el) {
     const on = el.checked;
-    const label = kind === 'water' ? 'Frischwasser-Sensor' : 'Gassensor';
-    if (!confirm(label + (on ? ' einschalten' : ' ausschalten') + '? Das Gerät startet neu.')) {
+    if (!confirm(SENSOR_LABELS[kind] + (on ? ' einschalten' : ' ausschalten') + '? Das Gerät startet neu.')) {
         el.checked = !on;
         return;
     }
     try {
         await postConfig({ [kind + '_enabled']: on });
-        if (kind === 'water') waterEnabled = on; else gasEnabled = on;
+        enabled[kind] = on;
         applyEnabled();
         showToast('✓ Gespeichert - Neustart...');
         setTimeout(() => restartDevice(), 1000);
@@ -550,64 +664,128 @@ async function setEnabled(kind, el) {
     }
 }
 
-// ---------- Fresh water ----------
+// ---------- Water tanks (fresh / grey) ----------
 
-function renderMatrix() {
-    const tbody = $('matrix-rows');
+function renderMatrix(kind) {
+    const t = TANKS[kind];
+    const tbody = $(t.rows);
     tbody.replaceChildren();
-    calibData.forEach((pt, idx) => {
+    t.calib.forEach((pt, idx) => {
         const tr = document.createElement('tr');
         const mk = (key, step) => {
             const td = document.createElement('td');
             const inp = document.createElement('input');
             inp.type = 'number'; inp.step = step; inp.value = pt[key];
-            inp.onchange = () => { calibData[idx][key] = parseFloat(inp.value); };
+            inp.onchange = () => { t.calib[idx][key] = parseFloat(inp.value); };
             td.appendChild(inp);
             return td;
         };
         const tdDel = document.createElement('td');
         const del = document.createElement('button');
         del.className = 'btn btn-danger btn-small'; del.textContent = '✕';
-        del.onclick = () => { calibData.splice(idx, 1); renderMatrix(); };
+        del.onclick = () => { t.calib.splice(idx, 1); renderMatrix(kind); };
         tdDel.appendChild(del);
         tr.append(mk('v', '0.001'), mk('l', '0.1'), tdDel);
         tbody.appendChild(tr);
     });
 }
 
-function addMatrixRow() {
-    if (calibData.length >= MAX_CALIB_POINTS) { showToast('Maximal ' + MAX_CALIB_POINTS + ' Punkte'); return; }
-    calibData.push({v: 0.0, l: 0.0});
-    renderMatrix();
+function addMatrixRow(kind) {
+    const t = TANKS[kind];
+    if (t.calib.length >= MAX_CALIB_POINTS) { showToast('Maximal ' + MAX_CALIB_POINTS + ' Punkte'); return; }
+    t.calib.push({v: 0.0, l: 0.0});
+    renderMatrix(kind);
 }
 
-async function saveMatrix() {
-    const clean = calibData.filter(p => Number.isFinite(p.v) && Number.isFinite(p.l));
+async function saveMatrix(kind) {
+    const t = TANKS[kind];
+    const clean = t.calib.filter(p => Number.isFinite(p.v) && Number.isFinite(p.l));
     if (clean.length < 2) { showToast('Mindestens 2 gültige Punkte nötig'); return; }
     clean.sort((a, b) => a.v - b.v);
     try {
-        await postConfig({calib: clean});
-        calibData = clean;
-        renderMatrix();
+        await postConfig({ [t.key + 'calib']: clean });
+        t.calib = clean;
+        renderMatrix(kind);
+        if (kind === 'grey') applyGreyType();
         showToast('✓ Matrix gespeichert');
     } catch (e) { showToast('Fehler: ' + e.message); }
 }
 
-async function saveTankSize() {
-    const size = parseFloat($('cfg-tank-size').value);
+async function saveTankSize(kind) {
+    const t = TANKS[kind];
+    const size = parseFloat($(t.size).value);
     if (!Number.isFinite(size) || size < 1 || size > 5000) { showToast('Tankgröße: 1 bis 5000 Liter'); return; }
     try {
-        await postConfig({tank_size: size});
+        await postConfig({ [t.key + 'tank_size']: size });
         showToast('✓ Tankgröße gespeichert');
     } catch (e) { showToast('Fehler: ' + e.message); }
 }
 
-// Toggles the smoothing filter on the device (the state is stored in flash)
-async function toggleFilter() {
+// ---------- Grey water sender type ----------
+
+let greyType = 0;   // 0 = tank electrode, 1 = Tank-Sensor FL
+
+const GREY_TYPE_HINTS = [
+    'Kennlinie über die Matrix mit mehreren Punkten, Startwerte wie beim Frischwasser.',
+    'Lineares Signal: unten Leer und Voll einlernen, die Matrix besteht dann aus zwei Punkten.'
+];
+
+function applyGreyType() {
+    $('cfg-grey-type').value = String(greyType);
+    $('grey-type-hint').textContent = GREY_TYPE_HINTS[greyType];
+    $('grey-teach').classList.toggle('hidden', greyType !== 1);
+    // Taught values = the 0 % and 100 % points of the table
+    const pts = TANKS.grey.calib;
+    const empty = pts.find(p => p.l === 0);
+    const full = pts.find(p => p.l === 100);
+    $('teach-empty').textContent = empty ? Number(empty.v).toFixed(3) : '--';
+    $('teach-full').textContent = full ? Number(full.v).toFixed(3) : '--';
+}
+
+async function setGreyType(sel) {
+    const type = parseInt(sel.value);
+    if (type === greyType) return;
+    if (!confirm('Gebertyp wechseln? Die Grauwasser-Matrix wird auf die Startwerte dieses Typs zurückgesetzt.')) {
+        sel.value = String(greyType);
+        return;
+    }
     try {
-        const resp = await fetch('/api/filter', { method: 'POST' });
+        await postConfig({ grey_type: type });
+        showToast('✓ Gebertyp gespeichert');
+        loadSetup();
+    } catch (e) {
+        sel.value = String(greyType);
+        showToast('Fehler: ' + e.message);
+    }
+}
+
+// Stores the current voltage as empty (0 %) or full (100 %) point of the FL sender
+async function teachGrey(which) {
+    if (!Number.isFinite(greyVoltage)) { showToast('Noch keine Spannung gemessen'); return; }
+    const pts = TANKS.grey.calib;
+    const empty = pts.find(p => p.l === 0);
+    const full = pts.find(p => p.l === 100);
+    let vEmpty = empty ? Number(empty.v) : 0.1;
+    let vFull = full ? Number(full.v) : 2.4;
+    if (which === 'empty') vEmpty = greyVoltage; else vFull = greyVoltage;
+    if (Math.abs(vFull - vEmpty) < 0.05) { showToast('Leer und Voll liegen zu nah beieinander'); return; }
+    const calib = [{ v: vEmpty, l: 0 }, { v: vFull, l: 100 }].sort((a, b) => a.v - b.v);
+    try {
+        await postConfig({ grey_calib: calib });
+        TANKS.grey.calib = calib;
+        renderMatrix('grey');
+        applyGreyType();
+        showToast(which === 'empty' ? '✓ Leer übernommen' : '✓ Voll übernommen');
+    } catch (e) { showToast('Fehler: ' + e.message); }
+}
+
+// Toggles the smoothing filter on the device (the state is stored in flash)
+async function toggleFilter(kind) {
+    const t = TANKS[kind];
+    try {
+        const resp = await fetch(t.api, { method: 'POST' });
         const j = await resp.json();
-        $('w-filter').textContent = (j.filter === 'ON') ? 'AN' : 'AUS';
+        $(t.filter).textContent = (j.filter === 'ON') ? 'AN' : 'AUS';
     } catch (e) { showToast('Fehler beim Umschalten'); }
 }
 
