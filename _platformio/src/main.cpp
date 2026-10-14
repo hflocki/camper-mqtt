@@ -10,6 +10,12 @@ PubSubClient client(espClient);
 M5Canvas canvas(&M5.Display);  // off-screen buffer, avoids flicker
 
 // ---------- Topics ----------
+// Combined water + gas firmware (camper-tanklevel): <prefix>/water/..., <prefix>/gas/..., <prefix>/status
+const char* TOPIC_TANK_ALL        = "camper/tanklevel/#";
+const char* TOPIC_TANK_WATER      = "camper/tanklevel/water/";
+const char* TOPIC_TANK_GAS        = "camper/tanklevel/gas/";
+const char* TOPIC_TANK_STATUS     = "camper/tanklevel/status";
+// Separate devices (camper-waterlevel / camper-gaslevel), still supported
 const char* TOPIC_WATER_ALL    = "camper/waterlevel/#";
 const char* TOPIC_WATER_PREFIX = "camper/waterlevel/";
 // Gas bottle topics: level, content, battery, ble_state, status
@@ -512,10 +518,11 @@ void drawPageGas() {
 void render() {
   if (!display_on) return;
   canvas.fillSprite(COL_BG);
+  // Page order: 1 = level, 2 = water, 3 = gas, 4 = system (WiFi / MQTT)
   if (current_page == 1) drawPageLevel();
-  else if (current_page == 2) drawPageSystem();
-  else if (current_page == 3) drawPageWater();
-  else drawPageGas();
+  else if (current_page == 2) drawPageWater();
+  else if (current_page == 3) drawPageGas();
+  else drawPageSystem();
   drawFooter();
   canvas.pushSprite(0, 0);
   dirty = false;
@@ -546,6 +553,32 @@ void goToSleep() {
 }
 
 // ---------- MQTT ----------
+void handleWater(const String& t, const String& message) {
+  if (t.endsWith("/percent")) {
+    waterPercent = constrain((int)message.toInt(), 0, 100);
+  } else if (t.endsWith("/liters")) {
+    waterLiters = message.toFloat();
+  } else if (t.endsWith("/status")) {          // separate device only
+    waterOnline = (message == "online");
+    waterStatusKnown = true;
+  }
+}
+
+void handleGas(const String& t, const String& message) {
+  if (t.endsWith("/level")) {                  // note: "raw_level" does not match "/level"
+    gasPercent = constrain((int)lroundf(message.toFloat()), 0, 100);
+  } else if (t.endsWith("/content")) {
+    gasKg = message.toFloat();
+  } else if (t.endsWith("/battery")) {
+    gasBattery = constrain((int)message.toInt(), 0, 100);
+  } else if (t.endsWith("/ble_state")) {
+    gasBleOk = (message == "OK");
+  } else if (t.endsWith("/status")) {          // separate device only
+    gasOnline = (message == "online");
+    gasStatusKnown = true;
+  }
+}
+
 void callback(char* topic, byte* payload, unsigned int length) {
   String message;
   message.reserve(length);
@@ -554,34 +587,25 @@ void callback(char* topic, byte* payload, unsigned int length) {
   String t(topic);
   Serial.printf("MQTT %s = %s\n", topic, message.c_str());  // debug: shows every topic
 
-  // Water tank topics
-  if (t.startsWith(TOPIC_WATER_PREFIX)) {
-    if (t.endsWith("/percent")) {
-      waterPercent = constrain((int)message.toInt(), 0, 100);
-    } else if (t.endsWith("/liters")) {
-      waterLiters = message.toFloat();
-    } else if (t.endsWith("/status")) {
-      waterOnline = (message == "online");
-      waterStatusKnown = true;
-    }
+  // Combined device: one status topic covers both water and gas
+  if (t == TOPIC_TANK_STATUS) {
+    bool online = (message == "online");
+    waterOnline = gasOnline = online;
+    waterStatusKnown = gasStatusKnown = true;
     dirty = true;
     return;
   }
 
-  // Gas bottle topics
-  if (t.startsWith(TOPIC_GAS_PREFIX)) {
-    if (t.endsWith("/level")) {                // note: "raw_level" does not match "/level"
-      gasPercent = constrain((int)lroundf(message.toFloat()), 0, 100);
-    } else if (t.endsWith("/content")) {
-      gasKg = message.toFloat();
-    } else if (t.endsWith("/battery")) {
-      gasBattery = constrain((int)message.toInt(), 0, 100);
-    } else if (t.endsWith("/ble_state")) {
-      gasBleOk = (message == "OK");
-    } else if (t.endsWith("/status")) {
-      gasOnline = (message == "online");
-      gasStatusKnown = true;
-    }
+  // Water tank topics (combined or separate device)
+  if (t.startsWith(TOPIC_TANK_WATER) || t.startsWith(TOPIC_WATER_PREFIX)) {
+    handleWater(t, message);
+    dirty = true;
+    return;
+  }
+
+  // Gas bottle topics (combined or separate device)
+  if (t.startsWith(TOPIC_TANK_GAS) || t.startsWith(TOPIC_GAS_PREFIX)) {
+    handleGas(t, message);
     dirty = true;
     return;
   }
@@ -608,7 +632,8 @@ void mqttReconnect() {
   String clientId = "roadbuddy-" + String(random(0xffff), HEX);
   if (client.connect(clientId.c_str(), mqtt_user, mqtt_pass)) {
     client.subscribe(mqtt_topic);
-    client.subscribe(TOPIC_WATER_ALL);  // retained values arrive immediately after subscribing
+    client.subscribe(TOPIC_TANK_ALL);   // retained values arrive immediately after subscribing
+    client.subscribe(TOPIC_WATER_ALL);
     client.subscribe(TOPIC_GAS_ALL);
     dirty = true;
   }
@@ -677,7 +702,7 @@ void loop() {
   // Redraw on new data (at most every 150 ms); the water page animates, the others refresh once per second
   if (display_on) {
     unsigned long since = millis() - lastRedraw;
-    unsigned long interval = (current_page == 3) ? 120 : 1000;
+    unsigned long interval = (current_page == 2) ? 120 : 1000;
     if ((dirty && since >= 150) || since >= interval) {
       render();
     }
