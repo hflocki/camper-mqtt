@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Camper Tanklevel</title>
+<style>
+:root {
+    --bg-primary: #0f1419;
+    --bg-secondary: #1a2332;
+    --bg-card: #1e2d3d;
+    --bg-input: #0d1b2a;
+    --water: #00d4aa;
+    --water-glow: rgba(0,212,170,0.3);
+    --gas: #ff9f43;
+    --accent: var(--water);
+    --warning: #ffb800;
+    --danger: #ff4757;
+    --success: #00d4aa;
+    --text-primary: #e8f0f8;
+    --text-secondary: #8899aa;
+    --text-muted: #556677;
+    --border: #2a3a4a;
+    --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-primary); color: var(--text-primary);
+    min-height: 100vh; overflow-x: hidden;
+}
+.header {
+    background: var(--bg-secondary); padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+}
+.header h1 { font-size: 1.15rem; font-weight: 600; color: var(--accent); }
+.status-dots { display: flex; gap: 6px; align-items: center; font-size: 0.65rem; color: var(--text-muted); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); display: inline-block; margin-right: 4px; }
+.status-dot.active { background: var(--success); box-shadow: 0 0 8px var(--water-glow); }
+.status-dot.warning { background: var(--warning); }
+.tabs { display: flex; background: var(--bg-secondary); border-bottom: 1px solid var(--border); overflow-x: auto; }
+.tab {
+    flex: 1; padding: 12px 6px; text-align: center; font-size: 0.78rem; font-weight: 500;
+    color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(0,212,170,0.05); }
+.tab.gas.active { color: var(--gas); border-bottom-color: var(--gas); background: rgba(255,159,67,0.05); }
+.tab-content { display: none; padding: 16px; }
+.tab-content.active { display: block; }
+.card { background: var(--bg-card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+.card-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 12px; }
+.card-title.water { color: var(--water); }
+.card-title.gas { color: var(--gas); }
+
+/* Live overview: water tank + gas bottle side by side */
+.gauges { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.gauge { text-align: center; }
+.gauge-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.gauge-title.water { color: var(--water); }
+.gauge-title.gas { color: var(--gas); }
+.gauge-sub { margin-top: 8px; font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.gauge-sub small { font-size: 0.7rem; font-weight: 500; color: var(--text-muted); }
+.overlay {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 1.5rem; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+.overlay small { font-size: 0.65rem; font-weight: 500; color: var(--text-secondary); margin-top: 2px; }
+
+.tank {
+    position: relative; width: 100%; max-width: 120px; height: 178px; margin: 0 auto;
+    border: 3px solid var(--border); border-radius: 16px; background: var(--bg-input); overflow: hidden;
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+}
+.tank-fill { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: linear-gradient(180deg, var(--water) 0%, #007799 100%); transition: height 0.5s ease-in-out; }
+
+.bottle { position: relative; width: 100%; max-width: 104px; margin: 0 auto; }
+.bottle-valve { width: 28px; height: 10px; margin: 0 auto; background: var(--border); border-radius: 4px 4px 0 0; }
+.bottle-collar { width: 56px; height: 16px; margin: 0 auto; border: 3px solid var(--border); border-bottom: none; border-radius: 12px 12px 0 0; }
+.bottle-body {
+    position: relative; height: 152px; border: 3px solid var(--border); border-radius: 34px 34px 16px 16px;
+    background: var(--bg-input); overflow: hidden; box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+}
+.bottle-fill { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: linear-gradient(180deg, var(--gas) 0%, #c0392b 100%); transition: height 0.6s ease-in-out; }
+.bottle-fill.low { background: linear-gradient(180deg, var(--danger) 0%, #8e1b26 100%); }
+.bottle-fill.stale { filter: grayscale(0.8); opacity: 0.6; }
+
+/* Values */
+.values-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.value-item { background: var(--bg-input); border-radius: 8px; padding: 12px; text-align: center; }
+.value-label { font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px; }
+.value-num { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.value-unit { font-size: 0.7rem; color: var(--text-muted); }
+
+/* Forms */
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; }
+.form-group input {
+    width: 100%; padding: 10px 12px; background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-primary); font-size: 0.9rem; outline: none;
+}
+.form-group input:focus { border-color: var(--accent); }
+.form-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.calib-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+.calib-table th, .calib-table td { padding: 6px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+.calib-table th { color: var(--text-secondary); font-weight: 500; }
+.calib-table input { width: 100%; padding: 6px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; width: 100%; }
+.btn-primary { background: var(--accent); color: var(--bg-primary); }
+.btn-gas { background: var(--gas); color: var(--bg-primary); }
+.btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-danger { background: rgba(255,71,87,0.15); color: var(--danger); border: 1px solid var(--danger); }
+.btn-small { width: auto; padding: 6px 10px; font-size: 0.75rem; }
+.btn-row { display: flex; gap: 8px; margin-top: 12px; }
+
+.info-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+.info-row:last-child { border-bottom: none; }
+.info-label { color: var(--text-secondary); }
+
+/* Nearby BLE devices */
+.dev-list { display: flex; flex-direction: column; gap: 6px; }
+.dev { display: flex; align-items: center; gap: 10px; background: var(--bg-input); border-radius: 8px; padding: 8px 10px; }
+.dev.current { outline: 1px solid var(--gas); }
+.dev.match { border-left: 3px solid var(--gas); }
+.dev-main { flex: 1; min-width: 0; }
+.dev-mac { font-family: ui-monospace, Menlo, monospace; font-size: 0.8rem; }
+.dev-name { font-size: 0.7rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dev-rssi { font-size: 0.75rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.badge { display: inline-block; font-size: 0.6rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 6px; background: rgba(255,159,67,0.15); color: var(--gas); vertical-align: middle; }
+.empty { font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 12px 0; }
+
+.switch-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; margin: 4px 0 12px; cursor: pointer; }
+.switch-row input { width: 18px; height: 18px; accent-color: var(--gas); }
+.bytes { display: flex; flex-wrap: wrap; gap: 4px; }
+.byte { display: flex; flex-direction: column; align-items: center; min-width: 30px; }
+.byte i { font-style: normal; font-size: 0.6rem; color: var(--text-muted); }
+.byte b { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; background: var(--bg-input); border-radius: 4px; padding: 3px 4px; border: 1px solid var(--border); }
+.byte.lv b { border-color: var(--gas); color: var(--gas); }
+.byte.bt b { border-color: var(--success); color: var(--success); }
+.legend { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: middle; }
+.legend.lv { background: var(--gas); } .legend.bt { background: var(--success); }
+code { font-family: ui-monospace, Menlo, monospace; }
+.hidden { display: none !important; }
+
+.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--bg-card); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 20px; font-size: 0.85rem; color: var(--accent); opacity: 0; transition: all 0.3s; z-index: 999; }
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+@media (min-width: 600px) { body { display: flex; justify-content: center; } .app-wrap { width: 100%; max-width: 520px; } }
+</style>
+</head>
+<body>
+<div class="app-wrap">
+    <div class="header">
+        <h1>🚐 Camper Tanklevel</h1>
+        <div class="status-dots">
+            <span><span class="status-dot" id="dot-ble"></span>BLE</span>
+            <span><span class="status-dot" id="dot-wifi"></span>WiFi</span>
+            <span><span class="status-dot" id="dot-mqtt"></span>MQTT</span>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="live">📊 Live</div>
+        <div class="tab" data-tab="water">💧 Wasser</div>
+        <div class="tab gas" data-tab="gas">🔥 Gas</div>
+        <div class="tab" data-tab="mqtt">⚙️ MQTT</div>
+        <div class="tab" data-tab="wifi">📶 WiFi</div>
+    </div>
+
+    <!-- LIVE TAB -->
+    <div class="tab-content active" id="tab-live">
+        <div class="card">
+            <div class="gauges">
+                <div class="gauge">
+                    <div class="gauge-title water">Frischwasser</div>
+                    <div class="tank">
+                        <div class="tank-fill" id="tank-fill"></div>
+                        <div class="overlay"><span id="w-percent">--</span></div>
+                    </div>
+                    <div class="gauge-sub"><span id="w-liters">--</span> <small>Liter</small></div>
+                </div>
+                <div class="gauge">
+                    <div class="gauge-title gas">Gas</div>
+                    <div class="bottle">
+                        <div class="bottle-valve"></div>
+                        <div class="bottle-collar"></div>
+                        <div class="bottle-body">
+                            <div class="bottle-fill" id="bottle-fill"></div>
+                            <div class="overlay"><span id="g-level">--</span><small id="g-state">Warte auf Daten</small></div>
+                        </div>
+                    </div>
+                    <div class="gauge-sub"><span id="g-content">--</span> <small>Liter</small></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title water">Frischwasser</div>
+            <div class="info-row"><span class="info-label">Spannung</span><span id="w-voltage">--</span></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title gas">Gas</div>
+            <div class="info-row"><span class="info-label">Rohwert Sensor</span><span id="g-raw">--</span></div>
+            <div class="info-row"><span class="info-label">Batterie Sensor</span><span id="g-battery">--</span></div>
+            <div class="info-row"><span class="info-label">Bluetooth Signal</span><span id="g-blerssi">--</span></div>
+            <div class="info-row"><span class="info-label">Letzter Wert</span><span id="g-age">--</span></div>
+        </div>
+    </div>
+
+    <!-- WATER TAB -->
+    <div class="tab-content" id="tab-water">
+        <div class="card">
+            <div class="card-title water">Tankgröße</div>
+            <div class="form-group"><label>Fassungsvermögen (Liter)</label><input type="number" id="cfg-tank-size" min="1" max="5000" step="0.1"></div>
+            <div class="btn-row"><button class="btn btn-primary" onclick="saveTankSize()">💾 Tankgröße speichern</button></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title water">Glättungsfilter</div>
+            <div class="info-row"><span class="info-label">Status</span><span id="w-filter">--</span></div>
+            <div class="form-hint">Gleitender Mittelwert über 75 s, beruhigt die Anzeige beim Fahren.</div>
+            <div class="btn-row"><button class="btn btn-primary" onclick="toggleFilter()">🔀 Filter ein/aus</button></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title water">Volt-zu-Füllstand Matrix</div>
+            <div class="info-row"><span class="info-label">Aktuelle Spannung</span><span id="w-voltage2">--</span></div>
+            <table class="calib-table">
+                <thead><tr><th>Spannung (V)</th><th>Füllstand (%)</th><th></th></tr></thead>
+                <tbody id="matrix-rows"></tbody>
+            </table>
+            <button class="btn btn-secondary" onclick="addMatrixRow()">+ Punkt hinzufügen</button>
+            <div class="btn-row"><button class="btn btn-primary" onclick="saveMatrix()">💾 Matrix speichern</button></div>
+        </div>
+    </div>
+
+    <!-- GAS TAB -->
+    <div class="tab-content" id="tab-gas">
+        <div class="card">
+            <div class="card-title gas">Gassensor</div>
+            <div class="form-group">
+                <label>MAC-Adresse</label>
+                <input type="text" id="cfg-mac" placeholder="AA:BB:CC:11:22:33" autocapitalize="characters" spellcheck="false">
+                <div class="form-hint">Oder unten aus der Liste der Geräte in der Nähe übernehmen. Leer = kein Gassensor.</div>
+            </div>
+            <div class="btn-row"><button class="btn btn-gas" onclick="saveMac()">💾 Sensor speichern</button></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title gas">Gasflasche</div>
+            <div class="form-group">
+                <label>Flaschenvolumen brutto (Liter)</label>
+                <input type="number" id="cfg-capacity" min="0.5" max="1000" step="0.1">
+            </div>
+            <label class="switch-row">
+                <input type="checkbox" id="cfg-fillstop-on" onchange="updateFillStop()">
+                <span>Flasche hat einen Füllstopp</span>
+            </label>
+            <div class="form-group" id="grp-fillstop">
+                <label>Füllstopp bei (%)</label>
+                <input type="number" id="cfg-fillstop" min="1" max="100" step="1">
+                <div class="form-hint">Bis zum Füllstopp gefüllt = 100 % nutzbarer Inhalt.</div>
+            </div>
+            <div class="info-row"><span class="info-label">Nutzbarer Inhalt</span><span id="usable">--</span></div>
+            <div class="btn-row"><button class="btn btn-gas" onclick="saveBottle()">💾 Flasche speichern</button></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title gas">Bluetooth-Geräte in der Nähe</div>
+            <div class="info-row"><span class="info-label">Bluetooth-Scan</span><span id="scan-state">--</span></div>
+            <div class="dev-list" id="dev-list" style="margin-top:8px"><div class="empty">Suche läuft...</div></div>
+            <div class="form-hint" style="margin-top:8px">Hervorgehoben: Hersteller-ID passt zur Sensor-Definition. Liste aktualisiert sich alle 5 s.</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title gas">Empfangene Daten (Rohbytes)</div>
+            <div class="bytes" id="raw-bytes"><div class="empty">Noch keine Daten vom Sensor</div></div>
+            <div class="form-hint" style="margin-top:8px"><span class="legend lv"></span> Füllstand &nbsp; <span class="legend bt"></span> Batterie &nbsp; (Zahl über dem Byte = Offset)</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title gas">Sensor-Definition (config.h)</div>
+            <div id="def-rows"></div>
+            <div class="form-hint" style="margin-top:8px">Für andere Sensoren den Block <b>GAS SENSOR DEFINITION</b> in <code>config.h</code> anpassen und neu flashen.</div>
+        </div>
+    </div>
+
+    <!-- MQTT TAB -->
+    <div class="tab-content" id="tab-mqtt">
+        <div class="card">
+            <div class="card-title">MQTT Settings (Home Assistant)</div>
+            <div class="form-row">
+                <div class="form-group"><label>Server</label><input type="text" id="cfg-mqtt-server"></div>
+                <div class="form-group"><label>Port</label><input type="number" id="cfg-mqtt-port" value="1883"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Benutzer</label><input type="text" id="cfg-mqtt-user"></div>
+                <div class="form-group"><label>Passwort</label><input type="password" id="cfg-mqtt-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            </div>
+            <div class="form-group">
+                <label>Topic-Prefix</label><input type="text" id="cfg-mqtt-prefix" value="camper/tanklevel">
+                <div class="form-hint">Werte unter <code>&lt;prefix&gt;/water/…</code> und <code>&lt;prefix&gt;/gas/…</code></div>
+            </div>
+        </div>
+        <div class="btn-row"><button class="btn btn-primary" onclick="saveSetup()">💾 Speichern</button></div>
+    </div>
+
+    <!-- WIFI TAB -->
+    <div class="tab-content" id="tab-wifi">
+        <div class="card">
+            <div class="card-title">Verbindungsstatus</div>
+            <div class="info-row"><span class="info-label">Status</span><span id="wifi-state">--</span></div>
+            <div class="info-row"><span class="info-label">RSSI</span><span id="wifi-rssi">--</span></div>
+            <div class="info-row"><span class="info-label">Firmware</span><span id="fw-version">--</span></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">WLAN-Verbindung</div>
+            <div class="form-group"><label>SSID</label><input type="text" id="cfg-wifi-ssid"></div>
+            <div class="form-group"><label>Passwort</label><input type="password" id="cfg-wifi-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Access Point</div>
+            <div class="form-group"><label>Name (SSID)</label><input type="text" id="cfg-ap-ssid"></div>
+            <div class="form-group"><label>Passwort (min. 8 Zeichen)</label><input type="password" id="cfg-ap-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+        </div>
+
+        <div class="btn-row"><button class="btn btn-primary" onclick="saveWifi()">💾 Speichern & Verbinden</button></div>
+        <div class="btn-row"><button class="btn btn-danger" onclick="restartDevice()">🔄 Neustart</button></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const MAX_CALIB_POINTS = 15;
+const SRC_NAMES = ['Herstellerdaten (Advertising)', 'Service Data (Advertising)'];
+let ws = null;
+let calibData = [];
+let currentMac = '';
+let def = null;          // Compile-time gas sensor definition from the device
+let scanTimer = null;
+let lastRawHex = null;
+
+const $ = (id) => document.getElementById(id);
+
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        $('tab-' + tab.dataset.tab).classList.add('active');
+        // Poll the nearby BLE device list only while the gas tab is open
+        clearInterval(scanTimer);
+        if (tab.dataset.tab === 'gas') { loadScan(); scanTimer = setInterval(loadScan, 5000); }
+    });
+});
+
+function connectWS() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(proto + '//' + location.host + '/ws');
+    ws.onmessage = (evt) => {
+        try { updateLiveData(JSON.parse(evt.data)); } catch (e) {}
+    };
+    ws.onclose = () => { setTimeout(connectWS, 3000); };
+}
+
+function formatAge(s) {
+    if (s < 0) return '--';
+    if (s < 60) return 'vor ' + s + ' s';
+    if (s < 3600) return 'vor ' + Math.floor(s / 60) + ' min';
+    return 'vor ' + Math.floor(s / 3600) + ' h ' + Math.floor((s % 3600) / 60) + ' min';
+}
+
+function updateLiveData(d) {
+    // Fresh water
+    const w = d.water || {};
+    const wp = Math.max(0, Math.min(100, w.percent || 0));
+    $('tank-fill').style.height = wp + '%';
+    $('w-percent').textContent = Math.round(wp) + '%';
+    $('w-liters').textContent = (w.liters || 0).toFixed(1);
+    const volt = (w.voltage || 0).toFixed(3) + ' V';
+    $('w-voltage').textContent = volt;
+    $('w-voltage2').textContent = volt;
+    $('w-filter').textContent = w.filter ? 'AN' : 'AUS';
+
+    // Gas
+    const g = d.gas || {};
+    const ok = g.ble_state === 'OK';
+    const fill = $('bottle-fill');
+    if (g.has_data) {
+        const gp = Math.max(0, Math.min(100, g.level || 0));
+        fill.style.height = gp + '%';
+        fill.classList.toggle('low', gp < 20);
+        fill.classList.toggle('stale', !ok);
+        $('g-level').textContent = gp.toFixed(0) + '%';
+        $('g-content').textContent = (g.content || 0).toFixed(1);
+        $('g-raw').textContent = (g.raw || 0).toFixed(0) + ' %';
+        $('g-blerssi').textContent = g.ble_rssi ? g.ble_rssi + ' dBm' : '--';
+    } else {
+        fill.style.height = '0%';
+        $('g-level').textContent = '--';
+        $('g-content').textContent = '--';
+        $('g-raw').textContent = '--';
+        $('g-blerssi').textContent = '--';
+    }
+    $('g-battery').textContent = (g.battery === null || g.battery === undefined) ? '--' : g.battery + ' %';
+    $('g-state').textContent = g.ble_state || '--';
+    $('g-age').textContent = formatAge(g.age);
+    $('scan-state').textContent = (g.scanning ? 'läuft' : 'AUS') + ' · ' + (g.adv_count || 0) + ' Pakete empfangen';
+    if (g.raw_hex !== lastRawHex) { lastRawHex = g.raw_hex; renderRawBytes(g.raw_hex); }
+
+    // Connection
+    $('dot-ble').className = 'status-dot ' + (ok ? 'active' : (g.has_data ? 'warning' : ''));
+    $('dot-wifi').className = 'status-dot ' + (d.wifi === 'Verbunden' ? 'active' : '');
+    $('dot-mqtt').className = 'status-dot ' + (d.mqtt ? 'active' : '');
+    $('wifi-state').textContent = d.wifi;
+    $('wifi-rssi').textContent = d.rssi ? d.rssi + ' dBm' : '--';
+}
+
+// POST a (partial) config object; throws with the device's error message if rejected
+async function postConfig(obj) {
+    const resp = await fetch('/api/config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(obj)
+    });
+    if (!resp.ok) {
+        let msg = 'HTTP ' + resp.status;
+        try { msg = (await resp.json()).error || msg; } catch (e) {}
+        throw new Error(msg);
+    }
+}
+
+async function loadSetup() {
+    try {
+        const resp = await fetch('/api/config');
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const cfg = await resp.json();
+
+        // Passwords are never sent by the device; the fields stay empty on purpose
+        $('cfg-mqtt-server').value = cfg.mqtt_server || '';
+        $('cfg-mqtt-port').value = cfg.mqtt_port || 1883;
+        $('cfg-mqtt-user').value = cfg.mqtt_user || '';
+        $('cfg-mqtt-prefix').value = cfg.mqtt_prefix || 'camper/tanklevel';
+        $('cfg-wifi-ssid').value = cfg.wifi_ssid || '';
+        $('cfg-ap-ssid').value = cfg.ap_ssid || '';
+        $('fw-version').textContent = cfg.version || '--';
+
+        // Fresh water
+        $('cfg-tank-size').value = cfg.tank_size || 100;
+        calibData = cfg.calib || [];
+        renderMatrix();
+
+        // Gas
+        $('cfg-mac').value = cfg.sensor_mac || '';
+        currentMac = cfg.sensor_mac || '';
+        $('cfg-capacity').value = cfg.capacity;
+        $('cfg-fillstop-on').checked = !!cfg.fill_stop_on;
+        $('cfg-fillstop').value = cfg.fill_stop;
+        updateFillStop();
+        def = cfg.sensor_def || null;
+        renderDef();
+        renderRawBytes(lastRawHex);
+    } catch (e) { showToast('Fehler beim Laden'); }
+}
+
+// ---------- Fresh water ----------
+
+function renderMatrix() {
+    const tbody = $('matrix-rows');
+    tbody.replaceChildren();
+    calibData.forEach((pt, idx) => {
+        const tr = document.createElement('tr');
+        const mk = (key, step) => {
+            const td = document.createElement('td');
+            const inp = document.createElement('input');
+            inp.type = 'number'; inp.step = step; inp.value = pt[key];
+            inp.onchange = () => { calibData[idx][key] = parseFloat(inp.value); };
+            td.appendChild(inp);
+            return td;
+        };
+        const tdDel = document.createElement('td');
+        const del = document.createElement('button');
+        del.className = 'btn btn-danger btn-small'; del.textContent = '✕';
+        del.onclick = () => { calibData.splice(idx, 1); renderMatrix(); };
+        tdDel.appendChild(del);
+        tr.append(mk('v', '0.001'), mk('l', '0.1'), tdDel);
+        tbody.appendChild(tr);
+    });
+}
+
+function addMatrixRow() {
+    if (calibData.length >= MAX_CALIB_POINTS) { showToast('Maximal ' + MAX_CALIB_POINTS + ' Punkte'); return; }
+    calibData.push({v: 0.0, l: 0.0});
+    renderMatrix();
+}
+
+async function saveMatrix() {
+    const clean = calibData.filter(p => Number.isFinite(p.v) && Number.isFinite(p.l));
+    if (clean.length < 2) { showToast('Mindestens 2 gültige Punkte nötig'); return; }
+    clean.sort((a, b) => a.v - b.v);
+    try {
+        await postConfig({calib: clean});
+        calibData = clean;
+        renderMatrix();
+        showToast('✓ Matrix gespeichert');
+    } catch (e) { showToast('Fehler: ' + e.message); }
+}
+
+async function saveTankSize() {
+    const size = parseFloat($('cfg-tank-size').value);
+    if (!Number.isFinite(size) || size < 1 || size > 5000) { showToast('Tankgröße: 1 bis 5000 Liter'); return; }
+    try {
+        await postConfig({tank_size: size});
+        showToast('✓ Tankgröße gespeichert');
+    } catch (e) { showToast('Fehler: ' + e.message); }
+}
+
+// Toggles the smoothing filter on the device (the state is stored in flash)
+async function toggleFilter() {
+    try {
+        const resp = await fetch('/api/filter', { method: 'POST' });
+        const j = await resp.json();
+        $('w-filter').textContent = (j.filter === 'ON') ? 'AN' : 'AUS';
+    } catch (e) { showToast('Fehler beim Umschalten'); }
+}
+
+// ---------- Gas ----------
+
+function updateFillStop() {
+    const on = $('cfg-fillstop-on').checked;
+    $('grp-fillstop').classList.toggle('hidden', !on);
+    const cap = parseFloat($('cfg-capacity').value);
+    const stop = on ? parseFloat($('cfg-fillstop').value) : 100;
+    $('usable').textContent = (Number.isFinite(cap) && Number.isFinite(stop))
+        ? (cap * stop / 100).toFixed(1) + ' L' : '--';
+}
+$('cfg-capacity').addEventListener('input', updateFillStop);
+$('cfg-fillstop').addEventListener('input', updateFillStop);
+
+function renderDef() {
+    const box = $('def-rows');
+    box.replaceChildren();
+    if (!def) return;
+    const rows = [['Sensor', def.model], ['Datenquelle', SRC_NAMES[def.source] || def.source]];
+    if (def.source === 0) rows.push(['Hersteller-ID', def.company ? '0x' + def.company : 'beliebig']);
+    if (def.source === 1) rows.push(['Service-Data-UUID', def.uuid || '--']);
+    rows.push(['Füllstand', 'Byte ' + def.level_offset + ', ' + def.level_len + ' Byte']);
+    rows.push(['Batterie', def.battery ? 'Byte ' + def.battery_offset + ', ' + def.battery_len + ' Byte' : 'nicht vorhanden']);
+    rows.forEach(([k, v]) => {
+        const r = document.createElement('div'); r.className = 'info-row';
+        const a = document.createElement('span'); a.className = 'info-label'; a.textContent = k;
+        const b = document.createElement('span'); b.textContent = v; b.style.textAlign = 'right'; b.style.wordBreak = 'break-all';
+        r.append(a, b); box.appendChild(r);
+    });
+}
+
+// Shows the received payload byte by byte with offsets; mapped bytes are highlighted
+function renderRawBytes(hex) {
+    const box = $('raw-bytes');
+    box.replaceChildren();
+    const bytes = (hex || '').trim() ? hex.trim().split(/\s+/) : [];
+    if (!bytes.length) {
+        const e = document.createElement('div'); e.className = 'empty';
+        e.textContent = currentMac ? 'Noch keine Daten vom Sensor' : 'Erst eine MAC-Adresse speichern';
+        box.appendChild(e);
+        return;
+    }
+    const inRange = (i, off, len) => i >= off && i < off + len;
+    bytes.forEach((b, i) => {
+        const c = document.createElement('div');
+        c.className = 'byte';
+        if (def && inRange(i, def.level_offset, def.level_len)) c.classList.add('lv');
+        else if (def && def.battery && inRange(i, def.battery_offset, def.battery_len)) c.classList.add('bt');
+        const idx = document.createElement('i'); idx.textContent = i;
+        const val = document.createElement('b'); val.textContent = b;
+        c.append(idx, val);
+        box.appendChild(c);
+    });
+}
+
+function isValidMac(mac) {
+    const hex = mac.replace(/[:\-\s]/g, '');
+    return hex === '' || /^[0-9a-fA-F]{12}$/.test(hex);
+}
+
+async function saveMac() {
+    const mac = $('cfg-mac').value.trim();
+    if (!isValidMac(mac)) { showToast('Ungültige MAC-Adresse'); return; }
+    try {
+        await postConfig({ sensor_mac: mac });
+        showToast('✓ Sensor gespeichert');
+        loadSetup();
+    } catch (e) { showToast('Fehler: ' + e.message); }
+}
+
+async function saveBottle() {
+    const cfg = {
+        capacity: parseFloat($('cfg-capacity').value),
+        fill_stop_on: $('cfg-fillstop-on').checked
+    };
+    if (!Number.isFinite(cfg.capacity) || cfg.capacity < 0.5 || cfg.capacity > 1000) {
+        showToast('Flaschengröße: 0,5 bis 1000 Liter'); return;
+    }
+    if (cfg.fill_stop_on) {
+        cfg.fill_stop = parseFloat($('cfg-fillstop').value);
+        if (!Number.isFinite(cfg.fill_stop) || cfg.fill_stop < 1 || cfg.fill_stop > 100) {
+            showToast('Füllstopp: 1 bis 100 %'); return;
+        }
+    }
+    try {
+        await postConfig(cfg);
+        showToast('✓ Flasche gespeichert');
+    } catch (e) { showToast('Fehler: ' + e.message); }
+}
+
+async function loadScan() {
+    try {
+        const resp = await fetch('/api/scan');
+        if (!resp.ok) return;
+        renderDevices((await resp.json()).devices || []);
+    } catch (e) {}
+}
+
+// Built with DOM nodes, not innerHTML: BLE device names come from foreign devices
+function renderDevices(devs) {
+    const list = $('dev-list');
+    list.replaceChildren();
+    if (!devs.length) {
+        const e = document.createElement('div');
+        e.className = 'empty'; e.textContent = 'Noch keine Geräte gefunden';
+        list.appendChild(e);
+        return;
+    }
+    devs.forEach(d => {
+        const row = document.createElement('div');
+        const match = def && def.source === 0 && def.company && d.mfg === def.company;
+        row.className = 'dev' + (d.mac === currentMac ? ' current' : '') + (match ? ' match' : '');
+
+        const main = document.createElement('div'); main.className = 'dev-main';
+        const mac = document.createElement('div'); mac.className = 'dev-mac'; mac.textContent = d.mac;
+        if (d.mfg) {
+            const b = document.createElement('span');
+            b.className = 'badge'; b.textContent = '0x' + d.mfg; b.title = 'Hersteller-ID';
+            mac.appendChild(b);
+        }
+        if (d.svc) {
+            const b = document.createElement('span');
+            b.className = 'badge'; b.textContent = 'SVC ' + (d.svc.length > 8 ? d.svc.slice(0, 8) + '…' : d.svc);
+            b.title = 'Service Data ' + d.svc;
+            mac.appendChild(b);
+        }
+        const name = document.createElement('div'); name.className = 'dev-name'; name.textContent = d.name || '(ohne Namen)';
+        main.append(mac, name);
+
+        const rssi = document.createElement('div'); rssi.className = 'dev-rssi'; rssi.textContent = d.rssi + ' dBm';
+
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-secondary btn-small'; btn.textContent = 'Übernehmen';
+        btn.onclick = () => { $('cfg-mac').value = d.mac; showToast('MAC übernommen - bitte speichern'); };
+
+        row.append(main, rssi, btn);
+        list.appendChild(row);
+    });
+}
+
+// ---------- MQTT / WiFi ----------
+
+async function saveSetup() {
+    const cfg = {
+        mqtt_server: $('cfg-mqtt-server').value.trim(),
+        mqtt_port: parseInt($('cfg-mqtt-port').value) || 1883,
+        mqtt_user: $('cfg-mqtt-user').value,
+        mqtt_prefix: $('cfg-mqtt-prefix').value.trim()
+    };
+    // An empty password field means "keep the stored password"
+    const pass = $('cfg-mqtt-pass').value;
+    if (pass) cfg.mqtt_pass = pass;
+
+    try {
+        await postConfig(cfg);
+        // MQTT settings are applied at boot, so restart the device
+        showToast('✓ MQTT gespeichert - Neustart...');
+        setTimeout(() => restartDevice(), 1500);
+    } catch (e) { showToast('Fehler: ' + e.message); }
+}
+
+async function saveWifi() {
+    const cfg = { wifi_ssid: $('cfg-wifi-ssid').value };
+    // An empty password field means "keep the stored password"
+    const pass = $('cfg-wifi-pass').value;
+    if (pass) cfg.wifi_pass = pass;
+
+    // Access point: empty fields keep the stored values
+    const apSsid = $('cfg-ap-ssid').value.trim();
+    if (apSsid) cfg.ap_ssid = apSsid;
+    const apPass = $('cfg-ap-pass').value;
+    if (apPass) {
+        if (apPass.length < 8) { showToast('AP-Passwort: mindestens 8 Zeichen'); return; }
+        cfg.ap_pass = apPass;
+    }
+
+    try {
+        await postConfig(cfg);
+        showToast('✓ WiFi gespeichert - Neustart...');
+        setTimeout(() => restartDevice(), 1500);
+    } catch (e) { showToast('Fehler: ' + e.message); }
+}
+
+async function restartDevice() {
+    try {
+        await fetch('/api/restart', { method: 'POST' });
+        showToast('Gerät startet neu...');
+    } catch (e) {}
+}
+
+function showToast(msg) {
+    const t = $('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+connectWS();
+loadSetup();
+</script>
+</body>
+</html>
