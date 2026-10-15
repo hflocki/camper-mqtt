@@ -14,7 +14,15 @@ const int mqtt_port = 1883;
 const char* mqtt_user = "YOUR_MQTT_USER";
 const char* mqtt_pass = "YOUR_MQTT_PASSWORD";
 
-// Level sensor topic (pitch / roll). Water and gas topics are defined in roadbuddy.ino
+// Level sensor topic (pitch / roll). Water, grey water and gas topics are defined in the sketch
 const char* mqtt_topic = "camper/level/#";
+
+// ---------- Sensors ----------
+// Choose which sensors RoadBuddy shows (1 = enabled, 0 = disabled).
+// A disabled sensor gets no page and no MQTT subscription. The system page is always shown.
+#define USE_LEVEL 1   // pitch / roll level sensor
+#define USE_WATER 1   // fresh water tank
+#define USE_GREY  0   // grey water tank (combined camper-tanklevel firmware only)
+#define USE_GAS   1   // gas bottle
 
 #endif
