@@ -39,7 +39,9 @@ Die Bilder zeigen Beispieldaten.
 ## Ordner
 
 ```
-_arduino/camper_tanklevel/   Sketch für die Arduino IDE (.ino + .cpp/.h + data/index.html)
+_arduino/camper_tanklevel/        Sketch für die Arduino IDE (.ino + .cpp/.h)
+_arduino/camper_tanklevel/web/    Quelle der Web-Oberfläche (index.html)
+_arduino/camper_tanklevel/data/   LittleFS-Inhalt: index.html.gz (komprimiert, wird hochgeladen)
 _platformio/                 platformio.ini, nutzt dieselben Quellen
 ```
 
@@ -49,7 +51,7 @@ _platformio/                 platformio.ini, nutzt dieselben Quellen
 | `water_sensor.cpp` | ADC für Frisch- und Grauwasser, gleitender Mittelwert, Interpolation über die Matrix |
 | `gas_sensor.cpp` | NimBLE-Scan, Dekodierung, Geräteliste, Füllstopp |
 | `mqtt_ha.cpp` | MQTT, HA-Discovery, Filter-Schalter |
-| `webserver.cpp` | Web-UI, REST-API, Konfiguration in LittleFS |
+| `webserver.cpp` | Web-UI (gzip), REST-API, Konfiguration in LittleFS |
 | `wifi_manager.cpp` | WLAN mit AP-Fallback (Modem-Sleep für WiFi/BLE-Koexistenz) |
 
 ## Hardware
@@ -103,7 +105,16 @@ Board-Paket: esp32 von Espressif, 3.x (getestet 3.3.9).
 2. `camper_tanklevel.ino` öffnen, Partition Scheme prüfen, hochladen.
 3. Serial Monitor schließen, `Cmd+Shift+P` → **Upload LittleFS to Pico/ESP8266/ESP32** (Plugin [arduino-littlefs-upload](https://github.com/earlephilhower/arduino-littlefs-upload)).
 
-Der LittleFS-Upload überschreibt die gespeicherte Konfiguration. Spätere Firmware-Updates gehen auch per OTA (`camper-tanklevel` unter Netzwerk-Ports).
+Der LittleFS-Upload überschreibt die gespeicherte Konfiguration.
+
+**Web-Oberfläche ändern:** Die Quelle ist `web/index.html`. Hochgeladen wird die komprimierte `data/index.html.gz` (ca. ein Viertel der Größe, lädt auf dem Handy deutlich schneller). Nach einer Änderung neu packen, dann LittleFS hochladen:
+
+```
+cd _arduino/camper_tanklevel
+gzip -9 -n -c web/index.html > data/index.html.gz
+```
+
+PlatformIO erledigt das automatisch bei jedem Build (`_platformio/gzip_web.py`). Spätere Firmware-Updates gehen auch per OTA (`camper-tanklevel` unter Netzwerk-Ports).
 
 ## Erstbenutzung
 
@@ -168,6 +179,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 | --- | --- |
+| 1.2.1 | Web-UI gzip-komprimiert (Quelle jetzt in `web/`), kompakte Tab-Leiste (Symbol über Text, passt bis 320 px) |
 | 1.2.0 | Optionaler Grauwasser-Sensor an GPIO1: Votronic Tankelektrode oder Tank-Sensor FL (mit Leer/Voll-Einlernen), eigene Tankgröße, Matrix und Filter |
 | 1.1.0 | Sensoren einzeln abschaltbar (`config.h` und Web-UI), AP-Name mit MAC-Endung, Live-Seite nur mit Anzeigen, Filter im Tab Wasser |
 | 1.0.0 | Erste kombinierte Version aus camper-waterlevel und camper-gaslevel |

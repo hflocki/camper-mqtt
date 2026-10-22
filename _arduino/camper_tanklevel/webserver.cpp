@@ -242,12 +242,19 @@ void webserverInit() {
 
     // Serve ONLY index.html. Serving the whole filesystem would expose /config.json
     // (WiFi and MQTT credentials) to everybody in the network.
+    // The web UI is stored gzip compressed (about 1/4 of the size): loads much faster,
+    // because WiFi runs in modem sleep for the Bluetooth coexistence.
     server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
-        if (fsReady && LittleFS.exists("/index.html")) {
-            request->send(LittleFS, "/index.html", "text/html");
+        if (fsReady && LittleFS.exists("/index.html.gz")) {
+            AsyncWebServerResponse* response = request->beginResponse(LittleFS, "/index.html.gz", "text/html");
+            response->addHeader("Content-Encoding", "gzip");
+            response->addHeader("Cache-Control", "no-cache");
+            request->send(response);
+        } else if (fsReady && LittleFS.exists("/index.html")) {
+            request->send(LittleFS, "/index.html", "text/html");   // Uncompressed (older filesystem image)
         } else {
             request->send(200, "text/html",
-                "<h1>Camper Tanklevel</h1><p>Please upload index.html to LittleFS.</p>");
+                "<h1>Camper Tanklevel</h1><p>Please upload the LittleFS image (data/index.html.gz).</p>");
         }
     });
 

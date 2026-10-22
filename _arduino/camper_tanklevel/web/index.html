@@ -40,10 +40,13 @@ body {
 .status-dot.active { background: var(--success); box-shadow: 0 0 8px var(--water-glow); }
 .status-dot.warning { background: var(--warning); }
 .tabs { display: flex; background: var(--bg-secondary); border-bottom: 1px solid var(--border); overflow-x: auto; }
+/* Icon above the label: all tabs fit even on small phones (320 px) */
 .tab {
-    flex: 1; padding: 12px 6px; text-align: center; font-size: 0.78rem; font-weight: 500;
+    flex: 1; min-width: 0; padding: 8px 1px 7px; text-align: center; font-size: 0.68rem; font-weight: 500; line-height: 1.2;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
     color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap;
 }
+.tab .ico { font-size: 1.05rem; line-height: 1; }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(0,212,170,0.05); }
 .tab.gas.active { color: var(--gas); border-bottom-color: var(--gas); background: rgba(255,159,67,0.05); }
 .tab-content { display: none; padding: 16px; }
@@ -169,6 +172,12 @@ code { font-family: ui-monospace, Menlo, monospace; }
 .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--bg-card); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 20px; font-size: 0.85rem; color: var(--accent); opacity: 0; transition: all 0.3s; z-index: 999; }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
+/* Small phones: keep the title on one line */
+@media (max-width: 374px) {
+    .header { padding: 14px 12px; gap: 8px; }
+    .header h1 { font-size: 1rem; white-space: nowrap; }
+    .status-dots { gap: 4px; font-size: 0.6rem; }
+}
 @media (min-width: 600px) { body { display: flex; justify-content: center; } .app-wrap { width: 100%; max-width: 520px; } }
 </style>
 </head>
@@ -184,12 +193,12 @@ code { font-family: ui-monospace, Menlo, monospace; }
     </div>
 
     <div class="tabs">
-        <div class="tab active" data-tab="live">📊 Live</div>
-        <div class="tab" data-tab="water">💧 Wasser</div>
-        <div class="tab grey" data-tab="grey">🚿 Grau</div>
-        <div class="tab gas" data-tab="gas">🔥 Gas</div>
-        <div class="tab" data-tab="mqtt">⚙️ MQTT</div>
-        <div class="tab" data-tab="wifi">📶 WiFi</div>
+        <div class="tab active" data-tab="live"><span class="ico">📊</span><span>Live</span></div>
+        <div class="tab" data-tab="water"><span class="ico">💧</span><span>Wasser</span></div>
+        <div class="tab grey" data-tab="grey"><span class="ico">🚿</span><span>Grau</span></div>
+        <div class="tab gas" data-tab="gas"><span class="ico">🔥</span><span>Gas</span></div>
+        <div class="tab" data-tab="mqtt"><span class="ico">⚙️</span><span>MQTT</span></div>
+        <div class="tab" data-tab="wifi"><span class="ico">📶</span><span>WiFi</span></div>
     </div>
 
     <!-- LIVE TAB -->
