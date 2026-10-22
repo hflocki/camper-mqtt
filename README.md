@@ -99,11 +99,13 @@ WiFi + Bluetooth ergeben ca. 1,43 MB Firmware und passen nicht in die Standard-P
 
 Board-Paket: esp32 von Espressif, 3.x (getestet 3.3.9).
 
+
+
 **LittleFS-Plugin installieren (einmalig)**
 
 Die Arduino IDE 2.x kann von sich aus kein Dateisystem hochladen. Dafür braucht es das Plugin [arduino-littlefs-upload](https://github.com/earlephilhower/arduino-littlefs-upload) (Arduino IDE **2.2.1 oder neuer**, für die alte IDE 1.8 funktioniert es nicht).
 
-1. Unter [Releases]([https://github.com/earlephilhower/arduino-littlefs-upload/releases/tag/1.6.3]) die Datei `arduino-littlefs-upload-x.y.z.vsix` herunterladen. **Nicht entpacken**, die `.vsix` bleibt so, wie sie ist.
+1. Unter [Releases](https://github.com/earlephilhower/arduino-littlefs-upload/releases/tag/1.6.3) die Datei `arduino-littlefs-upload-x.y.z.vsix` herunterladen. **Nicht entpacken**, die `.vsix` bleibt so, wie sie ist.
 2. In den Plugin-Ordner kopieren (Ordner vorher anlegen, falls es ihn nicht gibt):
 
    | System | Ordner |
