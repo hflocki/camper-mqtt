@@ -1,0 +1,5 @@
+.pio/
+build/
+*.bin
+.DS_Store
+.vscode/
