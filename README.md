@@ -56,14 +56,15 @@ _platformio/                 platformio.ini, nutzt dieselben Quellen
 
 ## Hardware
 
-- ESP32-C3 Super Mini (getestet kompiliert) oder klassischer ESP32
-| Sensor | ESP32-C3 | Klassischer ESP32 | `config.h` |
-| --- | --- | --- | --- |
-| Frischwasser (Votronic-Tankgeber) | **GPIO0** | GPIO34 | `ADC_PIN` |
-| Grauwasser (Votronic-Tankgeber, optional) | **GPIO1** | GPIO35 | `GREY_ADC_PIN` |
-| Gas (BLE) | keine Verkabelung, eingebautes Bluetooth | | |
+- ESP32-C3 Super Mini (Standard), ESP32-S3 oder klassischer ESP32 – die Pins werden je nach Chip automatisch gewählt
 
-Beide Tankeingänge müssen ADC1-Pins sein (ADC2 funktioniert nicht, solange WLAN aktiv ist). GPIO2 beim C3 nicht verwenden, das ist ein Boot-Pin. Verkabelung der Tankgeber wie im [camper-waterlevel](https://github.com/hflocki/camper-waterlevel#verkabelung) beschrieben, der Grauwasser-Geber bekommt eine eigene, gleich aufgebaute Messschaltung.
+| Sensor | ESP32-C3 | ESP32-S3 | Klassischer ESP32 | `config.h` |
+| --- | --- | --- | --- | --- |
+| Frischwasser (Votronic-Tankgeber) | **GPIO0** | **GPIO1** | GPIO34 | `ADC_PIN` |
+| Grauwasser (Votronic-Tankgeber, optional) | **GPIO1** | **GPIO2** | GPIO35 | `GREY_ADC_PIN` |
+| Gas (BLE) | keine Verkabelung, eingebautes Bluetooth | | | |
+
+Beide Tankeingänge müssen ADC1-Pins sein (ADC2 funktioniert nicht, solange WLAN aktiv ist). GPIO2 beim C3 nicht verwenden, das ist ein Boot-Pin. Beim S3 ist GPIO0 ein Boot-Pin ohne ADC, deshalb dort GPIO1/GPIO2. Verkabelung der Tankgeber wie im [camper-waterlevel](https://github.com/hflocki/camper-waterlevel#verkabelung) beschrieben, der Grauwasser-Geber bekommt eine eigene, gleich aufgebaute Messschaltung.
 
 **Grauwasser-Geber** – im Tab **Grau** unter „Gebertyp“ wählbar (Werkseinstellung in `config.h`: `GREY_SENSOR_TYPE`):
 
@@ -86,6 +87,8 @@ Für Abwasser ist der kapazitive FL die robustere Wahl, weil sich Ablagerungen k
 | Partition Scheme | ⚠️ **Minimal SPIFFS (1.9MB APP with OTA/190KB SPIFFS)** |
 
 WiFi + Bluetooth ergeben ca. 1,43 MB Firmware und passen nicht in die Standard-Partition (1,2 MB).
+
+**ESP32-S3:** Board „ESP32S3 Dev Module“, Partition Scheme ebenfalls Minimal SPIFFS (oder eine größere Variante mit SPIFFS). **PSRAM** passend zum Board einstellen (z. B. N16R8 → „OPI PSRAM“), eine falsche Einstellung führt zu Abstürzen. „USB CDC On Boot“ nur aktivieren, wenn der Serial Monitor über den nativen USB-Port läuft.
 
 **Libraries** (Bibliotheksverwalter)
 
@@ -225,6 +228,20 @@ In Home Assistant erscheint **ein** Gerät „Camper Tanklevel“ mit allen Enti
 
 **Umstieg von den Einzelprojekten:** Die alten Geräte „Camper Wasserlevel Sensor“ und „Camper Gaslevel Sensor“ bleiben in HA stehen, weil ihre Discovery-Nachrichten retained sind. Zum Entfernen in HA unter *Einstellungen → Geräte* löschen oder die Topics `homeassistant/sensor/camper_water/#`, `homeassistant/switch/camper_water/#` und `homeassistant/sensor/camper_gaslevel/#` mit leerer Nachricht (retained) überschreiben.
 
+## WLAN-Probleme
+
+Im Tab **WiFi** stehen Laufzeit, Grund des letzten Neustarts und die Zahl der WLAN-Abbrüche mit dem letzten Abbruchgrund. Damit lässt sich unterscheiden:
+
+| Anzeige | Bedeutung | Abhilfe |
+| --- | --- | --- |
+| Laufzeit springt zurück, Neustart „Brownout“ | Spannung bricht beim Senden ein | Besseres Netzteil, kürzere Leitung, Kondensator an 3,3 V |
+| Neustart „Absturz“ / „Watchdog“ | Firmware stürzt ab | Serial Monitor mitlaufen lassen; beim S3 PSRAM-Einstellung prüfen |
+| Abbrüche mit `BEACON_TIMEOUT` | Signal zu schwach oder gestört | Sendeleistung senken (8,5 dBm), Abstand zum Router, AP nur als Notfall |
+| Abbrüche mit `NO_AP_FOUND` | Router nicht sichtbar / Kanal gewechselt | Router-Kanal fest einstellen, Mesh/Band-Steering prüfen |
+| Abbrüche mit `AUTH_EXPIRE`, `4WAY_HANDSHAKE_TIMEOUT` | Anmeldung scheitert | Passwort prüfen, WPA2 statt WPA3 |
+
+**Sendeleistung** (Standard 17,5 dBm) und **Access Point immer an** (Standard an) sind im Tab WiFi einstellbar. Mit „AP nur als Notfall“ bleibt der eigene Access Point aus, solange das WLAN steht. Erst nach 60 s ohne WLAN geht er an. Das Gerät ist dann über seine IP oder `http://camper-tanklevel.local` erreichbar.
+
 ## Sensoren ein- und ausschalten
 
 Frischwasser und Gas sind standardmäßig an, Grauwasser ist aus. Jede Kombination ist möglich:
@@ -257,6 +274,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 | --- | --- |
+| 1.2.2 | ESP32-S3-Unterstützung (Pins automatisch), Sendeleistung und „AP nur als Notfall“ im Tab WiFi, Neustartgrund, Laufzeit und WLAN-Abbruchgrund in der Web-UI |
 | 1.2.1 | Web-UI gzip-komprimiert (Quelle jetzt in `web/`), kompakte Tab-Leiste (Symbol über Text, passt bis 320 px) |
 | 1.2.0 | Optionaler Grauwasser-Sensor an GPIO1: Votronic Tankelektrode oder Tank-Sensor FL (mit Leer/Voll-Einlernen), eigene Tankgröße, Matrix und Filter |
 | 1.1.0 | Sensoren einzeln abschaltbar (`config.h` und Web-UI), AP-Name mit MAC-Endung, Live-Seite nur mit Anzeigen, Filter im Tab Wasser |

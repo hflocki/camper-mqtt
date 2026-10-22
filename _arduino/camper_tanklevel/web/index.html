@@ -452,18 +452,37 @@ code { font-family: ui-monospace, Menlo, monospace; }
             <div class="info-row"><span class="info-label">Status</span><span id="wifi-state">--</span></div>
             <div class="info-row"><span class="info-label">RSSI</span><span id="wifi-rssi">--</span></div>
             <div class="info-row"><span class="info-label">Firmware</span><span id="fw-version">--</span></div>
+            <div class="info-row"><span class="info-label">Laufzeit</span><span id="uptime">--</span></div>
+            <div class="info-row"><span class="info-label">Letzter Neustart</span><span id="reset-reason">--</span></div>
+            <div class="info-row"><span class="info-label">WLAN-Abbrüche</span><span id="wifi-drops">--</span></div>
+            <div class="info-row"><span class="info-label">Letzter Abbruchgrund</span><span id="wifi-reason" style="text-align:right;word-break:break-all">--</span></div>
         </div>
 
         <div class="card">
             <div class="card-title">WLAN-Verbindung</div>
             <div class="form-group"><label>SSID</label><input type="text" id="cfg-wifi-ssid"></div>
             <div class="form-group"><label>Passwort</label><input type="password" id="cfg-wifi-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            <div class="form-group">
+                <label>Sendeleistung</label>
+                <select id="cfg-tx-power">
+                    <option value="34">8,5 dBm</option><option value="44">11 dBm</option><option value="52">13 dBm</option>
+                    <option value="60">15 dBm</option><option value="70">17,5 dBm (Standard)</option><option value="78">19,5 dBm (Maximum)</option>
+                </select>
+                <div class="form-hint">Bricht die Verbindung oft ab, zuerst 8,5 dBm probieren. Manche Boards (z. B. ESP32-C3 Super Mini) laufen mit weniger Leistung stabiler.</div>
+            </div>
         </div>
 
         <div class="card">
             <div class="card-title">Access Point</div>
             <div class="form-group"><label>Name (SSID)</label><input type="text" id="cfg-ap-ssid"></div>
             <div class="form-group"><label>Passwort (min. 8 Zeichen)</label><input type="password" id="cfg-ap-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            <div class="enable-row">
+                <div>
+                    <div style="font-size:0.85rem">Access Point immer an</div>
+                    <div class="form-hint" style="margin-top:2px">Aus = AP nur als Notfall, wenn das WLAN 60 s nicht erreichbar ist. Stabilere WLAN-Verbindung; das Gerät ist dann über seine IP im WLAN oder <code>camper-tanklevel.local</code> erreichbar.</div>
+                </div>
+                <label class="toggle"><input type="checkbox" id="cfg-ap-always"><span></span></label>
+            </div>
         </div>
 
         <div class="btn-row"><button class="btn btn-primary" onclick="saveWifi()">💾 Speichern & Verbinden</button></div>
@@ -509,6 +528,11 @@ function connectWS() {
         try { updateLiveData(JSON.parse(evt.data)); } catch (e) {}
     };
     ws.onclose = () => { setTimeout(connectWS, 3000); };
+}
+
+function formatUptime(s) {
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    return (d ? d + ' d ' : '') + (d || h ? h + ' h ' : '') + m + ' min';
 }
 
 function formatAge(s) {
@@ -572,6 +596,9 @@ function updateLiveData(d) {
     $('dot-mqtt').className = 'status-dot ' + (d.mqtt ? 'active' : '');
     $('wifi-state').textContent = d.wifi;
     $('wifi-rssi').textContent = d.rssi ? d.rssi + ' dBm' : '--';
+    if (d.uptime !== undefined) $('uptime').textContent = formatUptime(d.uptime);
+    if (d.wifi_drops !== undefined) $('wifi-drops').textContent = d.wifi_drops;
+    if (d.wifi_reason !== undefined) $('wifi-reason').textContent = d.wifi_reason;
 }
 
 // POST a (partial) config object; throws with the device's error message if rejected
@@ -602,6 +629,9 @@ async function loadSetup() {
         $('cfg-wifi-ssid').value = cfg.wifi_ssid || '';
         $('cfg-ap-ssid').value = cfg.ap_ssid || '';
         $('fw-version').textContent = cfg.version || '--';
+        $('reset-reason').textContent = cfg.reset_reason || '--';
+        $('cfg-tx-power').value = String(cfg.wifi_tx_power || 70);
+        $('cfg-ap-always').checked = cfg.ap_always !== false;
 
         // Enabled sensors
         enabled.water = cfg.water_enabled !== false;
@@ -959,7 +989,11 @@ async function saveSetup() {
 }
 
 async function saveWifi() {
-    const cfg = { wifi_ssid: $('cfg-wifi-ssid').value };
+    const cfg = {
+        wifi_ssid: $('cfg-wifi-ssid').value,
+        wifi_tx_power: parseInt($('cfg-tx-power').value),
+        ap_always: $('cfg-ap-always').checked
+    };
     // An empty password field means "keep the stored password"
     const pass = $('cfg-wifi-pass').value;
     if (pass) cfg.wifi_pass = pass;

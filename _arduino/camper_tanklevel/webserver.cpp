@@ -64,6 +64,8 @@ static void setDefaultTank(TankConfig& t, float size) {
 static void setDefaults() {
     strlcpy(config.ap_ssid, defaultApSsid(), sizeof(config.ap_ssid));
     strlcpy(config.ap_pass, DEFAULT_AP_PASSWORD, sizeof(config.ap_pass));
+    config.wifi_tx_power = DEFAULT_TX_POWER;
+    config.ap_always = DEFAULT_AP_ALWAYS;
     memset(config.wifi_ssid, 0, sizeof(config.wifi_ssid));
     memset(config.wifi_pass, 0, sizeof(config.wifi_pass));
     strlcpy(config.mqtt_server, DEFAULT_MQTT_SERVER, sizeof(config.mqtt_server));
@@ -353,10 +355,13 @@ void wsSendSensorData() {
     go["scanning"] = g.scanning;
 
     doc["rssi"] = sensorData.rssi;
+    doc["uptime"] = millis() / 1000;
+    doc["wifi_drops"] = sensorData.wifi_drops;
+    doc["wifi_reason"] = (const char*)sensorData.wifi_reason;
     doc["wifi"] = getWiFiStateString();
     doc["mqtt"] = mqttIsConnected();
 
-    char buffer[1024];
+    static char buffer[1280];   // static: keeps it off the stack
     size_t len = serializeJson(doc, buffer, sizeof(buffer));
     if (len == 0 || len >= sizeof(buffer)) return;
     ws.textAll(buffer, len);
@@ -380,6 +385,9 @@ static void handleApiGetConfig(AsyncWebServerRequest* request) {
     doc["wifi_ssid"] = (const char*)config.wifi_ssid;
     doc["ap_ssid"] = (const char*)config.ap_ssid;
     doc["wifi_pass_set"] = strlen(config.wifi_pass) > 0;
+    doc["wifi_tx_power"] = config.wifi_tx_power;
+    doc["ap_always"] = config.ap_always;
+    doc["reset_reason"] = resetReasonString();
     doc["mqtt_server"] = (const char*)config.mqtt_server;
     doc["mqtt_port"] = config.mqtt_port;
     doc["mqtt_user"] = (const char*)config.mqtt_user;
@@ -457,6 +465,8 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
         size_t apLen = strlen(doc["ap_pass"].as<const char*>());
         if (apLen > 0 && apLen < 8) { sendError(request, "AP password needs at least 8 characters"); return; }
     }
+    bool hasTx = doc["wifi_tx_power"].is<int>();
+    if (hasTx && !isValidTxPower(doc["wifi_tx_power"].as<int>())) { sendError(request, "Invalid TX power"); return; }
 
     // Water tanks (static: two tables are too big for the async web task stack)
     static TankUpdate freshUpd, greyUpd;
@@ -501,6 +511,10 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
     copyIfPresent(doc, "mqtt_user",   config.mqtt_user,   sizeof(config.mqtt_user),   false);
     copyIfPresent(doc, "mqtt_pass",   config.mqtt_pass,   sizeof(config.mqtt_pass),   true);
     copyIfPresent(doc, "mqtt_prefix", config.mqtt_prefix, sizeof(config.mqtt_prefix), true);
+
+    // WiFi TX power and AP mode take effect after the restart triggered by the web UI
+    if (hasTx) config.wifi_tx_power = (int8_t)doc["wifi_tx_power"].as<int>();
+    if (doc["ap_always"].is<bool>()) config.ap_always = doc["ap_always"].as<bool>();
 
     if (doc["mqtt_port"].is<int>()) {
         int port = doc["mqtt_port"].as<int>();
@@ -568,6 +582,9 @@ void loadConfig() {
     strlcpy(config.wifi_pass,   doc["wifi_pass"]   | "",                  sizeof(config.wifi_pass));
     strlcpy(config.ap_ssid,     doc["ap_ssid"]     | defaultApSsid(),     sizeof(config.ap_ssid));
     strlcpy(config.ap_pass,     doc["ap_pass"]     | DEFAULT_AP_PASSWORD, sizeof(config.ap_pass));
+    int tx = doc["wifi_tx_power"] | DEFAULT_TX_POWER;
+    config.wifi_tx_power = isValidTxPower(tx) ? (int8_t)tx : DEFAULT_TX_POWER;
+    config.ap_always = doc["ap_always"] | DEFAULT_AP_ALWAYS;
     strlcpy(config.mqtt_server, doc["mqtt_server"] | DEFAULT_MQTT_SERVER, sizeof(config.mqtt_server));
     config.mqtt_port = doc["mqtt_port"] | DEFAULT_MQTT_PORT;
     strlcpy(config.mqtt_user,   doc["mqtt_user"]   | "",                  sizeof(config.mqtt_user));
@@ -605,6 +622,8 @@ void saveConfig() {
     doc["wifi_pass"] = (const char*)config.wifi_pass;
     doc["ap_ssid"] = (const char*)config.ap_ssid;
     doc["ap_pass"] = (const char*)config.ap_pass;
+    doc["wifi_tx_power"] = config.wifi_tx_power;
+    doc["ap_always"] = config.ap_always;
     doc["mqtt_server"] = (const char*)config.mqtt_server;
     doc["mqtt_port"] = config.mqtt_port;
     doc["mqtt_user"] = (const char*)config.mqtt_user;

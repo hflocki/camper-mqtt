@@ -6,7 +6,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.2.1"
+#define FW_VERSION            "1.2.2"
 
 #define DEFAULT_AP_SSID       "Camper-Tanklevel" // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
 #define DEFAULT_AP_PASSWORD   "tanklevel1234"    // Test placeholder (min. 8 characters) - change in the web UI
@@ -15,9 +15,16 @@
 #define DEFAULT_MQTT_PORT     1883
 #define DEFAULT_MQTT_PREFIX   "camper/tanklevel" // Topics: <prefix>/water/..., <prefix>/grey/..., <prefix>/gas/..., <prefix>/status
 
-// WiFi TX power in 0.25 dBm steps: 70 = 17.5 dBm.
-// Full power (19.5 dBm) tends to be unstable on ESP32-C3 Super Mini boards.
-#define WIFI_TX_POWER         ((wifi_power_t)70)
+// WiFi TX power in 0.25 dBm steps: 70 = 17.5 dBm (factory default, selectable in the web UI).
+// Full power (19.5 dBm) tends to be unstable on ESP32-C3 Super Mini boards; if the
+// connection keeps dropping, try 8.5 dBm (34) first.
+#define DEFAULT_TX_POWER      70
+
+// Own access point while connected to the WiFi (web UI, tab "WiFi"):
+//   true  = AP always on (reachable at 192.168.4.1 at any time)
+//   false = AP only as fallback when the WiFi is not reachable (more stable STA connection)
+#define DEFAULT_AP_ALWAYS     true
+#define AP_FALLBACK_MS        60000  // AP-only-as-fallback: start the AP after 60 s without WiFi
 
 #define MQTT_WATER_MS         5000   // Fresh / grey water: periodic publish interval
 #define MQTT_GAS_MS           30000  // Gas: periodic publish (also published immediately on new data)
@@ -40,10 +47,21 @@
 // ============================================================
 // FRESH / GREY WATER (Votronic analog tank senders)
 // Both inputs must be ADC1 pins (ADC2 does not work while WiFi is active).
+// The pins are chosen automatically for the selected chip:
+//   ESP32-C3: GPIO0 / GPIO1 (avoid GPIO2: boot strapping pin)
+//   ESP32-S3: GPIO1 / GPIO2 (GPIO0 is a boot pin and has no ADC on the S3)
+//   ESP32   : GPIO34 / GPIO35 (input only, ADC1)
 // ============================================================
-#define ADC_PIN               0      // Fresh water. ESP32-C3: GPIO0 (ADC1_CH0). Classic ESP32: 34
-#define GREY_ADC_PIN          1      // Grey water.  ESP32-C3: GPIO1 (ADC1_CH1). Classic ESP32: 35
-                                     // (avoid GPIO2 on the C3: it is a boot strapping pin)
+#if CONFIG_IDF_TARGET_ESP32S3
+#define ADC_PIN               1      // Fresh water: ADC1_CH0
+#define GREY_ADC_PIN          2      // Grey water:  ADC1_CH1
+#elif CONFIG_IDF_TARGET_ESP32C3
+#define ADC_PIN               0      // Fresh water: ADC1_CH0
+#define GREY_ADC_PIN          1      // Grey water:  ADC1_CH1
+#else
+#define ADC_PIN               34     // Fresh water: ADC1_CH6
+#define GREY_ADC_PIN          35     // Grey water:  ADC1_CH7
+#endif
 #define ADC_SAMPLES           8      // Oversampling per measurement (reduces ADC noise)
 #define SENSOR_UPDATE_MS      1000   // Read the ADCs every second
 #define FILTER_WINDOW_SIZE    75     // Moving average: 75 x 1 s = 75 s
@@ -175,6 +193,8 @@ struct AppConfig {
     char wifi_pass[64];
     char ap_ssid[32];
     char ap_pass[32];
+    int8_t wifi_tx_power;  // TX power in 0.25 dBm steps (see TX_POWER_OPTIONS)
+    bool ap_always;        // true = own AP stays on while connected, false = fallback only
 
     char mqtt_server[64];
     uint16_t mqtt_port;
@@ -229,6 +249,8 @@ struct SensorData {
     WaterData grey;        // Grey water
     GasData gas;
     int rssi;              // WiFi signal strength (written by wifi_manager)
+    uint32_t wifi_drops;   // WiFi disconnects since boot
+    char wifi_reason[32];  // Reason of the last WiFi disconnect
 };
 
 extern AppConfig config;

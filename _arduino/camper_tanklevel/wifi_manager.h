@@ -21,6 +21,12 @@ bool isConnected();
 void startAP(int channel = 1);
 void connectToWiFi();
 
+// Reason of the last reset (power on, brownout, crash, watchdog ...) for the web UI
+const char* resetReasonString();
+
+// TX power values selectable in the web UI (0.25 dBm steps)
+bool isValidTxPower(int v);
+
 // Default access point name: DEFAULT_AP_SSID + "-" + last 6 hex digits of the WiFi MAC
 const char* defaultApSsid();
 
