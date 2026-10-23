@@ -109,7 +109,7 @@ void onMessage(char* topic, byte* payload, unsigned int len) {
 
 void subscribeAll() {
   const String* prefixes[] = {&settings.prefixTank, &settings.prefixLevel,
-                              &settings.prefixHeater, &settings.prefixFan};
+                              &settings.prefixHeater, &settings.prefixFan, &settings.prefixTemp};
   for (auto p : prefixes) {
     if (p->isEmpty()) continue;
     mqtt.subscribe((*p + "/#").c_str());
@@ -139,7 +139,7 @@ void connect() {
   const char* user = settings.mqttUser.isEmpty() ? nullptr : settings.mqttUser.c_str();
   const char* pass = settings.mqttUser.isEmpty() ? nullptr : settings.mqttPass.c_str();
   Serial.printf("[mqtt] connecting to %s:%u\n", settings.mqttHost.c_str(), settings.mqttPort);
-  if (mqtt.connect(clientId.c_str(), user, pass, will.c_str(), 0, true, "offline")) {
+  if (mqtt.connect(clientId.c_str(), user, pass, will.c_str(), 1, true, "offline")) {
     Serial.println("[mqtt] connected");
     publish(will, "online", true);
     subscribeAll();

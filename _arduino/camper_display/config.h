@@ -5,7 +5,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "1.0.0"
+#define FW_VERSION              "1.1.0"
 
 // ---- Device / access point ------------------------------------------
 #define DEFAULT_HOSTNAME        "camper-display"
@@ -19,8 +19,9 @@
 #define DEFAULT_PREFIX_SELF     "camper/display"
 #define DEFAULT_PREFIX_TANK     "camper/tanklevel"
 #define DEFAULT_PREFIX_LEVEL    "camper/level"
-#define DEFAULT_PREFIX_HEATER   "service/truma"
+#define DEFAULT_PREFIX_HEATER   "camper/heater"
 #define DEFAULT_PREFIX_FAN      "camper/maxxfan"
+#define DEFAULT_PREFIX_TEMP     "camper/temp"
 #define DEFAULT_FAN_PORT        1                   // VanTurtle port 1 = RJ45
 #define DEFAULT_FINDER_FILTER   "zigbee2mqtt/#"
 #define MQTT_BUFFER_SIZE        4096                // larger messages are dropped by PubSubClient

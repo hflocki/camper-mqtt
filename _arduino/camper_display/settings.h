@@ -3,7 +3,8 @@
 #include <vector>
 
 // Built-in pages. Their order here is the order on the display and web page.
-enum BuiltinPage : uint8_t { BP_OVERVIEW, BP_HEATER, BP_FAN, BP_LEVEL, BP_COUNT };
+// New pages are appended: the index is also the bit in the stored page mask.
+enum BuiltinPage : uint8_t { BP_OVERVIEW, BP_HEATER, BP_FAN, BP_LEVEL, BP_TEMP, BP_COUNT };
 
 // User tile types
 enum TileType : uint8_t { TILE_VALUE = 0, TILE_SWITCH = 1, TILE_BUTTON = 2, TILE_SLIDER = 3 };
@@ -39,7 +40,7 @@ struct Settings {
   // mqtt
   String mqttHost, mqttUser, mqttPass;
   uint16_t mqttPort = 1883;
-  String prefixSelf, prefixTank, prefixLevel, prefixHeater, prefixFan;
+  String prefixSelf, prefixTank, prefixLevel, prefixHeater, prefixFan, prefixTemp;
   uint8_t fanPort = 1;
   // time
   String ntpServer, tz;

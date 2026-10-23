@@ -7,10 +7,15 @@ Passt zu den anderen Projekten:
 | Gerät | Repo | Standard-Topic |
 | --- | --- | --- |
 | Frischwasser, Grauwasser, Gas | [camper-tanklevel](https://github.com/hflocki/camper-tanklevel) | `camper/tanklevel` |
-| Ausrichtung (BNO085) | [ESP32-Adafruit-BNO085 Levelsensor](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT) | `camper/level` |
-| Truma Combi Heizung | [camper-heater](https://github.com/hflocki/camper-heater) | `service/truma` |
+| Ausrichtung (BNO085) | [ESP32-Adafruit-BNO085 Levelsensor](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT) | `camper/level` ¹ |
+| Truma Combi Heizung | [camper-heater](https://github.com/hflocki/camper-heater) | `camper/heater` ² |
 | MaxxFan (VanTurtle) | [camper-maxxfan](https://github.com/hflocki/camper-maxxfan) | `camper/maxxfan` |
+| Temperaturen (DS18B20) | [camper-temp](https://github.com/hflocki/camper-temp) | `camper/temp` |
+| Router (GPS, Mobilfunk) | Teltonika RUT956, siehe [Router-Daten](#router-daten-rut956) | frei |
 | Zigbee2MQTT & alles andere | eigene Seiten und Kacheln | frei |
+
+¹ Der Levelsensor steht ab Werk auf `wowa/level`. In seiner Weboberfläche den MQTT-Prefix auf `camper/level` stellen (oder hier unter *Topics der Geräte* `wowa/level` eintragen).
+² Bis camper-heater 1.0 war der Standard `service/truma`. Ältere Geräte behalten ihre Einstellung; dann hier oder im Heizungs-Web-UI angleichen.
 
 <p>
 <img src="docs/web-overview.png" width="200"> <img src="docs/web-heizung.png" width="200"> <img src="docs/web-eigene-seite.png" width="200">
@@ -20,7 +25,8 @@ Passt zu den anderen Projekten:
 
 - **Wandpanel** mit LVGL-Oberfläche, Wischen oder Pfeile zum Blättern, deutsche Umlaute und Icons
 - **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert, hell/dunkel automatisch
-- **Feste Seiten:** Übersicht · Heizung · Dachlüfter · Ausrichtung (einzeln abschaltbar) und **System** (IP, QR-Code, Helligkeit)
+- **Feste Seiten:** Übersicht · Heizung · Dachlüfter · Ausrichtung · Temperaturen (einzeln abschaltbar) und **System** (IP, QR-Code, Helligkeit)
+- **Warnungen:** Temperatur-Alarme von camper-temp und Heizungsfehler erscheinen als rote Leiste auf der Übersicht und als ⚠ in der Kopfzeile. Eine neue Warnung weckt das Display; war es dunkel, springt es auf die Übersicht
 - **Eigene Seiten und Kacheln** für beliebige MQTT-Topics: *Wert*, *Schalter*, *Taster*, *Regler* – erscheinen automatisch auf Display **und** Webseite
 - **Topic-Finder:** lauscht z. B. auf `zigbee2mqtt/#`, zeigt alle Geräte mit ihren JSON-Werten; ein Klick legt eine Kachel an (Temperatur, Luftfeuchte, Licht an/aus, Helligkeit …)
 - **Setup-WLAN** wie bei den anderen Projekten: ohne WLAN-Daten oder nach 1 Minute ohne Verbindung öffnet sich `Camper-Display-XXXXXX`, Captive Portal unter `http://192.168.4.1`. Das Display zeigt dazu einen QR-Code zum Verbinden.
@@ -105,7 +111,7 @@ Die Webseite liegt als lesbare Datei in `web/index.html`. Nach Änderungen daran
 1. Nach dem ersten Flashen zeigt das Display die Seite **System** mit einem QR-Code. Scannen (oder WLAN `Camper-Display-XXXXXX`, Passwort `display1234` – in `config.h` ändern) → die Einstellungsseite öffnet sich.
 2. **WLAN** eintragen (Suchen-Knopf listet Netze), **MQTT-Broker** = IP des RUT956 → *Einstellungen speichern*. Das Display startet neu und verbindet sich.
 3. Danach ist die Webseite unter `http://camper-display.local` bzw. der IP erreichbar; die System-Seite am Display zeigt die Adresse auch als QR-Code.
-4. Unter **Topics der Geräte** prüfen, ob die Basis-Topics zu deinen Geräten passen (z. B. Heizung `service/truma` oder `camper/truma`, MaxxFan-Port 0/1). Leeres Feld = Gerät nicht vorhanden.
+4. Unter **Topics der Geräte** prüfen, ob die Basis-Topics zu deinen Geräten passen (Standard: `camper/tanklevel`, `camper/level`, `camper/heater`, `camper/maxxfan`, `camper/temp`; MaxxFan-Port 0/1). Leeres Feld = Gerät nicht vorhanden.
 5. Optional unter **System** ein Web-Passwort setzen – dann sind Einstellungen und Firmware-Update geschützt. Die Bedienseiten bleiben im eigenen WLAN offen.
 
 ## Seiten und Kacheln
@@ -145,6 +151,7 @@ Das Display abonniert `<Basis-Topic>/#` jedes Geräts und die Topics der Kacheln
 | Ausrichtung | `pitch`, `roll`, `is_level`, `tolerance`, `wedge_fl/fr/rl/rr`, `status` |
 | Heizung | `control_status/current_temp_room`, `room_setpoint`, `hvac_mode`, `fan_mode`, `water_mode`, `current_temp_water`, `operating_status_text`, `error_code`, `heater_error`, `decoke`, `decoke_remaining`, `alive`; `status` |
 | MaxxFan | `p<n>/auto_hold`, `p<n>/led`, `status` |
+| Temperaturen | `sensors` (JSON-Liste aller Sensoren mit Name, Wert und Alarm), `alarm_text`, `status` |
 
 **Gesendete Befehle**
 
@@ -172,6 +179,31 @@ Das Display abonniert `<Basis-Topic>/#` jedes Geräts und die Topics der Kacheln
 | `camper/display/cmd/reboot` | beliebig |
 
 Beispiel: `mosquitto_pub -h <broker> -t camper/display/cmd/screen -m OFF`
+
+## Warnungen
+
+Die Übersicht zeigt oben eine rote Leiste, solange etwas nicht stimmt:
+
+| Quelle | Wann |
+| --- | --- |
+| camper-temp | `alarm_text` ist nicht leer (Grenzwert eines Sensors länger als die eingestellte Verzögerung verletzt) |
+| camper-heater | `control_status/heater_error` = `ON`, mit Fehlercode |
+
+Warnungen von Geräten, die `offline` sind, werden nicht gezeigt (alte retained Werte sollen keinen Fehlalarm auslösen). Grenzwerte und Verzögerung stellt man direkt in camper-temp ein, nicht am Display.
+
+## Router-Daten (RUT956)
+
+Der RUT956 kann GPS und Mobilfunkwerte selbst per MQTT senden, ganz ohne zusätzliche Firmware. Im Router unter **Services → Data to Server**:
+
+1. Neue Instanz, **Server type: MQTT**, Server `127.0.0.1` (der Broker läuft auf dem Router), Port `1883`, ggf. Benutzer/Passwort.
+2. Topic z. B. `camper/router/gps`, Format **Json**, Timer **Period** 60 s.
+3. Datensammlung **Type: GPS** (Breite, Länge, Geschwindigkeit, Satelliten …). Eine zweite Instanz mit **Type: GSM** und Topic `camper/router/mobile` liefert Signal (RSSI, RSRP, SINR), Netzbetreiber und Modemtemperatur.
+
+Am Display dann im **Topic-Finder** `camper/router/#` starten und die gewünschten Werte per Klick als Kacheln anlegen. Die genauen JSON-Schlüssel hängen von der Router-Firmware ab; der Finder zeigt sie an.
+
+## Fertige Firmware (GitHub Actions)
+
+Jeder Push wird automatisch gebaut (`.github/workflows/build.yml`, Board-Paket und Bibliotheken in den hier genannten Versionen). Das Ergebnis liegt im Reiter **Actions** beim jeweiligen Lauf als Download. Ein Tag `v…` (z. B. `git tag v1.2.0 && git push --tags`) legt zusätzlich ein **Release** mit der `.bin` an, die sich direkt auf der Webseite unter **System → Firmware-Update** einspielen lässt.
 
 ## Hinweise
 

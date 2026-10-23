@@ -49,6 +49,10 @@ const DpDef DEFS[DP_COUNT] = {
   {"fan_status",  DEV_FAN, "status"},
   {"fan_hold",    DEV_FAN, "p#/auto_hold"},
   {"fan_led",     DEV_FAN, "p#/led"},
+
+  {"temp_status", DEV_TEMP, "status"},
+  {"temp_list",   DEV_TEMP, "sensors"},
+  {"temp_alarm",  DEV_TEMP, "alarm_text"},
 };
 
 String values[DP_COUNT];
@@ -66,6 +70,7 @@ const String& prefixOf(Dev d) {
     case DEV_TANK:   return settings.prefixTank;
     case DEV_LEVEL:  return settings.prefixLevel;
     case DEV_HEATER: return settings.prefixHeater;
+    case DEV_TEMP:   return settings.prefixTemp;
     default:         return settings.prefixFan;
   }
 }
@@ -169,7 +174,7 @@ float getf(DpId id, float def) {
 }
 
 bool devOnline(Dev d) {
-  static const DpId st[DEV_COUNT] = {DP_TANK_STATUS, DP_LVL_STATUS, DP_HEAT_STATUS, DP_FAN_STATUS};
+  static const DpId st[DEV_COUNT] = {DP_TANK_STATUS, DP_LVL_STATUS, DP_HEAT_STATUS, DP_FAN_STATUS, DP_TEMP_STATUS};
   return values[st[d]] == "online";
 }
 

@@ -70,6 +70,10 @@ code{font-size:12px;color:var(--mu)}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9}
 #toast.show{opacity:1}
 .banner{background:var(--gas);color:#000;border-radius:12px;padding:10px 14px;margin-bottom:12px}
+.warnbox{background:var(--warn);color:#fff;border-radius:16px;padding:12px 14px;margin-bottom:12px;font-weight:600;white-space:pre-line}
+.trow{display:flex;align-items:center;gap:10px}
+.trow .n{flex:1;color:var(--mu);font-size:18px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow.al .big{color:var(--warn)}
 </style>
 </head>
 <body>
@@ -85,7 +89,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let ws,cfg=null,V={},S={},page=localStorage.getItem('page')||'',finder={on:false,l:{}};
 let pendingSet=null,setTimer=null,setHold=0;
-const BUILTIN=[['overview','Übersicht'],['heater','Heizung'],['fan','Dachlüfter'],['level','Ausrichtung']];
+const BUILTIN=[['overview','Übersicht'],['heater','Heizung'],['fan','Dachlüfter'],['level','Ausrichtung'],['temp','Temperaturen']];
 
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2200)}
 function send(o){if(ws&&ws.readyState==1)ws.send(JSON.stringify(o));else toast('Keine Verbindung')}
@@ -128,6 +132,7 @@ function render(){
   else if(p.id==='heater')m.innerHTML=pgHeater();
   else if(p.id==='fan')m.innerHTML=pgFan();
   else if(p.id==='level')m.innerHTML=pgLevel();
+  else if(p.id==='temp')m.innerHTML=pgTemp();
   else if(p.id==='settings'){m.innerHTML=pgSettings();loadSettings()}
   else m.innerHTML=pgCustom(p.custom);
   bind();update();
@@ -136,8 +141,19 @@ function render(){
 function tank(id,icon,title,col){return `<div class="card"><h3>${icon} ${title}</h3><div class="row"><span class="big grow" id="${id}_v">--</span><span class="mu" id="${id}_l"></span></div><div class="bar"><i id="${id}_b" style="background:${col}"></i></div></div>`}
 function info(id,icon,title,go){return `<div class="card click" data-go="${go}"><h3>${icon} ${title}</h3><div class="big" id="${id}_v">--</div><div class="mu" id="${id}_s"></div></div>`}
 function pgOverview(){
-  return `<div class="grid">${tank('w','💧','Frischwasser','var(--water)')}${tank('g','🚿','Grauwasser','var(--grey)')}${tank('gas','🔥','Gas','var(--gas)')}
-  ${info('oh','♨️','Heizung','heater')}${info('ol','📐','Ausrichtung','level')}${info('of','🌀','Dachlüfter','fan')}</div>`;
+  return `<div class="warnbox" id="warn" hidden></div><div class="grid">${tank('w','💧','Frischwasser','var(--water)')}${tank('g','🚿','Grauwasser','var(--grey)')}${tank('gas','🔥','Gas','var(--gas)')}
+  ${info('oh','♨️','Heizung','heater')}${info('ol','📐','Ausrichtung','level')}${info('of','🌀','Dachlüfter','fan')}
+  <div class="card wide click" data-go="temp"><h3>🌡️ Temperaturen</h3><div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div></div>`;
+}
+function pgTemp(){return `<div class="warnbox" id="t_warn" hidden></div><div class="grid" id="t_list"></div><div class="mu" id="t_st" style="margin-top:12px"></div>`}
+// camper-temp: <prefix>/sensors = [{id,name,t,alarm}]
+function temps(){try{const a=JSON.parse(V.temp_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function tval(t){return t.t===null||t.t===undefined?'--':Number(t.t).toFixed(1)+' °C'}
+function warnings(){
+  const w=[];
+  if(online('temp')&&V.temp_alarm)V.temp_alarm.split('; ').forEach(x=>w.push(x));
+  if(online('heat')&&V.heat_errflag==='ON')w.push('Heizung: Fehler '+(V.heat_err||'?'));
+  return w;
 }
 function pgHeater(){
   return `<div class="grid">
@@ -213,6 +229,19 @@ function update(){
   set('ol_v',V.lvl_ok?(lvOk?'<span class="okc">Eben</span>':'<span class="err">Schief</span>'):'--');
   set('ol_s',online('lvl')?`Nick ${fmt(V.lvl_pitch,1,'°')} · Roll ${fmt(V.lvl_roll,1,'°')}`:'offline');
   set('of_v',online('fan')?'Bereit':'--');set('of_s',online('fan')?(V.fan_hold==='ON'?'Auto-Hold aktiv':'Tippen zum Steuern'):'offline');
+  // warnings + temperatures
+  const warn=warnings();
+  ['warn','t_warn'].forEach(id=>{const e=document.getElementById(id);if(e){e.hidden=!warn.length;e.textContent='⚠ '+warn.join('\n')}});
+  const tl=temps(),tOn=online('temp'),tAl=tl.some(t=>t.alarm);
+  if($('#ot_v')){
+    set('ot_v',tl.length?tl.slice(0,3).map(t=>`${esc(t.name)} <span${t.alarm?' class="err"':''}>${tval(t)}</span>`).join(' &nbsp; '):'--');
+    set('ot_s',!tOn?'offline':tAl?'<span class="err">Alarm</span>':tl.length>3?tl.length+' Sensoren':'');
+    $('#ot_v').closest('.card').classList.toggle('offline',!tOn);
+  }
+  if($('#t_list')){
+    set('t_list',tl.map(t=>`<div class="card wide${tOn?'':' offline'}"><div class="trow${t.alarm?' al':''}"><span class="n">${esc(t.name)}</span><span class="big">${tval(t)}</span></div></div>`).join(''));
+    set('t_st',!tOn?'Temperatursensoren offline':tl.length?'':'Keine Sensoren gemeldet');
+  }
   // heater
   if($('#h_room')){
     set('h_room',fmt(V.heat_room,1,'°C'));
@@ -258,7 +287,7 @@ function pgSettings(){
    <div class="f2">${inp('mqttHost','Broker (IP/Name)','text','192.168.1.1')}${inp('mqttPort','Port','number')}${inp('mqttUser','Benutzer')}${inp('mqttPass','Passwort','password')}</div></details>
   <details><summary>🏷 Topics der Geräte</summary>
    <p class="mu">Basis-Topic je Gerät. Leer lassen, wenn das Gerät nicht vorhanden ist.</p>
-   ${inp('prefixTank','Tanks (Wasser/Gas)')}${inp('prefixLevel','Ausrichtung (Levelsensor)')}${inp('prefixHeater','Heizung (camper-heater)')}${inp('prefixFan','MaxxFan')}
+   ${inp('prefixTank','Tanks (Wasser/Gas)')}${inp('prefixLevel','Ausrichtung (Levelsensor)')}${inp('prefixHeater','Heizung (camper-heater)')}${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (camper-temp)')}
    <div class="f2"><div><label>MaxxFan-Port</label><select id="fanPort"><option value="0">0 (RJ11)</option><option value="1">1 (RJ45)</option></select></div>${inp('prefixSelf','Eigenes Topic (Display)')}</div></details>
   <details><summary>🖥 Display &amp; Seiten</summary>
    <label>Helligkeit</label><input type="range" id="brightness" min="5" max="100">
@@ -278,7 +307,7 @@ function pgSettings(){
    <div class="actions"><button class="btn" id="reboot">Neustart</button><button class="btn danger" id="factory">Werkseinstellungen</button></div></details>
   <div class="actions"><button class="btn pri" id="save" style="flex:1">Einstellungen speichern</button></div>`;
 }
-const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixSelf','dimBrightness','screenTimeout','hostname','apPass','webUser','webPass','ntpServer','tz'];
+const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixSelf','dimBrightness','screenTimeout','hostname','apPass','webUser','webPass','ntpServer','tz'];
 async function loadSettings(){
   try{
     const r=await fetch('/api/settings');if(!r.ok)throw 0;ST=await r.json();

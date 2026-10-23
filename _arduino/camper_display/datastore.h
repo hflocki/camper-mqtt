@@ -6,7 +6,7 @@
 // comes from here; MQTT writes into it, the UI and the WebSocket read from it.
 // Only touched from the Arduino loop task.
 
-enum Dev : uint8_t { DEV_TANK, DEV_LEVEL, DEV_HEATER, DEV_FAN, DEV_COUNT };
+enum Dev : uint8_t { DEV_TANK, DEV_LEVEL, DEV_HEATER, DEV_FAN, DEV_TEMP, DEV_COUNT };
 
 // Fixed datapoint ids (index into the table in datastore.cpp)
 enum DpId : uint8_t {
@@ -20,6 +20,8 @@ enum DpId : uint8_t {
   DP_HEAT_DECOKE, DP_HEAT_DECOKE_REM,
   // maxxfan
   DP_FAN_STATUS, DP_FAN_HOLD, DP_FAN_LED,
+  // camper-temp: JSON list of all sensors + readable alarm text
+  DP_TEMP_STATUS, DP_TEMP_LIST, DP_TEMP_ALARM,
   DP_COUNT
 };
 

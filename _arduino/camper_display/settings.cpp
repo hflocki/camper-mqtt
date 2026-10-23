@@ -42,6 +42,7 @@ void load() {
   settings.prefixLevel  = prefs.getString("plvl",   DEFAULT_PREFIX_LEVEL);
   settings.prefixHeater = prefs.getString("pheat",  DEFAULT_PREFIX_HEATER);
   settings.prefixFan    = prefs.getString("pfan",   DEFAULT_PREFIX_FAN);
+  settings.prefixTemp   = prefs.getString("ptemp",  DEFAULT_PREFIX_TEMP);
   settings.fanPort      = prefs.getUChar ("fport",  DEFAULT_FAN_PORT);
   settings.ntpServer    = prefs.getString("ntp",    DEFAULT_NTP_SERVER);
   settings.tz           = prefs.getString("tz",     DEFAULT_TZ);
@@ -49,6 +50,9 @@ void load() {
   settings.dimBrightness= prefs.getUChar ("dim",    DEFAULT_DIM_BRIGHTNESS);
   settings.screenTimeout= prefs.getUShort("sto",    DEFAULT_SCREEN_TIMEOUT);
   uint8_t bmask         = prefs.getUChar ("bpages", 0xFF);
+  // Pages added in later versions start switched on (older masks do not have their bit)
+  uint8_t bknown        = prefs.getUChar ("bpknown", BP_LEVEL + 1);
+  for (int i = bknown; i < BP_COUNT; i++) bmask |= (1 << i);
   for (int i = 0; i < BP_COUNT; i++) settings.builtin[i] = bmask & (1 << i);
 
   String pagesJson;
@@ -93,6 +97,7 @@ void save() {
   prefs.putString("plvl",   settings.prefixLevel);
   prefs.putString("pheat",  settings.prefixHeater);
   prefs.putString("pfan",   settings.prefixFan);
+  prefs.putString("ptemp",  settings.prefixTemp);
   prefs.putUChar ("fport",  settings.fanPort);
   prefs.putString("ntp",    settings.ntpServer);
   prefs.putString("tz",     settings.tz);
@@ -102,6 +107,7 @@ void save() {
   uint8_t bmask = 0;
   for (int i = 0; i < BP_COUNT; i++) if (settings.builtin[i]) bmask |= (1 << i);
   prefs.putUChar("bpages", bmask);
+  prefs.putUChar("bpknown", BP_COUNT);
   prefs.end();
 }
 

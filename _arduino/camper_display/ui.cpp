@@ -8,6 +8,7 @@
 #include <lvgl.h>
 #include <vector>
 #include <time.h>
+#include <ArduinoJson.h>
 
 LV_FONT_DECLARE(font_de_14);
 LV_FONT_DECLARE(font_de_18);
@@ -69,6 +70,13 @@ lv_obj_t *hRoom, *hWater, *hSet, *hPower, *hPowerLbl, *hFanBm, *hWaterBm, *hStat
 lv_obj_t *fStatus, *fSpeed, *fSpeedLbl;
 lv_obj_t *lvArea, *lvBubble, *lvZone, *lvPitch, *lvRoll, *lvState, *lvWedge[4];
 lv_obj_t *sIp, *sNet, *sQr, *sQrLbl, *sBri, *sInfo;
+
+// warnings (overview banner) and temperatures (camper-temp)
+lv_obj_t *ovWarn, *ovWarnLbl, *ovTempVal, *ovTempSub;
+lv_obj_t *tStatus;
+std::vector<lv_obj_t*> tRows, tVals;
+String tSig;          // sensor names the rows were built for
+String lastWarn;      // to wake the screen when a new warning appears
 
 struct TileW { lv_obj_t* val = nullptr; lv_obj_t* sw = nullptr; lv_obj_t* slider = nullptr; lv_obj_t* sval = nullptr; lv_obj_t* card = nullptr; };
 std::vector<TileW> tileW;
@@ -264,6 +272,39 @@ void onTileSliderDrag(lv_event_t* e) {
   lv_label_set_text(tileW[i].sval, fmt(String(val, dec), dec, t.unit.c_str()).c_str());
 }
 
+// ---- temperatures / warnings -----------------------------------------------
+struct TempItem { String name; String val; uint8_t alarm; };
+
+// <temp prefix>/sensors: [{"id":"...","name":"...","t":4.31,"alarm":0}, ...], t = null on error
+std::vector<TempItem> tempItems() {
+  std::vector<TempItem> out;
+  if (!store::has(DP_TEMP_LIST)) return out;
+  JsonDocument doc;
+  if (deserializeJson(doc, store::get(DP_TEMP_LIST))) return out;
+  for (JsonObject o : doc.as<JsonArray>()) {
+    TempItem it;
+    it.name = (const char*)(o["name"] | "?");
+    it.val = o["t"].isNull() ? String("--") : String(o["t"].as<float>(), 1) + " \xC2\xB0""C";
+    it.alarm = o["alarm"] | 0;
+    out.push_back(it);
+  }
+  return out;
+}
+
+// All active warnings, one per line ("" = none)
+String warnings() {
+  String w;
+  auto add = [&](const String& s) { if (s.isEmpty()) return; if (w.length()) w += "\n"; w += s; };
+  if (store::devOnline(DEV_TEMP)) {
+    String a = store::get(DP_TEMP_ALARM);
+    a.replace("; ", "\n");
+    add(a);
+  }
+  if (store::devOnline(DEV_HEATER) && store::get(DP_HEAT_ERROR) == "ON")
+    add("Heizung: Fehler " + store::get(DP_HEAT_ERRCODE));
+  return w;
+}
+
 // ---- page builders ---------------------------------------------------------------
 lv_obj_t* tankCard(lv_obj_t* parent, const char* icon, const char* title, lv_color_t col, TankW& w) {
   lv_obj_t* c = card(parent, 224, 132);
@@ -297,12 +338,62 @@ lv_obj_t* infoCard(lv_obj_t* parent, const char* icon, const char* title, lv_obj
 
 void buildOverview(lv_obj_t* tab) {
   pageContainer(tab);
+  // warning banner, only visible while something is wrong
+  ovWarn = card(tab, PAGE_W - 20, LV_SIZE_CONTENT);
+  lv_obj_set_style_bg_color(ovWarn, C_WARN, 0);
+  lv_obj_set_style_bg_color(ovWarn, C_WARN, LV_STATE_PRESSED);
+  ovWarnLbl = label(ovWarn, &font_de_18, C_TEXT, "");
+  lv_obj_set_width(ovWarnLbl, PAGE_W - 44);
+  lv_label_set_long_mode(ovWarnLbl, LV_LABEL_LONG_WRAP);
+  lv_obj_add_flag(ovWarn, LV_OBJ_FLAG_HIDDEN);
+
   tankCard(tab, ICON_TINT, "Frischwasser", C_WATER, ovWater);
   tankCard(tab, ICON_DRIP, "Grauwasser", C_GREY, ovGrey);
   tankCard(tab, ICON_GAS, "Gas", C_GAS, ovGas);
   infoCard(tab, ICON_FIRE, "Heizung", ovHeatVal, ovHeatSub, BP_HEATER);
   infoCard(tab, ICON_BALANCE, "Ausrichtung", ovLvlVal, ovLvlSub, BP_LEVEL);
   infoCard(tab, ICON_FAN, "Dachlüfter", ovFanVal, ovFanSub, BP_FAN);
+
+  if (settings.prefixTemp.length()) {
+    lv_obj_t* c = card(tab, PAGE_W - 20, 96);
+    lv_obj_add_flag(c, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(c, onOverviewCard, LV_EVENT_CLICKED, (void*)(intptr_t)BP_TEMP);
+    lv_obj_t* t = label(c, &font_de_18, C_MUTED, ICON_THERMOMETER "  Temperaturen");
+    lv_obj_align(t, LV_ALIGN_TOP_LEFT, 0, 0);
+    ovTempVal = label(c, &font_de_22, C_TEXT, "--");
+    lv_obj_set_width(ovTempVal, PAGE_W - 44);
+    lv_label_set_long_mode(ovTempVal, LV_LABEL_LONG_DOT);
+    lv_obj_align(ovTempVal, LV_ALIGN_LEFT_MID, 0, 6);
+    ovTempSub = label(c, &font_de_14, C_MUTED, "");
+    lv_obj_align(ovTempSub, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+  }
+}
+
+void buildTemp(lv_obj_t* tab) {
+  pageContainer(tab);
+  tStatus = label(tab, &font_de_18, C_MUTED, "");
+  lv_obj_set_width(tStatus, PAGE_W - 20);
+  tRows.clear();
+  tVals.clear();
+  tSig = "\x01";   // force a row build on the first refresh
+}
+
+// (Re)creates one row per sensor when the sensor list changed
+void buildTempRows(const std::vector<TempItem>& items, lv_obj_t* tab) {
+  for (auto r : tRows) lv_obj_delete(r);
+  tRows.clear();
+  tVals.clear();
+  for (auto& it : items) {
+    lv_obj_t* c = card(tab, PAGE_W - 20, 70);
+    lv_obj_t* n = label(c, &font_de_22, C_MUTED, dispText(it.name).c_str());
+    lv_obj_set_width(n, 260);
+    lv_label_set_long_mode(n, LV_LABEL_LONG_DOT);
+    lv_obj_align(n, LV_ALIGN_LEFT_MID, 0, 0);
+    lv_obj_t* v = label(c, &font_de_28, C_TEXT, "--");
+    lv_obj_align(v, LV_ALIGN_RIGHT_MID, 0, 0);
+    tRows.push_back(c);
+    tVals.push_back(v);
+  }
 }
 
 lv_obj_t* modeMatrix(lv_obj_t* parent, const char** map, lv_event_cb_t cb) {
@@ -606,6 +697,65 @@ void refreshValues() {
     lv_label_set_text(ovFanSub, fanOn ? (store::get(DP_FAN_HOLD) == "ON" ? "Auto-Hold aktiv" : "Tippen zum Steuern") : "offline");
   }
 
+  // warnings
+  String warn = warnings();
+  if (ovWarn) {
+    lv_label_set_text(ovWarnLbl, dispText(String(LV_SYMBOL_WARNING "  ") + warn).c_str());
+    if (warn.length()) lv_obj_remove_flag(ovWarn, LV_OBJ_FLAG_HIDDEN);
+    else               lv_obj_add_flag(ovWarn, LV_OBJ_FLAG_HIDDEN);
+  }
+  if (warn.length() && warn != lastWarn) {
+    // A new warning should be seen: wake the screen. If it was dark (nobody is using
+    // it right now), also switch to the overview where the banner is.
+    bool wasAwake = disp::isAwake();
+    disp::wake();
+    int ov = tabIndexOfBuiltin(BP_OVERVIEW);
+    if (!wasAwake && ov >= 0) gotoTab(ov);
+  }
+  lastWarn = warn;
+
+  // temperatures
+  bool tempOn = store::devOnline(DEV_TEMP);
+  if (ovTempVal || tStatus) {
+    std::vector<TempItem> items = tempItems();
+    bool anyAlarm = false;
+    for (auto& it : items) anyAlarm |= it.alarm != 0;
+    if (ovTempVal) {
+      String v;
+      for (size_t i = 0; i < items.size() && i < 3; i++) {
+        if (v.length()) v += "   ";
+        v += items[i].name + " " + items[i].val;
+      }
+      lv_label_set_text(ovTempVal, v.length() ? dispText(v).c_str() : "--");
+      lv_obj_set_style_text_color(ovTempVal, anyAlarm ? C_WARN : (tempOn ? C_TEXT : C_MUTED), 0);
+      String sub = !tempOn ? String("offline")
+                 : anyAlarm ? String("Alarm \xE2\x80\xA2 Tippen f\xC3\xBCr Details")
+                 : items.size() > 3 ? String(items.size()) + " Sensoren \xE2\x80\xA2 Tippen f\xC3\xBCr alle"
+                 : String("Tippen f\xC3\xBCr Details");
+      lv_label_set_text(ovTempSub, sub.c_str());
+    }
+    if (tStatus) {
+      String sig;
+      for (auto& it : items) { sig += it.name; sig += '\x01'; }
+      if (sig != tSig) {
+        tSig = sig;
+        buildTempRows(items, lv_obj_get_parent(tStatus));
+      }
+      for (size_t i = 0; i < items.size() && i < tVals.size(); i++) {
+        lv_label_set_text(tVals[i], dispText(items[i].val).c_str());
+        lv_obj_set_style_text_color(tVals[i], items[i].alarm ? C_WARN : (tempOn ? C_TEXT : C_MUTED), 0);
+      }
+      String st = !tempOn ? String("Temperatursensoren offline")
+                : items.empty() ? String("Keine Sensoren gemeldet")
+                : (store::get(DP_TEMP_ALARM).length() ? store::get(DP_TEMP_ALARM) : String(""));
+      st.replace("; ", "\n");
+      lv_label_set_text(tStatus, dispText(st).c_str());
+      lv_obj_set_style_text_color(tStatus, store::get(DP_TEMP_ALARM).length() && tempOn ? C_WARN : C_MUTED, 0);
+      if (st.length()) lv_obj_remove_flag(tStatus, LV_OBJ_FLAG_HIDDEN);
+      else             lv_obj_add_flag(tStatus, LV_OBJ_FLAG_HIDDEN);
+    }
+  }
+
   // heater
   if (hRoom) {
     lv_label_set_text(hRoom, fmt(store::get(DP_HEAT_ROOM), 1, "\xC2\xB0""C").c_str());
@@ -710,8 +860,10 @@ void refreshHeader() {
   else if (!wifimgr::staConnected()) s = LV_SYMBOL_WIFI " " LV_SYMBOL_CLOSE;
   else if (!mqttc::connected()) s = "MQTT " LV_SYMBOL_CLOSE;
   else s = LV_SYMBOL_WIFI;
+  bool warn = lastWarn.length() > 0;
+  if (warn) s = LV_SYMBOL_WARNING " " + s;
   lv_label_set_text(hdrStatus, s.c_str());
-  lv_obj_set_style_text_color(hdrStatus, (wifimgr::staConnected() && mqttc::connected()) ? C_MUTED : C_WARN, 0);
+  lv_obj_set_style_text_color(hdrStatus, (wifimgr::staConnected() && mqttc::connected() && !warn) ? C_MUTED : C_WARN, 0);
 
   // system page
   if (sIp) {
@@ -748,6 +900,10 @@ void clearHandles() {
   lvArea = lvBubble = lvZone = lvPitch = lvRoll = lvState = nullptr;
   for (auto& w : lvWedge) w = nullptr;
   sIp = sNet = sQr = sQrLbl = sBri = sInfo = nullptr;
+  ovWarn = ovWarnLbl = ovTempVal = ovTempSub = nullptr;
+  tStatus = nullptr;
+  tRows.clear();
+  tVals.clear();
   lastQr = "";
   tileW.assign(settings.tiles.size(), TileW());
 }
@@ -759,7 +915,7 @@ void build() {
   clearHandles();
 
   pages.clear();
-  static const char* bpTitles[BP_COUNT] = {"Übersicht", "Heizung", "Dachlüfter", "Ausrichtung"};
+  static const char* bpTitles[BP_COUNT] = {"Übersicht", "Heizung", "Dachlüfter", "Ausrichtung", "Temperaturen"};
   for (int b = 0; b < BP_COUNT; b++) if (settings.builtin[b]) pages.push_back({bpTitles[b], b, -1});
   for (size_t p = 0; p < settings.pages.size(); p++) pages.push_back({settings.pages[p].name, -1, (int)p});
   pages.push_back({"System", PG_SYSTEM, -1});
@@ -779,6 +935,7 @@ void build() {
       case BP_HEATER:   buildHeater(tab); break;
       case BP_FAN:      buildFan(tab); break;
       case BP_LEVEL:    buildLevel(tab); break;
+      case BP_TEMP:     buildTemp(tab); break;
       case PG_SYSTEM:   buildSystem(tab); break;
       default:          buildCustom(tab, p.custom); break;
     }
