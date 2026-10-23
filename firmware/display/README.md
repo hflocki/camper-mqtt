@@ -6,11 +6,11 @@ Passt zu den anderen Projekten:
 
 | Gerät | Repo | Standard-Topic |
 | --- | --- | --- |
-| Frischwasser, Grauwasser, Gas | [camper-tanklevel](https://github.com/hflocki/camper-tanklevel) | `camper/tanklevel` |
+| Frischwasser, Grauwasser, Gas | [camper-tanklevel](../tanklevel) | `camper/tanklevel` |
 | Ausrichtung (BNO085) | [ESP32-Adafruit-BNO085 Levelsensor](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT) | `camper/level` ¹ |
-| Truma Combi Heizung | [camper-heater](https://github.com/hflocki/camper-heater) | `camper/heater` ² |
-| MaxxFan (VanTurtle) | [camper-maxxfan](https://github.com/hflocki/camper-maxxfan) | `camper/maxxfan` |
-| Temperaturen (DS18B20) | [camper-temp](https://github.com/hflocki/camper-temp) | `camper/temp` |
+| Truma Combi Heizung | [camper-heater](../heater) | `camper/heater` ² |
+| MaxxFan (VanTurtle) | [camper-maxxfan](../maxxfan) | `camper/maxxfan` |
+| Temperaturen (DS18B20) | [camper-temp](../temp) | `camper/temp` |
 | Router (GPS, Mobilfunk) | Teltonika RUT956, siehe [Router-Daten](#router-daten-rut956) | frei |
 | Zigbee2MQTT & alles andere | eigene Seiten und Kacheln | frei |
 
@@ -201,9 +201,9 @@ Der RUT956 kann GPS und Mobilfunkwerte selbst per MQTT senden, ganz ohne zusätz
 
 Am Display dann im **Topic-Finder** `camper/router/#` starten und die gewünschten Werte per Klick als Kacheln anlegen. Die genauen JSON-Schlüssel hängen von der Router-Firmware ab; der Finder zeigt sie an.
 
-## Fertige Firmware (GitHub Actions)
+## Fertige Firmware
 
-Jeder Push wird automatisch gebaut (`.github/workflows/build.yml`, Board-Paket und Bibliotheken in den hier genannten Versionen). Das Ergebnis liegt im Reiter **Actions** beim jeweiligen Lauf als Download. Ein Tag `v…` (z. B. `git tag v1.2.0 && git push --tags`) legt zusätzlich ein **Release** mit der `.bin` an, die sich direkt auf der Webseite unter **System → Firmware-Update** einspielen lässt.
+Wird im Haupt-Repo per GitHub Actions gebaut, siehe [Fertige Firmware](../../README.md#fertige-firmware).
 
 ## Hinweise
 

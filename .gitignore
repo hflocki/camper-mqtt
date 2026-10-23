@@ -1,0 +1,10 @@
+# Build output
+build/
+.pio/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Patch files dropped into the repo for applying
+*.patch

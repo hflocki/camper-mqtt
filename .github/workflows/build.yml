@@ -1,0 +1,121 @@
+# Builds every device on each push / pull request.
+# A tag "<device>-v<version>" (e.g. temp-v1.1.0) builds only that device and
+# creates a GitHub release with its .bin file.
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["*-v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ESP32_CORE: esp32:esp32@3.3.2
+  ESP8266_CORE: esp8266:esp8266@3.1.2
+  ESP32_URL: https://espressif.github.io/arduino-esp32/package_esp32_index.json
+  ESP8266_URL: https://arduino.esp8266.com/stable/package_esp8266com_index.json
+  COMMON_LIBS: '"PubSubClient@2.8" "ArduinoJson@7.4.2" "ESP Async WebServer@3.12.1" "Async TCP@3.5.0"'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: tanklevel
+            target: esp32c3
+            fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
+            sketch: firmware/tanklevel/_arduino/camper_tanklevel
+            libs: '"NimBLE-Arduino@2.5.1"'
+          - device: temp
+            target: esp8266
+            fqbn: esp8266:esp8266:nodemcuv2:eesz=4M1M
+            sketch: firmware/temp/_arduino/camper_temp
+            libs: '"OneWire@2.3.8" "DallasTemperature@4.0.6" "ESP Async TCP@2.0.0"'
+          - device: temp
+            target: esp32c3
+            fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
+            sketch: firmware/temp/_arduino/camper_temp
+            libs: '"OneWire@2.3.8" "DallasTemperature@4.0.6"'
+          - device: heater
+            target: esp32c3
+            fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
+            sketch: firmware/heater/truma_heater
+            libs: ''
+          - device: maxxfan
+            target: esp32c3
+            fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
+            sketch: firmware/maxxfan/_arduino/camper_maxxfan
+            libs: ''
+          - device: display
+            target: esp32s3
+            fqbn: esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB
+            sketch: firmware/display/_arduino/camper_display
+            libs: '"GFX Library for Arduino@1.6.0" "lvgl@9.2.2"'
+          - device: roadbuddy
+            target: core2
+            fqbn: esp32:esp32:m5stack_core2
+            sketch: firmware/roadbuddy/_arduino/roadbuddy
+            libs: '"M5Unified@0.2.27"'
+
+    steps:
+      # On a device tag only that device is built, all other matrix jobs end right away
+      - name: Select
+        id: sel
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != ${{ matrix.device }}-v* ]]; then
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.sel.outputs.skip != '1'
+
+      - uses: arduino/setup-arduino-cli@v2
+        if: steps.sel.outputs.skip != '1'
+
+      - name: Install board package and libraries
+        if: steps.sel.outputs.skip != '1'
+        run: |
+          arduino-cli config init
+          if [[ "${{ matrix.target }}" == esp8266 ]]; then
+            arduino-cli config add board_manager.additional_urls "$ESP8266_URL"
+            arduino-cli core update-index
+            arduino-cli core install "$ESP8266_CORE"
+          else
+            arduino-cli config add board_manager.additional_urls "$ESP32_URL"
+            arduino-cli core update-index
+            arduino-cli core install "$ESP32_CORE"
+          fi
+          eval arduino-cli lib install $COMMON_LIBS ${{ matrix.libs }}
+          # LVGL reads its configuration from next to the lvgl library folder
+          if [[ "${{ matrix.device }}" == display ]]; then
+            cp firmware/display/_arduino/lv_conf.h "$(arduino-cli config get directories.user)/libraries/"
+          fi
+          # CI build only: the real config.h with credentials is never in git
+          if [[ "${{ matrix.device }}" == roadbuddy ]]; then
+            cp "${{ matrix.sketch }}/config.example.h" "${{ matrix.sketch }}/config.h"
+          fi
+
+      - name: Compile
+        if: steps.sel.outputs.skip != '1'
+        run: |
+          out=build/${{ matrix.device }}-${{ matrix.target }}
+          arduino-cli compile --fqbn "${{ matrix.fqbn }}" --output-dir "$out" "${{ matrix.sketch }}"
+          cp "$out"/*.ino.bin "camper-${{ matrix.device }}-${{ matrix.target }}.bin"
+
+      - uses: actions/upload-artifact@v4
+        if: steps.sel.outputs.skip != '1'
+        with:
+          name: camper-${{ matrix.device }}-${{ matrix.target }}
+          path: camper-${{ matrix.device }}-${{ matrix.target }}.bin
+
+      - name: Release
+        if: steps.sel.outputs.skip != '1' && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: camper-${{ matrix.device }}-${{ matrix.target }}.bin

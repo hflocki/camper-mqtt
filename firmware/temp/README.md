@@ -5,7 +5,7 @@ Firmware für einen ESP8266 (ESP-12E, NodeMCU, Wemos D1 mini) oder ESP32-C3, die
 - Sensoren werden am Bus **automatisch gefunden** und in der Web-UI benannt, keine Adressen im Code
 - Werte per **MQTT** mit Home-Assistant-Discovery
 - Web-Oberfläche mit Live-Werten, Min/Max seit Start, Offset-Korrektur je Sensor
-- **Alarm-Grenzwerte** je Sensor (z. B. „Kühlschrank über 8 °C seit 15 min“), per MQTT auch ohne Home Assistant nutzbar, das [camper-display](https://github.com/hflocki/camper-display) zeigt sie als Warnung
+- **Alarm-Grenzwerte** je Sensor (z. B. „Kühlschrank über 8 °C seit 15 min“), per MQTT auch ohne Home Assistant nutzbar, das [camper-display](../display) zeigt sie als Warnung
 - Optionaler Login für die Web-Oberfläche
 - Access Point beim ersten Start, WLAN/MQTT im Browser einstellen, OTA-Updates
 
@@ -153,9 +153,9 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 | 1.0.0 | Erste Version: bis zu 8 DS18B20, automatische Erkennung, Web-UI, MQTT mit HA-Discovery |
 | 1.1.0 | Alarm-Grenzwerte je Sensor mit Verzögerung (`<id>/alarm`, `alarm`, `alarm_text`, HA-Binärsensoren), JSON-Liste `<prefix>/sensors` für Displays, Web-Login, Last Will mit QoS 1 |
 
-## Fertige Firmware (GitHub Actions)
+## Fertige Firmware
 
-Jeder Push wird automatisch gebaut (`.github/workflows/build.yml`, Board-Paket und Bibliotheken in den hier genannten Versionen). Das Ergebnis liegt im Reiter **Actions** beim jeweiligen Lauf als Download. Ein Tag `v…` (z. B. `git tag v1.2.0 && git push --tags`) legt zusätzlich ein **Release** mit der `.bin` an – flashen per USB oder Arduino-OTA; die Web-Oberfläche liegt weiterhin als LittleFS-Image in `data/`.
+Wird im Haupt-Repo per GitHub Actions gebaut, siehe [Fertige Firmware](../../README.md#fertige-firmware).
 
 ## Lizenz
 

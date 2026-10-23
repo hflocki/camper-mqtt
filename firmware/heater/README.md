@@ -61,7 +61,7 @@ Spätere Updates gehen ohne USB: In der Arduino IDE *Sketch → Kompilierte Bin�
 
 ## Weboberfläche
 
-Aufbau und Optik wie bei [camper-tanklevel](https://github.com/hflocki/camper-tanklevel): Heizung, Timer, MQTT, WiFi, System.
+Aufbau und Optik wie bei [camper-tanklevel](../tanklevel): Heizung, Timer, MQTT, WiFi, System.
 
 | Heizung | Timer | WiFi |
 | --- | --- | --- |
@@ -222,9 +222,9 @@ Der LIN-Teil läuft in einem eigenen Task mit hoher Priorität, damit Antworten 
 - Uhrzeit: Die Original-iNet-Box stellt die Uhr nie selbst; das CP Plus meldet Änderungen sofort. Unser NTP-Uhrzeit-Setzen (Frame 0x14) ist nur gegen ESPHome geprüft.
 - **Am echten LIN-Bus noch nicht getestet.**
 
-## Fertige Firmware (GitHub Actions)
+## Fertige Firmware
 
-Jeder Push wird automatisch gebaut (`.github/workflows/build.yml`, Board-Paket und Bibliotheken in den hier genannten Versionen). Das Ergebnis liegt im Reiter **Actions** beim jeweiligen Lauf als Download. Ein Tag `v…` (z. B. `git tag v1.2.0 && git push --tags`) legt zusätzlich ein **Release** mit der `.bin` an, die sich direkt im Web-UI über das Firmware-Update einspielen lässt.
+Wird im Haupt-Repo per GitHub Actions gebaut, siehe [Fertige Firmware](../../README.md#fertige-firmware).
 
 ## Lizenz
 

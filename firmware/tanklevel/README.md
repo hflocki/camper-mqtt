@@ -285,9 +285,9 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 | 1.1.0 | Sensoren einzeln abschaltbar (`config.h` und Web-UI), AP-Name mit MAC-Endung, Live-Seite nur mit Anzeigen, Filter im Tab Wasser |
 | 1.0.0 | Erste kombinierte Version aus camper-waterlevel und camper-gaslevel |
 
-## Fertige Firmware (GitHub Actions)
+## Fertige Firmware
 
-Jeder Push wird automatisch gebaut (`.github/workflows/build.yml`, Board-Paket und Bibliotheken in den hier genannten Versionen). Das Ergebnis liegt im Reiter **Actions** beim jeweiligen Lauf als Download. Ein Tag `v…` (z. B. `git tag v1.2.0 && git push --tags`) legt zusätzlich ein **Release** mit der `.bin` an – flashen per USB oder Arduino-OTA; die Web-Oberfläche liegt weiterhin als LittleFS-Image in `data/`.
+Wird im Haupt-Repo per GitHub Actions gebaut, siehe [Fertige Firmware](../../README.md#fertige-firmware).
 
 ## Lizenz
 

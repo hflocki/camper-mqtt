@@ -1,6 +1,6 @@
 # Camper MaxxFan – VanTurtle-Board per MQTT
 
-Firmware für einen **ESP32-C3** mit dem **VanTurtle**-Board (TCA9555-Port-Expander), die eine MaxxFan-Dachhaube per **MQTT** steuert – reines **Arduino**, ohne ESPHome. Aufbau wie [camper-tanklevel](https://github.com/hflocki/camper-tanklevel) und [camper-heater](https://github.com/hflocki/camper-heater):
+Firmware für einen **ESP32-C3** mit dem **VanTurtle**-Board (TCA9555-Port-Expander), die eine MaxxFan-Dachhaube per **MQTT** steuert – reines **Arduino**, ohne ESPHome. Aufbau wie [camper-tanklevel](../tanklevel) und [camper-heater](../heater):
 
 - Tastendrücke der MaxxFan-Bedienung (Auto, Richtung, Ein/Aus, Schneller, Langsamer, Piep) für **Port 0 (RJ11)** und **Port 1 (RJ45)**
 - Eingang **Auto Hold** und **Controller-LED** je Port
@@ -137,9 +137,9 @@ Mit Discovery erscheint ein Gerät **„Camper MaxxFan“** mit Tasten-Entitäte
 | 1.1.0 | Stufe 1–10 setzen (MQTT, HA-Regler, Web-UI) |
 | 1.0.0 | Erste Arduino/MQTT-Version, ersetzt die ESPHome-Konfiguration |
 
-## Fertige Firmware (GitHub Actions)
+## Fertige Firmware
 
-Jeder Push wird automatisch gebaut (`.github/workflows/build.yml`, Board-Paket und Bibliotheken in den hier genannten Versionen). Das Ergebnis liegt im Reiter **Actions** beim jeweiligen Lauf als Download. Ein Tag `v…` (z. B. `git tag v1.2.0 && git push --tags`) legt zusätzlich ein **Release** mit der `.bin` an, die sich direkt im Web-UI unter **WiFi → Firmware-Update** einspielen lässt.
+Wird im Haupt-Repo per GitHub Actions gebaut, siehe [Fertige Firmware](../../README.md#fertige-firmware).
 
 ## Lizenz
 

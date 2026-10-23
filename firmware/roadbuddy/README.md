@@ -68,9 +68,9 @@ Weitere Topics unter diesen Präfixen (z. B. `rssi`, `voltage`, `raw_level`, Gra
 Die Sensoren dazu:
 
 - Level: [ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT) von klehnst (ESP32 + Adafruit BNO085), Topic-Präfix dort auf `camper/level` gestellt
-- Wasser und Gas: [camper-tanklevel](https://github.com/hflocki/camper-tanklevel) (ein ESP32-C3 für Frischwasser, Grauwasser und Gas)
+- Wasser und Gas: [camper-tanklevel](../tanklevel) (ein ESP32-C3 für Frischwasser, Grauwasser und Gas)
 
-Mehr zeigt der RoadBuddy bewusst nicht: Heizung, Lüfter, Temperaturen und Warnungen laufen auf dem großen Wandpanel [camper-display](https://github.com/hflocki/camper-display).
+Mehr zeigt der RoadBuddy bewusst nicht: Heizung, Lüfter, Temperaturen und Warnungen laufen auf dem großen Wandpanel [camper-display](../display).
 
 ---
 
@@ -118,6 +118,6 @@ m5core2-roadbuddy/
 
 ---
 
-## Fertige Firmware (GitHub Actions)
+## Fertige Firmware
 
-Jeder Push wird automatisch gebaut (`.github/workflows/build.yml`, Board-Paket und Bibliotheken in den hier genannten Versionen). Das Ergebnis liegt im Reiter **Actions** beim jeweiligen Lauf als Download. Ein Tag `v…` (z. B. `git tag v1.2.0 && git push --tags`) legt zusätzlich ein **Release** mit der `.bin` an (flashen per USB). Für den CI-Build wird `config.example.h` als `config.h` verwendet, das Release enthält also keine Zugangsdaten und ist nur ein Beispiel; für den Camper selbst mit eigener `config.h` bauen.
+Wird im Haupt-Repo per GitHub Actions gebaut, siehe [Fertige Firmware](../../README.md#fertige-firmware). Der CI-Build nutzt `config.example.h` als `config.h`, die `.bin` enthält also keine Zugangsdaten. Für den Camper selbst mit eigener `config.h` bauen.
