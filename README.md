@@ -1,6 +1,6 @@
 # Camper MaxxFan – VanTurtle-Board per MQTT
 
-Firmware für einen **ESP32-C3** mit dem **VanTurtle**-Board (TCA9555-Port-Expander), die eine MaxxFan-Dachhaube per **MQTT** steuert – reines **Arduino**, ohne ESPHome. Aufbau wie [camper-tanklevel](https://github.com/hflocki/camper-tanklevel) und [truma-lin-mqtt](https://github.com/hflocki/truma-lin-mqtt):
+Firmware für einen **ESP32-C3** mit dem **VanTurtle**-Board (TCA9555-Port-Expander), die eine MaxxFan-Dachhaube per **MQTT** steuert – reines **Arduino**, ohne ESPHome. Aufbau wie [camper-tanklevel](https://github.com/hflocki/camper-tanklevel) und [camper-heater](https://github.com/hflocki/camper-heater):
 
 - Tastendrücke der MaxxFan-Bedienung (Auto, Richtung, Ein/Aus, Schneller, Langsamer, Piep) für **Port 0 (RJ11)** und **Port 1 (RJ45)**
 - Eingang **Auto Hold** und **Controller-LED** je Port
@@ -69,15 +69,18 @@ Die Firmware ist ca. 1,18 MB groß und passt knapp in die Standard-Partition; mi
 1. In `config.h` `DEFAULT_AP_PASSWORD` und `DEFAULT_OTA_PASSWORD` ändern.
 2. `camper_maxxfan.ino` öffnen, Partition Scheme prüfen, hochladen.
 
-Die Web-Oberfläche steckt in `web_ui.h` – kein LittleFS-Upload nötig. Spätere Updates per OTA (`camper-maxxfan` unter Netzwerk-Ports) oder im Web-UI unter **System → Firmware-Update** (*Sketch → Kompilierte Binärdatei exportieren*).
+Die Web-Oberfläche steckt in `web_ui.h` – kein LittleFS-Upload nötig. Spätere Updates per OTA (`camper-maxxfan` unter Netzwerk-Ports) oder im Web-UI unter **WiFi → Firmware-Update** (*Sketch → Kompilierte Binärdatei exportieren*).
 
 ## Web-Oberfläche
 
-- **Live:** Ein/Aus, Auto, Richtung, Langsamer, Schneller, Stufe 1–10 setzen, Auto-Hold-Anzeige, Sync auf AUS
-- **Einstellungen:** Bedienteil je Port (Controller-LED, Piep als Verbindungstest), WLAN, MQTT, Ports, Tastendruck-Dauer, Web-Login
-- **System:** Info, Firmware-Update, Neustart, Werkseinstellungen
+Gleicher Aufbau und gleiche Optik wie bei camper-tanklevel, camper-temp und camper-heater: Kopfzeile mit Statuspunkten (Board, WiFi, MQTT), Reiter mit Symbolen.
 
-`docs/mockup.html` zeigt die Oberfläche mit Beispieldaten im Browser (ohne ESP).
+- **Live:** Ein/Aus, Auto, Richtung, Langsamer, Schneller, Stufe 1–10 setzen, Auto-Hold-Anzeige, Sync auf AUS
+- **MaxxFan:** Bedienteil je Port (Controller-LED, Piep als Verbindungstest), Ports ein/aus, Tastendruck-Dauer, Sync-Port
+- **MQTT:** Broker, Topic-Prefix, Home-Assistant-Discovery, Web-Login
+- **WiFi:** Verbindungsstatus, WLAN, feste IP, Access Point, Firmware-Update, Neustart, Werkseinstellungen
+
+`docs/mockup.html` zeigt die Oberfläche mit Beispieldaten im Browser (ohne ESP). Nach Änderungen an `web_ui.h` mit `python3 tools/make_mockup.py` neu erzeugen (nur Python-Standardbibliothek).
 
 ## Erstbenutzung
 
@@ -130,8 +133,13 @@ Mit Discovery erscheint ein Gerät **„Camper MaxxFan“** mit Tasten-Entitäte
 
 | Version | Änderungen |
 | --- | --- |
+| 1.2.0 | Web-Oberfläche im gleichen Stil wie die anderen Camper-Geräte (Statuspunkte, Reiter Live / MaxxFan / MQTT / WiFi) |
 | 1.1.0 | Stufe 1–10 setzen (MQTT, HA-Regler, Web-UI) |
 | 1.0.0 | Erste Arduino/MQTT-Version, ersetzt die ESPHome-Konfiguration |
+
+## Fertige Firmware (GitHub Actions)
+
+Jeder Push wird automatisch gebaut (`.github/workflows/build.yml`, Board-Paket und Bibliotheken in den hier genannten Versionen). Das Ergebnis liegt im Reiter **Actions** beim jeweiligen Lauf als Download. Ein Tag `v…` (z. B. `git tag v1.2.0 && git push --tags`) legt zusätzlich ein **Release** mit der `.bin` an, die sich direkt im Web-UI unter **WiFi → Firmware-Update** einspielen lässt.
 
 ## Lizenz
 

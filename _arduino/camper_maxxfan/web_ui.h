@@ -1,143 +1,208 @@
 #pragma once
 // Web UI served from flash. Edit the HTML between the R"HTML( ... )HTML" markers.
+// Look and tab layout follow camper-tanklevel / camper-temp / camper-heater.
 
 static const char WEB_UI[] = R"HTML(<!doctype html>
 <html lang="de"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Camper MaxxFan</title>
 <style>
-:root{--bg:#0f1418;--card:#182129;--fg:#e6edf2;--mut:#8b9aa6;--acc:#2f9be0;--ok:#2fbf71;--bad:#e05252;--bd:#26323c}
-@media (prefers-color-scheme:light){:root{--bg:#f2f5f7;--card:#fff;--fg:#17212a;--mut:#5d6b77;--bd:#dde3e8}}
-*{box-sizing:border-box}body{margin:0;font:15px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
-header{padding:14px 16px 0;max-width:640px;margin:auto}h1{font-size:19px;margin:0 0 10px}
-nav{display:flex;gap:4px;border-bottom:1px solid var(--bd)}
-nav button{flex:1;background:none;border:0;color:var(--mut);padding:10px 4px;font:inherit;cursor:pointer;border-bottom:2px solid transparent}
-nav button.on{color:var(--fg);border-color:var(--acc)}
-main{max-width:640px;margin:auto;padding:14px 16px 40px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
-.card h2{font-size:15px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.btn{background:var(--acc);color:#fff;border:0;border-radius:9px;padding:12px 6px;font:inherit;font-weight:600;cursor:pointer}
-.btn.sec{background:transparent;color:var(--fg);border:1px solid var(--bd)}
-.btn.bad{background:var(--bad)}.btn:active{transform:scale(.97)}
-.pill{font-size:12px;font-weight:500;padding:2px 8px;border-radius:99px;background:var(--bd);color:var(--mut)}
-.pill.ok{background:var(--ok);color:#fff}.pill.bad{background:var(--bad);color:#fff}
-.row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}.row:last-child{border:0}
-label{display:block;margin:10px 0 4px;color:var(--mut);font-size:13px}
-input,select{width:100%;padding:9px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--fg);font:inherit}
-.chk{display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--fg)}.chk input{width:auto}
-.hide{display:none}.mut{color:var(--mut);font-size:13px}#msg{margin-top:8px}
-progress{width:100%}
-</style></head><body>
-<header><h1>Camper MaxxFan</h1>
-<nav><button data-t="live" class="on">Live</button><button data-t="cfg">Einstellungen</button><button data-t="sys">System</button></nav></header>
-<main>
-<section id="live">
-  <div class="card"><h2>Status <span id="st" class="pill">…</span></h2>
-    <button class="btn sec" style="width:100%" onclick="post('/api/sync')">Lüfter auf AUS synchronisieren</button>
-    <div class="mut" style="margin-top:6px">Drückt Auto, wartet auf „Auto Hold“, dann Ein/Aus.</div></div>
+:root{--bg:#0f1419;--bg2:#1a2332;--card:#1e2d3d;--input:#0d1b2a;--acc:#4fc3f7;--acc-glow:rgba(79,195,247,.3);
+--warn:#ffb800;--danger:#ff4757;--ok:#00d4aa;--ink:#e8f0f8;--mute:#8899aa;--dim:#556677;--line:#2a3a4a;--r:12px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden}
+.header{background:var(--bg2);padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.header h1{font-size:1.15rem;font-weight:600;color:var(--acc);white-space:nowrap}
+.dots{display:flex;gap:8px;align-items:center;font-size:.65rem;color:var(--dim)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dim);display:inline-block;margin-right:4px}
+.dot.on{background:var(--ok);box-shadow:0 0 8px rgba(0,212,170,.3)}
+.dot.warn{background:var(--warn)}.dot.bad{background:var(--danger)}
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{flex:1;min-width:0;padding:8px 1px 7px;text-align:center;font-size:.68rem;font-weight:500;line-height:1.2;display:flex;flex-direction:column;
+align-items:center;gap:3px;color:var(--mute);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab .ico{font-size:1.05rem;line-height:1}
+.tab.on{color:var(--acc);border-bottom-color:var(--acc);background:rgba(79,195,247,.05)}
+.tc{display:none;padding:16px}.tc.on{display:block}
+.card{background:var(--card);border-radius:var(--r);padding:16px;margin-bottom:12px;border:1px solid var(--line)}
+.ct{font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:var(--mute);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ct.acc{color:var(--acc)}
+.badge{font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--input);color:var(--mute);text-transform:none;letter-spacing:0}
+.badge.ok{background:rgba(0,212,170,.15);color:var(--ok)}.badge.bad{background:rgba(255,71,87,.15);color:var(--danger)}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 16px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;border:none;width:100%;font-family:inherit}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--acc);color:var(--bg)}
+.btn-s{background:var(--input);color:var(--ink);border:1px solid var(--line)}
+.btn-d{background:rgba(255,71,87,.15);color:var(--danger);border:1px solid var(--danger)}
+.btn-sm{width:auto;padding:6px 12px;font-size:.75rem}
+.btn-big{padding:18px;font-size:1rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-row{display:flex;gap:8px;margin-top:12px}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:.75rem;color:var(--mute);margin-bottom:4px}
+.fg input,.fg select,select.in{width:100%;padding:10px 12px;background:var(--input);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-size:.9rem;outline:none;font-family:inherit}
+.fg input:focus,.fg select:focus{border-color:var(--acc)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hint{font-size:.7rem;color:var(--dim);margin-top:4px}
+code{font-family:ui-monospace,Menlo,monospace}
+.info{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.85rem}
+.info:last-child{border-bottom:none}.info .l{color:var(--mute)}
+.er{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;font-size:.85rem}
+.er+.er{border-top:1px solid var(--line)}
+.tg{position:relative;width:46px;height:26px;flex-shrink:0}
+.tg input{opacity:0;width:0;height:0}
+.tg span{position:absolute;inset:0;background:var(--line);border-radius:13px;cursor:pointer;transition:.2s}
+.tg span::before{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:var(--ink);border-radius:50%;transition:.2s}
+.tg input:checked+span{background:var(--acc)}.tg input:checked+span::before{transform:translateX(20px)}
+.speed{display:flex;gap:8px;align-items:center;margin-top:12px}
+.speed span{flex:1;font-size:.85rem;color:var(--mute)}
+.speed select{width:auto}
+progress{width:100%;margin-bottom:8px;accent-color:var(--acc)}
+.hide{display:none!important}
+.empty{font-size:.8rem;color:var(--dim);text-align:center;padding:12px 0}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--card);border:1px solid var(--acc);border-radius:8px;padding:10px 20px;font-size:.85rem;color:var(--acc);opacity:0;transition:all .3s;z-index:999}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}.toast.err{border-color:var(--danger);color:var(--danger)}
+@media (max-width:374px){.header{padding:14px 12px}.header h1{font-size:1rem}.dots{gap:4px;font-size:.6rem}}
+@media (min-width:600px){body{display:flex;justify-content:center}.app{width:100%;max-width:520px}}
+</style></head><body><div class="app">
+<div class="header"><h1>🌀 Camper MaxxFan</h1>
+  <div class="dots"><span><span class="dot" id="d-exp"></span>Board</span><span><span class="dot" id="d-wifi"></span>WiFi</span><span><span class="dot" id="d-mqtt"></span>MQTT</span></div></div>
+<div class="tabs">
+  <div class="tab on" data-t="live"><span class="ico">📊</span><span>Live</span></div>
+  <div class="tab" data-t="fan"><span class="ico">🌀</span><span>MaxxFan</span></div>
+  <div class="tab" data-t="mqtt"><span class="ico">⚙️</span><span>MQTT</span></div>
+  <div class="tab" data-t="wifi"><span class="ico">📶</span><span>WiFi</span></div>
+</div>
+
+<div class="tc on" id="t-live">
+  <div class="card"><div class="ct acc">Status <span class="badge" id="st">…</span></div>
+    <button class="btn btn-s" type="button" onclick="post('/api/sync').then(()=>toast('Synchronisation gestartet'))">↺ Lüfter auf AUS synchronisieren</button>
+    <div class="hint">Drückt Auto, wartet auf „Auto Hold“, dann Ein/Aus.</div></div>
   <div id="ports"></div>
-</section>
+</div>
 
-<section id="cfg" class="hide"><div id="ctl"></div><form id="f">
-  <div class="card"><h2>WLAN</h2>
-    <label>Gerätename (Hostname)</label><input name="hostname">
-    <label>SSID</label><input name="ssid">
-    <label>Passwort (leer = unverändert)</label><input name="wpass" type="password">
-    <div class="chk"><input type="checkbox" name="static_ip" id="sip"><span>Feste IP</span></div>
-    <div id="ipbox"><label>IP</label><input name="ip"><label>Gateway</label><input name="gw">
-    <label>Subnetz</label><input name="sn"><label>DNS (leer = Gateway)</label><input name="dns"></div>
-    <label>Setup-AP-Passwort (min. 8 Zeichen, leer = unverändert)</label><input name="appass" type="password">
+<!-- One form across the settings tabs: the device expects all fields in one request -->
+<form id="f" autocomplete="off">
+<div class="tc" id="t-fan">
+  <div id="ctl"></div>
+  <div class="card"><div class="ct acc">Ports</div>
+    <div class="er"><span>Port 0 (RJ11) aktiv</span><label class="tg"><input type="checkbox" name="p0"><span></span></label></div>
+    <div class="er"><span>Port 1 (RJ45) aktiv</span><label class="tg"><input type="checkbox" name="p1"><span></span></label></div>
   </div>
-  <div class="card"><h2>MQTT</h2>
-    <label>Broker</label><input name="mhost" placeholder="192.168.x.x">
-    <label>Port</label><input name="mport" type="number">
-    <label>Benutzer</label><input name="muser"><label>Passwort (leer = unverändert)</label><input name="mpass" type="password">
-    <label>Topic-Prefix</label><input name="prefix">
-    <div class="chk"><input type="checkbox" name="disc"><span>Home-Assistant-Discovery</span></div>
+  <div class="card"><div class="ct acc">Bedienung</div>
+    <div class="fr">
+      <div class="fg"><label>Tastendruck (ms)</label><input name="pulse" type="number" min="50" max="2000"></div>
+      <div class="fg"><label>Port für Synchronisation</label><select name="syncport"><option value="0">Port 0 (RJ11)</option><option value="1">Port 1 (RJ45)</option></select></div>
+    </div>
+    <div class="hint">Stufe setzen = 10× Langsamer, dann (Stufe−1)× Schneller.</div>
   </div>
-  <div class="card"><h2>MaxxFan</h2>
-    <div class="chk"><input type="checkbox" name="p0"><span>Port 0 (RJ11) aktiv</span></div>
-    <div class="chk"><input type="checkbox" name="p1"><span>Port 1 (RJ45) aktiv</span></div>
-    <label>Tastendruck-Dauer (ms)</label><input name="pulse" type="number" min="50" max="2000">
-    <label>Port für Synchronisation</label><select name="syncport"><option value="0">Port 0 (RJ11)</option><option value="1">Port 1 (RJ45)</option></select>
-  </div>
-  <div class="card"><h2>Web-Login</h2>
-    <label>Benutzer (leer = kein Login)</label><input name="wuser">
-    <label>Passwort (leer = unverändert)</label><input name="wpw" type="password">
-  </div>
-  <button class="btn" style="width:100%" type="submit">Speichern &amp; Neustart</button><div id="msg" class="mut"></div>
-</form></section>
+  <div class="btn-row"><button class="btn btn-p" type="submit">💾 Speichern &amp; Neustart</button></div>
+</div>
 
-<section id="sys" class="hide">
-  <div class="card"><h2>Info</h2><div id="info"></div></div>
-  <div class="card"><h2>Firmware-Update</h2>
-    <div class="mut">Arduino IDE: Sketch → Kompilierte Binärdatei exportieren, dann die .bin hier hochladen.</div>
-    <label>Datei</label><input type="file" id="fw" accept=".bin">
+<div class="tc" id="t-mqtt">
+  <div class="card"><div class="ct">MQTT Settings (Home Assistant)</div>
+    <div class="fr"><div class="fg"><label>Server</label><input name="mhost" placeholder="192.168.x.x"></div>
+      <div class="fg"><label>Port</label><input name="mport" type="number"></div></div>
+    <div class="fr"><div class="fg"><label>Benutzer</label><input name="muser"></div>
+      <div class="fg"><label>Passwort</label><input name="mpass" type="password" placeholder="(unverändert)" autocomplete="new-password"></div></div>
+    <div class="fg"><label>Topic-Prefix</label><input name="prefix">
+      <div class="hint">Befehle unter <code>&lt;prefix&gt;/cmd/…</code>, Status unter <code>&lt;prefix&gt;/status</code></div></div>
+    <div class="er"><span>Home-Assistant-Discovery</span><label class="tg"><input type="checkbox" name="disc"><span></span></label></div>
+  </div>
+  <div class="card"><div class="ct">Web-Oberfläche Login</div>
+    <div class="fr"><div class="fg"><label>Benutzer</label><input name="wuser" autocapitalize="none"></div>
+      <div class="fg"><label>Passwort</label><input name="wpw" type="password" placeholder="(unverändert)" autocomplete="new-password"></div></div>
+    <div class="hint">Leerer Benutzer = kein Login.</div>
+  </div>
+  <div class="btn-row"><button class="btn btn-p" type="submit">💾 Speichern &amp; Neustart</button></div>
+</div>
+
+<div class="tc" id="t-wifi">
+  <div class="card"><div class="ct">Verbindungsstatus</div><div id="info"></div></div>
+  <div class="card"><div class="ct">WLAN-Verbindung</div>
+    <div class="fg"><label>Gerätename (Hostname)</label><input name="hostname"></div>
+    <div class="fg"><label>SSID</label><input name="ssid"></div>
+    <div class="fg"><label>Passwort</label><input name="wpass" type="password" placeholder="(unverändert)" autocomplete="new-password"></div>
+    <div class="er"><span>Feste IP-Adresse</span><label class="tg"><input type="checkbox" name="static_ip" id="sip"><span></span></label></div>
+    <div id="ipbox" style="margin-top:12px"><div class="fr"><div class="fg"><label>IP</label><input name="ip"></div><div class="fg"><label>Gateway</label><input name="gw"></div></div>
+      <div class="fr"><div class="fg"><label>Subnetz</label><input name="sn"></div><div class="fg"><label>DNS (leer = Gateway)</label><input name="dns"></div></div></div>
+  </div>
+  <div class="card"><div class="ct">Access Point</div>
+    <div class="fg"><label>Passwort (min. 8 Zeichen)</label><input name="appass" type="password" placeholder="(unverändert)" autocomplete="new-password"></div>
+  </div>
+  <div class="btn-row"><button class="btn btn-p" type="submit">💾 Speichern &amp; Verbinden</button></div>
+  <div class="card" style="margin-top:12px"><div class="ct">Firmware-Update</div>
+    <div class="hint" style="margin:0 0 8px">Arduino IDE: Sketch → Kompilierte Binärdatei exportieren, dann die .bin hier hochladen.</div>
+    <div class="fg"><input type="file" id="fw" accept=".bin"></div>
     <progress id="pr" value="0" max="100" class="hide"></progress>
-    <button class="btn" style="width:100%;margin-top:10px" onclick="upload()">Hochladen</button><div id="umsg" class="mut"></div></div>
-  <div class="card"><h2>Gerät</h2><div class="grid" style="grid-template-columns:1fr 1fr">
-    <button class="btn sec" onclick="post('/api/reboot')">Neustart</button>
-    <button class="btn bad" onclick="if(confirm('Alle Einstellungen löschen?'))post('/api/factory')">Werkseinstellungen</button></div></div>
-</section>
-</main>
+    <button class="btn btn-s" type="button" onclick="upload()">⬆ Hochladen</button></div>
+  <div class="btn-row"><button class="btn btn-d" type="button" onclick="if(confirm('Neu starten?'))post('/api/reboot').then(restarting)">🔄 Neustart</button></div>
+  <div class="btn-row"><button class="btn btn-d" type="button" onclick="if(confirm('Alle Einstellungen löschen?'))post('/api/factory').then(restarting)">Werkseinstellungen</button></div>
+</div>
+</form>
+<div class="toast" id="toast"></div>
+</div>
 <script>
 const $=s=>document.querySelector(s);
-const BTN=[["auto","Auto"],["direction","Richtung"],["slower","Langsamer"],["faster","Schneller"]];
+const BTN=[["auto","Auto"],["direction","⇅ Richtung"],["slower","▼ Langsamer"],["faster","▲ Schneller"]];
 let built="";
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));
-  ["live","cfg","sys"].forEach(id=>$("#"+id).classList.toggle("hide",id!==b.dataset.t));
-  if(b.dataset.t==="cfg")loadCfg();
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===t));
+  document.querySelectorAll(".tc").forEach(c=>c.classList.toggle("on",c.id==="t-"+t.dataset.t));
 });
-function post(url,data){return fetch(url,{method:"POST",body:new URLSearchParams(data||{})}).then(()=>setTimeout(poll,300))}
+function toast(m,err){const t=$("#toast");t.textContent=m;t.classList.toggle("err",!!err);t.classList.add("show");
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2500)}
+function post(url,data){return fetch(url,{method:"POST",body:new URLSearchParams(data||{})})
+  .then(r=>{if(!r.ok)toast("Befehl abgelehnt",true);setTimeout(poll,300);return r})
+  .catch(()=>toast("Keine Verbindung",true))}
+function restarting(){toast("Neustart... Seite lädt in 10 s neu");setTimeout(()=>location.reload(),10000)}
 function buildPorts(s){
   const key=s.ports.map(p=>p.enabled).join();
   if(key===built)return; built=key;
-  $("#ports").innerHTML=s.ports.map((p,i)=>!p.enabled?"":`<div class="card"><h2>${p.label} · Port ${i}
-    <span class="pill" id="h${i}">Auto Hold</span></h2>
-    <button class="btn" style="width:100%;margin-bottom:8px" onclick="post('/api/press',{port:${i},btn:'on_off'})">Ein / Aus</button>
-    <div class="grid" style="grid-template-columns:1fr 1fr">${BTN.map(b=>`<button class="btn" onclick="post('/api/press',{port:${i},btn:'${b[0]}'})">${b[1]}</button>`).join("")}</div>
-    <div class="row" style="margin-top:8px"><span>Stufe setzen</span>
-    <span><select id="s${i}" style="width:auto">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option>${n}</option>`).join("")}</select>
-    <button class="btn sec" onclick="post('/api/speed',{port:${i},level:$('#s${i}').value})">Setzen</button></span></div>
+  $("#ports").innerHTML=s.ports.map((p,i)=>!p.enabled?"":`<div class="card"><div class="ct acc">${p.label} · Port ${i} <span class="badge" id="h${i}">Auto Hold</span></div>
+    <button class="btn btn-p btn-big" type="button" style="margin-bottom:8px" onclick="post('/api/press',{port:${i},btn:'on_off'})">⏻ Ein / Aus</button>
+    <div class="g2">${BTN.map(b=>`<button class="btn btn-s" type="button" onclick="post('/api/press',{port:${i},btn:'${b[0]}'})">${b[1]}</button>`).join("")}</div>
+    <div class="speed"><span>Stufe setzen</span><select class="in" id="s${i}">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option>${n}</option>`).join("")}</select>
+    <button class="btn btn-s btn-sm" type="button" onclick="post('/api/speed',{port:${i},level:$('#s${i}').value}).then(()=>toast('Stufe wird gesetzt'))">Setzen</button></div>
     </div>`).join("")
-    || '<div class="card mut">Kein Port aktiv – unter Einstellungen einschalten.</div>';
-  $("#ctl").innerHTML=s.ports.map((p,i)=>!p.enabled?"":`<div class="card"><h2>Bedienteil ${p.label} · Port ${i}</h2>
-    <div class="row"><span>Controller-LED</span>
-    <button class="btn sec" type="button" id="l${i}" onclick="post('/api/led',{port:${i},on:this.dataset.on==='1'?0:1})">–</button></div>
-    <div class="row"><span>Piep (Verbindungstest)</span>
-    <button class="btn sec" type="button" onclick="post('/api/press',{port:${i},btn:'beep'})">Piep</button></div></div>`).join("");
+    || '<div class="card"><div class="empty">Kein Port aktiv – im Tab MaxxFan einschalten.</div></div>';
+  $("#ctl").innerHTML=s.ports.map((p,i)=>!p.enabled?"":`<div class="card"><div class="ct acc">Bedienteil ${p.label} · Port ${i}</div>
+    <div class="er"><span>Controller-LED</span>
+    <button class="btn btn-s btn-sm" type="button" id="l${i}" onclick="post('/api/led',{port:${i},on:this.dataset.on==='1'?0:1})">–</button></div>
+    <div class="er"><span>Piep (Verbindungstest)</span>
+    <button class="btn btn-s btn-sm" type="button" onclick="post('/api/press',{port:${i},btn:'beep'})">Piep</button></div></div>`).join("");
 }
+function dot(id,cls){$("#"+id).className="dot "+cls}
 function poll(){fetch("/api/state").then(r=>r.json()).then(s=>{
   buildPorts(s);
   s.ports.forEach((p,i)=>{if(!p.enabled)return;
-    const h=$("#h"+i);h.className="pill"+(p.hold?" ok":"");h.textContent="Auto Hold "+(p.hold?"an":"aus");
-    const l=$("#l"+i);l.dataset.on=p.led?"1":"0";l.textContent=p.led?"An":"Aus";});
+    const h=$("#h"+i);h.className="badge"+(p.hold?" ok":"");h.textContent="Auto Hold "+(p.hold?"an":"aus");
+    const l=$("#l"+i);if(l){l.dataset.on=p.led?"1":"0";l.textContent=p.led?"An":"Aus"}});
   const st=$("#st");
-  if(!s.expander){st.className="pill bad";st.textContent="Port-Expander fehlt"}
-  else if(s.sync){st.className="pill";st.textContent="Synchronisiere…"}
-  else{st.className="pill "+(s.mqtt?"ok":"");st.textContent=s.mqtt?"MQTT verbunden":"MQTT getrennt"}
+  if(!s.expander){st.className="badge bad";st.textContent="Port-Expander fehlt"}
+  else if(s.sync){st.className="badge";st.textContent="Synchronisiere…"}
+  else{st.className="badge "+(s.mqtt?"ok":"");st.textContent=s.mqtt?"MQTT verbunden":"MQTT getrennt"}
+  dot("d-exp",s.expander?"on":"bad");dot("d-wifi",s.sta?"on":(s.ap?"warn":""));dot("d-mqtt",s.mqtt?"on":"");
   $("#info").innerHTML=[["Firmware",s.fw],["IP",s.ip],["WLAN",s.sta?s.rssi+" dBm":"nicht verbunden"],
     ["Setup-AP",s.ap?"aktiv":"aus"],["MQTT",s.mqtt?"verbunden":"getrennt"],["Port-Expander",s.expander?"OK":"nicht gefunden"],
     ["Laufzeit",Math.floor(s.uptime/3600)+" h "+Math.floor(s.uptime%3600/60)+" min"]]
-    .map(r=>`<div class="row"><span class="mut">${r[0]}</span><span>${r[1]}</span></div>`).join("");
-}).catch(()=>{$("#st").className="pill bad";$("#st").textContent="offline"})}
+    .map(r=>`<div class="info"><span class="l">${r[0]}</span><span>${r[1]}</span></div>`).join("");
+}).catch(()=>{$("#st").className="badge bad";$("#st").textContent="offline";dot("d-wifi","");dot("d-mqtt","")})}
 function loadCfg(){fetch("/api/config").then(r=>r.json()).then(c=>{
   const f=$("#f");for(const k in c){const el=f.elements[k];if(!el)continue;
     if(el.type==="checkbox")el.checked=!!c[k];else el.value=c[k];}
-  f.elements.appass.placeholder="AP: "+c.apssid;sipToggle();})}
+  f.elements.appass.placeholder="(unverändert) AP: "+c.apssid;sipToggle();}).catch(()=>toast("Fehler beim Laden der Einstellungen",true))}
 function sipToggle(){$("#ipbox").classList.toggle("hide",!$("#sip").checked)}
 $("#sip").onchange=sipToggle;
 $("#f").onsubmit=e=>{e.preventDefault();const f=e.target,d={};
   for(const el of f.elements){if(!el.name)continue;d[el.name]=el.type==="checkbox"?(el.checked?"1":"0"):el.value;}
+  if(d.appass&&d.appass.length<8){toast("AP-Passwort: mindestens 8 Zeichen",true);return}
   fetch("/api/config",{method:"POST",body:new URLSearchParams(d)}).then(r=>{
-    $("#msg").textContent=r.ok?"Gespeichert – Neustart…":"Fehler beim Speichern";});};
-function upload(){const file=$("#fw").files[0];if(!file)return;
+    if(r.ok)restarting();else toast("Fehler beim Speichern",true)}).catch(()=>toast("Keine Verbindung",true))};
+function upload(){const file=$("#fw").files[0];if(!file){toast("Erst eine .bin-Datei wählen",true);return}
   const fd=new FormData();fd.append("update",file);const x=new XMLHttpRequest();
   $("#pr").classList.remove("hide");
   x.upload.onprogress=e=>{if(e.lengthComputable)$("#pr").value=e.loaded/e.total*100};
-  x.onload=()=>{$("#umsg").textContent=x.status===200?"Erfolgreich – Neustart…":"Fehler: "+x.responseText};
+  x.onload=()=>{if(x.status===200){toast("Update erfolgreich – Neustart...");setTimeout(()=>location.reload(),12000)}else toast("Fehler: "+x.responseText,true)};
   x.open("POST","/api/update");x.send(fd);}
-poll();setInterval(poll,2000);
+loadCfg();poll();setInterval(poll,2000);
 </script></body></html>)HTML";

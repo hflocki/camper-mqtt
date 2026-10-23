@@ -1,0 +1,53 @@
+# Builds the firmware on every push / pull request. A tag "v*" (e.g. v1.2.0) also
+# creates a GitHub release with the .bin files for the web / OTA update.
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: esp32c3
+            fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: arduino/setup-arduino-cli@v2
+
+      - name: Install board package and libraries
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32@3.3.2
+          arduino-cli lib install "PubSubClient@2.8" "ArduinoJson@7.4.2" "ESP Async WebServer@3.12.1" "Async TCP@3.5.0"
+
+      - name: Compile
+        run: |
+          arduino-cli compile --fqbn "${{ matrix.fqbn }}" --output-dir build/${{ matrix.name }} _arduino/camper_maxxfan
+          cp build/${{ matrix.name }}/*.ino.bin camper-maxxfan-${{ matrix.name }}.bin
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: camper-maxxfan-${{ matrix.name }}
+          path: |
+            camper-maxxfan-${{ matrix.name }}.bin
+            build/${{ matrix.name }}/*.merged.bin
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: camper-maxxfan-${{ matrix.name }}.bin
