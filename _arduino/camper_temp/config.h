@@ -6,7 +6,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.0.0"
+#define FW_VERSION            "1.1.0"
 
 #define DEFAULT_AP_SSID       "Camper-Temp"      // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
 #define DEFAULT_AP_PASSWORD   "camptemp1234"     // Test placeholder (min. 8 characters) - change in the web UI
@@ -47,6 +47,17 @@
 #define MAX_OFFSET            10.0f  // Allowed calibration offset +/- °C
 
 // ============================================================
+// ALARMS (per sensor, set in the web UI)
+// A limit is violated for "delay" minutes -> alarm. It clears as soon as the value is back
+// inside the limit by ALARM_HYSTERESIS (no delay), so a value around the limit does not flap.
+// ============================================================
+#define ALARM_HYSTERESIS      0.5f   // °C
+#define MAX_ALARM_DELAY_MIN   240    // Max. delay in minutes
+#define ALARM_NONE            0
+#define ALARM_LOW             1
+#define ALARM_HIGH            2
+
+// ============================================================
 // TYPES
 // ============================================================
 struct TempSensorConfig {
@@ -55,6 +66,9 @@ struct TempSensorConfig {
     char name[32];         // Display name, e.g. "Fridge evaporator"
     char key[24];          // MQTT sub topic / id, e.g. "fridge_evap" -> <prefix>/fridge_evap
     float offset;          // Calibration offset in °C, added to the reading
+    float alarm_lo;        // Alarm below this value in °C, NAN = off
+    float alarm_hi;        // Alarm above this value in °C, NAN = off
+    uint16_t alarm_delay;  // Minutes the limit must be violated before the alarm is raised
 };
 
 // ============================================================
@@ -73,6 +87,9 @@ struct AppConfig {
     char mqtt_user[32];
     char mqtt_pass[32];
     char mqtt_prefix[32];
+
+    char web_user[32];     // Web UI login, empty = no login
+    char web_pass[32];
 
     uint16_t interval_s;   // Measurement interval in seconds
     uint8_t resolution;    // DS18B20 resolution in bit (9-12)
@@ -99,6 +116,9 @@ struct TempData {
     bool has_minmax;
     unsigned long last_ok; // millis() of the last valid reading
     uint32_t errors;       // Failed readings since boot
+    uint8_t alarm;         // ALARM_NONE / ALARM_LOW / ALARM_HIGH (active alarm)
+    uint8_t pending;       // Limit currently violated, waiting for the delay
+    unsigned long pending_since;
 };
 
 struct SensorData {
@@ -106,6 +126,7 @@ struct SensorData {
     uint8_t busCount;
     TempData temps[MAX_SENSORS];
     uint32_t readCount;    // Completed measurement cycles (used to detect new data)
+    uint32_t alarmSeq;     // Incremented on every alarm change (used to publish right away)
     int rssi;              // WiFi signal strength (written by wifi_manager)
     uint32_t wifi_drops;   // WiFi disconnects since boot
     char wifi_reason[32];  // Reason of the last WiFi disconnect

@@ -111,8 +111,14 @@ void loop() {
             Serial.println("[CMD] Bus scan requested, list follows with 'bus'");
         } else if (cmd == "bus") {
             tempPrintBus();
+        } else if (cmd == "noauth") {
+            // Forgotten web login: switch it off over USB
+            config.web_user[0] = '\0';
+            config.web_pass[0] = '\0';
+            saveConfig();
+            Serial.println("[CMD] Web login removed");
         } else if (cmd == "help") {
-            Serial.println("[CMD] Commands: read, scan, bus, help");
+            Serial.println("[CMD] Commands: read, scan, bus, noauth, help");
         }
     }
 

@@ -15,8 +15,15 @@
 //   <prefix>/rssi                 WiFi signal
 //   <prefix>/<id>                 temperature in °C of the sensor with this id (web UI)
 //   <prefix>/<id>/available       online / offline (sensor answers on the bus)
+//   <prefix>/<id>/alarm           ON / OFF (limit violated for the set delay, see web UI)
+//   <prefix>/alarm                ON while at least one sensor is in alarm
+//   <prefix>/alarm_text           readable text of all active alarms ("" if none), for displays
+//   <prefix>/sensors              all sensors as one JSON list for displays:
+//                                 [{"id":"fridge","name":"Fridge","t":4.31,"alarm":0}, ...]
+//                                 t = null without a valid reading, alarm 0 = none, 1 = low, 2 = high
 //
-// Home Assistant: one device "Camper Temp" with one entity per sensor.
+// Home Assistant: one device "Camper Temp" with one entity per sensor,
+// plus one alarm binary_sensor per sensor with limits and an overall alarm.
 // The unique_id uses the 1-Wire address, so renaming a sensor keeps its HA history.
 
 #define HA_NODE_ID  "camper_temp"
@@ -28,6 +35,7 @@ static unsigned long lastPublish = 0;
 static unsigned long lastReconnect = 0;
 static bool discoveryPublished = false;
 static uint32_t lastPublishedRead = 0;
+static uint32_t lastPublishedAlarm = 0;
 
 // Pending removals (deleted sensors or changed ids), filled by the web task, handled in loop()
 struct Removal { char addr[17]; char key[24]; bool entity; };
@@ -41,6 +49,14 @@ static void publishSensor(const char* name, const char* id, const char* topic, c
 static void addDeviceBlock(JsonDocument& doc);
 static void publishJson(const String& topic, JsonDocument& doc, const char* id);
 static void processRemovals();
+static void publishAlarms();
+static void publishSensorList();
+static void publishAlarmSensor(int i);
+static void publishBinary(const char* name, const char* id, const char* stateTopic, const char* icon);
+
+static bool hasLimits(const TempSensorConfig& s) {
+    return !isnan(s.alarm_lo) || !isnan(s.alarm_hi);
+}
 
 static String topic(const char* sub) {
     return String(config.mqtt_prefix) + "/" + sub;
@@ -53,7 +69,7 @@ void mqttInit() {
     }
 
     mqtt.setServer(config.mqtt_server, config.mqtt_port);
-    mqtt.setBufferSize(1024);
+    mqtt.setBufferSize(1280);   // sensor list JSON + topic
     mqtt.setKeepAlive(30);
     mqtt.setSocketTimeout(5);
 
@@ -78,10 +94,10 @@ void mqttLoop() {
 
             if (strlen(config.mqtt_user) > 0) {
                 connected = mqtt.connect(clientId.c_str(), config.mqtt_user, config.mqtt_pass,
-                                         willTopic.c_str(), 0, true, "offline");
+                                         willTopic.c_str(), 1, true, "offline");
             } else {
                 connected = mqtt.connect(clientId.c_str(),
-                                         NULL, NULL, willTopic.c_str(), 0, true, "offline");
+                                         NULL, NULL, willTopic.c_str(), 1, true, "offline");
             }
 
             if (connected) {
@@ -113,6 +129,9 @@ void mqttLoop() {
         lastPublishedRead = sensorData.readCount;
         publishStates();
     }
+
+    // Alarm changes go out right away, not only with the next reading
+    if (sensorData.alarmSeq != lastPublishedAlarm) publishAlarms();
 }
 
 bool mqttIsConnected() {
@@ -139,10 +158,13 @@ static void processRemovals() {
         if (r.key[0]) {
             mqtt.publish(topic(r.key).c_str(), "", true);
             mqtt.publish((topic(r.key) + "/available").c_str(), "", true);
+            mqtt.publish((topic(r.key) + "/alarm").c_str(), "", true);
         }
         // Empty retained discovery removes the entity from Home Assistant
         if (r.entity && r.addr[0]) {
             String configTopic = String("homeassistant/sensor/" HA_NODE_ID "/") + r.addr + "/config";
+            mqtt.publish(configTopic.c_str(), "", true);
+            configTopic = String("homeassistant/binary_sensor/" HA_NODE_ID "/") + r.addr + "_alarm/config";
             mqtt.publish(configTopic.c_str(), "", true);
         }
     }
@@ -168,14 +190,77 @@ static void publishStates() {
     itoa(sensorData.rssi, buf, 10);
     mqtt.publish(topic("rssi").c_str(), buf, true);
     mqtt.publish(topic("status").c_str(), "online", true);
+    publishAlarms();
+}
+
+// Builds the readable alarm text, e.g. "Fridge too warm: 9,2 °C (limit 8,0 °C)"
+String alarmText() {
+    String txt;
+    char v[12], l[12];
+    for (int i = 0; i < MAX_SENSORS; i++) {
+        const TempSensorConfig& s = config.sensors[i];
+        const TempData& t = sensorData.temps[i];
+        if (!s.used || t.alarm == ALARM_NONE) continue;
+        bool high = (t.alarm == ALARM_HIGH);
+        dtostrf(t.temp, 1, 1, v);
+        dtostrf(high ? s.alarm_hi : s.alarm_lo, 1, 1, l);
+        for (char* c = v; *c; c++) if (*c == '.') *c = ',';
+        for (char* c = l; *c; c++) if (*c == '.') *c = ',';
+        if (txt.length()) txt += "; ";
+        txt += s.name;
+        txt += high ? " zu warm: " : " zu kalt: ";
+        txt += v;
+        txt += " \xC2\xB0" "C (Grenze ";
+        txt += l;
+        txt += " \xC2\xB0" "C)";
+    }
+    return txt;
+}
+
+static void publishAlarms() {
+    lastPublishedAlarm = sensorData.alarmSeq;
+    bool any = false;
+    for (int i = 0; i < MAX_SENSORS; i++) {
+        if (!config.sensors[i].used) continue;
+        bool on = sensorData.temps[i].alarm != ALARM_NONE;
+        any |= on;
+        mqtt.publish((topic(config.sensors[i].key) + "/alarm").c_str(), on ? "ON" : "OFF", true);
+    }
+    mqtt.publish(topic("alarm").c_str(), any ? "ON" : "OFF", true);
+    mqtt.publish(topic("alarm_text").c_str(), alarmText().c_str(), true);
+    publishSensorList();
+}
+
+static void publishSensorList() {
+    JsonDocument doc;
+    JsonArray arr = doc.to<JsonArray>();
+    for (int i = 0; i < MAX_SENSORS; i++) {
+        const TempSensorConfig& s = config.sensors[i];
+        if (!s.used) continue;
+        const TempData& t = sensorData.temps[i];
+        JsonObject o = arr.add<JsonObject>();
+        o["id"] = (const char*)s.key;
+        o["name"] = (const char*)s.name;
+        if (t.ok) o["t"] = roundf(t.temp * 100.0f) / 100.0f; else o["t"] = nullptr;
+        o["alarm"] = t.alarm;
+    }
+    static char buffer[1024];   // 8 sensors with long names fit; static keeps it off the stack
+    size_t len = serializeJson(doc, buffer, sizeof(buffer));
+    if (len == 0 || len >= sizeof(buffer)) return;
+    mqtt.publish(topic("sensors").c_str(), buffer, true);
 }
 
 void mqttPublishDiscovery() {
     Serial.println("[MQTT] Publishing HA Discovery...");
 
     for (int i = 0; i < MAX_SENSORS; i++) {
-        if (config.sensors[i].used) publishTempSensor(i);
+        if (!config.sensors[i].used) continue;
+        publishTempSensor(i);
+        publishAlarmSensor(i);
     }
+
+    publishBinary("Temperatur-Alarm", "alarm", "alarm", "mdi:thermometer-alert");
+    publishSensor("Alarmtext", "alarm_text", "alarm_text", "", "None", "mdi:alert-circle-outline", false, true);
 
     // Device
     publishSensor("WLAN Signal", "rssi",   "rssi",   "dBm", "signal_strength", "mdi:wifi",         true,  true);
@@ -254,4 +339,39 @@ static void publishSensor(const char* name, const char* id, const char* stateTop
 
     addDeviceBlock(doc);
     publishJson(String("homeassistant/sensor/" HA_NODE_ID "/") + id + "/config", doc, id);
+}
+
+// Alarm entity of one sensor; removed again when the sensor has no limits
+static void publishAlarmSensor(int i) {
+    const TempSensorConfig& s = config.sensors[i];
+    char addr[17];
+    addrToHex(s.addr, addr);
+    String configTopic = String("homeassistant/binary_sensor/" HA_NODE_ID "/") + addr + "_alarm/config";
+
+    if (!hasLimits(s)) {
+        mqtt.publish(configTopic.c_str(), "", true);
+        return;
+    }
+
+    JsonDocument doc;
+    doc["name"] = String(s.name) + " Alarm";
+    doc["unique_id"] = String(HA_NODE_ID "_") + addr + "_alarm";
+    doc["state_topic"] = topic(s.key) + "/alarm";
+    doc["device_class"] = "problem";
+    doc["icon"] = "mdi:thermometer-alert";
+    doc["availability_topic"] = topic("status");
+    addDeviceBlock(doc);
+    publishJson(configTopic, doc, s.key);
+}
+
+static void publishBinary(const char* name, const char* id, const char* stateTopic, const char* icon) {
+    JsonDocument doc;
+    doc["name"] = name;
+    doc["unique_id"] = String(HA_NODE_ID "_") + id;
+    doc["state_topic"] = topic(stateTopic);
+    doc["device_class"] = "problem";
+    doc["icon"] = icon;
+    doc["availability_topic"] = topic("status");
+    addDeviceBlock(doc);
+    publishJson(String("homeassistant/binary_sensor/" HA_NODE_ID "/") + id + "/config", doc, id);
 }

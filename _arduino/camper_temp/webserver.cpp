@@ -32,6 +32,18 @@ static void handleApiGetConfig(AsyncWebServerRequest* request);
 static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total);
 static void handleApiRestart(AsyncWebServerRequest* request);
 
+// Web UI login (HTTP basic auth). Empty user = no login.
+static bool authOk(AsyncWebServerRequest* request) {
+    if (config.web_user[0] == '\0') return true;
+    return request->authenticate(config.web_user, config.web_pass);
+}
+
+static bool auth(AsyncWebServerRequest* request) {
+    if (authOk(request)) return true;
+    request->requestAuthentication();
+    return false;
+}
+
 // ============================================================
 // Helpers
 // ============================================================
@@ -48,6 +60,8 @@ static void setDefaults() {
     memset(config.mqtt_user, 0, sizeof(config.mqtt_user));
     memset(config.mqtt_pass, 0, sizeof(config.mqtt_pass));
     strlcpy(config.mqtt_prefix, DEFAULT_MQTT_PREFIX, sizeof(config.mqtt_prefix));
+    memset(config.web_user, 0, sizeof(config.web_user));
+    memset(config.web_pass, 0, sizeof(config.web_pass));
 
     config.interval_s = DEFAULT_INTERVAL_S;
     config.resolution = DEFAULT_RESOLUTION;
@@ -66,7 +80,8 @@ static bool isValidKey(const char* k) {
         char c = k[i];
         if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-')) return false;
     }
-    return strcmp(k, "status") != 0 && strcmp(k, "rssi") != 0 && strcmp(k, "cmd") != 0;
+    return strcmp(k, "status") != 0 && strcmp(k, "rssi") != 0 && strcmp(k, "cmd") != 0 &&
+           strcmp(k, "alarm") != 0 && strcmp(k, "alarm_text") != 0 && strcmp(k, "sensors") != 0;
 }
 
 // Parses the "sensors" array of the web UI / config file into out[].
@@ -92,6 +107,18 @@ static const char* parseSensors(JsonArrayConst arr, TempSensorConfig* out) {
         if (off < -MAX_OFFSET || off > MAX_OFFSET) return "Offset must be -10 ... +10";
         s.offset = off;
 
+        // Alarm limits: null / missing = off
+        s.alarm_lo = NAN;
+        s.alarm_hi = NAN;
+        if (isNumber(item["lo"])) s.alarm_lo = item["lo"].as<float>();
+        if (isNumber(item["hi"])) s.alarm_hi = item["hi"].as<float>();
+        if (!isnan(s.alarm_lo) && (s.alarm_lo < -55 || s.alarm_lo > 125)) return "Alarm limit must be -55 ... 125";
+        if (!isnan(s.alarm_hi) && (s.alarm_hi < -55 || s.alarm_hi > 125)) return "Alarm limit must be -55 ... 125";
+        if (!isnan(s.alarm_lo) && !isnan(s.alarm_hi) && s.alarm_lo >= s.alarm_hi) return "Lower limit must be below upper limit";
+        int dl = item["delay"] | 0;
+        if (dl < 0 || dl > MAX_ALARM_DELAY_MIN) return "Alarm delay must be 0-240 min";
+        s.alarm_delay = (uint16_t)dl;
+
         for (int j = 0; j < n; j++) {
             if (memcmp(out[j].addr, s.addr, 8) == 0) return "Sensor added twice";
             if (strcmp(out[j].key, s.key) == 0) return "Id used twice";
@@ -113,6 +140,10 @@ static void sensorsToJson(JsonArray arr) {
         o["name"] = (const char*)s.name;
         o["key"] = (const char*)s.key;
         o["offset"] = s.offset;
+        // NAN would be written as invalid JSON, so "off" is sent as null
+        if (isnan(s.alarm_lo)) o["lo"] = nullptr; else o["lo"] = s.alarm_lo;
+        if (isnan(s.alarm_hi)) o["hi"] = nullptr; else o["hi"] = s.alarm_hi;
+        o["delay"] = s.alarm_delay;
     }
 }
 
@@ -166,12 +197,15 @@ void webserverInit() {
     loadConfig();
 
     ws.onEvent(onWsEvent);
+    // Browsers send the basic auth credentials of the page along with the WebSocket upgrade
+    ws.handleHandshake([](AsyncWebServerRequest* request) { return authOk(request); });
     server.addHandler(&ws);
 
     // Serve ONLY index.html. Serving the whole filesystem would expose /config.json
     // (WiFi and MQTT credentials) to everybody in the network.
     // The web UI is stored gzip compressed (about 1/4 of the size).
     server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (!auth(request)) return;
         if (fsReady && LittleFS.exists("/index.html.gz")) {
             AsyncWebServerResponse* response = request->beginResponse(LittleFS, "/index.html.gz", "text/html");
             response->addHeader("Content-Encoding", "gzip");
@@ -186,17 +220,27 @@ void webserverInit() {
     });
 
     server.on("/api/config", HTTP_GET, handleApiGetConfig);
-    server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL, handleApiSaveConfig);
+    server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL,
+              [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+                  // Checked per chunk: the body handler runs before the request handler
+                  if (!authOk(request)) {
+                      if (index + len == total) request->requestAuthentication();
+                      return;
+                  }
+                  handleApiSaveConfig(request, data, len, index, total);
+              });
     server.on("/api/restart", HTTP_POST, handleApiRestart);
 
     // Search the 1-Wire bus again (the search itself runs in loop())
     server.on("/api/scan", HTTP_POST, [](AsyncWebServerRequest* request) {
+        if (!auth(request)) return;
         tempRequestScan();
         request->send(200, "application/json", "{\"status\":\"ok\"}");
     });
 
     // Reset min/max of all sensors
     server.on("/api/minmax/reset", HTTP_POST, [](AsyncWebServerRequest* request) {
+        if (!auth(request)) return;
         minMaxReset = true;
         request->send(200, "application/json", "{\"status\":\"ok\"}");
     });
@@ -265,6 +309,7 @@ void wsSendSensorData() {
         else { o["min"] = nullptr; o["max"] = nullptr; }
         o["age"] = t.last_ok ? (long)((now - t.last_ok) / 1000) : -1;
         o["errors"] = t.errors;
+        o["alarm"] = t.alarm;
     }
 
     // Everything found on the bus (raw values without offset), for assigning new sensors
@@ -286,8 +331,9 @@ void wsSendSensorData() {
     doc["wifi_reason"] = (const char*)sensorData.wifi_reason;
     doc["wifi"] = getWiFiStateString();
     doc["mqtt"] = mqttIsConnected();
+    doc["alarm_text"] = alarmText();
 
-    static char buffer[2048];   // static: keeps it off the stack
+    static char buffer[3072];   // static: keeps it off the stack
     size_t len = serializeJson(doc, buffer, sizeof(buffer));
     if (len == 0 || len >= sizeof(buffer)) return;
     ws.textAll(buffer, len);
@@ -305,6 +351,7 @@ static void onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
 // ============================================================
 
 static void handleApiGetConfig(AsyncWebServerRequest* request) {
+    if (!auth(request)) return;
     JsonDocument doc;
 
     // Passwords are never sent back to the browser
@@ -319,6 +366,8 @@ static void handleApiGetConfig(AsyncWebServerRequest* request) {
     doc["mqtt_user"] = (const char*)config.mqtt_user;
     doc["mqtt_pass_set"] = strlen(config.mqtt_pass) > 0;
     doc["mqtt_prefix"] = (const char*)config.mqtt_prefix;
+    doc["web_user"] = (const char*)config.web_user;
+    doc["web_pass_set"] = strlen(config.web_pass) > 0;
     doc["version"] = FW_VERSION;
     doc["pin"] = ONEWIRE_PIN;
     doc["max_sensors"] = MAX_SENSORS;
@@ -383,6 +432,12 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
     int newRes = hasRes ? doc["resolution"].as<int>() : 0;
     if (hasRes && (newRes < 9 || newRes > 12)) { sendError(request, "Resolution must be 9-12 bit"); return; }
 
+    // A login needs a password: either sent now or already stored
+    if (doc["web_user"].is<const char*>() && doc["web_user"].as<const char*>()[0]) {
+        const char* wp = doc["web_pass"] | "";
+        if (wp[0] == '\0' && config.web_pass[0] == '\0') { sendError(request, "Login needs a password"); return; }
+    }
+
     if (doc["mqtt_prefix"].is<const char*>()) {
         const char* p = doc["mqtt_prefix"].as<const char*>();
         if (p[0] && (strchr(p, '#') || strchr(p, '+') || p[strlen(p) - 1] == '/')) {
@@ -409,6 +464,9 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
     copyIfPresent(doc, "mqtt_user",   config.mqtt_user,   sizeof(config.mqtt_user),   false);
     copyIfPresent(doc, "mqtt_pass",   config.mqtt_pass,   sizeof(config.mqtt_pass),   true);
     copyIfPresent(doc, "mqtt_prefix", config.mqtt_prefix, sizeof(config.mqtt_prefix), true);
+    copyIfPresent(doc, "web_user",    config.web_user,    sizeof(config.web_user),    false);
+    copyIfPresent(doc, "web_pass",    config.web_pass,    sizeof(config.web_pass),    true);
+    if (config.web_user[0] == '\0') config.web_pass[0] = '\0';   // No user = login off
 
     // WiFi TX power and AP mode take effect after the restart triggered by the web UI
     if (hasTx) config.wifi_tx_power = (int8_t)doc["wifi_tx_power"].as<int>();
@@ -436,6 +494,7 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
 }
 
 static void handleApiRestart(AsyncWebServerRequest* request) {
+    if (!auth(request)) return;
     request->send(200, "application/json", "{\"status\":\"restarting\"}");
     // Do not block the async web task: restart from webserverLoop() instead
     restartPending = true;
@@ -479,6 +538,9 @@ void loadConfig() {
     strlcpy(config.mqtt_user,   doc["mqtt_user"]   | "",                  sizeof(config.mqtt_user));
     strlcpy(config.mqtt_pass,   doc["mqtt_pass"]   | "",                  sizeof(config.mqtt_pass));
     strlcpy(config.mqtt_prefix, doc["mqtt_prefix"] | DEFAULT_MQTT_PREFIX, sizeof(config.mqtt_prefix));
+    strlcpy(config.web_user,    doc["web_user"]    | "",                  sizeof(config.web_user));
+    strlcpy(config.web_pass,    doc["web_pass"]    | "",                  sizeof(config.web_pass));
+    if (config.web_user[0] == '\0') config.web_pass[0] = '\0';
 
     int iv = doc["interval"] | DEFAULT_INTERVAL_S;
     config.interval_s = (iv >= 5 && iv <= 600) ? (uint16_t)iv : DEFAULT_INTERVAL_S;
@@ -508,6 +570,8 @@ void saveConfig() {
     doc["mqtt_user"] = (const char*)config.mqtt_user;
     doc["mqtt_pass"] = (const char*)config.mqtt_pass;
     doc["mqtt_prefix"] = (const char*)config.mqtt_prefix;
+    doc["web_user"] = (const char*)config.web_user;
+    doc["web_pass"] = (const char*)config.web_pass;
 
     doc["interval"] = config.interval_s;
     doc["resolution"] = config.resolution;

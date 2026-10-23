@@ -86,6 +86,49 @@ static void resetData(int i) {
     t.has_minmax = false;
     t.last_ok = 0;
     t.errors = 0;
+    if (t.alarm != ALARM_NONE) sensorData.alarmSeq++;   // Alarm disappears: publish the change
+    t.alarm = ALARM_NONE;
+    t.pending = ALARM_NONE;
+    t.pending_since = 0;
+}
+
+// Evaluates the limits of one sensor after a valid reading.
+// Raise: limit violated continuously for alarm_delay minutes.
+// Clear: value back inside the limit by ALARM_HYSTERESIS (right away).
+// A failed reading leaves an active alarm as it is (the sensor shows as unavailable instead).
+static void evalAlarm(int i) {
+    const TempSensorConfig& s = config.sensors[i];
+    TempData& t = sensorData.temps[i];
+    uint8_t before = t.alarm;
+
+    bool hasLo = !isnan(s.alarm_lo);
+    bool hasHi = !isnan(s.alarm_hi);
+
+    // Clear an active alarm (or one whose limit was removed in the web UI)
+    if (t.alarm == ALARM_HIGH && (!hasHi || t.temp <= s.alarm_hi - ALARM_HYSTERESIS)) t.alarm = ALARM_NONE;
+    if (t.alarm == ALARM_LOW  && (!hasLo || t.temp >= s.alarm_lo + ALARM_HYSTERESIS)) t.alarm = ALARM_NONE;
+
+    uint8_t want = ALARM_NONE;
+    if (hasHi && t.temp > s.alarm_hi) want = ALARM_HIGH;
+    else if (hasLo && t.temp < s.alarm_lo) want = ALARM_LOW;
+
+    if (want == ALARM_NONE || want == t.alarm) {
+        t.pending = ALARM_NONE;
+    } else if (t.pending != want) {
+        t.pending = want;
+        t.pending_since = millis();
+    }
+    if (t.pending != ALARM_NONE &&
+        millis() - t.pending_since >= (unsigned long)s.alarm_delay * 60000UL) {
+        t.alarm = t.pending;
+        t.pending = ALARM_NONE;
+    }
+
+    if (t.alarm != before) {
+        sensorData.alarmSeq++;
+        Serial.printf("[Alarm] %s: %s (%.2f C)\n", s.name,
+            t.alarm == ALARM_HIGH ? "too high" : t.alarm == ALARM_LOW ? "too low" : "cleared", t.temp);
+    }
 }
 
 void tempInit() {
@@ -143,6 +186,7 @@ static void readAll() {
             if (v < t.min) t.min = v;
             if (v > t.max) t.max = v;
         }
+        evalAlarm(i);
     }
     sensorData.readCount++;
 }

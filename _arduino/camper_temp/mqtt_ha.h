@@ -16,4 +16,7 @@ void mqttRequestDiscovery();
 // and retained topics are removed on the next loop
 void mqttQueueRemoval(const char* addrHex, const char* oldKey, bool removeEntity);
 
+// Readable text of all active alarms, "" if none
+String alarmText();
+
 #endif // MQTT_HA_H

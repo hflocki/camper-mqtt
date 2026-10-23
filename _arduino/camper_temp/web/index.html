@@ -74,6 +74,11 @@ body {
 .temp-state { font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; }
 .temp-tile.error .temp-value { color: var(--text-muted); }
 .temp-tile.error .temp-state { color: var(--danger); }
+.temp-tile.alarm { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger) inset; }
+.temp-tile.alarm .temp-state { color: var(--danger); font-weight: 600; }
+.alarm-banner { border-color: var(--danger); background: rgba(255,71,87,0.12); color: var(--danger);
+    font-size: 0.85rem; font-weight: 600; line-height: 1.4; }
+.sensor-alarm { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 
 /* Values */
 .values-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -174,6 +179,7 @@ code { font-family: ui-monospace, Menlo, monospace; }
 
     <!-- LIVE TAB -->
     <div class="tab-content active" id="tab-live">
+        <div class="card alarm-banner hidden" id="alarm-banner"></div>
         <div class="temps" id="live-temps"></div>
 
         <div class="card hidden" id="live-none">
@@ -191,7 +197,8 @@ code { font-family: ui-monospace, Menlo, monospace; }
             <div class="card-title accent">Sensoren</div>
             <div id="sensor-list"></div>
             <div class="empty hidden" id="sensor-none">Noch keine Sensoren. Unten aus der Liste der gefundenen Geräte übernehmen.</div>
-            <div class="form-hint">Die ID ist das MQTT-Topic: <code id="topic-example">camper/temp/&lt;id&gt;</code>. Erlaubt sind a-z, 0-9, _ und -. Der Offset wird zum Messwert addiert.</div>
+            <div class="form-hint">Die ID ist das MQTT-Topic: <code id="topic-example">camper/temp/&lt;id&gt;</code>. Erlaubt sind a-z, 0-9, _ und -. Der Offset wird zum Messwert addiert.<br>
+                Alarm: Wert liegt länger als die Verzögerung unter bzw. über der Grenze. Er geht weg, sobald der Wert 0,5 °C zurück im Bereich ist. Leeres Feld = kein Alarm. Topic <code>&lt;prefix&gt;/&lt;id&gt;/alarm</code>, Text für Displays unter <code>&lt;prefix&gt;/alarm_text</code>, alle Werte als JSON unter <code>&lt;prefix&gt;/sensors</code>.</div>
             <div class="btn-row"><button class="btn btn-primary" onclick="saveSensors()">💾 Sensoren speichern</button></div>
         </div>
 
@@ -240,6 +247,14 @@ code { font-family: ui-monospace, Menlo, monospace; }
                 <label>Topic-Prefix</label><input type="text" id="cfg-mqtt-prefix" value="camper/temp">
                 <div class="form-hint">Werte unter <code>&lt;prefix&gt;/&lt;id&gt;</code>, Status unter <code>&lt;prefix&gt;/status</code></div>
             </div>
+        </div>
+        <div class="card">
+            <div class="card-title">Web-Oberfläche Login</div>
+            <div class="form-row">
+                <div class="form-group"><label>Benutzer</label><input type="text" id="cfg-web-user" autocomplete="off" autocapitalize="none"></div>
+                <div class="form-group"><label>Passwort</label><input type="password" id="cfg-web-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            </div>
+            <div class="form-hint">Leerer Benutzer = kein Login. Login vergessen: über USB den Befehl <code>noauth</code> im seriellen Monitor senden.</div>
         </div>
         <div class="btn-row"><button class="btn btn-primary" onclick="saveSetup()">💾 Speichern</button></div>
     </div>
@@ -365,6 +380,7 @@ function renderLive(list) {
         const tile = $('tile-' + s.addr);
         if (!tile) continue;
         tile.classList.toggle('error', !s.ok);
+        tile.classList.toggle('alarm', !!s.alarm);
         tile.style.setProperty('--tile-color', tempColor(s.ok ? s.temp : null));
         tile.querySelector('.tv').textContent = s.ok ? fmt(s.temp) : '--';
         tile.querySelector('.tmin').textContent = fmt(s.min);
@@ -373,6 +389,8 @@ function renderLive(list) {
         if (!s.present) state = 'Nicht am Bus gefunden';
         else if (!s.ok) state = 'Keine gültige Messung' + (s.age >= 0 ? ' · letzter Wert ' + formatAge(s.age) : '');
         else state = formatAge(s.age);
+        if (s.alarm === 2) state = '⚠ Zu warm · ' + state;
+        else if (s.alarm === 1) state = '⚠ Zu kalt · ' + state;
         tile.querySelector('.temp-state').textContent = state;
     }
 }
@@ -388,6 +406,8 @@ function updateLiveData(d) {
     if (firstData) renderSensors();   // "nicht gefunden" badges need the bus list
 
     renderLive(list);
+    $('alarm-banner').textContent = d.alarm_text ? '⚠ ' + d.alarm_text : '';
+    $('alarm-banner').classList.toggle('hidden', !d.alarm_text);
     $('live-none').classList.toggle('hidden', list.length > 0);
     $('live-actions').classList.toggle('hidden', list.length === 0);
     const n = (d.bus || []).length;
@@ -434,6 +454,11 @@ function renderSensors() {
                 <div class="form-group"><label>ID (Topic)</label><input type="text" maxlength="23" value="${esc(s.key)}" autocapitalize="none" spellcheck="false" oninput="sensors[${i}].key=this.value.toLowerCase()"></div>
                 <div class="form-group"><label>Offset °C</label><input type="number" step="0.1" min="-10" max="10" value="${s.offset}" oninput="sensors[${i}].offset=parseFloat(this.value)||0"></div>
             </div>
+            <div class="sensor-alarm">
+                <div class="form-group"><label>Alarm unter °C</label><input type="number" step="0.5" value="${s.lo ?? ''}" placeholder="aus" oninput="sensors[${i}].lo=numOrNull(this.value)"></div>
+                <div class="form-group"><label>Alarm über °C</label><input type="number" step="0.5" value="${s.hi ?? ''}" placeholder="aus" oninput="sensors[${i}].hi=numOrNull(this.value)"></div>
+                <div class="form-group"><label>Verzögerung min</label><input type="number" step="1" min="0" max="240" value="${s.delay}" oninput="sensors[${i}].delay=parseInt(this.value)||0"></div>
+            </div>
             <div class="sensor-foot">
                 <div class="form-hint" style="margin:0"><code>${esc(prefix)}/${esc(s.key)}</code></div>
                 <button class="btn btn-danger btn-small" onclick="removeSensor(${i})">Entfernen</button>
@@ -441,6 +466,8 @@ function renderSensors() {
         </div>`;
     }).join('');
 }
+
+const numOrNull = (v) => (v === '' || isNaN(parseFloat(v))) ? null : parseFloat(v);
 
 function removeSensor(i) {
     sensors.splice(i, 1);
@@ -460,7 +487,7 @@ function addSensor(addr) {
     if (sensors.length >= maxSensors) { showToast('Maximal ' + maxSensors + ' Sensoren', true); return; }
     if (sensors.some(s => s.addr === addr)) return;
     const key = nextKey();
-    sensors.push({addr, name: 'Sensor ' + key.slice(4), key, offset: 0, isNew: true});
+    sensors.push({addr, name: 'Sensor ' + key.slice(4), key, offset: 0, lo: null, hi: null, delay: 15, isNew: true});
     renderSensors();
     lastBusSig = '';
     showToast('Hinzugefügt – Name vergeben und speichern');
@@ -530,7 +557,9 @@ async function loadSetup() {
         $('cfg-interval').value = cfg.interval || 10;
         $('cfg-resolution').value = String(cfg.resolution || 12);
         maxSensors = cfg.max_sensors || 8;
-        sensors = (cfg.sensors || []).map(s => ({addr: s.addr, name: s.name, key: s.key, offset: s.offset || 0}));
+        sensors = (cfg.sensors || []).map(s => ({addr: s.addr, name: s.name, key: s.key, offset: s.offset || 0,
+            lo: s.lo ?? null, hi: s.hi ?? null, delay: s.delay ?? 15}));
+        $('cfg-web-user').value = cfg.web_user || '';
         renderSensors();
         lastBusSig = '';
     } catch (e) {
@@ -544,12 +573,15 @@ async function saveSensors() {
         s.name = (s.name || '').trim();
         s.key = (s.key || '').trim();
         if (!s.name) { showToast('Jeder Sensor braucht einen Namen', true); return; }
-        if (!keyRe.test(s.key) || ['status', 'rssi', 'cmd'].includes(s.key)) { showToast('Ungültige ID: ' + s.key, true); return; }
+        if (!keyRe.test(s.key) || ['status', 'rssi', 'cmd', 'alarm', 'alarm_text', 'sensors'].includes(s.key)) { showToast('Ungültige ID: ' + s.key, true); return; }
         if (sensors.filter(x => x.key === s.key).length > 1) { showToast('ID doppelt: ' + s.key, true); return; }
         if (Math.abs(s.offset) > 10) { showToast('Offset max. ±10 °C', true); return; }
+        if (s.lo !== null && s.hi !== null && s.lo >= s.hi) { showToast(s.name + ': untere Grenze muss unter der oberen liegen', true); return; }
+        if (!(s.delay >= 0 && s.delay <= 240)) { showToast('Verzögerung 0-240 min', true); return; }
     }
     try {
-        await postConfig({sensors: sensors.map(s => ({addr: s.addr, name: s.name, key: s.key, offset: s.offset}))});
+        await postConfig({sensors: sensors.map(s => ({addr: s.addr, name: s.name, key: s.key, offset: s.offset,
+            lo: s.lo, hi: s.hi, delay: s.delay}))});
         sensors.forEach(s => delete s.isNew);
         renderSensors();
         lastBusSig = '';
@@ -598,6 +630,9 @@ async function saveSetup() {
     };
     const pass = $('cfg-mqtt-pass').value;
     if (pass) cfg.mqtt_pass = pass;
+    cfg.web_user = $('cfg-web-user').value.trim();
+    const webPass = $('cfg-web-pass').value;
+    if (webPass) cfg.web_pass = webPass;
     try {
         await postConfig(cfg);
         showToast('Gespeichert – Neustart...');
