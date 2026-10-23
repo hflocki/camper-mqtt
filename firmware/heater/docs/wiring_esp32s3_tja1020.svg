@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900" font-family="DejaVu Sans, Arial, sans-serif">
+  <rect width="1400" height="900" fill="#ffffff"/>
+  <text x="40" y="48" font-size="28" font-weight="bold" fill="#111">Truma LIN-Slave: ESP32-S3-DevKitC-1 + TJA1020-Modul (Lochraster)</text>
+  <text x="40" y="78" font-size="16" fill="#555">CP Plus bleibt Master. Der ESP hängt parallel am LIN-Bus. Alle Massen verbunden.</text>
+
+  <!-- ===== wires (drawn first, under the boxes) ===== -->
+  <!-- 12 V raw: source -> fuse -> diode -->
+  <g stroke="#d62728" stroke-width="5" fill="none">
+    <line x1="230" y1="190" x2="300" y2="190"/>
+    <line x1="370" y1="190" x2="420" y2="190"/>
+    <!-- protected 12 V rail -->
+    <line x1="490" y1="190" x2="760" y2="190"/>
+    <line x1="560" y1="190" x2="560" y2="230"/>
+    <line x1="640" y1="190" x2="640" y2="230"/>
+    <!-- to Traco Vin -->
+    <line x1="760" y1="190" x2="790" y2="190"/>
+    <!-- to TJA1020 12V -->
+    <polyline points="520,190 520,560 600,560"/>
+  </g>
+  <!-- 5 V -->
+  <g stroke="#ff7f0e" stroke-width="5" fill="none">
+    <polyline points="970,190 1040,190 1040,230 1090,230"/>
+  </g>
+  <!-- 3V3 -->
+  <g stroke="#c2185b" stroke-width="4" fill="none">
+    <polyline points="1090,290 1010,290 1010,410"/>
+    <polyline points="1010,470 1010,500"/>
+    <polyline points="1010,290 960,290 960,650 880,650"/>
+  </g>
+  <!-- TX GPIO17 -> module TX -->
+  <polyline points="1090,350 1050,350 1050,590 880,590" stroke="#2ca02c" stroke-width="4" fill="none"/>
+  <!-- RX module -> GPIO18 -->
+  <polyline points="880,620 1010,620 1010,500 1030,500 1030,380 1090,380" stroke="#17becf" stroke-width="4" fill="none"/>
+  <!-- LIN -->
+  <polyline points="600,590 300,590 300,640 230,640" stroke="#1f5fbf" stroke-width="5" fill="none"/>
+  <!-- GND: every symbol is the same common ground -->
+  <g stroke="#111" stroke-width="5" fill="none">
+    <polyline points="230,250 260,250 260,262"/>
+    <line x1="560" y1="300" x2="560" y2="318"/>
+    <line x1="640" y1="300" x2="640" y2="318"/>
+    <line x1="880" y1="240" x2="880" y2="262"/>
+    <polyline points="600,620 570,620 570,662"/>
+    <polyline points="880,680 920,680 920,712"/>
+    <polyline points="1280,260 1320,260 1320,272"/>
+    <polyline points="230,670 260,670 260,692"/>
+  </g>
+  <g stroke="#111" stroke-width="3"><line x1="260" y1="262" x2="260" y2="276"/><line x1="246" y1="276" x2="274" y2="276"/><line x1="251" y1="282" x2="269" y2="282"/><line x1="256" y1="288" x2="264" y2="288"/></g>
+  <g stroke="#111" stroke-width="3"><line x1="560" y1="318" x2="560" y2="332"/><line x1="546" y1="332" x2="574" y2="332"/><line x1="551" y1="338" x2="569" y2="338"/><line x1="556" y1="344" x2="564" y2="344"/></g>
+  <g stroke="#111" stroke-width="3"><line x1="640" y1="318" x2="640" y2="332"/><line x1="626" y1="332" x2="654" y2="332"/><line x1="631" y1="338" x2="649" y2="338"/><line x1="636" y1="344" x2="644" y2="344"/></g>
+  <g stroke="#111" stroke-width="3"><line x1="880" y1="262" x2="880" y2="276"/><line x1="866" y1="276" x2="894" y2="276"/><line x1="871" y1="282" x2="889" y2="282"/><line x1="876" y1="288" x2="884" y2="288"/></g>
+  <g stroke="#111" stroke-width="3"><line x1="570" y1="662" x2="570" y2="676"/><line x1="556" y1="676" x2="584" y2="676"/><line x1="561" y1="682" x2="579" y2="682"/><line x1="566" y1="688" x2="574" y2="688"/></g>
+  <g stroke="#111" stroke-width="3"><line x1="920" y1="712" x2="920" y2="726"/><line x1="906" y1="726" x2="934" y2="726"/><line x1="911" y1="732" x2="929" y2="732"/><line x1="916" y1="738" x2="924" y2="738"/></g>
+  <g stroke="#111" stroke-width="3"><line x1="1320" y1="272" x2="1320" y2="286"/><line x1="1306" y1="286" x2="1334" y2="286"/><line x1="1311" y1="292" x2="1329" y2="292"/><line x1="1316" y1="298" x2="1324" y2="298"/></g>
+  <g stroke="#111" stroke-width="3"><line x1="260" y1="692" x2="260" y2="706"/><line x1="246" y1="706" x2="274" y2="706"/><line x1="251" y1="712" x2="269" y2="712"/><line x1="256" y1="718" x2="264" y2="718"/></g>
+  <g fill="#d62728"><circle cx="520" cy="190" r="6"/><circle cx="560" cy="190" r="6"/><circle cx="640" cy="190" r="6"/></g>
+  <g fill="#c2185b"><circle cx="1010" cy="290" r="6"/></g>
+  <g fill="#17becf"><circle cx="1010" cy="500" r="6"/></g>
+
+  <!-- ===== components ===== -->
+  <!-- 12 V source -->
+  <rect x="40" y="150" width="190" height="130" rx="10" fill="#fdecea" stroke="#d62728" stroke-width="2"/>
+  <text x="55" y="180" font-size="18" font-weight="bold">12 V Bordnetz</text>
+  <text x="55" y="203" font-size="14" fill="#444">z. B. Versorgung</text>
+  <text x="55" y="221" font-size="14" fill="#444">des CP Plus</text>
+  <text x="200" y="196" font-size="15" font-weight="bold" fill="#d62728">+</text>
+  <text x="196" y="256" font-size="15" font-weight="bold">GND</text>
+
+  <!-- F1 -->
+  <rect x="300" y="172" width="70" height="36" rx="6" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="335" y="196" font-size="15" text-anchor="middle" font-weight="bold">F1</text>
+  <text x="335" y="232" font-size="13" text-anchor="middle" fill="#444">1 A</text>
+  <!-- D1 -->
+  <rect x="420" y="172" width="70" height="36" rx="6" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="455" y="196" font-size="15" text-anchor="middle" font-weight="bold">D1 ▶|</text>
+  <text x="455" y="232" font-size="13" text-anchor="middle" fill="#444">1N5819</text>
+  <text x="455" y="249" font-size="13" text-anchor="middle" fill="#444">Verpolschutz</text>
+  <!-- D2 TVS -->
+  <rect x="525" y="230" width="70" height="70" rx="6" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="560" y="262" font-size="15" text-anchor="middle" font-weight="bold">D2</text>
+  <text x="560" y="282" font-size="12" text-anchor="middle" fill="#444">P6KE24A</text>
+  <!-- C1 -->
+  <rect x="605" y="230" width="70" height="70" rx="6" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="640" y="262" font-size="15" text-anchor="middle" font-weight="bold">C1</text>
+  <text x="640" y="282" font-size="12" text-anchor="middle" fill="#444">10 µF 50 V</text>
+  <text x="600" y="174" font-size="13" fill="#d62728">+12 V geschützt</text>
+
+  <!-- Traco -->
+  <rect x="790" y="150" width="180" height="90" rx="10" fill="#fff4e5" stroke="#ff7f0e" stroke-width="2"/>
+  <text x="880" y="178" font-size="16" text-anchor="middle" font-weight="bold">Traco TSR 1-2450</text>
+  <text x="880" y="198" font-size="13" text-anchor="middle" fill="#444">12 V → 5 V / 1 A</text>
+  <text x="798" y="226" font-size="12" fill="#444">Vin</text>
+  <text x="866" y="234" font-size="12" fill="#444">GND</text>
+  <text x="932" y="226" font-size="12" fill="#444">Vout</text>
+
+  <!-- ESP32-S3 -->
+  <rect x="1090" y="200" width="190" height="230" rx="10" fill="#eef4ff" stroke="#1f5fbf" stroke-width="2"/>
+  <text x="1185" y="160" font-size="17" text-anchor="middle" font-weight="bold">ESP32-S3-DevKitC-1</text>
+  <text x="1185" y="182" font-size="13" text-anchor="middle" fill="#444">N8R8</text>
+  <text x="1100" y="236" font-size="15">5V</text>
+  <text x="1100" y="266" font-size="15">GND</text>
+  <text x="1100" y="296" font-size="15">3V3</text>
+  <text x="1100" y="356" font-size="15">GPIO17 (TX)</text>
+  <text x="1100" y="386" font-size="15">GPIO18 (RX)</text>
+
+  <!-- R1 pull-up -->
+  <rect x="985" y="410" width="50" height="60" rx="6" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="1010" y="436" font-size="14" text-anchor="middle" font-weight="bold">R1</text>
+  <text x="1010" y="455" font-size="11" text-anchor="middle" fill="#444">10 kΩ</text>
+
+  <!-- TJA1020 module -->
+  <rect x="600" y="520" width="280" height="190" rx="10" fill="#f3f3f3" stroke="#333" stroke-width="2"/>
+  <text x="740" y="508" font-size="17" text-anchor="middle" font-weight="bold">LIN-Modul TJA1020 / TJA1021</text>
+  <text x="610" y="566" font-size="15">12V</text>
+  <text x="610" y="596" font-size="15">LIN</text>
+  <text x="610" y="626" font-size="15">GND</text>
+  <text x="610" y="656" font-size="15" fill="#888">INH (frei)</text>
+  <text x="870" y="596" font-size="15" text-anchor="end">TX</text>
+  <text x="870" y="626" font-size="15" text-anchor="end">RX</text>
+  <text x="870" y="656" font-size="15" text-anchor="end">SLP</text>
+  <text x="870" y="686" font-size="15" text-anchor="end">GND</text>
+  <text x="740" y="700" font-size="12" text-anchor="middle" fill="#b00">Master-Jumper OFFEN</text>
+
+  <!-- RJ12 -->
+  <rect x="40" y="600" width="190" height="110" rx="10" fill="#e8f0fb" stroke="#1f5fbf" stroke-width="2"/>
+  <text x="55" y="628" font-size="17" font-weight="bold">RJ12 zum Bus</text>
+  <text x="140" y="646" font-size="14">LIN (Pin 3)</text>
+  <text x="140" y="676" font-size="14">GND (Pin 5)</text>
+  <text x="55" y="700" font-size="12" fill="#444">Pins vorher messen</text>
+
+  <!-- notes -->
+  <g font-size="14" fill="#333">
+    <text x="300" y="842">• SLP an 3V3: Transceiver wach. • R1: Pull-up für das Open-Drain-RX. • Am RX des Moduls dürfen nie 5 V anliegen.</text>
+    <text x="300" y="866">• Firmware: BOARD_ESP32S3_GENERIC (UART1, TX 17, RX 18). • GPIO 35–37 (PSRAM), 19/20 (USB), 0/3/45/46 nicht verwenden.</text>
+  </g>
+  <g font-size="13">
+    <rect x="40" y="740" width="16" height="6" fill="#d62728"/><text x="64" y="747">12 V</text>
+    <rect x="110" y="740" width="16" height="6" fill="#ff7f0e"/><text x="134" y="747">5 V</text>
+    <rect x="40" y="760" width="16" height="6" fill="#c2185b"/><text x="64" y="767">3,3 V</text>
+    <rect x="110" y="760" width="16" height="6" fill="#1f5fbf"/><text x="134" y="767">LIN</text>
+    <rect x="40" y="780" width="16" height="6" fill="#2ca02c"/><text x="64" y="787">TX</text>
+    <rect x="110" y="780" width="16" height="6" fill="#17becf"/><text x="134" y="787">RX</text>
+    <g stroke="#111" stroke-width="2"><line x1="48" y1="800" x2="48" y2="808"/><line x1="40" y1="808" x2="56" y2="808"/><line x1="43" y1="812" x2="53" y2="812"/><line x1="46" y1="816" x2="50" y2="816"/></g><text x="64" y="814">= gemeinsame Masse (alle verbinden)</text>
+  </g>
+</svg>

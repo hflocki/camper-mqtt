@@ -1,0 +1,11 @@
+// Personal settings that should not end up in git.
+// Copy this file to config_local.h (same folder). config_local.h is ignored by git, so patches and
+// updates never touch it. Only add what you want to change.
+#pragma once
+
+// Password of the setup access point (min. 8 characters)
+#define DEFAULT_AP_PASSWORD "change-me-please"
+
+// Optional examples:
+// #define DEFAULT_MQTT_BASE "camper/truma"
+// #define BOARD_ESP32C3_SUPERMINI

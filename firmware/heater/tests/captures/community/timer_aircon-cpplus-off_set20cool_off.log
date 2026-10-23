@@ -1,0 +1,1431 @@
+# source: community capture 'CPPlus-Timer-Klima-1' (ESPHome truma_inetbox observer, VERBOSE)
+[17:39:49.723][C][truma_inetbox.LinBusListener:032]: LinBusListener:
+[17:39:49.723][C][truma_inetbox.LinBusListener:033]:   Component version: 1.0.43
+[17:39:49.727][C][truma_inetbox.LinBusListener:340]:   Update Interval: 0.500s
+[17:39:49.728][C][truma_inetbox.LinBusListener:037]:   LIN checksum Version: 2
+[17:39:49.728][C][truma_inetbox.LinBusListener:038]:   Observer mode: YES
+[17:39:49.767][C][truma_inetbox.room_climate:036]: truma_inetbox.room_climateTruma Room Climate 'Room'
+[17:39:49.767][C][truma_inetbox.water_climate:022]: truma_inetbox.water_climateTruma Water Climate 'Water'
+[17:39:49.767][C][truma_inetbox.aircon_climate:019]: truma_inetbox.aircon_climateTruma Aircon Climate 'Aircon'
+[17:39:49.779][C][truma_inetbox.cpplus_binary_sensor:016]: Truma CP Plus Binary Sensor 'CP Plus alive'
+[17:39:49.816][C][truma_inetbox.heater_binary_sensor:016]: Truma Heater Binary Sensor 'Room Heater active'
+[17:39:49.816][C][truma_inetbox.heater_binary_sensor:063]:   Type 'HEATER_ROOM'
+[17:39:49.816][C][truma_inetbox.heater_binary_sensor:016]: Truma Heater Binary Sensor 'Water Heater active'
+[17:39:49.819][C][truma_inetbox.heater_binary_sensor:063]:   Type 'HEATER_WATER'
+[17:39:49.834][C][truma_inetbox.heater_binary_sensor:016]: Truma Heater Binary Sensor 'Heater has error'
+[17:39:49.835][C][truma_inetbox.heater_binary_sensor:063]:   Type 'HEATER_HAS_ERROR'
+[17:39:49.835][C][truma_inetbox.timer_binary_sensor:016]: Truma Timer Binary Sensor 'Timer active'
+[17:39:49.838][C][truma_inetbox.timer_binary_sensor:030]:   Type TIMER_ACTIVE
+[17:39:49.871][C][truma_inetbox.timer_binary_sensor:016]: Truma Timer Binary Sensor 'Timer Room Heater active'
+[17:39:49.872][C][truma_inetbox.timer_binary_sensor:030]:   Type TIMER_ROOM
+[17:39:49.872][C][truma_inetbox.timer_binary_sensor:016]: Truma Timer Binary Sensor 'Timer Water Heater active'
+[17:39:49.875][C][truma_inetbox.timer_binary_sensor:030]:   Type TIMER_WATER
+[17:39:49.885][C][truma_inetbox.heater_number:016]: Truma Heater Number 'Target Room Temperature'
+[17:39:49.885][C][truma_inetbox.heater_number:156]:   Icon: 'mdi:thermometer'
+[17:39:49.886][C][truma_inetbox.heater_number:171]:   Unit of Measurement: '°C'
+[17:39:49.889][C][truma_inetbox.heater_number:165]:   Device Class: 'temperature'
+[17:39:49.889][C][truma_inetbox.heater_number:046]:   Type 'TARGET_ROOM_TEMPERATURE'
+[17:39:49.955][C][truma_inetbox.heater_number:016]: Truma Heater Number 'Target Water Temperature'
+[17:39:49.964][C][truma_inetbox.heater_number:156]:   Icon: 'mdi:thermometer'
+[17:39:49.975][C][truma_inetbox.heater_number:171]:   Unit of Measurement: '°C'
+[17:39:49.975][C][truma_inetbox.heater_number:165]:   Device Class: 'temperature'
+[17:39:49.975][C][truma_inetbox.heater_number:046]:   Type 'TARGET_WATER_TEMPERATURE'
+[17:39:50.003][C][truma_inetbox.aircon_manual_number:016]: Truma Aircon Manual Number 'Target Aircon Temperature'
+[17:39:50.008][C][truma_inetbox.aircon_manual_number:156]:   Icon: 'mdi:thermometer'
+[17:39:50.008][C][truma_inetbox.aircon_manual_number:171]:   Unit of Measurement: '°C'
+[17:39:50.009][C][truma_inetbox.aircon_manual_number:165]:   Device Class: 'temperature'
+[17:39:50.020][C][truma_inetbox.aircon_manual_number:040]:   Type 'AIRCON_MANUAL_TEMPERATURE'
+[17:39:50.041][C][truma_inetbox.aircon_manual_number:016]: Truma Aircon Manual Number 'Aircon Licht'
+[17:39:50.042][C][truma_inetbox.aircon_manual_number:156]:   Icon: 'mdi:lightbulb'
+[17:39:50.042][C][truma_inetbox.aircon_manual_number:040]:   Type 'AIRCON_LIGHT'
+[17:39:50.105][C][truma_inetbox.sensor:017]: Truma Sensor 'Current Room Temperature'
+[17:39:50.105][C][truma_inetbox.sensor:017]:   State Class: 'measurement'
+[17:39:50.105][C][truma_inetbox.sensor:017]:   Unit of Measurement: '°C'
+[17:39:50.105][C][truma_inetbox.sensor:017]:   Accuracy Decimals: 1
+[17:39:50.108][C][truma_inetbox.sensor:165]:   Device Class: 'temperature'
+[17:39:50.108][C][truma_inetbox.sensor:156]:   Icon: 'mdi:thermometer'
+[17:39:50.109][C][truma_inetbox.sensor:067]:   Type 'CURRENT_ROOM_TEMPERATURE'
+[17:39:50.137][C][truma_inetbox.sensor:017]: Truma Sensor 'Current Water Temperature'
+[17:39:50.137][C][truma_inetbox.sensor:017]:   State Class: 'measurement'
+[17:39:50.137][C][truma_inetbox.sensor:017]:   Unit of Measurement: '°C'
+[17:39:50.137][C][truma_inetbox.sensor:017]:   Accuracy Decimals: 0
+[17:39:50.141][C][truma_inetbox.sensor:165]:   Device Class: 'temperature'
+[17:39:50.142][C][truma_inetbox.sensor:156]:   Icon: 'mdi:thermometer'
+[17:39:50.142][C][truma_inetbox.sensor:067]:   Type 'CURRENT_WATER_TEMPERATURE'
+[17:39:50.170][C][truma_inetbox.sensor:017]: Truma Sensor 'Target Room Temperature'
+[17:39:50.170][C][truma_inetbox.sensor:017]:   State Class: 'measurement'
+[17:39:50.170][C][truma_inetbox.sensor:017]:   Unit of Measurement: '°C'
+[17:39:50.170][C][truma_inetbox.sensor:017]:   Accuracy Decimals: 0
+[17:39:50.175][C][truma_inetbox.sensor:165]:   Device Class: 'temperature'
+[17:39:50.175][C][truma_inetbox.sensor:156]:   Icon: 'mdi:thermometer'
+[17:39:50.176][C][truma_inetbox.sensor:067]:   Type 'TARGET_ROOM_TEMPERATURE'
+[17:39:50.204][C][truma_inetbox.sensor:017]: Truma Sensor 'Target Water Temperature'
+[17:39:50.204][C][truma_inetbox.sensor:017]:   State Class: 'measurement'
+[17:39:50.204][C][truma_inetbox.sensor:017]:   Unit of Measurement: '°C'
+[17:39:50.204][C][truma_inetbox.sensor:017]:   Accuracy Decimals: 0
+[17:39:50.209][C][truma_inetbox.sensor:165]:   Device Class: 'temperature'
+[17:39:50.209][C][truma_inetbox.sensor:156]:   Icon: 'mdi:thermometer'
+[17:39:50.209][C][truma_inetbox.sensor:067]:   Type 'TARGET_WATER_TEMPERATURE'
+[17:39:50.239][C][truma_inetbox.sensor:017]: Truma Sensor 'Heating mode'
+[17:39:50.239][C][truma_inetbox.sensor:017]:   State Class: 'measurement'
+[17:39:50.239][C][truma_inetbox.sensor:017]:   Unit of Measurement: ''
+[17:39:50.239][C][truma_inetbox.sensor:017]:   Accuracy Decimals: 0
+[17:39:50.259][C][truma_inetbox.sensor:067]:   Type 'HEATING_MODE'
+[17:39:50.260][C][truma_inetbox.sensor:017]: Truma Sensor 'Operating status (raw)'
+[17:39:50.260][C][truma_inetbox.sensor:017]:   State Class: 'measurement'
+[17:39:50.260][C][truma_inetbox.sensor:017]:   Unit of Measurement: ''
+[17:39:50.260][C][truma_inetbox.sensor:017]:   Accuracy Decimals: 0
+[17:39:50.260][C][truma_inetbox.sensor:067]:   Type 'OPERATING_STATUS'
+[17:39:50.268][C][truma_inetbox.sensor:017]: Truma Sensor 'Heater error code'
+[17:39:50.268][C][truma_inetbox.sensor:017]:   State Class: 'measurement'
+[17:39:50.268][C][truma_inetbox.sensor:017]:   Unit of Measurement: ''
+[17:39:50.268][C][truma_inetbox.sensor:017]:   Accuracy Decimals: 0
+[17:39:50.292][C][truma_inetbox.sensor:067]:   Type 'HEATER_ERROR_CODE'
+[17:39:50.293][C][truma_inetbox.sensor:017]: Truma Sensor 'Aircon Auto Temperature Status'
+[17:39:50.293][C][truma_inetbox.sensor:017]:   State Class: 'measurement'
+[17:39:50.293][C][truma_inetbox.sensor:017]:   Unit of Measurement: '°C'
+[17:39:50.293][C][truma_inetbox.sensor:017]:   Accuracy Decimals: 0
+[17:39:50.293][C][truma_inetbox.sensor:165]:   Device Class: 'temperature'
+[17:39:50.298][C][truma_inetbox.sensor:156]:   Icon: 'mdi:thermometer'
+[17:39:50.337][C][truma_inetbox.sensor:067]:   Type 'AIRCON_AUTO_TARGET_TEMPERATURE'
+[17:39:50.370][C][truma_inetbox.aircon_select:120]: Truma Aircon Select 'Aircon Operating Mode'
+[17:39:50.414][C][truma_inetbox.aircon_select:156]:   Icon: 'mdi:thermometer'
+[17:39:50.415][C][truma_inetbox.aircon_select:121]:   Type 'AIRCON_MODE'
+[17:39:50.415][C][truma_inetbox.aircon_select:120]: Truma Aircon Select 'Aircon Fan Mode'
+[17:39:50.418][C][truma_inetbox.aircon_select:156]:   Icon: 'mdi:thermometer'
+[17:39:50.421][C][truma_inetbox.aircon_select:121]:   Type 'AIRCON_VENT_MODE'
+[17:39:50.438][C][truma_inetbox.heater_select:144]: Truma Heater Select 'Fan Mode'
+[17:39:50.440][C][truma_inetbox.heater_select:156]:   Icon: 'mdi:thermometer'
+[17:39:50.447][C][truma_inetbox.heater_select:145]:   Type 'HEATER_FAN_MODE'
+[17:39:50.499][C][truma_inetbox.text_sensor:016]: Truma Version Text Sensor 'ESPHome Truma Version'
+[17:39:50.503][C][truma_inetbox.text_sensor:156]:   Icon: 'mdi:tag'
+[17:39:57.082][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:39:57.183][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:39:57.231][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:39:57.281][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:39:57.332][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:39:57.336][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:39:57.382][V][truma_inetbox.LinBusListener:437]: PID 3C      03.06.B9.00.1F.00.00.00.1E (9)  - MASTER 
+[17:39:57.431][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.02.F9.00.FF.FF.FF.FF.01 (9) - NOT SEND (OBSERVER MODE)
+[17:39:57.436][V][truma_inetbox.LinBusListener:437]: PID 3D      03.02.F9.00.FF.FF.FF.FF.01 (9)  - SLAVE 
+[17:39:57.682][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:39:57.686][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:39:57.784][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:39:57.831][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:39:57.883][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:39:57.939][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:39:57.945][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:39:57.987][V][truma_inetbox.LinBusListener:437]: PID 3C      03.10.29.BB.00.1F.00.1E.CA (9)  - MASTER 
+[17:39:58.037][V][truma_inetbox.LinBusListener:437]: PID 3C      03.21.00.00.22.FF.FF.FF.B9 (9)  - MASTER 
+[17:39:58.088][V][truma_inetbox.LinBusListener:437]: PID 3C      03.22.54.01.0A.15.00.50.16 (9)  - MASTER 
+[17:39:58.137][V][truma_inetbox.LinBusListener:437]: PID 3C      03.23.11.27.00.01.01.00.9F (9)  - MASTER 
+[17:39:58.188][V][truma_inetbox.LinBusListener:437]: PID 3C      03.24.00.01.00.00.00.00.D7 (9)  - MASTER 
+[17:39:58.237][V][truma_inetbox.LinBusListener:437]: PID 3C      03.25.00.00.00.00.00.00.D7 (9)  - MASTER 
+[17:39:58.290][V][truma_inetbox.LinBusListener:437]: PID 3C      03.26.00.00.00.00.00.00.D6 (9)  - MASTER 
+[17:39:58.294][D][truma_inetbox.LinBusProtocol:225][lin_event_task]: Multi package request  BB.00.1F.00.1E.00.00.22.FF.FF.FF.54.01.0A.15.00.50.11.27.00.01.01.00.00.01.00.00.00.00.00.00.00.00.00.00.00.00.00.00.00.00 (41)
+[17:39:58.295][I][truma_inetbox.TrumaiNetBoxApp:377][lin_event_task]: StatusFrameClock
+[17:39:58.295][D][truma_inetbox.TrumaiNetBoxAppClock:017][lin_event_task]: StatusFrameClock 17:39:00
+[17:39:58.310][D][truma_inetbox.LinBusProtocol:232][lin_event_task]: Multi package response FB
+[17:39:58.338][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.01.FB.FF.FF.FF.FF.FF.00 (9) - NOT SEND (OBSERVER MODE)
+[17:39:58.343][V][truma_inetbox.LinBusListener:437]: PID 3D      03.01.FB.FF.FF.FF.FF.FF.00 (9)  - SLAVE 
+[17:39:58.589][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:39:58.594][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:39:58.689][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:39:58.737][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:39:58.787][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:39:58.837][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:39:58.842][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:39:58.887][V][truma_inetbox.LinBusListener:437]: PID 3C      FF.FF.FF.FF.FF.FF.FF.FF.00 (9)  - MASTER 
+[17:39:58.988][V][truma_inetbox.LinBusListener:404]: PID 3D      order no answer
+[17:39:59.138][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:39:59.289][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:39:59.337][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:39:59.388][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:39:59.437][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:39:59.442][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:39:59.504][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:39:59.537][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:39:59.541][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:39:59.738][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:39:59.787][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:39:59.889][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:39:59.942][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:39:59.988][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:00.038][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:00.042][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:00.088][V][truma_inetbox.LinBusListener:437]: PID 3C      03.06.B9.00.1F.00.00.00.1E (9)  - MASTER 
+[17:40:00.138][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.02.F9.00.FF.FF.FF.FF.01 (9) - NOT SEND (OBSERVER MODE)
+[17:40:00.143][V][truma_inetbox.LinBusListener:437]: PID 3D      03.02.F9.00.FF.FF.FF.FF.01 (9)  - SLAVE 
+[17:40:00.339][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:00.389][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:00.489][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:00.538][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:00.588][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:00.638][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:00.642][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:00.688][V][truma_inetbox.LinBusListener:437]: PID 3C      03.10.29.BB.00.1F.00.1E.CA (9)  - MASTER 
+[17:40:00.738][V][truma_inetbox.LinBusListener:437]: PID 3C      03.21.00.00.22.FF.FF.FF.B9 (9)  - MASTER 
+[17:40:00.788][V][truma_inetbox.LinBusListener:437]: PID 3C      03.22.54.01.14.33.00.DD.60 (9)  - MASTER 
+[17:40:00.838][V][truma_inetbox.LinBusListener:437]: PID 3C      03.23.00.00.00.00.00.00.D9 (9)  - MASTER 
+[17:40:00.888][V][truma_inetbox.LinBusListener:437]: PID 3C      03.24.00.00.00.00.01.01.D6 (9)  - MASTER 
+[17:40:00.938][V][truma_inetbox.LinBusListener:437]: PID 3C      03.25.36.0B.33.0B.04.00.54 (9)  - MASTER 
+[17:40:00.980][D][truma_inetbox.LinBusProtocol:225][lin_event_task]: Multi package request  BB.00.1F.00.1E.00.00.22.FF.FF.FF.54.01.14.33.00.DD.00.00.00.00.00.00.00.00.00.00.01.01.36.0B.33.0B.04.00.00.00.00.00.00.00 (41)
+[17:40:00.984][I][truma_inetbox.TrumaiNetBoxApp:315][lin_event_task]: StatusFrameHeater
+[17:40:00.985][D][truma_inetbox.TrumaiNetBoxAppHeater:051][lin_event_task]: StatusFrameHeater room: nan°C mode: 0 water: nan°C energy_mix: 1 el_power: 0 W status: START/COOL DOWN
+[17:40:00.991][D][truma_inetbox.LinBusProtocol:232][lin_event_task]: Multi package response FB
+[17:40:01.004][V][truma_inetbox.LinBusListener:437]: PID 3C      03.26.00.00.00.00.00.00.D6 (9)  - MASTER 
+[17:40:01.055][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.01.FB.FF.FF.FF.FF.FF.00 (9) - NOT SEND (OBSERVER MODE)
+[17:40:01.060][V][truma_inetbox.LinBusListener:437]: PID 3D      03.01.FB.FF.FF.FF.FF.FF.00 (9)  - SLAVE 
+[17:40:01.256][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:01.305][V][truma_inetbox.LinBusListener:437]: PID 3C      FF.FF.FF.FF.FF.FF.FF.FF.00 (9)  - MASTER 
+[17:40:01.313][V][climate:438]: 'Room' >>
+[17:40:01.317][V][climate:441]:   Mode: OFF
+[17:40:01.317][V][climate:446]:   Fan Mode: OFF
+[17:40:01.318][V][climate:461]:   Current Temperature: 13.70°C
+[17:40:01.322][V][climate:468]:   Target Temperature: nan°C
+[17:40:01.322][V][climate:438]: 'Water' >>
+[17:40:01.322][V][climate:441]:   Mode: OFF
+[17:40:01.325][V][climate:461]:   Current Temperature: 14.00°C
+[17:40:01.328][V][climate:468]:   Target Temperature: nan°C
+[17:40:01.333][V][number:025]: 'Target Room Temperature' >> 0.00
+[17:40:01.334][V][number:025]: 'Target Water Temperature' >> 0.00
+[17:40:01.405][V][select:028]: 'Fan Mode' >> Off (0)
+[17:40:01.468][V][truma_inetbox.LinBusListener:404]: PID 3D      order no answer
+[17:40:01.469][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:01.473][V][truma_inetbox.LinBusListener:437]: PID 3C      FF.FF.FF.FF.FF.FF.FF.FF.00 (9)  - MASTER 
+[17:40:01.537][V][truma_inetbox.LinBusListener:404]: PID 3D      order no answer
+[17:40:01.540][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:01.545][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:01.587][V][truma_inetbox.LinBusListener:437]: PID 3C      FF.FF.FF.FF.FF.FF.FF.FF.00 (9)  - MASTER 
+[17:40:03.843][V][truma_inetbox.LinBusListener:404]: PID 3D      order no answer
+[17:40:05.595][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:05.746][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:05.795][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:05.845][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:05.896][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:05.899][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:05.945][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:05.994][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:06.001][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:06.196][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:06.244][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:06.346][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:06.395][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:06.444][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:06.494][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:06.501][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:06.544][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:06.594][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:06.597][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:06.796][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:06.800][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:06.946][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:06.994][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:07.045][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:07.049][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:07.094][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:07.144][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:07.149][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:07.194][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:07.395][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:07.497][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:07.545][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:07.647][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:07.651][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:07.653][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:07.748][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:07.751][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:07.795][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:07.997][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:08.002][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:08.097][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:08.147][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:08.195][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:08.245][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:08.252][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:08.348][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:08.355][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:08.355][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:08.597][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:08.599][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:08.697][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:08.745][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:08.795][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:08.845][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:08.849][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:08.895][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:08.945][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:08.948][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:09.146][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:09.297][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:09.345][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:09.395][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:09.446][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:09.451][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:09.495][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:09.545][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:09.549][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:09.746][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:09.797][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:09.897][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:09.946][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:09.995][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:10.045][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:10.049][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:10.095][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:10.145][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:10.150][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:10.346][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:10.395][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:10.497][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:10.545][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:10.595][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:10.645][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:10.648][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:10.695][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:10.745][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:10.749][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:10.946][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:11.468][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:11.469][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:11.469][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:11.469][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:11.470][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:11.470][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:11.470][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:11.471][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:11.669][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:11.672][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:11.696][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:11.916][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:11.917][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:11.917][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:11.917][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:11.918][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:12.084][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:12.085][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:12.293][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:12.297][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:12.298][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:12.499][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:12.500][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:12.500][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:12.501][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:12.501][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:12.706][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:12.710][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:12.745][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:12.915][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:12.945][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:12.950][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:13.463][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:13.703][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:13.703][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:13.703][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:13.704][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:13.704][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:13.704][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:13.710][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:13.710][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:13.711][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:13.711][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:13.712][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:13.712][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:13.712][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:13.713][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:13.945][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:13.950][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:14.047][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:14.095][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:14.145][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:14.195][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:14.199][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:14.245][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:14.295][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:14.300][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:14.496][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:14.651][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:14.697][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:14.745][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:14.795][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:14.801][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:14.845][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:14.895][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:14.901][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:15.096][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:15.145][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:15.247][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:15.295][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:15.345][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:15.397][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:15.402][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:15.446][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:15.496][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:15.500][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:15.698][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:15.745][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:15.847][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:15.895][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:15.946][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:15.995][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:15.999][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:16.045][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:16.095][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:16.099][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:16.296][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:16.447][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:16.495][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:16.545][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:16.595][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:16.599][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:16.645][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:16.695][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:16.701][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:16.896][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:16.948][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:17.047][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:17.095][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:17.145][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:17.195][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:17.197][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:17.245][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:17.295][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:17.300][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:17.497][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:17.501][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:17.650][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:17.697][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:17.749][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:17.753][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:17.797][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:17.848][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:17.897][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:17.900][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:18.098][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:18.199][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:18.300][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:18.304][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:18.347][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:18.397][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:18.447][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:18.453][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:18.499][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:18.699][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:18.700][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:18.799][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:18.847][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:18.897][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:18.947][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:18.951][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:19.050][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:19.052][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:19.053][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:19.302][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:19.307][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:19.399][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:19.448][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:19.497][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:19.547][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:19.550][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:19.597][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:19.647][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:19.651][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:19.848][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:20.000][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:20.047][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:20.098][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:20.147][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:20.152][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:20.197][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:20.247][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:20.251][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:20.448][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:20.497][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:20.599][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:20.647][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:20.697][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:20.747][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:20.750][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:20.797][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:20.847][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:20.853][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:21.048][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:21.097][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:21.199][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:21.247][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:21.297][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:21.348][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:21.352][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:21.397][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:21.451][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:21.454][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:21.649][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:21.800][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:21.848][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:21.898][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:21.959][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:21.964][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:22.005][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:22.056][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:22.060][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:22.257][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:22.261][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:22.406][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:22.411][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:22.506][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:22.511][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:22.514][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:22.609][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:22.616][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:22.655][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:22.857][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:22.861][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:22.959][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:23.009][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:23.057][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:23.107][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:23.111][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:23.210][V][truma_inetbox.LinBusListener:437]: PID 3C      03.06.B9.00.1F.00.00.FF.1E (9)  - MASTER 
+[17:40:23.214][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.02.F9.00.FF.FF.FF.FF.01 (9) - NOT SEND (OBSERVER MODE)
+[17:40:23.214][V][truma_inetbox.LinBusListener:437]: PID 3D      03.02.F9.00.FF.FF.FF.FF.01 (9)  - SLAVE 
+[17:40:23.457][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:23.559][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:23.610][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:23.657][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:23.707][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:23.712][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:23.757][V][truma_inetbox.LinBusListener:437]: PID 3C      03.10.29.BB.00.1F.00.1E.CA (9)  - MASTER 
+[17:40:23.810][V][truma_inetbox.LinBusListener:437]: PID 3C      03.21.00.00.22.FF.FF.FF.B9 (9)  - MASTER 
+[17:40:23.910][V][truma_inetbox.LinBusListener:437]: PID 3C      03.22.54.01.16.3F.00.25.0B (9)  - MASTER 
+[17:40:23.960][V][truma_inetbox.LinBusListener:437]: PID 3C      03.23.05.00.71.01.72.0B.E4 (9)  - MASTER 
+[17:40:24.009][V][truma_inetbox.LinBusListener:437]: PID 3C      03.24.00.00.00.00.00.00.D8 (9)  - MASTER 
+[17:40:24.057][V][truma_inetbox.LinBusListener:437]: PID 3C      03.25.00.00.00.00.00.01.D6 (9)  - MASTER 
+[17:40:24.068][D][truma_inetbox.LinBusProtocol:225][lin_event_task]: Multi package request  BB.00.1F.00.1E.00.00.22.FF.FF.FF.54.01.16.3F.00.25.05.00.71.01.72.0B.00.00.00.00.00.00.00.00.00.00.00.01.00.16.1E.06.00.00 (41)
+[17:40:24.073][I][truma_inetbox.TrumaiNetBoxApp:347][lin_event_task]: StatusFrameAirconManualInit
+[17:40:24.076][D][truma_inetbox.LinBusProtocol:232][lin_event_task]: Multi package response FB
+[17:40:24.107][V][truma_inetbox.LinBusListener:437]: PID 3C      03.26.00.16.1E.06.00.00.9C (9)  - MASTER 
+[17:40:24.114][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.01.FB.FF.FF.FF.FF.FF.00 (9) - NOT SEND (OBSERVER MODE)
+[17:40:24.157][V][truma_inetbox.LinBusListener:437]: PID 3D      03.01.FB.FF.FF.FF.FF.FF.00 (9)  - SLAVE 
+[17:40:24.359][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:24.363][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:24.459][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:24.509][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:24.557][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:24.609][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:24.617][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:24.709][V][truma_inetbox.LinBusListener:437]: PID 3C      FF.FF.FF.FF.FF.FF.FF.FF.00 (9)  - MASTER 
+[17:40:24.757][V][truma_inetbox.LinBusListener:404]: PID 3D      order no answer
+[17:40:24.961][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:24.965][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:25.059][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:25.107][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:25.157][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:25.207][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:25.210][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:25.258][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:25.307][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:25.312][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:25.558][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:25.658][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:25.725][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:25.770][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:25.821][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:25.825][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:25.870][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:25.953][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:25.960][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:26.158][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:26.159][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:26.252][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:26.300][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:26.351][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:26.402][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:26.408][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:26.450][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:26.500][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:26.503][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:26.701][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:26.750][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:26.852][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:26.902][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:26.950][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:27.002][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:27.005][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:27.050][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:27.100][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:27.104][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:27.301][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:27.452][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:27.501][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:27.551][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:27.601][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:27.606][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:27.651][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:27.703][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:27.707][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:27.902][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:27.954][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:28.053][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:28.102][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:28.151][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:28.201][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:28.205][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:28.251][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:28.301][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:28.307][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:28.504][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:28.555][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:28.653][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:28.706][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:28.753][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:28.801][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:28.805][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:28.851][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:28.901][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:28.907][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:29.103][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:29.253][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:29.303][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:29.509][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:29.509][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:29.509][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:29.514][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:29.515][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:29.515][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:29.718][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:29.723][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:29.927][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:29.928][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:29.954][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:29.958][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:29.963][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:30.132][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:30.136][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:30.137][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:30.339][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:30.340][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:30.550][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:30.553][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:30.554][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:30.554][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:30.561][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:30.756][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:30.756][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:30.756][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:30.962][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:31.001][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:31.170][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:31.170][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:31.176][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:31.176][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:31.201][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:31.534][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:31.534][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:31.539][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:31.539][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:31.603][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:31.651][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:31.701][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:31.751][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:31.756][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:31.802][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:31.851][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:31.854][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:32.053][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:32.102][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:32.204][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:32.252][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:32.302][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:32.352][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:32.355][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:32.403][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:32.452][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:32.456][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:32.653][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:32.810][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:32.852][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:32.903][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:32.952][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:32.957][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:33.003][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:33.052][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:33.058][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:33.253][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:33.302][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:33.404][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:33.453][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:33.502][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:33.552][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:33.556][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:33.602][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:33.652][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:33.655][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:33.854][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:33.902][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:34.003][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:34.053][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:34.103][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:34.153][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:34.156][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:34.203][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:34.253][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:34.258][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:34.454][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:34.605][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:34.653][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:34.703][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:34.754][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:34.759][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:34.803][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:34.857][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:34.857][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:35.057][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:35.064][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:35.205][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:35.254][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:35.304][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:35.309][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:35.353][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:35.404][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:35.408][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:35.454][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:35.655][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:35.659][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:35.755][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:35.804][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:35.906][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:35.911][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:35.911][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:35.960][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:36.009][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:36.014][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:36.260][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:36.361][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:36.409][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:36.459][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:36.509][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:36.513][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:36.559][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:36.610][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:36.614][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:36.810][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:36.860][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:36.961][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:37.009][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:37.059][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:37.109][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:37.113][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:37.159][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:37.210][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:37.215][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:37.449][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:37.453][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:37.547][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:37.597][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:37.647][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:37.697][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:37.701][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:37.747][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:37.797][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:37.800][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:38.013][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:38.164][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:38.212][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:38.263][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:38.312][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:38.316][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:38.362][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:38.412][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:38.416][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:38.613][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:38.663][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:38.765][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:38.812][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:38.862][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:38.912][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:38.915][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:38.962][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:39.012][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:39.016][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:39.213][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:39.263][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:39.363][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:39.454][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:39.463][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:39.500][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:39.504][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:39.550][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:39.603][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:39.606][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:39.801][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:39.953][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:40.000][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:40.050][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:40.100][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:40.105][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:40.150][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:40.200][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:40.203][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:40.402][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:40.453][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:40.552][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:40.601][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:40.650][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:40.700][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:40.704][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:40.752][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:40.802][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:40.805][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:41.002][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:41.004][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:41.152][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:41.201][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:41.250][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:41.257][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:41.303][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:41.352][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:41.356][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:41.400][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:41.601][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:41.702][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:41.750][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:41.853][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:41.859][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:41.859][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:41.955][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:41.959][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:41.962][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:42.206][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:42.209][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:42.305][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:42.354][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:42.406][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:42.453][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:42.456][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:42.508][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:42.556][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:42.560][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:42.754][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:42.805][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:42.905][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:42.954][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:43.003][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:43.053][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:43.059][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:43.103][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:43.155][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:43.159][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:43.354][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:43.503][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:43.555][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:43.605][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:43.653][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:43.660][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:43.705][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:43.761][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:43.765][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:43.955][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:44.003][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:44.105][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:44.155][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:44.203][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:44.256][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:44.260][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:44.303][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:44.353][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:44.359][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:44.555][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:44.604][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:44.721][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:44.756][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:44.807][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:44.853][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:44.857][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:44.905][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:44.967][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:44.971][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:45.155][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:45.305][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:45.355][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:45.403][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:45.454][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:45.458][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:45.505][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:45.555][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:45.559][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:45.755][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:45.759][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:45.909][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:45.957][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:46.003][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:46.011][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:46.061][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:46.103][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:46.153][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:46.157][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:46.357][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:46.368][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:46.506][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:46.509][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:46.609][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:46.615][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:46.615][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:46.709][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:46.709][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:46.754][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:46.954][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:47.055][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:47.103][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:47.154][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:47.205][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:47.209][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:47.306][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:47.316][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:47.317][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:47.556][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:47.561][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:47.736][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:47.736][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:47.756][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:47.944][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:47.944][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:47.945][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:47.945][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:47.945][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:48.153][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:48.161][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:48.360][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:48.361][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:48.370][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:48.565][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:48.566][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:48.566][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:48.572][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:48.572][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:48.777][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:48.985][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:48.989][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:48.989][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:49.007][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:49.010][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:49.190][V][truma_inetbox.LinBusListener:437]: PID 3C      03.06.B9.00.1F.00.00.00.1E (9)  - MASTER 
+[17:40:49.194][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.02.F9.00.FF.FF.FF.FF.01 (9) - NOT SEND (OBSERVER MODE)
+[17:40:49.194][V][truma_inetbox.LinBusListener:437]: PID 3D      03.02.F9.00.FF.FF.FF.FF.01 (9)  - SLAVE 
+[17:40:49.396][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:49.400][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:49.918][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:49.929][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:49.929][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:49.929][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:49.929][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:49.930][V][truma_inetbox.LinBusListener:437]: PID 3C      03.10.29.BB.00.1F.00.1E.CA (9)  - MASTER 
+[17:40:49.930][V][truma_inetbox.LinBusListener:437]: PID 3C      03.21.00.00.22.FF.FF.FF.B9 (9)  - MASTER 
+[17:40:49.930][V][truma_inetbox.LinBusListener:437]: PID 3C      03.22.54.01.0A.15.00.4F.17 (9)  - MASTER 
+[17:40:49.931][V][truma_inetbox.LinBusListener:437]: PID 3C      03.23.11.28.00.01.01.00.9E (9)  - MASTER 
+[17:40:49.931][V][truma_inetbox.LinBusListener:437]: PID 3C      03.24.00.01.00.00.00.00.D7 (9)  - MASTER 
+[17:40:49.932][V][truma_inetbox.LinBusListener:437]: PID 3C      03.25.00.00.00.00.00.00.D7 (9)  - MASTER 
+[17:40:49.952][D][truma_inetbox.LinBusProtocol:225][lin_event_task]: Multi package request  BB.00.1F.00.1E.00.00.22.FF.FF.FF.54.01.0A.15.00.4F.11.28.00.01.01.00.00.01.00.00.00.00.00.00.00.00.00.00.00.00.00.00.00.00 (41)
+[17:40:49.956][I][truma_inetbox.TrumaiNetBoxApp:377][lin_event_task]: StatusFrameClock
+[17:40:49.984][D][truma_inetbox.TrumaiNetBoxAppClock:017][lin_event_task]: StatusFrameClock 17:40:00
+[17:40:49.985][D][truma_inetbox.LinBusProtocol:232][lin_event_task]: Multi package response FB
+[17:40:49.985][V][truma_inetbox.LinBusListener:437]: PID 3C      03.26.00.00.00.00.00.00.D6 (9)  - MASTER 
+[17:40:49.995][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.01.FB.FF.FF.FF.FF.FF.00 (9) - NOT SEND (OBSERVER MODE)
+[17:40:50.046][V][truma_inetbox.LinBusListener:437]: PID 3D      03.01.FB.FF.FF.FF.FF.FF.00 (9)  - SLAVE 
+[17:40:50.236][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:50.237][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:50.336][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:50.437][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:50.441][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:50.484][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:50.535][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:50.584][V][truma_inetbox.LinBusListener:437]: PID 3C      FF.FF.FF.FF.FF.FF.FF.FF.00 (9)  - MASTER 
+[17:40:50.686][V][truma_inetbox.LinBusListener:404]: PID 3D      order no answer
+[17:40:50.835][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:50.936][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:50.984][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:51.035][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:51.084][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:51.089][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:51.187][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:51.190][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:51.191][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:51.448][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:51.453][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:51.550][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:51.598][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:51.648][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:51.698][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:51.701][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:51.748][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:51.798][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:51.802][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:51.999][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:52.050][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:52.153][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:52.199][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:52.249][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:52.299][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:52.304][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:52.363][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:52.404][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:52.405][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:52.600][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:52.751][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:52.800][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:52.849][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:52.899][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:52.902][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:52.949][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:52.999][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:53.004][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:53.200][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:53.250][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:53.351][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:53.400][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:53.449][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:53.455][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:53.500][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:53.549][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:53.599][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:53.604][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:53.801][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:53.803][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:53.950][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:53.955][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:54.052][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:54.056][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:54.101][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:54.150][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:54.152][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:54.200][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:54.402][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:54.501][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:54.550][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:54.599][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:54.649][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:54.654][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:54.752][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:54.757][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:54.758][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:55.001][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:55.003][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:55.101][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:55.149][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:55.200][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:55.249][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:55.254][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:55.299][V][truma_inetbox.LinBusListener:437]: PID 3C      03.06.B9.00.1F.00.00.00.1E (9)  - MASTER 
+[17:40:55.349][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.02.F9.00.FF.FF.FF.FF.01 (9) - NOT SEND (OBSERVER MODE)
+[17:40:55.352][V][truma_inetbox.LinBusListener:437]: PID 3D      03.02.F9.00.FF.FF.FF.FF.01 (9)  - SLAVE 
+[17:40:55.601][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:55.605][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:55.699][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:55.749][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:55.799][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:55.849][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:55.854][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:55.899][V][truma_inetbox.LinBusListener:437]: PID 3C      03.10.29.BB.00.1F.00.1E.CA (9)  - MASTER 
+[17:40:55.953][V][truma_inetbox.LinBusListener:437]: PID 3C      03.21.00.00.22.FF.FF.FF.B9 (9)  - MASTER 
+[17:40:56.001][V][truma_inetbox.LinBusListener:437]: PID 3C      03.22.54.01.16.3F.00.26.0A (9)  - MASTER 
+[17:40:56.051][V][truma_inetbox.LinBusListener:437]: PID 3C      03.23.05.00.71.01.72.0B.E4 (9)  - MASTER 
+[17:40:56.101][V][truma_inetbox.LinBusListener:437]: PID 3C      03.24.00.00.00.00.00.00.D8 (9)  - MASTER 
+[17:40:56.205][V][truma_inetbox.LinBusListener:437]: PID 3C      03.25.00.00.00.00.00.00.D7 (9)  - MASTER 
+[17:40:56.211][V][truma_inetbox.LinBusListener:437]: PID 3C      03.26.00.16.1E.06.00.00.9C (9)  - MASTER 
+[17:40:56.212][D][truma_inetbox.LinBusProtocol:225][lin_event_task]: Multi package request  BB.00.1F.00.1E.00.00.22.FF.FF.FF.54.01.16.3F.00.26.05.00.71.01.72.0B.00.00.00.00.00.00.00.00.00.00.00.00.00.16.1E.06.00.00 (41)
+[17:40:56.216][I][truma_inetbox.TrumaiNetBoxApp:347][lin_event_task]: StatusFrameAirconManualInit
+[17:40:56.219][D][truma_inetbox.LinBusProtocol:232][lin_event_task]: Multi package response FB
+[17:40:56.253][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.01.FB.FF.FF.FF.FF.FF.00 (9) - NOT SEND (OBSERVER MODE)
+[17:40:56.302][V][truma_inetbox.LinBusListener:437]: PID 3D      03.01.FB.FF.FF.FF.FF.FF.00 (9)  - SLAVE 
+[17:40:56.502][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:56.602][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:56.653][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:56.702][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:56.752][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:56.760][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:56.803][V][truma_inetbox.LinBusListener:437]: PID 3C      FF.FF.FF.FF.FF.FF.FF.FF.00 (9)  - MASTER 
+[17:40:56.904][V][truma_inetbox.LinBusListener:404]: PID 3D      order no answer
+[17:40:57.053][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:57.103][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:57.204][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:57.252][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:57.304][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:57.352][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:57.357][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:57.403][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:57.452][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:57.457][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:57.653][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:57.704][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:57.804][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:57.852][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:57.902][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:57.959][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:57.963][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:58.010][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:58.061][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:58.064][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:58.259][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:58.410][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:58.458][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:58.508][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:58.558][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:58.562][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:58.609][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:58.658][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:58.663][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:58.859][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:58.913][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:40:59.014][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:59.059][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:40:59.110][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:40:59.158][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:59.162][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:59.214][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:40:59.259][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:40:59.263][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:40:59.459][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:40:59.464][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:40:59.610][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:40:59.659][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:40:59.710][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:40:59.714][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:40:59.760][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:40:59.810][V][truma_inetbox.LinBusListener:437]: PID 3C      03.06.B9.00.1F.00.00.FF.1E (9)  - MASTER 
+[17:40:59.875][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.02.F9.00.FF.FF.FF.FF.01 (9) - NOT SEND (OBSERVER MODE)
+[17:40:59.879][V][truma_inetbox.LinBusListener:437]: PID 3D      03.02.F9.00.FF.FF.FF.FF.01 (9)  - SLAVE 
+[17:41:00.060][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:00.161][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:00.261][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:00.265][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:00.311][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:00.361][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:00.409][V][truma_inetbox.LinBusListener:437]: PID 3C      03.10.29.BB.00.1F.00.1E.CA (9)  - MASTER 
+[17:41:00.460][V][truma_inetbox.LinBusListener:437]: PID 3C      03.21.00.00.22.FF.FF.FF.B9 (9)  - MASTER 
+[17:41:00.512][V][truma_inetbox.LinBusListener:437]: PID 3C      03.22.54.01.14.33.00.DC.61 (9)  - MASTER 
+[17:41:00.561][V][truma_inetbox.LinBusListener:437]: PID 3C      03.23.00.00.00.00.00.00.D9 (9)  - MASTER 
+[17:41:00.609][V][truma_inetbox.LinBusListener:437]: PID 3C      03.24.00.00.00.00.01.01.D6 (9)  - MASTER 
+[17:41:00.659][V][truma_inetbox.LinBusListener:437]: PID 3C      03.25.36.0B.34.0B.04.00.53 (9)  - MASTER 
+[17:41:00.680][D][truma_inetbox.LinBusProtocol:225][lin_event_task]: Multi package request  BB.00.1F.00.1E.00.00.22.FF.FF.FF.54.01.14.33.00.DC.00.00.00.00.00.00.00.00.00.00.01.01.36.0B.34.0B.04.00.00.00.00.00.00.00 (41)
+[17:41:00.684][I][truma_inetbox.TrumaiNetBoxApp:315][lin_event_task]: StatusFrameHeater
+[17:41:00.684][D][truma_inetbox.TrumaiNetBoxAppHeater:051][lin_event_task]: StatusFrameHeater room: nan°C mode: 0 water: nan°C energy_mix: 1 el_power: 0 W status: START/COOL DOWN
+[17:41:00.692][D][truma_inetbox.LinBusProtocol:232][lin_event_task]: Multi package response FB
+[17:41:00.710][V][truma_inetbox.LinBusListener:437]: PID 3C      03.26.00.00.00.00.00.00.D6 (9)  - MASTER 
+[17:41:00.727][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.01.FB.FF.FF.FF.FF.FF.00 (9) - NOT SEND (OBSERVER MODE)
+[17:41:00.732][V][truma_inetbox.LinBusListener:437]: PID 3D      03.01.FB.FF.FF.FF.FF.FF.00 (9)  - SLAVE 
+[17:41:00.820][V][climate:438]: 'Room' >>
+[17:41:00.826][V][climate:441]:   Mode: OFF
+[17:41:00.827][V][climate:446]:   Fan Mode: OFF
+[17:41:00.827][V][climate:461]:   Current Temperature: 13.80°C
+[17:41:00.827][V][climate:468]:   Target Temperature: nan°C
+[17:41:00.830][V][climate:438]: 'Water' >>
+[17:41:00.831][V][climate:441]:   Mode: OFF
+[17:41:00.833][V][climate:461]:   Current Temperature: 14.00°C
+[17:41:00.834][V][climate:468]:   Target Temperature: nan°C
+[17:41:00.841][V][number:025]: 'Target Room Temperature' >> 0.00
+[17:41:00.843][V][number:025]: 'Target Water Temperature' >> 0.00
+[17:41:00.910][V][select:028]: 'Fan Mode' >> Off (0)
+[17:41:00.962][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:00.968][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:41:01.113][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:01.163][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:01.212][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:01.217][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:01.261][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:01.311][V][truma_inetbox.LinBusListener:437]: PID 3C      FF.FF.FF.FF.FF.FF.FF.FF.00 (9)  - MASTER 
+[17:41:01.448][V][truma_inetbox.LinBusListener:404]: PID 3D      order no answer
+[17:41:01.550][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:01.599][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:41:01.700][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:01.750][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:01.800][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:01.849][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:01.855][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:01.898][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:01.950][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:01.955][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:02.150][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:02.301][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:02.351][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:02.402][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:02.403][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:02.451][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:02.501][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:02.549][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:02.555][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:02.751][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:02.755][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:41:02.849][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:02.950][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:02.956][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:02.999][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:03.049][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:03.101][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:03.105][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:03.150][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:03.353][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:03.357][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:41:03.459][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:03.499][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:03.550][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:03.599][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:03.603][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:03.702][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:03.707][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:03.708][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:03.958][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:04.051][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:04.099][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:04.149][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:04.199][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:04.203][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:04.249][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:04.299][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:04.302][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:04.501][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:04.550][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:41:04.651][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:04.701][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:04.751][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:04.811][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:04.815][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:04.852][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:04.902][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:04.908][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:05.101][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:05.151][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:41:05.250][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:05.299][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:05.352][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:05.401][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:05.405][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:05.449][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:05.503][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:05.506][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:05.700][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:05.956][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:05.957][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:05.962][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:06.163][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:06.164][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:06.170][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:06.171][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:06.171][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:06.372][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:06.379][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:41:06.583][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:06.583][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:06.584][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:06.602][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:06.606][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:06.789][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:06.789][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:06.795][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:06.999][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:07.003][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:41:07.201][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:07.203][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:07.203][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:07.203][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:07.203][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:07.410][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:07.411][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:07.411][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:08.457][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:08.457][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:08.457][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:08.458][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:09.529][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:09.530][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:09.531][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:09.531][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:09.531][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:09.539][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:09.539][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:41:09.540][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:09.540][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:09.541][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:09.541][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:09.542][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:09.542][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:09.543][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:09.543][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:09.544][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:09.544][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:41:09.545][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:09.545][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:09.545][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:09.546][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:09.546][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:09.546][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:09.546][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:09.547][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:09.547][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:09.547][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:09.551][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:09.551][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:09.555][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:09.600][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:09.650][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:09.656][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:09.851][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:09.901][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:41:10.002][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:10.051][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:10.102][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:10.151][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:10.155][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:10.201][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:10.251][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:10.254][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:10.453][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:10.502][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:41:10.603][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:10.651][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:10.702][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:10.751][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:10.755][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:10.802][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:10.851][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:10.855][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:11.052][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:11.203][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:11.252][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:11.303][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:11.352][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:11.354][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:11.403][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:11.453][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:11.456][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:11.654][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:11.702][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:41:11.804][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:11.853][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:11.902][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:11.953][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:11.955][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:12.004][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:12.053][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:12.056][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:12.254][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:12.303][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:41:12.404][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:12.453][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:12.507][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:12.511][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:12.555][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:12.604][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:12.655][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:12.659][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:12.854][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:13.006][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:13.054][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:13.104][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:13.107][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:13.155][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:13.204][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:13.209][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:13.254][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:13.455][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:13.460][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:41:13.557][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:13.604][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:13.707][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:13.710][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:13.710][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:13.808][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:13.812][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:13.854][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:14.057][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:14.060][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:41:14.156][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:14.205][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:14.255][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:14.304][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:14.309][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:14.407][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:14.412][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:14.412][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:14.655][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:14.756][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:14.805][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:14.854][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:14.904][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:14.908][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:14.954][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:15.004][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:15.008][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:15.206][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:15.254][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:41:15.356][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:15.404][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:15.455][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:15.504][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:15.508][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:15.554][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:15.607][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:15.610][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:15.806][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:15.855][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:41:15.955][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:16.005][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:16.056][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:16.105][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:16.109][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:16.155][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:16.205][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:16.209][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:16.407][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:16.557][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:16.608][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:16.656][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:16.705][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:16.713][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:16.755][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:16.805][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:16.813][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:17.007][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:17.056][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:41:17.157][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:17.205][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:17.255][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:17.305][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:17.310][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:17.355][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:17.406][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:17.410][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:17.607][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:17.656][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:41:17.757][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:17.806][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:17.857][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:17.905][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:17.911][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:17.963][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:18.009][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:18.012][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:18.211][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:18.311][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:18.412][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.0C.5E (9)  - MASTER 
+[17:41:18.414][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.17.46.00.0C.00.9B (9)  - SLAVE 
+[17:41:18.459][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:18.510][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:18.559][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.00.1F.4B (9)  - MASTER 
+[17:41:18.562][V][truma_inetbox.LinBusListener:389]: RESPONSE 3D 03.06.F2.17.46.00.1F.00.87 (9) - NOT SEND (OBSERVER MODE)
+[17:41:18.610][V][truma_inetbox.LinBusListener:437]: PID 3D      03.06.F2.17.46.00.1F.00.87 (9)  - SLAVE 
+[17:41:18.811][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:18.815][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.00.17.46.40.03.27 (9)  - MASTER 
+[17:41:18.911][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:18.962][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.00.0C.3B (9)  - MASTER 
+[17:41:19.009][V][truma_inetbox.LinBusListener:437]: PID 3D      02.06.F2.01.00.00.00.FF.04 (9)  - SLAVE 
+[17:41:19.059][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:19.065][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:19.161][V][truma_inetbox.LinBusListener:437]: PID 3C      FF.FF.FF.FF.FF.FF.FF.FF.00 (9)  - MASTER 
+[17:41:19.209][V][truma_inetbox.LinBusListener:404]: PID 3D      order no answer
+[17:41:19.411][V][truma_inetbox.LinBusListener:420]: 0x00 LIN CRC error on SID.
+[17:41:19.413][V][truma_inetbox.LinBusListener:437]: PID 3C      7F.06.B2.23.17.46.40.03.04 (9)  - MASTER 
+[17:41:19.511][V][truma_inetbox.LinBusListener:437]: PID 17      21.0B.86.0B.71.00.00.FF.39 (9)  - SLAVE 
+[17:41:19.559][V][truma_inetbox.LinBusListener:437]: PID 3C      FF.FF.FF.FF.FF.FF.FF.FF.00 (9)  - MASTER 
+[17:41:19.661][V][truma_inetbox.LinBusListener:404]: PID 3D      order no answer
+[17:41:19.667][V][truma_inetbox.LinBusListener:389]: RESPONSE 18 FF.FF.FF.FF.FF.FF.FF.FF.27 (9) - NOT SEND (OBSERVER MODE)
+[17:41:19.667][V][truma_inetbox.LinBusListener:437]: PID 18      FE.FF.FF.FF.FF.FF.FF.FF.28 (9)  - SLAVE 
+[17:41:19.709][V][truma_inetbox.LinBusListener:437]: PID 3C      FF.FF.FF.FF.FF.FF.FF.FF.00 (9)  - MASTER 

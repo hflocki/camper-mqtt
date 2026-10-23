@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="980" viewBox="0 0 1500 980" font-family="DejaVu Sans, Arial, sans-serif">
+<rect width="1500" height="980" fill="#fff"/>
+<text x="40" y="46" font-size="28" font-weight="bold">Schaltplan – Truma LIN-Slave (Lochraster)</text>
+<text x="40" y="74" font-size="15" fill="#555">ESP32-S3-DevKitC-1 N8R8 · LIN-Modul T151 (TJA1020) · Bauer DC/DC 8–32 V → 5 V · CP Plus bleibt Master</text>
+<rect x="40" y="140" width="150" height="110" rx="8" fill="#fdecea" stroke="#d62728" stroke-width="2"/>
+<text x="115.0" y="130" font-size="15" text-anchor="middle" fill="#111" font-weight="bold">JST IN (Kabelbaum)</text>
+<text x="180" y="180" font-size="14" text-anchor="end" fill="#111">+ 12 V</text>
+<text x="180" y="225" font-size="14" text-anchor="end" fill="#111">− GND</text>
+<rect x="40" y="330" width="150" height="110" rx="8" fill="#fdecea" stroke="#d62728" stroke-width="2"/>
+<text x="115.0" y="320" font-size="15" text-anchor="middle" fill="#111" font-weight="bold">JST OUT (zum CP Plus)</text>
+<text x="180" y="370" font-size="14" text-anchor="end" fill="#111">+ 12 V</text>
+<text x="180" y="415" font-size="14" text-anchor="end" fill="#111">− GND</text>
+<polyline points="190,175 250,175 250,365 190,365" fill="none" stroke="#d62728" stroke-width="4" stroke-linejoin="round"/>
+<polyline points="190,220 225,220 225,410 190,410" fill="none" stroke="#111" stroke-width="4" stroke-linejoin="round"/>
+<circle cx="250" cy="175" r="5" fill="#d62728"/>
+<circle cx="225" cy="410" r="5" fill="#111"/>
+<text x="258" y="280" font-size="12" text-anchor="start" fill="#666">1:1 durch</text>
+<rect x="40" y="560" width="150" height="160" rx="8" fill="#e8f0fb" stroke="#1f5fbf" stroke-width="2"/>
+<text x="115.0" y="550" font-size="15" text-anchor="middle" fill="#111" font-weight="bold">RJ12 IN (Heizung)</text>
+<rect x="40" y="790" width="150" height="160" rx="8" fill="#e8f0fb" stroke="#1f5fbf" stroke-width="2"/>
+<text x="115.0" y="780" font-size="15" text-anchor="middle" fill="#111" font-weight="bold">RJ12 OUT (CP Plus)</text>
+<text x="182" y="590" font-size="12" text-anchor="end" fill="#111">1</text>
+<text x="182" y="820" font-size="12" text-anchor="end" fill="#111">1</text>
+<polyline points="190,585 205,585 205,815 190,815" fill="none" stroke="#999" stroke-width="2" stroke-linejoin="round"/>
+<text x="182" y="612" font-size="12" text-anchor="end" fill="#111">2</text>
+<text x="182" y="842" font-size="12" text-anchor="end" fill="#111">2</text>
+<polyline points="190,607 214,607 214,837 190,837" fill="none" stroke="#999" stroke-width="2" stroke-linejoin="round"/>
+<text x="182" y="634" font-size="12" text-anchor="end" fill="#111">3</text>
+<text x="182" y="864" font-size="12" text-anchor="end" fill="#111">3</text>
+<polyline points="190,629 223,629 223,859 190,859" fill="none" stroke="#1f5fbf" stroke-width="3" stroke-linejoin="round"/>
+<text x="182" y="656" font-size="12" text-anchor="end" fill="#111">4</text>
+<text x="182" y="886" font-size="12" text-anchor="end" fill="#111">4</text>
+<polyline points="190,651 232,651 232,881 190,881" fill="none" stroke="#999" stroke-width="2" stroke-linejoin="round"/>
+<text x="182" y="678" font-size="12" text-anchor="end" fill="#111">5</text>
+<text x="182" y="908" font-size="12" text-anchor="end" fill="#111">5</text>
+<polyline points="190,673 241,673 241,903 190,903" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+<text x="182" y="700" font-size="12" text-anchor="end" fill="#111">6</text>
+<text x="182" y="930" font-size="12" text-anchor="end" fill="#111">6</text>
+<polyline points="190,695 250,695 250,925 190,925" fill="none" stroke="#999" stroke-width="2" stroke-linejoin="round"/>
+<text x="320" y="700" font-size="12" text-anchor="start" fill="#666">alle 6 Kontakte 1:1</text>
+<text x="320" y="716" font-size="12" text-anchor="start" fill="#666">LIN = Pin 3, GND = Pin 5</text>
+<text x="320" y="732" font-size="12" text-anchor="start" fill="#b00">(vorher messen!)</text>
+<polyline points="250,175 330,175" fill="none" stroke="#d62728" stroke-width="4" stroke-linejoin="round"/>
+<rect x="330" y="160" width="80" height="30" rx="5" fill="#fff" stroke="#333" stroke-width="2"/>
+<text x="370" y="181" font-size="15" text-anchor="middle" fill="#111" font-weight="bold">F1</text>
+<text x="370" y="215" font-size="12" text-anchor="middle" fill="#555">Flachsicherung 1 A</text>
+<text x="370" y="230" font-size="12" text-anchor="middle" fill="#555">(fliegender Halter)</text>
+<polyline points="410,175 470,175" fill="none" stroke="#d62728" stroke-width="4" stroke-linejoin="round"/>
+<rect x="470" y="160" width="80" height="30" rx="5" fill="#fff" stroke="#888" stroke-width="2" stroke-dasharray="6,4"/>
+<text x="510" y="181" font-size="14" text-anchor="middle" fill="#666" font-weight="bold">D1 ▶|</text>
+<text x="510" y="215" font-size="12" text-anchor="middle" fill="#555">optional 1N400x</text>
+<text x="510" y="230" font-size="12" text-anchor="middle" fill="#555">sonst Drahtbrücke</text>
+<polyline points="550,175 980,175" fill="none" stroke="#d62728" stroke-width="4" stroke-linejoin="round"/>
+<text x="600" y="160" font-size="13" text-anchor="start" fill="#d62728">+12 V (abgesichert)</text>
+<circle cx="620" cy="175" r="5" fill="#d62728"/>
+<polyline points="620,175 620,240" fill="none" stroke="#d62728" stroke-width="3" stroke-linejoin="round"/>
+<rect x="595" y="240" width="50" height="60" rx="5" fill="#fff" stroke="#333" stroke-width="2"/>
+<rect x="595" y="240" width="50" height="10" fill="#333"/>
+<text x="620" y="280" font-size="14" text-anchor="middle" fill="#111" font-weight="bold">D2</text>
+<text x="660" y="265" font-size="12" text-anchor="start" fill="#555">P6KE24A</text>
+<text x="660" y="280" font-size="12" text-anchor="start" fill="#555">Ring oben (+)</text>
+<polyline points="620,300 620,330" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+<g stroke="#111" stroke-width="3"><line x1="620" y1="330" x2="620" y2="342"/><line x1="606" y1="342" x2="634" y2="342"/><line x1="611" y1="348" x2="629" y2="348"/><line x1="616" y1="354" x2="624" y2="354"/></g>
+<circle cx="760" cy="175" r="5" fill="#d62728"/>
+<polyline points="760,175 760,245" fill="none" stroke="#d62728" stroke-width="3" stroke-linejoin="round"/>
+<line x1="735" y1="250" x2="785" y2="250" stroke="#333" stroke-width="4"/>
+<path d="M735,268 Q760,256 785,268" fill="none" stroke="#333" stroke-width="4"/>
+<text x="728" y="248" font-size="16" text-anchor="end" fill="#111" font-weight="bold">+</text>
+<text x="795" y="255" font-size="14" text-anchor="start" fill="#111" font-weight="bold">C1</text>
+<text x="795" y="272" font-size="12" text-anchor="start" fill="#555">22 µF / 35 V</text>
+<polyline points="760,262 760,330" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+<g stroke="#111" stroke-width="3"><line x1="760" y1="330" x2="760" y2="342"/><line x1="746" y1="342" x2="774" y2="342"/><line x1="751" y1="348" x2="769" y2="348"/><line x1="756" y1="354" x2="764" y2="354"/></g>
+<rect x="980" y="130" width="200" height="120" rx="8" fill="#fff4e5" stroke="#ff7f0e" stroke-width="2"/>
+<text x="1080.0" y="120" font-size="15" text-anchor="middle" fill="#111" font-weight="bold">DC/DC Bauer 8–32 V → 5 V</text>
+<text x="990" y="180" font-size="13" text-anchor="start" fill="#111">IN+ rot</text>
+<text x="990" y="228" font-size="13" text-anchor="start" fill="#111">IN− schwarz</text>
+<text x="1170" y="180" font-size="13" text-anchor="end" fill="#111">OUT+ gelb</text>
+<text x="1170" y="228" font-size="13" text-anchor="end" fill="#111">OUT− schw.</text>
+<polyline points="980,225 950,225 950,330" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+<g stroke="#111" stroke-width="3"><line x1="950" y1="330" x2="950" y2="342"/><line x1="936" y1="342" x2="964" y2="342"/><line x1="941" y1="348" x2="959" y2="348"/><line x1="946" y1="354" x2="954" y2="354"/></g>
+<polyline points="1180,175 1215,175 1215,470 1230,470" fill="none" stroke="#ff7f0e" stroke-width="4" stroke-linejoin="round"/>
+<polyline points="1180,225 1195,225 1195,232" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+<g stroke="#111" stroke-width="3"><line x1="1195" y1="232" x2="1195" y2="244"/><line x1="1181" y1="244" x2="1209" y2="244"/><line x1="1186" y1="250" x2="1204" y2="250"/><line x1="1191" y1="256" x2="1199" y2="256"/></g>
+<text x="1222" y="200" font-size="14" text-anchor="start" fill="#ff7f0e" font-weight="bold">5 V</text>
+<rect x="1230" y="230" width="230" height="330" rx="8" fill="#eef4ff" stroke="#1f5fbf" stroke-width="2"/>
+<text x="1345.0" y="220" font-size="15" text-anchor="middle" fill="#111" font-weight="bold">ESP32-S3-DevKitC-1</text>
+<text x="1345.0" y="578" font-size="12" text-anchor="middle" fill="#555">Stiftleiste J1 (links)</text>
+<text x="1245" y="275" font-size="14" text-anchor="start" fill="#111">3V3</text>
+<text x="1450" y="275" font-size="12" text-anchor="end" fill="#666">J1-1</text>
+<text x="1245" y="355" font-size="14" text-anchor="start" fill="#111">GPIO17 (TX)</text>
+<text x="1450" y="355" font-size="12" text-anchor="end" fill="#666">J1-10</text>
+<text x="1245" y="395" font-size="14" text-anchor="start" fill="#111">GPIO18 (RX)</text>
+<text x="1450" y="395" font-size="12" text-anchor="end" fill="#666">J1-11</text>
+<text x="1245" y="475" font-size="14" text-anchor="start" fill="#111">5V</text>
+<text x="1450" y="475" font-size="12" text-anchor="end" fill="#666">J1-21</text>
+<text x="1245" y="525" font-size="14" text-anchor="start" fill="#111">GND</text>
+<text x="1450" y="525" font-size="12" text-anchor="end" fill="#666">J1-22</text>
+<polyline points="1230,520 1200,520 1200,560" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+<g stroke="#111" stroke-width="3"><line x1="1200" y1="560" x2="1200" y2="572"/><line x1="1186" y1="572" x2="1214" y2="572"/><line x1="1191" y1="578" x2="1209" y2="578"/><line x1="1196" y1="584" x2="1204" y2="584"/></g>
+<rect x="560" y="520" width="320" height="300" rx="8" fill="#f3f3f3" stroke="#333" stroke-width="2"/>
+<text x="720.0" y="510" font-size="15" text-anchor="middle" fill="#111" font-weight="bold">LIN-Modul T151 (TJA1020)</text>
+<text x="720.0" y="838" font-size="12" text-anchor="middle" fill="#555">Master-Widerstand vorher prüfen (12V↔LIN)</text>
+<circle cx="560" cy="570" r="7" fill="#fff" stroke="#333" stroke-width="2"/>
+<text x="575" y="575" font-size="14" text-anchor="start" fill="#111">12V</text>
+<circle cx="560" cy="630" r="7" fill="#fff" stroke="#333" stroke-width="2"/>
+<text x="575" y="635" font-size="14" text-anchor="start" fill="#111">LIN</text>
+<circle cx="560" cy="690" r="7" fill="#fff" stroke="#333" stroke-width="2"/>
+<text x="575" y="695" font-size="14" text-anchor="start" fill="#888">INH (frei)</text>
+<circle cx="560" cy="750" r="7" fill="#fff" stroke="#333" stroke-width="2"/>
+<text x="575" y="755" font-size="14" text-anchor="start" fill="#111">GND</text>
+<circle cx="880" cy="570" r="7" fill="#fff" stroke="#333" stroke-width="2"/>
+<text x="865" y="575" font-size="14" text-anchor="end" fill="#111">TX</text>
+<circle cx="880" cy="630" r="7" fill="#fff" stroke="#333" stroke-width="2"/>
+<text x="865" y="635" font-size="14" text-anchor="end" fill="#111">RX</text>
+<circle cx="880" cy="690" r="7" fill="#fff" stroke="#333" stroke-width="2"/>
+<text x="865" y="695" font-size="14" text-anchor="end" fill="#111">SLP</text>
+<circle cx="880" cy="750" r="7" fill="#fff" stroke="#333" stroke-width="2"/>
+<text x="865" y="755" font-size="14" text-anchor="end" fill="#111">GND</text>
+<circle cx="575" cy="175" r="5" fill="#d62728"/>
+<polyline points="575,175 575,470 500,470 500,570 553,570" fill="none" stroke="#d62728" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="223" cy="629" r="5" fill="#1f5fbf"/>
+<polyline points="223,629 223,630 553,630" fill="none" stroke="#1f5fbf" stroke-width="4" stroke-linejoin="round"/>
+<text x="330" y="622" font-size="13" text-anchor="start" fill="#1f5fbf">LIN (Pin 3)</text>
+<polyline points="553,750 520,750 520,860" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+<g stroke="#111" stroke-width="3"><line x1="520" y1="860" x2="520" y2="872"/><line x1="506" y1="872" x2="534" y2="872"/><line x1="511" y1="878" x2="529" y2="878"/><line x1="516" y1="884" x2="524" y2="884"/></g>
+<circle cx="241" cy="673" r="5" fill="#111"/>
+<polyline points="241,673 241,673 300,673 300,860" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+<g stroke="#111" stroke-width="3"><line x1="300" y1="860" x2="300" y2="872"/><line x1="286" y1="872" x2="314" y2="872"/><line x1="291" y1="878" x2="309" y2="878"/><line x1="296" y1="884" x2="304" y2="884"/></g>
+<text x="308" y="668" font-size="13" text-anchor="start" fill="#111">GND (Pin 5)</text>
+<polyline points="887,570 1100,570 1100,350 1230,350" fill="none" stroke="#2ca02c" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="887,630 1130,630 1130,390 1230,390" fill="none" stroke="#17becf" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="1230,270 1060,270 1060,690 887,690" fill="none" stroke="#c2185b" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="1060" cy="270" r="5" fill="#c2185b"/>
+<circle cx="1060" cy="600" r="5" fill="#c2185b"/>
+<circle cx="1130" cy="600" r="5" fill="#17becf"/>
+<polyline points="1060,600 1072,600" fill="none" stroke="#c2185b" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="1118,600 1130,600" fill="none" stroke="#17becf" stroke-width="3" stroke-linejoin="round"/>
+<rect x="1072" y="590" width="46" height="20" rx="3" fill="#fff" stroke="#333" stroke-width="2"/>
+<text x="1095" y="585" font-size="12" text-anchor="middle" fill="#111" font-weight="bold">R1 10 kΩ</text>
+<text x="1066" y="290" font-size="13" text-anchor="start" fill="#c2185b" font-weight="bold">3V3</text>
+<polyline points="887,750 960,750 960,860" fill="none" stroke="#111" stroke-width="3" stroke-linejoin="round"/>
+<g stroke="#111" stroke-width="3"><line x1="960" y1="860" x2="960" y2="872"/><line x1="946" y1="872" x2="974" y2="872"/><line x1="951" y1="878" x2="969" y2="878"/><line x1="956" y1="884" x2="964" y2="884"/></g>
+<text x="560" y="900" font-size="14" text-anchor="start" fill="#333">• Gemeinsame Masse: alle Masse-Symbole sind verbunden (12-V-Minus, Modul, Wandler, DevKit GND, RJ12 Pin 5).</text>
+<text x="560" y="922" font-size="14" text-anchor="start" fill="#333">• Vor dem ersten Anschluss: Polarität am JST messen, Master-Widerstand am Modul prüfen, RX am Modul ≤ 3,3 V.</text>
+<text x="560" y="944" font-size="14" text-anchor="start" fill="#333">• Firmware: BOARD_ESP32S3_GENERIC (UART1, TX = GPIO17, RX = GPIO18). Kreuzende Linien ohne Punkt sind nicht verbunden.</text>
+</svg>
