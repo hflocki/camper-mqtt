@@ -16,7 +16,7 @@ Plattform, Board und Bibliotheken (M5Unified, PubSubClient) lädt PlatformIO bei
 ## Bauen und Flashen
 
 1. Den Ordner `_platformio/` als Projekt öffnen (in VS Code: *PlatformIO Home → Open Project*).
-2. Im Ordner `include/` die Datei `config.example.h` nach `config.h` kopieren und die eigenen Zugangsdaten eintragen:
+2. Im Ordner `../_arduino/roadbuddy/` die Datei `config.example.h` nach `config.h` kopieren und die eigenen Zugangsdaten eintragen (PlatformIO baut direkt aus diesem Ordner, es gibt nur einen Quellcode):
 
    ```cpp
    const char* ssid = "YOUR_WIFI_SSID";
@@ -51,11 +51,11 @@ Plattform, Board und Bibliotheken (M5Unified, PubSubClient) lädt PlatformIO bei
 
 ```
 _platformio/
-├── platformio.ini            – Board, Framework, Bibliotheken
-├── src/main.cpp              – kompletter Sketch
-└── include/
-    ├── config.example.h      – Vorlage für WLAN- und MQTT-Daten
-    └── config.h              – eigene Zugangsdaten (nicht im Git)
+└── platformio.ini            – Board, Framework, Bibliotheken; src_dir = ../_arduino/roadbuddy
+_arduino/roadbuddy/
+├── roadbuddy.ino             – kompletter Sketch
+├── config.example.h          – Vorlage für WLAN- und MQTT-Daten
+└── config.h                  – eigene Zugangsdaten (nicht im Git)
 ```
 
 ---
@@ -70,7 +70,7 @@ _platformio/
 
 ## Fehlersuche
 
-- **`config.h: No such file or directory`:** `include/config.example.h` wurde noch nicht nach `include/config.h` kopiert.
+- **`config.h: No such file or directory`:** `_arduino/roadbuddy/config.example.h` wurde noch nicht nach `config.h` kopiert.
 - **Upload-Port wird nicht gefunden:** Mit `pio device list` den Port prüfen und bei Bedarf in `platformio.ini` `upload_port = …` ergänzen. Außerdem ein Datenkabel verwenden.
 - **Upload bricht ab:** In `platformio.ini` `upload_speed` auf `460800` oder `115200` senken.
 - **Display zeigt falsche Pitch-/Roll-Werte:** Im Serial Monitor prüfen, welche Topics wirklich ankommen.

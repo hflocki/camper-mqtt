@@ -6,14 +6,14 @@ Kleines Touch-Display für das Wohnmobil auf Basis des **M5Stack Core2**. Es zei
 
 ## Wähle deine Entwicklungsumgebung
 
-Der Code ist in beiden Varianten identisch, du hast die Wahl:
+Es gibt nur einen Quellcode in `_arduino/roadbuddy/`, PlatformIO baut direkt aus diesem Ordner. Du hast die Wahl:
 
 | Ordner | Für wen | Anleitung |
 | ------ | ------- | --------- |
 | [`_arduino/`](_arduino/) | Arduino IDE (1.x und 2.x) | [Anleitung Arduino](_arduino/README.md) |
 | [`_platformio/`](_platformio/) | PlatformIO (VS Code oder CLI) | [Anleitung PlatformIO](_platformio/README.md) |
 
-In beiden Varianten brauchst du eine eigene `config.h` mit WLAN- und MQTT-Zugangsdaten. Als Vorlage liegt jeweils eine `config.example.h` bei, deine `config.h` ist per `.gitignore` vom Git ausgeschlossen.
+In beiden Varianten brauchst du eine eigene `_arduino/roadbuddy/config.h` mit WLAN- und MQTT-Zugangsdaten. Als Vorlage liegt `config.example.h` bei, deine `config.h` ist per `.gitignore` vom Git ausgeschlossen.
 
 ---
 
@@ -55,28 +55,28 @@ Das Display ist reiner Empfänger und fragt nichts ab, die Aktualisierungsrate b
 | ----- | --------- |
 | `camper/level/pitch` | Neigung vorne/hinten in Grad |
 | `camper/level/roll` | Neigung links/rechts in Grad |
-| `camper/waterlevel/percent` | Füllstand Frischwasser in % |
-| `camper/waterlevel/liters` | Tankinhalt in Litern |
-| `camper/waterlevel/status` | `online` / `offline` (Last Will) |
-| `camper/gaslevel/level` | Füllstand Gasflasche in % |
-| `camper/gaslevel/content` | Restmenge der Gasflasche (kg) |
-| `camper/gaslevel/battery` | Akku des Gassensors in % |
-| `camper/gaslevel/ble_state` | `OK`, sonst wird „BLE“ als Warnung gezeigt |
-| `camper/gaslevel/status` | `online` / `offline` (Last Will) |
+| `camper/tanklevel/water/percent` | Füllstand Frischwasser in % |
+| `camper/tanklevel/water/liters` | Tankinhalt in Litern |
+| `camper/tanklevel/gas/level` | Füllstand Gasflasche in % |
+| `camper/tanklevel/gas/content` | Restmenge der Gasflasche (kg) |
+| `camper/tanklevel/gas/battery` | Akku des Gassensors in % |
+| `camper/tanklevel/gas/ble_state` | `OK`, sonst wird „BLE“ als Warnung gezeigt |
+| `camper/tanklevel/status` | `online` / `offline` (Last Will, gilt für Wasser und Gas) |
 
-Weitere Topics unter diesen Präfixen (z. B. `rssi`, `voltage`, `raw_level`) werden ignoriert. Die Topics für Wasser und Gas stehen als Konstanten am Anfang des Sketches, das Level-Topic in `config.h`.
+Weitere Topics unter diesen Präfixen (z. B. `rssi`, `voltage`, `raw_level`, Grauwasser) werden ignoriert. Die Topics für Wasser und Gas stehen als Konstanten am Anfang des Sketches, das Level-Topic in `config.h`. Die früheren getrennten Geräte (`camper/waterlevel`, `camper/gaslevel`) werden nicht mehr unterstützt.
 
 Die Sensoren dazu:
 
-- Level: [ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT) von klehnst (ESP32 + Adafruit BNO085)
-- Wasser: [camper_waterlevel](https://github.com/hflocki/camper_waterlevel) (ESP32-C3 + Votronic Tankgeber)
-- Gas: camper_gaslevel (ESP32-C3, passives BLE-Advertising)
+- Level: [ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT) von klehnst (ESP32 + Adafruit BNO085), Topic-Präfix dort auf `camper/level` gestellt
+- Wasser und Gas: [camper-tanklevel](https://github.com/hflocki/camper-tanklevel) (ein ESP32-C3 für Frischwasser, Grauwasser und Gas)
+
+Mehr zeigt der RoadBuddy bewusst nicht: Heizung, Lüfter, Temperaturen und Warnungen laufen auf dem großen Wandpanel [camper-display](https://github.com/hflocki/camper-display).
 
 ---
 
 ## Anpassungen
 
-Alle Einstellungen stehen am Anfang des Sketches (`roadbuddy.ino` bzw. `main.cpp`):
+Alle Einstellungen stehen am Anfang von `roadbuddy.ino`:
 
 | Konstante | Wirkung |
 | --------- | ------- |
@@ -87,7 +87,7 @@ Alle Einstellungen stehen am Anfang des Sketches (`roadbuddy.ino` bzw. `main.cpp
 | `BUBBLE_FULL_SCALE_DEG` | Winkel, bei dem die Blase den Rand erreicht (Standard 10°) |
 | `ICON_SIGN_PITCH` / `ICON_SIGN_ROLL` | Kipprichtung der Fahrzeug-Icons umdrehen |
 | `ICON_GAIN` | Übertreibung des Kippwinkels, damit kleine Winkel sichtbar sind |
-| `TOPIC_WATER_*` / `TOPIC_GAS_*` | MQTT-Präfixe für Wasser und Gas |
+| `TOPIC_TANK_*` | MQTT-Topics für Wasser und Gas |
 
 WLAN-Hostname und MQTT-Client-ID beginnen mit `roadbuddy`.
 
@@ -106,12 +106,8 @@ m5core2-roadbuddy/
 │       └── config.example.h     – Vorlage für WLAN- und MQTT-Daten
 └── _platformio/
     ├── README.md                – Anleitung für PlatformIO
-    ├── platformio.ini
-    ├── src/main.cpp             – kompletter Sketch (identisch zu roadbuddy.ino)
-    └── include/config.example.h – Vorlage für WLAN- und MQTT-Daten
+    └── platformio.ini           – baut direkt aus _arduino/roadbuddy
 ```
-
-**Hinweis für Entwickler:** `roadbuddy.ino` und `main.cpp` sind inhaltlich identisch. Wer am Code ändert, sollte beide Dateien synchron halten, zum Beispiel mit `diff _arduino/roadbuddy/roadbuddy.ino _platformio/src/main.cpp`.
 
 ---
 
@@ -119,3 +115,9 @@ m5core2-roadbuddy/
 
 - Zugangsdaten gehören nur in `config.h`, diese Datei ist in `.gitignore` eingetragen und darf nie committet werden.
 - Der Prozentwert des Core2-Akkus ist nur eine Schätzung aus der Spannung.
+
+---
+
+## Fertige Firmware (GitHub Actions)
+
+Jeder Push wird automatisch gebaut (`.github/workflows/build.yml`, Board-Paket und Bibliotheken in den hier genannten Versionen). Das Ergebnis liegt im Reiter **Actions** beim jeweiligen Lauf als Download. Ein Tag `v…` (z. B. `git tag v1.2.0 && git push --tags`) legt zusätzlich ein **Release** mit der `.bin` an (flashen per USB). Für den CI-Build wird `config.example.h` als `config.h` verwendet, das Release enthält also keine Zugangsdaten und ist nur ein Beispiel; für den Camper selbst mit eigener `config.h` bauen.

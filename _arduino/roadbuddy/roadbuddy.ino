@@ -17,26 +17,16 @@
 #ifndef USE_GAS
 #define USE_GAS 1     // gas bottle
 #endif
-#ifndef USE_GREY
-#define USE_GREY 0    // grey water tank (combined firmware only)
-#endif
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 M5Canvas canvas(&M5.Display);  // off-screen buffer, avoids flicker
 
 // ---------- Topics ----------
-// Combined water + gas firmware (camper-tanklevel): <prefix>/water/..., <prefix>/gas/..., <prefix>/status
+// camper-tanklevel firmware: <prefix>/water/..., <prefix>/gas/..., one <prefix>/status for both
 const char* TOPIC_TANK_WATER      = "camper/tanklevel/water/";
-const char* TOPIC_TANK_GREY       = "camper/tanklevel/grey/";
-const char* TOPIC_TANK_GAS        = "camper/tanklevel/gas/";
+const char* TOPIC_TANK_GAS        = "camper/tanklevel/gas/";   // level, content, battery, ble_state
 const char* TOPIC_TANK_STATUS     = "camper/tanklevel/status";
-// Separate devices (camper-waterlevel / camper-gaslevel), still supported
-const char* TOPIC_WATER_ALL    = "camper/waterlevel/#";
-const char* TOPIC_WATER_PREFIX = "camper/waterlevel/";
-// Gas bottle topics: level, content, battery, ble_state, status
-const char* TOPIC_GAS_ALL     = "camper/gaslevel/#";
-const char* TOPIC_GAS_PREFIX   = "camper/gaslevel/";
 
 // ---------- Power management ----------
 const unsigned long DISPLAY_TIMEOUT_MS = 60UL * 1000UL;        // display off after this much inactivity
@@ -49,16 +39,13 @@ const uint64_t SLEEP_SAFETY_TIMER_US   = 24ULL * 3600ULL * 1000000ULL;
 // ---------- State ----------
 
 // Pages in display order; the system page is always present
-enum PageId { PAGE_LEVEL, PAGE_WATER, PAGE_GREY, PAGE_GAS, PAGE_SYSTEM };
+enum PageId { PAGE_LEVEL, PAGE_WATER, PAGE_GAS, PAGE_SYSTEM };
 static const PageId PAGES[] = {
 #if USE_LEVEL
   PAGE_LEVEL,
 #endif
 #if USE_WATER
   PAGE_WATER,
-#endif
-#if USE_GREY
-  PAGE_GREY,
 #endif
 #if USE_GAS
   PAGE_GAS,
@@ -86,10 +73,6 @@ RTC_DATA_ATTR int waterPercent = -1;       // -1 = no data yet
 RTC_DATA_ATTR float waterLiters = -1.0f;   // <0 = no data yet
 bool waterOnline = false;
 bool waterStatusKnown = false;
-
-// Grey water tank
-RTC_DATA_ATTR int greyPercent = -1;        // -1 = no data yet
-RTC_DATA_ATTR float greyLiters = -1.0f;    // <0 = no data yet
 
 // Gas bottle
 RTC_DATA_ATTR int gasPercent = -1;         // -1 = no data yet (topic "level", 0-100 %)
@@ -123,8 +106,6 @@ static const uint16_t COL_WARN   = lgfx::color565(255, 190, 40);
 static const uint16_t COL_BAD    = lgfx::color565(240, 70, 70);
 static const uint16_t COL_ACCENT = lgfx::color565(60, 160, 255);
 static const uint16_t COL_WAVE   = lgfx::color565(130, 205, 255);
-static const uint16_t COL_GREY_W = lgfx::color565(135, 145, 115);
-static const uint16_t COL_GREY_HI = lgfx::color565(185, 195, 160);
 static const uint16_t COL_GAS    = lgfx::color565(255, 150, 40);
 static const uint16_t COL_GAS_HI = lgfx::color565(255, 205, 110);
 static const uint16_t COL_STEEL  = lgfx::color565(150, 160, 175);
@@ -364,8 +345,8 @@ void drawPageSystem() {
   drawRow(184, "Laufzeit", String(up), COL_DIM);
 }
 
-// ---------- Tank pages (fresh water / grey water) ----------
-// highIsBad: grey water warns when the tank is nearly FULL, fresh water when it is nearly empty
+// ---------- Tank page (fresh water) ----------
+// highIsBad: warn when the tank is nearly FULL (waste tank) instead of nearly empty (fresh water)
 void drawTankPage(int percent, float liters, bool online, bool statusKnown,
                   bool highIsBad, uint16_t liquidCol, uint16_t surfaceCol) {
   drawHeader();
@@ -455,10 +436,6 @@ void drawPageWater() {
   drawTankPage(waterPercent, waterLiters, waterOnline, waterStatusKnown, false, COL_ACCENT, COL_WAVE);
 }
 
-void drawPageGrey() {
-  // The grey water sensor shares the online/offline status of the water device
-  drawTankPage(greyPercent, greyLiters, waterOnline, waterStatusKnown, true, COL_GREY_W, COL_GREY_HI);
-}
 
 // ---------- Gas page ----------
 // Horizontal inset of a rounded rectangle at row y (all four corners share radius r)
@@ -580,9 +557,6 @@ void render() {
 #if USE_WATER
     case PAGE_WATER:  drawPageWater();  break;
 #endif
-#if USE_GREY
-    case PAGE_GREY:   drawPageGrey();   break;
-#endif
 #if USE_GAS
     case PAGE_GAS:    drawPageGas();    break;
 #endif
@@ -623,17 +597,6 @@ void handleWater(const String& t, const String& message) {
     waterPercent = constrain((int)message.toInt(), 0, 100);
   } else if (t.endsWith("/liters")) {
     waterLiters = message.toFloat();
-  } else if (t.endsWith("/status")) {          // separate device only
-    waterOnline = (message == "online");
-    waterStatusKnown = true;
-  }
-}
-
-void handleGrey(const String& t, const String& message) {
-  if (t.endsWith("/percent")) {
-    greyPercent = constrain((int)message.toInt(), 0, 100);
-  } else if (t.endsWith("/liters")) {
-    greyLiters = message.toFloat();
   }
 }
 
@@ -646,9 +609,6 @@ void handleGas(const String& t, const String& message) {
     gasBattery = constrain((int)message.toInt(), 0, 100);
   } else if (t.endsWith("/ble_state")) {
     gasBleOk = (message == "OK");
-  } else if (t.endsWith("/status")) {          // separate device only
-    gasOnline = (message == "online");
-    gasStatusKnown = true;
   }
 }
 
@@ -660,7 +620,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   String t(topic);
   Serial.printf("MQTT %s = %s\n", topic, message.c_str());  // debug: shows every topic
 
-  // Combined device: one status topic covers both water and gas
+  // One status topic covers both water and gas
   if (t == TOPIC_TANK_STATUS) {
     bool online = (message == "online");
     waterOnline = gasOnline = online;
@@ -670,26 +630,15 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
 #if USE_WATER
-  // Water tank topics (combined or separate device)
-  if (t.startsWith(TOPIC_TANK_WATER) || t.startsWith(TOPIC_WATER_PREFIX)) {
+  if (t.startsWith(TOPIC_TANK_WATER)) {
     handleWater(t, message);
     dirty = true;
     return;
   }
 #endif
 
-#if USE_GREY
-  // Grey water tank topics (combined firmware only)
-  if (t.startsWith(TOPIC_TANK_GREY)) {
-    handleGrey(t, message);
-    dirty = true;
-    return;
-  }
-#endif
-
 #if USE_GAS
-  // Gas bottle topics (combined or separate device)
-  if (t.startsWith(TOPIC_TANK_GAS) || t.startsWith(TOPIC_GAS_PREFIX)) {
+  if (t.startsWith(TOPIC_TANK_GAS)) {
     handleGas(t, message);
     dirty = true;
     return;
@@ -725,19 +674,14 @@ void mqttReconnect() {
 #if USE_LEVEL
     client.subscribe(mqtt_topic);
 #endif
-#if USE_WATER || USE_GREY || USE_GAS
-    client.subscribe(TOPIC_TANK_STATUS);  // combined firmware: shared online/offline status
+#if USE_WATER || USE_GAS
+    client.subscribe(TOPIC_TANK_STATUS);  // shared online/offline status of the tank firmware
 #endif
 #if USE_WATER
     client.subscribe((String(TOPIC_TANK_WATER) + "#").c_str());
-    client.subscribe(TOPIC_WATER_ALL);
-#endif
-#if USE_GREY
-    client.subscribe((String(TOPIC_TANK_GREY) + "#").c_str());
 #endif
 #if USE_GAS
     client.subscribe((String(TOPIC_TANK_GAS) + "#").c_str());
-    client.subscribe(TOPIC_GAS_ALL);
 #endif
     dirty = true;
   }
@@ -809,7 +753,7 @@ void loop() {
   if (display_on) {
     unsigned long since = millis() - lastRedraw;
     PageId cur = PAGES[page_index];
-    unsigned long interval = (cur == PAGE_WATER || cur == PAGE_GREY) ? 120 : 1000;  // tank pages animate
+    unsigned long interval = (cur == PAGE_WATER) ? 120 : 1000;  // tank pages animate
     if ((dirty && since >= 150) || since >= interval) {
       render();
     }

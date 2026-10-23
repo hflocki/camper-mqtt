@@ -1,0 +1,6 @@
+# Own credentials, never commit
+config.h
+
+# PlatformIO
+.pio/
+.vscode/
