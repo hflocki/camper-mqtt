@@ -5,7 +5,7 @@ Firmware für einen ESP8266 (ESP-12E, NodeMCU, Wemos D1 mini) oder ESP32-C3, die
 - Sensoren werden am Bus **automatisch gefunden** und in der Web-UI benannt, keine Adressen im Code
 - Werte per **MQTT** mit Home-Assistant-Discovery
 - Web-Oberfläche mit Live-Werten, Min/Max seit Start, Offset-Korrektur je Sensor
-- Gleicher Aufbau wie [camper-tanklevel](https://github.com/hflocki/camper-tanklevel): Access Point beim ersten Start, WLAN/MQTT im Browser einstellen, OTA-Updates
+- Access Point beim ersten Start, WLAN/MQTT im Browser einstellen, OTA-Updates
 
 ## Web-Oberfläche
 
