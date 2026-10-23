@@ -442,6 +442,14 @@ code { font-family: ui-monospace, Menlo, monospace; }
                 <div class="form-hint">Werte unter <code>&lt;prefix&gt;/water/…</code> und <code>&lt;prefix&gt;/gas/…</code></div>
             </div>
         </div>
+        <div class="card">
+            <div class="card-title">Web-Oberfläche Login</div>
+            <div class="form-row">
+                <div class="form-group"><label>Benutzer</label><input type="text" id="cfg-web-user" autocomplete="off" autocapitalize="none"></div>
+                <div class="form-group"><label>Passwort</label><input type="password" id="cfg-web-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            </div>
+            <div class="form-hint">Leerer Benutzer = kein Login. Login vergessen: über USB den Befehl <code>noauth</code> im seriellen Monitor senden.</div>
+        </div>
         <div class="btn-row"><button class="btn btn-primary" onclick="saveSetup()">💾 Speichern</button></div>
     </div>
 
@@ -626,6 +634,7 @@ async function loadSetup() {
         $('cfg-mqtt-port').value = cfg.mqtt_port || 1883;
         $('cfg-mqtt-user').value = cfg.mqtt_user || '';
         $('cfg-mqtt-prefix').value = cfg.mqtt_prefix || 'camper/tanklevel';
+        $('cfg-web-user').value = cfg.web_user || '';
         $('cfg-wifi-ssid').value = cfg.wifi_ssid || '';
         $('cfg-ap-ssid').value = cfg.ap_ssid || '';
         $('fw-version').textContent = cfg.version || '--';
@@ -979,6 +988,9 @@ async function saveSetup() {
     // An empty password field means "keep the stored password"
     const pass = $('cfg-mqtt-pass').value;
     if (pass) cfg.mqtt_pass = pass;
+    cfg.web_user = $('cfg-web-user').value.trim();
+    const webPass = $('cfg-web-pass').value;
+    if (webPass) cfg.web_pass = webPass;
 
     try {
         await postConfig(cfg);

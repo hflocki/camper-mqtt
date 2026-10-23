@@ -6,7 +6,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.2.2"
+#define FW_VERSION            "1.3.0"
 
 #define DEFAULT_AP_SSID       "Camper-Tanklevel" // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
 #define DEFAULT_AP_PASSWORD   "tanklevel1234"    // Test placeholder (min. 8 characters) - change in the web UI
@@ -201,6 +201,9 @@ struct AppConfig {
     char mqtt_user[32];
     char mqtt_pass[32];
     char mqtt_prefix[32];
+
+    char web_user[32];     // Web UI login, empty = no login
+    char web_pass[32];
 
     // Enabled sensors (applied at boot)
     bool water_enabled;

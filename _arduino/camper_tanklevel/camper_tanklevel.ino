@@ -128,8 +128,14 @@ void loop() {
             config.fresh.filter_active = !config.fresh.filter_active;
             saveConfig();
             Serial.printf("[CMD] Fresh water filter: %s\n", config.fresh.filter_active ? "ON" : "OFF");
+        } else if (cmd == "noauth") {
+            // Forgotten web login: switch it off over USB
+            config.web_user[0] = '\0';
+            config.web_pass[0] = '\0';
+            saveConfig();
+            Serial.println("[CMD] Web login removed");
         } else if (cmd == "help") {
-            Serial.println("[CMD] Commands: read, scan, filter, help");
+            Serial.println("[CMD] Commands: read, scan, filter, noauth, help");
         }
     }
 

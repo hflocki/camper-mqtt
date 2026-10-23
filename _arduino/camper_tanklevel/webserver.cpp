@@ -27,6 +27,19 @@ static void handleApiGetConfig(AsyncWebServerRequest* request);
 static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total);
 static void handleApiRestart(AsyncWebServerRequest* request);
 
+
+// Web UI login (HTTP basic auth). Empty user = no login.
+static bool authOk(AsyncWebServerRequest* request) {
+    if (config.web_user[0] == '\0') return true;
+    return request->authenticate(config.web_user, config.web_pass);
+}
+
+static bool auth(AsyncWebServerRequest* request) {
+    if (authOk(request)) return true;
+    request->requestAuthentication();
+    return false;
+}
+
 // ============================================================
 // Helpers
 // ============================================================
@@ -73,6 +86,8 @@ static void setDefaults() {
     memset(config.mqtt_user, 0, sizeof(config.mqtt_user));
     memset(config.mqtt_pass, 0, sizeof(config.mqtt_pass));
     strlcpy(config.mqtt_prefix, DEFAULT_MQTT_PREFIX, sizeof(config.mqtt_prefix));
+    memset(config.web_user, 0, sizeof(config.web_user));
+    memset(config.web_pass, 0, sizeof(config.web_pass));
 
     config.water_enabled = (WATER_ENABLED != 0);
     config.grey_enabled = (GREY_ENABLED != 0);
@@ -240,6 +255,8 @@ void webserverInit() {
     loadConfig();
 
     ws.onEvent(onWsEvent);
+    // Browsers send the basic auth credentials of the page along with the WebSocket upgrade
+    ws.handleHandshake([](AsyncWebServerRequest* request) { return authOk(request); });
     server.addHandler(&ws);
 
     // Serve ONLY index.html. Serving the whole filesystem would expose /config.json
@@ -247,6 +264,7 @@ void webserverInit() {
     // The web UI is stored gzip compressed (about 1/4 of the size): loads much faster,
     // because WiFi runs in modem sleep for the Bluetooth coexistence.
     server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (!auth(request)) return;
         if (fsReady && LittleFS.exists("/index.html.gz")) {
             AsyncWebServerResponse* response = request->beginResponse(LittleFS, "/index.html.gz", "text/html");
             response->addHeader("Content-Encoding", "gzip");
@@ -261,12 +279,21 @@ void webserverInit() {
     });
 
     server.on("/api/config", HTTP_GET, handleApiGetConfig);
-    server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL, handleApiSaveConfig);
+    server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL,
+              [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+                  // Checked per chunk: the body handler runs before the request handler
+                  if (!authOk(request)) {
+                      if (index + len == total) request->requestAuthentication();
+                      return;
+                  }
+                  handleApiSaveConfig(request, data, len, index, total);
+              });
     server.on("/api/restart", HTTP_POST, handleApiRestart);
 
     // Toggle the smoothing filter (state-changing endpoint, so POST instead of GET).
     // /api/filter = fresh water, /api/filter?tank=grey = grey water
     server.on("/api/filter", HTTP_POST, [](AsyncWebServerRequest* request) {
+        if (!auth(request)) return;
         bool isGrey = request->hasParam("tank") && request->getParam("tank")->value() == "grey";
         TankConfig& t = isGrey ? config.grey : config.fresh;
         t.filter_active = !t.filter_active;
@@ -277,6 +304,7 @@ void webserverInit() {
 
     // Nearby BLE devices (for picking the gas sensor MAC in the web UI)
     server.on("/api/scan", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (!auth(request)) return;
         JsonDocument doc;
         JsonArray arr = doc["devices"].to<JsonArray>();
         if (config.gas_enabled) gasFillSeenList(arr);
@@ -379,6 +407,7 @@ static void onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
 // ============================================================
 
 static void handleApiGetConfig(AsyncWebServerRequest* request) {
+    if (!auth(request)) return;
     JsonDocument doc;
 
     // Passwords are never sent back to the browser
@@ -393,6 +422,8 @@ static void handleApiGetConfig(AsyncWebServerRequest* request) {
     doc["mqtt_user"] = (const char*)config.mqtt_user;
     doc["mqtt_pass_set"] = strlen(config.mqtt_pass) > 0;
     doc["mqtt_prefix"] = (const char*)config.mqtt_prefix;
+    doc["web_user"] = (const char*)config.web_user;
+    doc["web_pass_set"] = strlen(config.web_pass) > 0;
     doc["version"] = FW_VERSION;
     doc["water_enabled"] = config.water_enabled;
     doc["grey_enabled"] = config.grey_enabled;
@@ -468,6 +499,12 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
     bool hasTx = doc["wifi_tx_power"].is<int>();
     if (hasTx && !isValidTxPower(doc["wifi_tx_power"].as<int>())) { sendError(request, "Invalid TX power"); return; }
 
+    // A login needs a password: either sent now or already stored
+    if (doc["web_user"].is<const char*>() && doc["web_user"].as<const char*>()[0]) {
+        const char* wp = doc["web_pass"] | "";
+        if (wp[0] == '\0' && config.web_pass[0] == '\0') { sendError(request, "Login needs a password"); return; }
+    }
+
     // Water tanks (static: two tables are too big for the async web task stack)
     static TankUpdate freshUpd, greyUpd;
     freshUpd = TankUpdate();
@@ -511,6 +548,9 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
     copyIfPresent(doc, "mqtt_user",   config.mqtt_user,   sizeof(config.mqtt_user),   false);
     copyIfPresent(doc, "mqtt_pass",   config.mqtt_pass,   sizeof(config.mqtt_pass),   true);
     copyIfPresent(doc, "mqtt_prefix", config.mqtt_prefix, sizeof(config.mqtt_prefix), true);
+    copyIfPresent(doc, "web_user",    config.web_user,    sizeof(config.web_user),    false);
+    copyIfPresent(doc, "web_pass",    config.web_pass,    sizeof(config.web_pass),    true);
+    if (config.web_user[0] == '\0') config.web_pass[0] = '\0';   // No user = login off
 
     // WiFi TX power and AP mode take effect after the restart triggered by the web UI
     if (hasTx) config.wifi_tx_power = (int8_t)doc["wifi_tx_power"].as<int>();
@@ -547,6 +587,7 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
 }
 
 static void handleApiRestart(AsyncWebServerRequest* request) {
+    if (!auth(request)) return;
     request->send(200, "application/json", "{\"status\":\"restarting\"}");
     // Do not block the async web task: restart from webserverLoop() instead
     restartPending = true;
@@ -590,6 +631,9 @@ void loadConfig() {
     strlcpy(config.mqtt_user,   doc["mqtt_user"]   | "",                  sizeof(config.mqtt_user));
     strlcpy(config.mqtt_pass,   doc["mqtt_pass"]   | "",                  sizeof(config.mqtt_pass));
     strlcpy(config.mqtt_prefix, doc["mqtt_prefix"] | DEFAULT_MQTT_PREFIX, sizeof(config.mqtt_prefix));
+    strlcpy(config.web_user,    doc["web_user"]    | "",                  sizeof(config.web_user));
+    strlcpy(config.web_pass,    doc["web_pass"]    | "",                  sizeof(config.web_pass));
+    if (config.web_user[0] == '\0') config.web_pass[0] = '\0';
 
     config.water_enabled = doc["water_enabled"] | (WATER_ENABLED != 0);
     config.grey_enabled = doc["grey_enabled"] | (GREY_ENABLED != 0);
@@ -629,6 +673,8 @@ void saveConfig() {
     doc["mqtt_user"] = (const char*)config.mqtt_user;
     doc["mqtt_pass"] = (const char*)config.mqtt_pass;
     doc["mqtt_prefix"] = (const char*)config.mqtt_prefix;
+    doc["web_user"] = (const char*)config.web_user;
+    doc["web_pass"] = (const char*)config.web_pass;
 
     doc["water_enabled"] = config.water_enabled;
     doc["grey_enabled"] = config.grey_enabled;

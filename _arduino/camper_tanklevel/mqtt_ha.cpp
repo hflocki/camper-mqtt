@@ -76,10 +76,10 @@ void mqttLoop() {
 
             if (strlen(config.mqtt_user) > 0) {
                 connected = mqtt.connect(clientId.c_str(), config.mqtt_user, config.mqtt_pass,
-                                         willTopic.c_str(), 0, true, "offline");
+                                         willTopic.c_str(), 1, true, "offline");
             } else {
                 connected = mqtt.connect(clientId.c_str(),
-                                         NULL, NULL, willTopic.c_str(), 0, true, "offline");
+                                         NULL, NULL, willTopic.c_str(), 1, true, "offline");
             }
 
             if (connected) {
