@@ -1,0 +1,1 @@
+# tools/embed_web.py uses only the Python standard library - no packages required
