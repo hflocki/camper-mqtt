@@ -4,16 +4,15 @@ Elektronik für den Camper, die über **MQTT** zusammenspielt: Tanks, Temperatur
 
 ```mermaid
 flowchart LR
-  subgraph Broker["MQTT-Broker (z. B. Teltonika RUT956)"]
-  end
-  tank["tanklevel<br/>Wasser, Grau, Gas"] --> Broker
-  temp["temp<br/>DS18B20 + Alarme"] --> Broker
-  heater["heater<br/>Truma Combi (LIN)"] <--> Broker
-  fan["maxxfan<br/>VanTurtle"] <--> Broker
-  level["Levelsensor<br/>BNO085 (extern)"] --> Broker
-  Broker <--> display["display<br/>4&quot; Wandpanel + Webseite"]
-  Broker --> rb["roadbuddy<br/>M5Stack Core2"]
-  Broker <-.-> ha["Home Assistant<br/>(optional)"]
+  broker(("MQTT-Broker<br/>z. B. RUT956"))
+  tank["tanklevel<br/>Wasser, Grau, Gas"] --> broker
+  temp["temp<br/>DS18B20 + Alarme"] --> broker
+  heater["heater<br/>Truma Combi (LIN)"] <--> broker
+  fan["maxxfan<br/>VanTurtle"] <--> broker
+  level["Levelsensor<br/>BNO085 (extern)"] --> broker
+  broker <--> display["display<br/>4-Zoll-Wandpanel + Webseite"]
+  broker --> rb["roadbuddy<br/>M5Stack Core2"]
+  broker -.- ha["Home Assistant<br/>(optional)"]
 ```
 
 ## Geräte
