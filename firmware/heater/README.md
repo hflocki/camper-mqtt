@@ -36,6 +36,8 @@ Pins lassen sich im jeweiligen Block in `config.h` anpassen. Optional: `LIN_CS_P
 
 ## Arduino IDE einrichten
 
+> **Eigene Passwörter, WLAN und Broker:** `config_local.h.example` im Sketch-Ordner nach `config_local.h` kopieren und anpassen. Die Datei geht nicht nach GitHub. Details in der [Haupt-README](../../README.md#eigene-einstellungen-config_localh).
+
 1. Boardverwalter: **esp32 von Espressif, Version 3.x** (kompiliert mit 3.3).
 2. Bibliotheken über den Bibliotheksverwalter installieren:
    - **PubSubClient** (Nick O'Leary)
@@ -157,7 +159,7 @@ In `config.h`:
 - `HEATER_HAS_ELECTRIC` – E-Heizstab (Combi E), blendet die Energiequellen-Auswahl in HA ein
 - `LIN_OBSERVER_MODE` – nur mithören, nie antworten (Fehlersuche)
 
-**Eigene Werte ohne `config.h` zu ändern:** `truma_heater/config_local.h.example` nach `truma_heater/config_local.h` kopieren und dort z. B. ein eigenes AP-Passwort (`DEFAULT_AP_PASSWORD`) oder die Board-Auswahl eintragen. Die Datei wird automatisch eingebunden, von Git ignoriert und von Patches nie angefasst. WLAN- und MQTT-Zugangsdaten gehören weiterhin in die Weboberfläche.
+**Eigene Werte ohne `config.h` zu ändern:** `truma_heater/config_local.h.example` nach `truma_heater/config_local.h` kopieren und dort z. B. ein eigenes AP-Passwort (`DEFAULT_AP_PASSWORD`) oder die Board-Auswahl eintragen. Die Datei wird automatisch eingebunden, von Git ignoriert und von Patches nie angefasst. Auch WLAN, Broker und Web-Login ab Werk lassen sich dort eintragen; sie gelten, solange im Gerät noch nichts gespeichert ist (erster Start, Werkseinstellungen, „Erase All Flash“).
 
 ## Fehlersuche
 

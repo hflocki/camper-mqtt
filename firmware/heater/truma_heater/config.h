@@ -175,6 +175,29 @@
 #ifndef DEFAULT_AP_PASSWORD
 #define DEFAULT_AP_PASSWORD "truma1234"  // min. 8 characters
 #endif
+// Factory defaults for WiFi / MQTT / web login. Used only while nothing is stored in NVS yet
+// (first boot, factory reset or "Erase All Flash"). Set your own in config_local.h.
+#ifndef DEFAULT_WIFI_SSID
+#define DEFAULT_WIFI_SSID ""
+#endif
+#ifndef DEFAULT_WIFI_PASSWORD
+#define DEFAULT_WIFI_PASSWORD ""
+#endif
+#ifndef DEFAULT_MQTT_SERVER
+#define DEFAULT_MQTT_SERVER ""
+#endif
+#ifndef DEFAULT_MQTT_USER
+#define DEFAULT_MQTT_USER ""
+#endif
+#ifndef DEFAULT_MQTT_PASSWORD
+#define DEFAULT_MQTT_PASSWORD ""
+#endif
+#ifndef DEFAULT_WEB_USER
+#define DEFAULT_WEB_USER ""
+#endif
+#ifndef DEFAULT_WEB_PASSWORD
+#define DEFAULT_WEB_PASSWORD ""
+#endif
 #ifndef DEFAULT_MQTT_PORT
 #define DEFAULT_MQTT_PORT 1883
 #endif

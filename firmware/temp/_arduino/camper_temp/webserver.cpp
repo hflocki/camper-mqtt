@@ -53,15 +53,15 @@ static void setDefaults() {
     strlcpy(config.ap_pass, DEFAULT_AP_PASSWORD, sizeof(config.ap_pass));
     config.wifi_tx_power = DEFAULT_TX_POWER;
     config.ap_always = DEFAULT_AP_ALWAYS;
-    memset(config.wifi_ssid, 0, sizeof(config.wifi_ssid));
-    memset(config.wifi_pass, 0, sizeof(config.wifi_pass));
+    strlcpy(config.wifi_ssid, DEFAULT_WIFI_SSID, sizeof(config.wifi_ssid));
+    strlcpy(config.wifi_pass, DEFAULT_WIFI_PASSWORD, sizeof(config.wifi_pass));
     strlcpy(config.mqtt_server, DEFAULT_MQTT_SERVER, sizeof(config.mqtt_server));
     config.mqtt_port = DEFAULT_MQTT_PORT;
-    memset(config.mqtt_user, 0, sizeof(config.mqtt_user));
-    memset(config.mqtt_pass, 0, sizeof(config.mqtt_pass));
+    strlcpy(config.mqtt_user, DEFAULT_MQTT_USER, sizeof(config.mqtt_user));
+    strlcpy(config.mqtt_pass, DEFAULT_MQTT_PASSWORD, sizeof(config.mqtt_pass));
     strlcpy(config.mqtt_prefix, DEFAULT_MQTT_PREFIX, sizeof(config.mqtt_prefix));
-    memset(config.web_user, 0, sizeof(config.web_user));
-    memset(config.web_pass, 0, sizeof(config.web_pass));
+    strlcpy(config.web_user, DEFAULT_WEB_USER, sizeof(config.web_user));
+    strlcpy(config.web_pass, DEFAULT_WEB_PASSWORD, sizeof(config.web_pass));
 
     config.interval_s = DEFAULT_INTERVAL_S;
     config.resolution = DEFAULT_RESOLUTION;
@@ -526,8 +526,8 @@ void loadConfig() {
         return;
     }
 
-    strlcpy(config.wifi_ssid,   doc["wifi_ssid"]   | "",                  sizeof(config.wifi_ssid));
-    strlcpy(config.wifi_pass,   doc["wifi_pass"]   | "",                  sizeof(config.wifi_pass));
+    strlcpy(config.wifi_ssid,   doc["wifi_ssid"]   | DEFAULT_WIFI_SSID,     sizeof(config.wifi_ssid));
+    strlcpy(config.wifi_pass,   doc["wifi_pass"]   | DEFAULT_WIFI_PASSWORD, sizeof(config.wifi_pass));
     strlcpy(config.ap_ssid,     doc["ap_ssid"]     | defaultApSsid(),     sizeof(config.ap_ssid));
     strlcpy(config.ap_pass,     doc["ap_pass"]     | DEFAULT_AP_PASSWORD, sizeof(config.ap_pass));
     int tx = doc["wifi_tx_power"] | DEFAULT_TX_POWER;
@@ -535,11 +535,11 @@ void loadConfig() {
     config.ap_always = doc["ap_always"] | DEFAULT_AP_ALWAYS;
     strlcpy(config.mqtt_server, doc["mqtt_server"] | DEFAULT_MQTT_SERVER, sizeof(config.mqtt_server));
     config.mqtt_port = doc["mqtt_port"] | DEFAULT_MQTT_PORT;
-    strlcpy(config.mqtt_user,   doc["mqtt_user"]   | "",                  sizeof(config.mqtt_user));
-    strlcpy(config.mqtt_pass,   doc["mqtt_pass"]   | "",                  sizeof(config.mqtt_pass));
+    strlcpy(config.mqtt_user,   doc["mqtt_user"]   | DEFAULT_MQTT_USER,     sizeof(config.mqtt_user));
+    strlcpy(config.mqtt_pass,   doc["mqtt_pass"]   | DEFAULT_MQTT_PASSWORD, sizeof(config.mqtt_pass));
     strlcpy(config.mqtt_prefix, doc["mqtt_prefix"] | DEFAULT_MQTT_PREFIX, sizeof(config.mqtt_prefix));
-    strlcpy(config.web_user,    doc["web_user"]    | "",                  sizeof(config.web_user));
-    strlcpy(config.web_pass,    doc["web_pass"]    | "",                  sizeof(config.web_pass));
+    strlcpy(config.web_user,    doc["web_user"]    | DEFAULT_WEB_USER,      sizeof(config.web_user));
+    strlcpy(config.web_pass,    doc["web_pass"]    | DEFAULT_WEB_PASSWORD,  sizeof(config.web_pass));
     if (config.web_user[0] == '\0') config.web_pass[0] = '\0';
 
     int iv = doc["interval"] | DEFAULT_INTERVAL_S;

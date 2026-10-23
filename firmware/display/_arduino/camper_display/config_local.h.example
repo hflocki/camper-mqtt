@@ -1,0 +1,27 @@
+// Personal settings that must not end up in git.
+// Copy this file to config_local.h (same folder). config_local.h is ignored by git, so
+// pulls, patches and CI builds never touch it. Only keep the lines you want to change:
+// everything here wins over the defaults in config.h.
+#pragma once
+
+// ---- Passwords -------------------------------------------------------
+#define DEFAULT_AP_PASSWORD     "my-ap-password"   // setup access point, min. 8 characters
+#define DEFAULT_OTA_PASSWORD    "my-ota-password"  // Arduino IDE network port
+
+// ---- Factory defaults ------------------------------------------------
+// Used only while nothing is stored on the device yet (first boot, factory reset or
+// flashing with "Erase All Flash"). Values changed later in the web UI win.
+#define DEFAULT_WIFI_SSID       "my-wifi"
+#define DEFAULT_WIFI_PASSWORD   "my-wifi-password"
+#define DEFAULT_MQTT_SERVER     "192.168.1.1"
+// #define DEFAULT_MQTT_PORT    1883
+// #define DEFAULT_MQTT_USER     "mqtt-user"
+// #define DEFAULT_MQTT_PASSWORD "mqtt-password"
+// #define DEFAULT_WEB_USER      "admin"
+// #define DEFAULT_WEB_PASSWORD  "web-password"
+
+// ---- Device ----------------------------------------------------------
+// #define DEFAULT_NTP_SERVER   "192.168.1.1"     // e.g. the router
+// #define LCD_ROTATION         0                 // 0..3, wall mount orientation
+// #define LCD_INIT_TYPE        9                 // 1 for older panel batches
+// #define DEFAULT_BRIGHTNESS   80

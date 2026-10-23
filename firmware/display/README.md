@@ -73,6 +73,8 @@ docs/                      Screenshots
 
 ## Arduino IDE
 
+> **Eigene Passwörter, WLAN und Broker:** `config_local.h.example` im Sketch-Ordner nach `config_local.h` kopieren und anpassen. Die Datei geht nicht nach GitHub. Details in der [Haupt-README](../../README.md#eigene-einstellungen-config_localh).
+
 **Board-Paket:** esp32 von Espressif **3.3.x** (getestet mit 3.3.2)
 
 | Einstellung | Wert |

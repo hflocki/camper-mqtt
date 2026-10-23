@@ -53,6 +53,8 @@ Tasten werden als Impuls ausgegeben (Standard 150 ms, im Web-UI einstellbar), mi
 
 ## Arduino IDE
 
+> **Eigene Passwörter, WLAN und Broker:** `config_local.h.example` im Sketch-Ordner nach `config_local.h` kopieren und anpassen. Die Datei geht nicht nach GitHub. Details in der [Haupt-README](../../README.md#eigene-einstellungen-config_localh).
+
 | Einstellung | Wert |
 | --- | --- |
 | Board | ESP32C3 Dev Module |

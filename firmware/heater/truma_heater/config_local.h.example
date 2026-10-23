@@ -1,11 +1,25 @@
-// Personal settings that should not end up in git.
-// Copy this file to config_local.h (same folder). config_local.h is ignored by git, so patches and
-// updates never touch it. Only add what you want to change.
+// Personal settings that must not end up in git.
+// Copy this file to config_local.h (same folder). config_local.h is ignored by git, so
+// pulls, patches and CI builds never touch it. Only keep the lines you want to change:
+// everything here wins over the defaults in config.h.
 #pragma once
 
-// Password of the setup access point (min. 8 characters)
-#define DEFAULT_AP_PASSWORD "change-me-please"
+// ---- Passwords -------------------------------------------------------
+#define DEFAULT_AP_PASSWORD     "my-ap-password"   // setup access point, min. 8 characters
 
-// Optional examples:
-// #define DEFAULT_MQTT_BASE "camper/truma"
-// #define BOARD_ESP32C3_SUPERMINI
+// ---- Factory defaults ------------------------------------------------
+// Used only while nothing is stored on the device yet (first boot, factory reset or
+// flashing with "Erase All Flash"). Values changed later in the web UI win.
+#define DEFAULT_WIFI_SSID       "my-wifi"
+#define DEFAULT_WIFI_PASSWORD   "my-wifi-password"
+#define DEFAULT_MQTT_SERVER     "192.168.1.1"
+// #define DEFAULT_MQTT_PORT    1883
+// #define DEFAULT_MQTT_USER     "mqtt-user"
+// #define DEFAULT_MQTT_PASSWORD "mqtt-password"
+// #define DEFAULT_WEB_USER      "admin"
+// #define DEFAULT_WEB_PASSWORD  "web-password"
+
+// ---- Device ----------------------------------------------------------
+// #define BOARD_ESP32C3_SUPERMINI                // board selection, see config.h
+// #define DEFAULT_MQTT_BASE    "camper/heater"
+// #define DEFAULT_NTP_SERVER   "192.168.1.1"

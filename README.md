@@ -47,6 +47,31 @@ Alle Geräte halten sich an dasselbe Schema, damit Displays und Home Assistant s
 | Web-Oberfläche | Gleiche Optik auf allen Geräten, optionaler Login (HTTP Basic Auth); Login vergessen → `noauth` im seriellen Monitor bzw. Werkseinstellungen |
 | Firmware-Version | `FW_VERSION` in der `config.h` des Geräts, sichtbar im Web-UI und in HA |
 
+## Eigene Einstellungen (`config_local.h`)
+
+Passwörter, WLAN und Broker gehören nicht ins Repo. Jedes Gerät hat dafür neben seiner `config.h` eine Vorlage `config_local.h.example`:
+
+```bash
+cd firmware/temp/_arduino/camper_temp
+cp config_local.h.example config_local.h   # then edit
+```
+
+Alles, was in `config_local.h` steht, gilt statt des Standardwerts aus `config.h`. Die Datei ist per `.gitignore` ausgeschlossen, landet also nie auf GitHub, und Updates oder Patches überschreiben sie nicht. Typisch:
+
+| Wert | Wirkung |
+| --- | --- |
+| `DEFAULT_AP_PASSWORD` | Passwort des Setup-Access-Points |
+| `DEFAULT_OTA_PASSWORD` | Passwort für Updates über den Netzwerk-Port der Arduino IDE |
+| `DEFAULT_WIFI_SSID` / `DEFAULT_WIFI_PASSWORD` | WLAN, mit dem sich ein frisch geflashtes Gerät sofort verbindet |
+| `DEFAULT_MQTT_SERVER`, `_USER`, `_PASSWORD` | Broker ab Werk |
+| `DEFAULT_WEB_USER` / `DEFAULT_WEB_PASSWORD` | Login für die Web-Oberfläche ab Werk |
+
+Außerdem lässt sich jeder andere Wert aus `config.h` überschreiben (Pins, Prefix, Tankgröße …).
+
+Wichtig: WLAN, MQTT und Login ab Werk wirken nur, solange auf dem Gerät noch nichts gespeichert ist. Ein normales Update über bestehende Einstellungen ändert sie nicht. Neu übernommen werden sie nach **Werkseinstellungen** im Web-UI, nach dem Flashen mit **Erase All Flash Before Sketch Upload: Enabled** (Arduino IDE, Menü Werkzeuge) bzw. bei temp und tanklevel nach dem Hochladen des LittleFS-Images. Die Passwörter für Access Point und OTA gelten dagegen immer sofort.
+
+Der Road Buddy hat keine Web-Oberfläche; dort ist die ganze `config.h` schon die persönliche Datei (Vorlage `config.example.h`).
+
 ## Warnungen
 
 `firmware/temp` meldet überschrittene Grenzwerte (z. B. „Kühlschrank über 8 °C seit 15 min“) unter `camper/temp/alarm_text`. Das Wandpanel zeigt diese und Heizungsfehler als rote Leiste, weckt dafür den Bildschirm und schaltet auf die Übersicht. In Home Assistant gibt es dieselben Alarme als Binärsensoren.

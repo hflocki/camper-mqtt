@@ -8,3 +8,6 @@ build/
 
 # Patch files dropped into the repo for applying
 *.patch
+
+# Personal settings of each device (see config_local.h.example)
+config_local.h

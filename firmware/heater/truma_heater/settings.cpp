@@ -11,8 +11,8 @@ static const char *const NS = "truma";
 void settings_load() {
   Preferences p;
   p.begin(NS, true);
-  g_settings.wifi_ssid = p.getString("ssid", "");
-  g_settings.wifi_pass = p.getString("wpass", "");
+  g_settings.wifi_ssid = p.getString("ssid", DEFAULT_WIFI_SSID);
+  g_settings.wifi_pass = p.getString("wpass", DEFAULT_WIFI_PASSWORD);
   g_settings.hostname = p.getString("host", DEFAULT_HOSTNAME);
   g_settings.ap_pass = p.getString("appass", DEFAULT_AP_PASSWORD);
   g_settings.ap_ssid = p.getString("apssid", "");
@@ -23,10 +23,10 @@ void settings_load() {
   g_settings.subnet = p.getString("mask", "");
   g_settings.dns = p.getString("dns", "");
 
-  g_settings.mqtt_host = p.getString("mhost", "");
+  g_settings.mqtt_host = p.getString("mhost", DEFAULT_MQTT_SERVER);
   g_settings.mqtt_port = p.getUShort("mport", DEFAULT_MQTT_PORT);
-  g_settings.mqtt_user = p.getString("muser", "");
-  g_settings.mqtt_pass = p.getString("mpass", "");
+  g_settings.mqtt_user = p.getString("muser", DEFAULT_MQTT_USER);
+  g_settings.mqtt_pass = p.getString("mpass", DEFAULT_MQTT_PASSWORD);
   g_settings.mqtt_base = p.getString("mbase", DEFAULT_MQTT_BASE);
   g_settings.ha_discovery = p.getBool("hadisc", true);
   g_settings.ha_prefix = p.getString("hapre", DEFAULT_HA_PREFIX);
@@ -34,8 +34,8 @@ void settings_load() {
   g_settings.ntp_server = p.getString("ntp", DEFAULT_NTP_SERVER);
   g_settings.tz = p.getString("tz", DEFAULT_TZ);
 
-  g_settings.web_user = p.getString("wuser", "");
-  g_settings.web_pass = p.getString("wwpass", "");
+  g_settings.web_user = p.getString("wuser", DEFAULT_WEB_USER);
+  g_settings.web_pass = p.getString("wwpass", DEFAULT_WEB_PASSWORD);
 
   g_settings.decoke_minutes = p.getUShort("decmin", DECOKE_DEFAULT_MINUTES);
   g_settings.room_setpoint = p.getFloat("setp", 20.0f);
