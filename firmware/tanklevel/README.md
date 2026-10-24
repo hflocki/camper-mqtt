@@ -4,7 +4,7 @@ Eine Firmware für **einen** ESP32-C3 (oder klassischen ESP32), die zwei Projekt
 
 - **Frischwasser** aus [camper-waterlevel](https://github.com/hflocki/camper-waterlevel): Votronic-Tankgeber am analogen Eingang, Volt-zu-Füllstand-Matrix, Glättungsfilter
 - **Grauwasser** (optional): zweiter Votronic-Geber, wahlweise Tankelektrode (wie Frischwasser) oder kapazitiver Tank-Sensor FL, mit eigener Tankgröße, Matrix und Filter
-- **Gas** aus [camper-gaslevel](https://github.com/hflocki/camper-gaslevel): BLE-Gassensor (Standard: Rotarex DIMES / SRG WAVE), passiv über Bluetooth-Advertising, Füllstopp-Berechnung
+- **Gas** aus [camper-gaslevel](https://github.com/hflocki/camper-gaslevel): BLE-Gassensor (Standard: Rotarex DIMES / SRG WAVE), passiv über Bluetooth-Advertising, Füllstopp-Berechnung. Alternativ **Mopeka Pro** (Pro Check, Pro Check Universal, Pro Plus …), umschaltbar im Tab Gas
 
 Alle Werte gehen per **MQTT** (mit Home-Assistant-Discovery) raus und sind in einer gemeinsamen **Web-Oberfläche** zu sehen und einzustellen. Jeder Sensor lässt sich einzeln ein- und ausschalten.
 
@@ -225,6 +225,7 @@ Prefix (Web-UI) Standard `camper/tanklevel`:
 | `<prefix>/cmd/grey/filter/set` | `ON` / `OFF` / `TOGGLE` |
 | `<prefix>/gas/level`, `raw_level`, `content` | Gas (nur nach erstem gültigen Wert) |
 | `<prefix>/gas/battery`, `ble_rssi`, `ble_state` | Gassensor |
+| `<prefix>/gas/distance`, `temperature`, `quality` | nur Mopeka: Füllhöhe in mm, Sensortemperatur in °C, Messqualität 0–3 |
 
 In Home Assistant erscheint **ein** Gerät „Camper Tanklevel“ mit allen Entitäten.
 
@@ -258,6 +259,23 @@ Frischwasser und Gas sind standardmäßig an, Grauwasser ist aus. Jede Kombinati
 
 Ein ausgeschalteter Sensor verschwindet von der Live-Seite und aus Home Assistant (die Entitäten werden per MQTT entfernt). Ist Gas aus, wird Bluetooth gar nicht gestartet.
 
+## Mopeka-Sensoren
+
+Im Tab **Gas** unter **Sensortyp** „Mopeka Pro“ wählen und speichern. Unterstützt werden alle aktuellen Mopeka-Modelle mit Bluetooth-Advertising: Pro Check (auch Lippert BottleCheck), Pro Check Universal, Pro Plus, Pro-200 und TD40/TD200. Die alte Mopeka **Std Check** sendet ein ganz anderes Format und wird nicht unterstützt.
+
+Mopeka misst per Ultraschall die **Füllhöhe in mm** von unten durch die Flaschenwand. Der Füllstand ergibt sich aus „Leer bei“ und „Voll bei“:
+
+| Flaschentyp | Leer | Voll |
+|---|---|---|
+| Europa 6 kg | 38 mm | 336 mm |
+| Europa 11 kg | 38 mm | 366 mm |
+| Europa 14 kg | 38 mm | 467 mm |
+| USA 20 lb | 38 mm | 254 mm |
+
+Für andere Flaschen „Eigene Werte“ wählen und die angezeigte Füllhöhe einmal mit voller und einmal mit fast leerer Flasche ablesen. Messungen mit schlechter Qualität (z. B. Sensor verrutscht, Flasche fast leer) werden ignoriert, der letzte gute Wert bleibt stehen; die Qualität ist im Tab **Live** und per MQTT sichtbar. Der Inhalt in Litern wird aus Füllstand × Flaschenvolumen × Füllstopp berechnet.
+
+Die Dekodierung folgt der MIT-lizenzierten Bibliothek [mopeka-iot-ble](https://github.com/Bluetooth-Devices/mopeka-iot-ble), die auch Home Assistant verwendet.
+
 ## Anderer Gassensor
 
 Block **GAS SENSOR DEFINITION** in `config.h` anpassen (Datenquelle, Hersteller-ID/UUID, Byte-Offsets). Der Tab **Gas** zeigt die empfangenen Rohbytes mit Offsets, damit sich die Zuordnung leicht finden lässt.
@@ -280,6 +298,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 | --- | --- |
+| 1.4.0 | Mopeka-Pro-Sensoren als Gassensor (Sensortyp im Tab Gas), Füllhöhe, Temperatur und Messqualität per MQTT |
 | 1.3.0 | Optionaler Login für die Web-Oberfläche (Tab MQTT), Last Will mit QoS 1 |
 | 1.2.2 | ESP32-S3-Unterstützung (Pins automatisch), Sendeleistung und „AP nur als Notfall“ im Tab WiFi, Neustartgrund, Laufzeit und WLAN-Abbruchgrund in der Web-UI |
 | 1.2.1 | Web-UI gzip-komprimiert (Quelle jetzt in `web/`), kompakte Tab-Leiste (Symbol über Text, passt bis 320 px) |

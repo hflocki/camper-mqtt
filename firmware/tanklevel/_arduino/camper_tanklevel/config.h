@@ -12,7 +12,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.3.0"
+#define FW_VERSION            "1.4.0"
 
 #ifndef DEFAULT_AP_SSID
 #define DEFAULT_AP_SSID       "Camper-Tanklevel" // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
@@ -192,6 +192,27 @@
 #ifndef COMPANY_ANY
 #define COMPANY_ANY           -1     // Accept manufacturer data of any company ID
 #endif
+
+// Gas sensor type (selectable in the web UI, tab "Gas")
+#define GAS_TYPE_DEFINITION   0      // DIMES / SRG WAVE or any sensor of the GAS SENSOR DEFINITION below
+#define GAS_TYPE_MOPEKA       1      // Mopeka Pro family (Pro Check, Pro Check Universal, Pro Plus ...)
+#ifndef DEFAULT_GAS_TYPE
+#define DEFAULT_GAS_TYPE      GAS_TYPE_DEFINITION
+#endif
+
+// Mopeka: the sensor measures the liquid height in mm. Level % = (height - empty) / (full - empty).
+// Presets in the web UI: Europe 6 kg 38/336, 11 kg 38/366, 14 kg 38/467, US 20 lb 38/254 mm.
+#ifndef DEFAULT_MOPEKA_EMPTY_MM
+#define DEFAULT_MOPEKA_EMPTY_MM  38     // Europe 11 kg bottle
+#endif
+#ifndef DEFAULT_MOPEKA_FULL_MM
+#define DEFAULT_MOPEKA_FULL_MM   366
+#endif
+// Readings below this quality are ignored (0 = none, 1 = low, 2 = medium, 3 = high)
+#ifndef MOPEKA_MIN_QUALITY
+#define MOPEKA_MIN_QUALITY       2
+#endif
+#define MOPEKA_COMPANY_ID        0x0059 // Nordic Semiconductor (used by all Mopeka Pro sensors)
 
 // ============================================================
 // >>> GAS SENSOR DEFINITION - edit this block for other BLE sensors <<<
@@ -398,6 +419,9 @@ struct AppConfig {
 
     // Gas (data mapping is defined at compile time, see GAS SENSOR DEFINITION)
     char sensor_mac[18];   // "AA:BB:CC:DD:EE:FF" (upper case), empty = no sensor
+    uint8_t gas_type;      // GAS_TYPE_DEFINITION or GAS_TYPE_MOPEKA
+    uint16_t mopeka_empty_mm;  // Mopeka: liquid height of an empty bottle
+    uint16_t mopeka_full_mm;   // Mopeka: liquid height of a full bottle
     float capacity;        // Gross bottle capacity in liters
     bool fill_stop_on;     // Bottle has a mechanical fill stop
     float fill_stop;       // Fill stop in %
@@ -416,7 +440,10 @@ struct WaterData {
 struct GasData {
     bool has_data;         // At least one valid reading since boot
     float battery;         // Sensor battery in % (NAN = unknown)
-    float raw_level;       // Raw sensor level in % (1:1 value)
+    float raw_level;       // Raw sensor level in % (1:1 value; Mopeka: % between empty and full height)
+    float distance_mm;     // Mopeka: measured liquid height in mm (NAN = none)
+    float temperature;     // Mopeka: sensor temperature in °C (NAN = none)
+    int8_t quality;        // Mopeka: read quality 0-3 (-1 = none)
     float level;           // Level scaled to the fill stop in %
     float content;         // Remaining content in liters
     int ble_rssi;          // Signal strength of the gas sensor

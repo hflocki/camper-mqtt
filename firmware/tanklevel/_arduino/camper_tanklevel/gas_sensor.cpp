@@ -20,8 +20,12 @@ static SeenDevice seen[BLE_MAX_SEEN];
 
 // Reading handed over from the scan callback to loop()
 static bool readingPending = false;
+static bool pendingHasLevel = false;   // false = Mopeka read quality too low (battery etc. still valid)
 static float pendingBattery = NAN;
 static float pendingRaw = 0.0f;
+static float pendingDist = NAN;
+static float pendingTemp = NAN;
+static int8_t pendingQuality = -1;
 static int pendingRssi = 0;
 
 // Last payload of the configured sensor (shown as hex in the web UI)
@@ -95,13 +99,52 @@ static void storeRaw(const uint8_t* d, size_t n) {
 
 #define COMPANY_APPLE 0x004C
 
+// ============================================================
+// Mopeka Pro family
+// Manufacturer data, company 0x0059, 10 payload bytes (after the company ID):
+//   [0] model, [1] battery (/32 = V), [2] bit 0-6 temperature + 40 °C, bit 7 sync button,
+//   [3..4] bit 0-13 raw level, bit 14-15 read quality, [5..7] MAC tail, [8..9] accelerometer
+// Raw level -> liquid height in mm with the propane coefficients published by Mopeka.
+// Decoding as in the MIT licensed mopeka-iot-ble library used by Home Assistant
+// (https://github.com/Bluetooth-Devices/mopeka-iot-ble).
+// ============================================================
+static bool mopekaModelKnown(uint8_t m) {
+    // 3 Pro Check, 4 Pro-200, 5 Pro Check H2O, 6 Lippert BottleCheck, 8/9 Pro Plus,
+    // 0x0A/0x0B TD40/TD200, 0x0C Pro Check Universal, 0x12 Pro-200B
+    return m == 0x03 || m == 0x04 || m == 0x05 || m == 0x06 || m == 0x08 || m == 0x09 ||
+           m == 0x0A || m == 0x0B || m == 0x0C || m == 0x12;
+}
+
+static float mopekaLevelPercent(float mm) {
+    float empty = config.mopeka_empty_mm, full = config.mopeka_full_mm;
+    if (full <= empty) return 0.0f;
+    return constrain((mm - empty) / (full - empty) * 100.0f, 0.0f, 100.0f);
+}
+
+// Returns false if the payload is not a Mopeka Pro advertisement
+static bool decodeMopeka(const uint8_t* d, size_t n, float& battery, float& temp, int8_t& quality, float& mm) {
+    if (n != 10 || !mopekaModelKnown(d[0])) return false;
+    float volt = (d[1] & 0x7F) / 32.0f;
+    battery = constrain((volt - 2.2f) / 0.65f * 100.0f, 0.0f, 100.0f);   // CR2032
+    int t = d[2] & 0x7F;
+    temp = t - 40;
+    uint16_t raw = ((uint16_t)d[4] << 8 | d[3]) & 0x3FFF;
+    quality = d[4] >> 6;
+    mm = raw * (0.573045f - 0.002822f * t - 0.00000535f * t * t);        // propane / LPG
+    return true;
+}
+
 // Higher = more important. Keeps the gas sensor in the list even when many phones are around.
 //   3 = configured sensor, 2 = company ID matches the sensor definition,
 //   1 = other device with data, 0 = Apple devices (rotating addresses) / no data
 static uint8_t devicePriority(const char* addr, const char* svc, int32_t company) {
     if (config.sensor_mac[0] && strcmp(addr, config.sensor_mac) == 0) return 3;
-    if (SENSOR_SOURCE == SRC_MANUFACTURER && SENSOR_COMPANY_ID != COMPANY_ANY &&
-        company == SENSOR_COMPANY_ID) return 2;
+    if (config.gas_type == GAS_TYPE_MOPEKA) {
+        if (company == MOPEKA_COMPANY_ID) return 2;
+    } else if (SENSOR_SOURCE == SRC_MANUFACTURER && SENSOR_COMPANY_ID != COMPANY_ANY &&
+               company == SENSOR_COMPANY_ID) {
+        return 2;
+    }
     if (company == COMPANY_APPLE) return 0;
     if (company >= 0 || svc[0] != '\0') return 1;
     return 0;
@@ -153,7 +196,9 @@ static void computeDerived() {
     float fillStop = config.fill_stop_on ? config.fill_stop : 100.0f;
     if (fillStop <= 0.0f) fillStop = 100.0f;
 
-    float level = sensorData.gas.raw_level / fillStop * 100.0f;
+    // Mopeka measures between "empty" and "full" height: that is already the usable range
+    float level = (config.gas_type == GAS_TYPE_MOPEKA) ? sensorData.gas.raw_level
+                                                       : sensorData.gas.raw_level / fillStop * 100.0f;
     if (level > 100.0f) level = 100.0f;
     if (level < 0.0f) level = 0.0f;
 
@@ -162,11 +207,20 @@ static void computeDerived() {
     sensorData.gas.content = level / 100.0f * usable;
 }
 
-static void applyReading(float battery, float raw, int rssi) {
+static void applyReading(bool hasLevel, float battery, float raw, float dist, float temp, int8_t quality, int rssi) {
     if (!isnan(battery)) sensorData.gas.battery = battery;
-    sensorData.gas.raw_level = raw;
-    computeDerived();
+    sensorData.gas.temperature = temp;
+    sensorData.gas.quality = quality;
     sensorData.gas.ble_rssi = rssi;
+    if (!hasLevel) {
+        // Mopeka with poor read quality: keep the last level, only show the quality
+        sensorData.gas.updates++;
+        Serial.printf("[BLE] Mopeka read quality %d too low - level ignored\n", quality);
+        return;
+    }
+    sensorData.gas.raw_level = raw;
+    sensorData.gas.distance_mm = dist;
+    computeDerived();
     sensorData.gas.last_update = millis();
     sensorData.gas.has_data = true;
     sensorData.gas.updates++;
@@ -201,6 +255,35 @@ class ScanCallbacks : public NimBLEScanCallbacks {
         // Find the payload: manufacturer data (without the 2 company ID bytes) or service data
         std::string payload;
         bool found = false;
+
+        if (config.gas_type == GAS_TYPE_MOPEKA) {
+            for (uint8_t i = 0; i < dev->getManufacturerDataCount(); i++) {
+                std::string m = dev->getManufacturerData(i);
+                if (m.size() < 2 || ((uint8_t)m[0] | ((uint8_t)m[1] << 8)) != MOPEKA_COMPANY_ID) continue;
+                payload = m.substr(2);
+                found = true;
+                break;
+            }
+            if (!found) return;
+            const uint8_t* d = (const uint8_t*)payload.data();
+            storeRaw(d, payload.size());
+            float battery, temp, mm;
+            int8_t quality;
+            if (!decodeMopeka(d, payload.size(), battery, temp, quality, mm)) return;
+            bool good = quality >= MOPEKA_MIN_QUALITY;
+            portENTER_CRITICAL(&dataMux);
+            pendingHasLevel = good;
+            pendingRaw = good ? mopekaLevelPercent(mm) : 0.0f;
+            pendingDist = mm;
+            pendingTemp = temp;
+            pendingQuality = quality;
+            pendingBattery = battery;
+            pendingRssi = dev->getRSSI();
+            readingPending = true;
+            portEXIT_CRITICAL(&dataMux);
+            return;
+        }
+
         if (SENSOR_SOURCE == SRC_MANUFACTURER) {
             for (uint8_t i = 0; i < dev->getManufacturerDataCount(); i++) {
                 std::string m = dev->getManufacturerData(i);
@@ -227,7 +310,11 @@ class ScanCallbacks : public NimBLEScanCallbacks {
         if (decodeValue(MAP_BATTERY, d, payload.size(), battery)) battery = validBattery(battery);
 
         portENTER_CRITICAL(&dataMux);
+        pendingHasLevel = true;
         pendingRaw = level;
+        pendingDist = NAN;
+        pendingTemp = NAN;
+        pendingQuality = -1;
         pendingBattery = battery;
         pendingRssi = dev->getRSSI();
         readingPending = true;
@@ -254,6 +341,9 @@ bool gasInit() {
     Serial.println("[BLE] Initializing NimBLE...");
     memset(seen, 0, sizeof(seen));
     sensorData.gas.battery = NAN;
+    sensorData.gas.distance_mm = NAN;
+    sensorData.gas.temperature = NAN;
+    sensorData.gas.quality = -1;
 
     NimBLEDevice::init("");
     scan = NimBLEDevice::getScan();
@@ -266,21 +356,27 @@ bool gasInit() {
     startScan();
 
     strlcpy(sensorData.gas.ble_state, "Warte auf Daten", sizeof(sensorData.gas.ble_state));
-    Serial.printf("[BLE] Sensor: %s  MAC: %s  Source: %u\n", SENSOR_MODEL,
+    Serial.printf("[BLE] Sensor: %s  MAC: %s  Source: %u\n",
+        config.gas_type == GAS_TYPE_MOPEKA ? "Mopeka Pro" : SENSOR_MODEL,
         config.sensor_mac[0] ? config.sensor_mac : "(not set)", (unsigned)SENSOR_SOURCE);
     return true;
 }
 
 void gasLoop() {
     // Values and raw bytes from the scan callback
-    bool pending = false;
-    float battery = NAN, raw = 0;
+    bool pending = false, hasLevel = false;
+    float battery = NAN, raw = 0, dist = NAN, temp = NAN;
+    int8_t quality = -1;
     int rssi = 0;
     portENTER_CRITICAL(&dataMux);
     if (readingPending) {
         pending = true;
+        hasLevel = pendingHasLevel;
         battery = pendingBattery;
         raw = pendingRaw;
+        dist = pendingDist;
+        temp = pendingTemp;
+        quality = pendingQuality;
         rssi = pendingRssi;
         readingPending = false;
     }
@@ -295,7 +391,7 @@ void gasLoop() {
     portEXIT_CRITICAL(&dataMux);
 
     if (newRaw) bytesToHex(rawCopy, rawCopyLen, sensorData.gas.raw_hex, sizeof(sensorData.gas.raw_hex));
-    if (pending) applyReading(battery, raw, rssi);
+    if (pending) applyReading(hasLevel, battery, raw, dist, temp, quality, rssi);
 
     sensorData.gas.adv_count = advCount;
     sensorData.gas.scanning = scan && scan->isScanning();
@@ -329,6 +425,9 @@ void gasReset() {
     sensorData.gas.level = 0;
     sensorData.gas.content = 0;
     sensorData.gas.ble_rssi = 0;
+    sensorData.gas.distance_mm = NAN;
+    sensorData.gas.temperature = NAN;
+    sensorData.gas.quality = -1;
     sensorData.gas.raw_hex[0] = '\0';
     sensorData.gas.updates++;
     strlcpy(sensorData.gas.ble_state, "Warte auf Daten", sizeof(sensorData.gas.ble_state));
@@ -337,6 +436,10 @@ void gasReset() {
 void gasRecalculate() {
     // Tank size / fill stop changed: recalculate from the last raw value (age stays unchanged)
     if (sensorData.gas.has_data) {
+        // Mopeka: empty/full height may have changed, the level comes from the stored height
+        if (config.gas_type == GAS_TYPE_MOPEKA && !isnan(sensorData.gas.distance_mm)) {
+            sensorData.gas.raw_level = mopekaLevelPercent(sensorData.gas.distance_mm);
+        }
         computeDerived();
         sensorData.gas.updates++;
     }

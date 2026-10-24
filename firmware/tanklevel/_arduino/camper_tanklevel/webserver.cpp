@@ -101,6 +101,9 @@ static void setDefaults() {
 
     // Gas
     memset(config.sensor_mac, 0, sizeof(config.sensor_mac));
+    config.gas_type = DEFAULT_GAS_TYPE;
+    config.mopeka_empty_mm = DEFAULT_MOPEKA_EMPTY_MM;
+    config.mopeka_full_mm = DEFAULT_MOPEKA_FULL_MM;
     config.capacity = DEFAULT_CAPACITY;
     config.fill_stop_on = DEFAULT_FILL_STOP_ON;
     config.fill_stop = DEFAULT_FILL_STOP;
@@ -332,6 +335,7 @@ void webserverLoop() {
         gasSensorChanged = false;
         gasTankChanged = false;
         gasReset();             // Other sensor: forget the old readings
+        mqttRequestDiscovery(); // Mopeka has additional entities
     } else if (gasTankChanged) {
         gasTankChanged = false;
         gasRecalculate();       // Same sensor: recalculate level/content from the last raw value
@@ -378,6 +382,10 @@ void wsSendSensorData() {
     go["ble_rssi"] = g.ble_rssi;
     go["ble_state"] = (const char*)g.ble_state;
     go["age"] = g.has_data ? (long)((millis() - g.last_update) / 1000) : -1;
+    go["type"] = config.gas_type;
+    if (isnan(g.distance_mm)) go["mm"] = nullptr; else go["mm"] = (int)roundf(g.distance_mm);
+    if (isnan(g.temperature)) go["temp"] = nullptr; else go["temp"] = (int)roundf(g.temperature);
+    if (g.quality < 0) go["quality"] = nullptr; else go["quality"] = g.quality;
     go["raw_hex"] = (const char*)g.raw_hex;
     go["adv_count"] = g.adv_count;
     go["scanning"] = g.scanning;
@@ -439,6 +447,9 @@ static void handleApiGetConfig(AsyncWebServerRequest* request) {
     doc["capacity"] = config.capacity;
     doc["fill_stop_on"] = config.fill_stop_on;
     doc["fill_stop"] = config.fill_stop;
+    doc["gas_type"] = config.gas_type;
+    doc["mopeka_empty_mm"] = config.mopeka_empty_mm;
+    doc["mopeka_full_mm"] = config.mopeka_full_mm;
 
     // Compile-time gas sensor definition (read-only in the web UI)
     JsonObject def = doc["sensor_def"].to<JsonObject>();
@@ -537,6 +548,18 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
     bool hasStopOn = doc["fill_stop_on"].is<bool>();
     bool newStopOn = hasStopOn ? doc["fill_stop_on"].as<bool>() : false;
 
+    bool hasGasType = doc["gas_type"].is<int>();
+    int newGasType = hasGasType ? doc["gas_type"].as<int>() : 0;
+    if (hasGasType && newGasType != GAS_TYPE_DEFINITION && newGasType != GAS_TYPE_MOPEKA) {
+        sendError(request, "Unknown gas sensor type"); return;
+    }
+    bool hasMm = isNumber(doc["mopeka_empty_mm"]) || isNumber(doc["mopeka_full_mm"]);
+    int newEmpty = doc["mopeka_empty_mm"] | (int)config.mopeka_empty_mm;
+    int newFull = doc["mopeka_full_mm"] | (int)config.mopeka_full_mm;
+    if (hasMm && (newEmpty < 0 || newFull > 2000 || newFull <= newEmpty + 10)) {
+        sendError(request, "Mopeka: full height must be above empty height (0-2000 mm)"); return;
+    }
+
     // ---- Apply ----
 
     // Empty values clear SSID/server/user; empty passwords are ignored (= keep the stored one)
@@ -577,6 +600,15 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
     if (hasMac && strcmp(newMac, config.sensor_mac) != 0) {
         strlcpy(config.sensor_mac, newMac, sizeof(config.sensor_mac));
         gasSensorChanged = true;
+    }
+    if (hasGasType && newGasType != config.gas_type) {
+        config.gas_type = (uint8_t)newGasType;
+        gasSensorChanged = true;
+    }
+    if (hasMm && (newEmpty != config.mopeka_empty_mm || newFull != config.mopeka_full_mm)) {
+        config.mopeka_empty_mm = (uint16_t)newEmpty;
+        config.mopeka_full_mm = (uint16_t)newFull;
+        gasTankChanged = true;
     }
     if (hasCap && newCap != config.capacity)           { config.capacity = newCap;       gasTankChanged = true; }
     if (hasStopOn && newStopOn != config.fill_stop_on) { config.fill_stop_on = newStopOn; gasTankChanged = true; }
@@ -656,6 +688,14 @@ void loadConfig() {
     config.fill_stop_on = doc["fill_stop_on"] | DEFAULT_FILL_STOP_ON;
     float stop = doc["fill_stop"] | DEFAULT_FILL_STOP;
     config.fill_stop = (stop >= 1.0f && stop <= 100.0f) ? stop : DEFAULT_FILL_STOP;
+    int gt = doc["gas_type"] | DEFAULT_GAS_TYPE;
+    config.gas_type = (gt == GAS_TYPE_MOPEKA) ? GAS_TYPE_MOPEKA : GAS_TYPE_DEFINITION;
+    int me = doc["mopeka_empty_mm"] | DEFAULT_MOPEKA_EMPTY_MM;
+    int mf = doc["mopeka_full_mm"] | DEFAULT_MOPEKA_FULL_MM;
+    if (me >= 0 && mf <= 2000 && mf > me + 10) {
+        config.mopeka_empty_mm = (uint16_t)me;
+        config.mopeka_full_mm = (uint16_t)mf;
+    }
 }
 
 void saveConfig() {
@@ -690,6 +730,9 @@ void saveConfig() {
     doc["capacity"] = config.capacity;
     doc["fill_stop_on"] = config.fill_stop_on;
     doc["fill_stop"] = config.fill_stop;
+    doc["gas_type"] = config.gas_type;
+    doc["mopeka_empty_mm"] = config.mopeka_empty_mm;
+    doc["mopeka_full_mm"] = config.mopeka_full_mm;
 
     // Write to a temp file first so a power loss cannot leave a half-written config
     const char* tmpPath = "/config.tmp";

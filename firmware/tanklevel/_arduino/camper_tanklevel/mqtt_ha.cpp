@@ -11,7 +11,7 @@
 //   <prefix>/rssi                   WiFi signal
 //   <prefix>/water/<value>          fresh water values
 //   <prefix>/grey/<value>           grey water values (optional)
-//   <prefix>/gas/<value>            gas values
+//   <prefix>/gas/<value>            gas values (Mopeka additionally: distance mm, temperature, quality)
 //   <prefix>/cmd/water/filter/set   ON / OFF / TOGGLE (fresh water filter)
 //   <prefix>/cmd/grey/filter/set    ON / OFF / TOGGLE (grey water filter)
 //
@@ -198,6 +198,20 @@ static void publishGasState() {
         dtostrf(g.battery, 1, 0, buf);
         mqtt.publish(topic("gas/battery").c_str(), buf, true);
     }
+    if (config.gas_type == GAS_TYPE_MOPEKA) {
+        if (!isnan(g.distance_mm)) {
+            itoa((int)roundf(g.distance_mm), buf, 10);
+            mqtt.publish(topic("gas/distance").c_str(), buf, true);
+        }
+        if (!isnan(g.temperature)) {
+            itoa((int)roundf(g.temperature), buf, 10);
+            mqtt.publish(topic("gas/temperature").c_str(), buf, true);
+        }
+        if (g.quality >= 0) {
+            itoa(g.quality, buf, 10);
+            mqtt.publish(topic("gas/quality").c_str(), buf, true);
+        }
+    }
     mqtt.publish(topic("gas/ble_state").c_str(), g.ble_state, true);
 }
 
@@ -238,7 +252,16 @@ void mqttPublishDiscovery() {
         publishSensor("Gas Füllstand",         "gas_level",     "gas/level",     "%",   "None",            "mdi:gauge",             true,  true);
         publishSensor("Gas Füllstand Rohwert", "gas_raw_level", "gas/raw_level", "%",   "None",            "mdi:gauge-low",         true,  true);
         publishSensor("Gas Inhalt",            "gas_content",   "gas/content",   "L",   "volume_storage",  "mdi:gas-cylinder",      true,  true);
-        if (BATTERY_ENABLED) {
+        bool mopeka = (config.gas_type == GAS_TYPE_MOPEKA);
+        if (mopeka) {
+            publishSensor("Gas Füllhöhe",          "gas_distance",    "gas/distance",    "mm", "distance",    "mdi:arrow-expand-vertical", true, true);
+            publishSensor("Gassensor Temperatur",  "gas_temperature", "gas/temperature", "\u00b0C", "temperature", "mdi:thermometer",      true, true);
+            publishSensor("Gassensor Messqualität","gas_quality",     "gas/quality",     "",   "None",        "mdi:signal",                true, true);
+        } else {
+            const char* ids[] = {"gas_distance", "gas_temperature", "gas_quality"};
+            for (const char* id : ids) removeEntity("sensor", id);
+        }
+        if (BATTERY_ENABLED || mopeka) {
             publishSensor("Gassensor Batterie", "gas_battery",  "gas/battery",   "%",   "battery",         "mdi:battery",           true,  true);
         } else {
             removeEntity("sensor", "gas_battery");
@@ -246,7 +269,8 @@ void mqttPublishDiscovery() {
         publishSensor("Gassensor Signal",      "gas_ble_rssi",  "gas/ble_rssi",  "dBm", "signal_strength", "mdi:bluetooth",         true,  false);
         publishSensor("Gassensor Status",      "gas_ble_state", "gas/ble_state", "",    "None",            "mdi:bluetooth-connect", false, false);
     } else {
-        const char* gasIds[] = {"gas_level", "gas_raw_level", "gas_content", "gas_battery", "gas_ble_rssi", "gas_ble_state"};
+        const char* gasIds[] = {"gas_level", "gas_raw_level", "gas_content", "gas_battery", "gas_ble_rssi", "gas_ble_state",
+                                "gas_distance", "gas_temperature", "gas_quality"};
         for (const char* id : gasIds) removeEntity("sensor", id);
     }
 
