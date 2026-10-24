@@ -198,7 +198,7 @@ static void publishGasState() {
         dtostrf(g.battery, 1, 0, buf);
         mqtt.publish(topic("gas/battery").c_str(), buf, true);
     }
-    if (config.gas_type == GAS_TYPE_MOPEKA) {
+    if (config.gas_type != GAS_TYPE_DEFINITION) {
         if (!isnan(g.distance_mm)) {
             itoa((int)roundf(g.distance_mm), buf, 10);
             mqtt.publish(topic("gas/distance").c_str(), buf, true);
@@ -252,7 +252,7 @@ void mqttPublishDiscovery() {
         publishSensor("Gas Füllstand",         "gas_level",     "gas/level",     "%",   "None",            "mdi:gauge",             true,  true);
         publishSensor("Gas Füllstand Rohwert", "gas_raw_level", "gas/raw_level", "%",   "None",            "mdi:gauge-low",         true,  true);
         publishSensor("Gas Inhalt",            "gas_content",   "gas/content",   "L",   "volume_storage",  "mdi:gas-cylinder",      true,  true);
-        bool mopeka = (config.gas_type == GAS_TYPE_MOPEKA);
+        bool mopeka = (config.gas_type != GAS_TYPE_DEFINITION);
         if (mopeka) {
             publishSensor("Gas Füllhöhe",          "gas_distance",    "gas/distance",    "mm", "distance",    "mdi:arrow-expand-vertical", true, true);
             publishSensor("Gassensor Temperatur",  "gas_temperature", "gas/temperature", "\u00b0C", "temperature", "mdi:thermometer",      true, true);

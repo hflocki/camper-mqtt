@@ -12,7 +12,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.4.0"
+#define FW_VERSION            "1.5.0"
 
 #ifndef DEFAULT_AP_SSID
 #define DEFAULT_AP_SSID       "Camper-Tanklevel" // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
@@ -196,6 +196,7 @@
 // Gas sensor type (selectable in the web UI, tab "Gas")
 #define GAS_TYPE_DEFINITION   0      // DIMES / SRG WAVE or any sensor of the GAS SENSOR DEFINITION below
 #define GAS_TYPE_MOPEKA       1      // Mopeka Pro family (Pro Check, Pro Check Universal, Pro Plus ...)
+#define GAS_TYPE_MOPEKA_STD   2      // Mopeka Standard / Std Check (older model, CC2540 chip)
 #ifndef DEFAULT_GAS_TYPE
 #define DEFAULT_GAS_TYPE      GAS_TYPE_DEFINITION
 #endif
@@ -213,6 +214,11 @@
 #define MOPEKA_MIN_QUALITY       2
 #endif
 #define MOPEKA_COMPANY_ID        0x0059 // Nordic Semiconductor (used by all Mopeka Pro sensors)
+#define MOPEKA_STD_COMPANY_ID    0x000D // Texas Instruments (Mopeka Standard)
+// Mopeka Standard: the speed of sound depends on the gas mix (web UI, % propane, rest butane)
+#ifndef DEFAULT_LPG_PROPANE
+#define DEFAULT_LPG_PROPANE      100
+#endif
 
 // ============================================================
 // >>> GAS SENSOR DEFINITION - edit this block for other BLE sensors <<<
@@ -422,6 +428,7 @@ struct AppConfig {
     uint8_t gas_type;      // GAS_TYPE_DEFINITION or GAS_TYPE_MOPEKA
     uint16_t mopeka_empty_mm;  // Mopeka: liquid height of an empty bottle
     uint16_t mopeka_full_mm;   // Mopeka: liquid height of a full bottle
+    uint8_t lpg_propane;       // Mopeka Standard: propane share of the gas in % (rest butane)
     float capacity;        // Gross bottle capacity in liters
     bool fill_stop_on;     // Bottle has a mechanical fill stop
     float fill_stop;       // Fill stop in %

@@ -115,6 +115,70 @@ static bool mopekaModelKnown(uint8_t m) {
            m == 0x0A || m == 0x0B || m == 0x0C || m == 0x12;
 }
 
+// ============================================================
+// Mopeka Standard (Std Check, CC2540)
+// Manufacturer data, company 0x000D, 23 payload bytes (after the company ID):
+//   [1] & 0xCF hardware id (0x02 Standard, 0x03 XL, 0x44 Standard, 0x46 eTrailer)
+//   [2] battery: V = raw / 256 * 2 + 1.5
+//   [3] bit 0-5 temperature, bit 6 slow update rate, bit 7 sync button
+//   [4..18] three blocks of 5 bytes = 40 bits little endian, each with four
+//           (time, amplitude) pairs of 5 bits: time0, amp0, time1, amp1, ...
+// The ultrasonic echo with the strongest amplitude gives the run time (10 us ticks,
+// times are summed up until an echo is reported), height = speed of sound in LPG * time.
+// Format as documented by the ESPHome mopeka_std_check component; own implementation.
+// ============================================================
+static bool mopekaStdModelKnown(uint8_t hw) {
+    hw &= 0xCF;
+    return hw == 0x02 || hw == 0x03 || hw == 0x44 || hw == 0x46;
+}
+
+// Speed of sound in liquid LPG in m/s; t = temperature in °C, butane = 0..1
+static float lpgSpeedOfSound(float t, float butane) {
+    return 1040.71f - 4.87f * t - 137.5f * butane - 0.0107f * t * t - 1.63f * t * butane;
+}
+
+// Returns false if the payload is not a Mopeka Standard advertisement.
+// quality: 3 = usable echo found, 0 = no usable echo (height not valid)
+static bool decodeMopekaStd(const uint8_t* d, size_t n, float& battery, float& temp, int8_t& quality, float& mm) {
+    if (n != 23 || !mopekaStdModelKnown(d[1])) return false;
+
+    float volt = d[2] / 256.0f * 2.0f + 1.5f;
+    battery = constrain((volt - 2.2f) / 0.65f * 100.0f, 0.0f, 100.0f);   // CR2032
+    uint8_t rawTemp = d[3] & 0x3F;
+    temp = (rawTemp == 0) ? -40.0f : (float)(int)((rawTemp - 25.0f) * 1.776964f);
+
+    // Unpack the 12 (time, amplitude) pairs
+    uint8_t times[12], amps[12];
+    for (int b = 0; b < 3; b++) {
+        uint64_t bits = 0;
+        for (int i = 0; i < 5; i++) bits |= (uint64_t)d[4 + b * 5 + i] << (8 * i);
+        for (int k = 0; k < 4; k++) {
+            times[b * 4 + k] = (bits >> (10 * k)) & 0x1F;
+            amps[b * 4 + k]  = (bits >> (10 * k + 5)) & 0x1F;
+        }
+    }
+
+    // Strongest echo; the time runs on until an echo is reported
+    uint16_t elapsed = 0, bestTime = 0;
+    uint8_t bestAmp = 0, echoes = 0;
+    for (int i = 0; i < 12; i++) {
+        elapsed += times[i] + 1;
+        if (amps[i] == 0) continue;
+        echoes++;
+        if (amps[i] > bestAmp) { bestAmp = amps[i]; bestTime = elapsed; }
+        elapsed = 0;
+    }
+    if (echoes < 1 || bestAmp < 2 || bestTime < 2) {
+        quality = 0;
+        mm = NAN;
+        return true;
+    }
+    quality = 3;
+    float butane = (100 - config.lpg_propane) / 100.0f;
+    mm = lpgSpeedOfSound(temp, butane) * bestTime / 100.0f;
+    return true;
+}
+
 static float mopekaLevelPercent(float mm) {
     float empty = config.mopeka_empty_mm, full = config.mopeka_full_mm;
     if (full <= empty) return 0.0f;
@@ -141,6 +205,8 @@ static uint8_t devicePriority(const char* addr, const char* svc, int32_t company
     if (config.sensor_mac[0] && strcmp(addr, config.sensor_mac) == 0) return 3;
     if (config.gas_type == GAS_TYPE_MOPEKA) {
         if (company == MOPEKA_COMPANY_ID) return 2;
+    } else if (config.gas_type == GAS_TYPE_MOPEKA_STD) {
+        if (company == MOPEKA_STD_COMPANY_ID) return 2;
     } else if (SENSOR_SOURCE == SRC_MANUFACTURER && SENSOR_COMPANY_ID != COMPANY_ANY &&
                company == SENSOR_COMPANY_ID) {
         return 2;
@@ -197,7 +263,7 @@ static void computeDerived() {
     if (fillStop <= 0.0f) fillStop = 100.0f;
 
     // Mopeka measures between "empty" and "full" height: that is already the usable range
-    float level = (config.gas_type == GAS_TYPE_MOPEKA) ? sensorData.gas.raw_level
+    float level = (config.gas_type != GAS_TYPE_DEFINITION) ? sensorData.gas.raw_level
                                                        : sensorData.gas.raw_level / fillStop * 100.0f;
     if (level > 100.0f) level = 100.0f;
     if (level < 0.0f) level = 0.0f;
@@ -256,10 +322,12 @@ class ScanCallbacks : public NimBLEScanCallbacks {
         std::string payload;
         bool found = false;
 
-        if (config.gas_type == GAS_TYPE_MOPEKA) {
+        if (config.gas_type == GAS_TYPE_MOPEKA || config.gas_type == GAS_TYPE_MOPEKA_STD) {
+            const bool pro = (config.gas_type == GAS_TYPE_MOPEKA);
+            const int32_t wanted = pro ? MOPEKA_COMPANY_ID : MOPEKA_STD_COMPANY_ID;
             for (uint8_t i = 0; i < dev->getManufacturerDataCount(); i++) {
                 std::string m = dev->getManufacturerData(i);
-                if (m.size() < 2 || ((uint8_t)m[0] | ((uint8_t)m[1] << 8)) != MOPEKA_COMPANY_ID) continue;
+                if (m.size() < 2 || ((uint8_t)m[0] | ((uint8_t)m[1] << 8)) != wanted) continue;
                 payload = m.substr(2);
                 found = true;
                 break;
@@ -269,7 +337,9 @@ class ScanCallbacks : public NimBLEScanCallbacks {
             storeRaw(d, payload.size());
             float battery, temp, mm;
             int8_t quality;
-            if (!decodeMopeka(d, payload.size(), battery, temp, quality, mm)) return;
+            bool ok = pro ? decodeMopeka(d, payload.size(), battery, temp, quality, mm)
+                          : decodeMopekaStd(d, payload.size(), battery, temp, quality, mm);
+            if (!ok) return;
             bool good = quality >= MOPEKA_MIN_QUALITY;
             portENTER_CRITICAL(&dataMux);
             pendingHasLevel = good;
@@ -357,7 +427,8 @@ bool gasInit() {
 
     strlcpy(sensorData.gas.ble_state, "Warte auf Daten", sizeof(sensorData.gas.ble_state));
     Serial.printf("[BLE] Sensor: %s  MAC: %s  Source: %u\n",
-        config.gas_type == GAS_TYPE_MOPEKA ? "Mopeka Pro" : SENSOR_MODEL,
+        config.gas_type == GAS_TYPE_MOPEKA ? "Mopeka Pro" :
+        config.gas_type == GAS_TYPE_MOPEKA_STD ? "Mopeka Standard" : SENSOR_MODEL,
         config.sensor_mac[0] ? config.sensor_mac : "(not set)", (unsigned)SENSOR_SOURCE);
     return true;
 }
@@ -437,7 +508,7 @@ void gasRecalculate() {
     // Tank size / fill stop changed: recalculate from the last raw value (age stays unchanged)
     if (sensorData.gas.has_data) {
         // Mopeka: empty/full height may have changed, the level comes from the stored height
-        if (config.gas_type == GAS_TYPE_MOPEKA && !isnan(sensorData.gas.distance_mm)) {
+        if (config.gas_type != GAS_TYPE_DEFINITION && !isnan(sensorData.gas.distance_mm)) {
             sensorData.gas.raw_level = mopekaLevelPercent(sensorData.gas.distance_mm);
         }
         computeDerived();

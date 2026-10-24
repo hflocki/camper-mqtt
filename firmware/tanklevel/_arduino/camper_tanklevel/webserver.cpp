@@ -104,6 +104,7 @@ static void setDefaults() {
     config.gas_type = DEFAULT_GAS_TYPE;
     config.mopeka_empty_mm = DEFAULT_MOPEKA_EMPTY_MM;
     config.mopeka_full_mm = DEFAULT_MOPEKA_FULL_MM;
+    config.lpg_propane = DEFAULT_LPG_PROPANE;
     config.capacity = DEFAULT_CAPACITY;
     config.fill_stop_on = DEFAULT_FILL_STOP_ON;
     config.fill_stop = DEFAULT_FILL_STOP;
@@ -450,6 +451,7 @@ static void handleApiGetConfig(AsyncWebServerRequest* request) {
     doc["gas_type"] = config.gas_type;
     doc["mopeka_empty_mm"] = config.mopeka_empty_mm;
     doc["mopeka_full_mm"] = config.mopeka_full_mm;
+    doc["lpg_propane"] = config.lpg_propane;
 
     // Compile-time gas sensor definition (read-only in the web UI)
     JsonObject def = doc["sensor_def"].to<JsonObject>();
@@ -550,9 +552,13 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
 
     bool hasGasType = doc["gas_type"].is<int>();
     int newGasType = hasGasType ? doc["gas_type"].as<int>() : 0;
-    if (hasGasType && newGasType != GAS_TYPE_DEFINITION && newGasType != GAS_TYPE_MOPEKA) {
+    if (hasGasType && newGasType != GAS_TYPE_DEFINITION && newGasType != GAS_TYPE_MOPEKA &&
+        newGasType != GAS_TYPE_MOPEKA_STD) {
         sendError(request, "Unknown gas sensor type"); return;
     }
+    bool hasProp = doc["lpg_propane"].is<int>();
+    int newProp = hasProp ? doc["lpg_propane"].as<int>() : 0;
+    if (hasProp && (newProp < 0 || newProp > 100)) { sendError(request, "Propane share must be 0-100 %"); return; }
     bool hasMm = isNumber(doc["mopeka_empty_mm"]) || isNumber(doc["mopeka_full_mm"]);
     int newEmpty = doc["mopeka_empty_mm"] | (int)config.mopeka_empty_mm;
     int newFull = doc["mopeka_full_mm"] | (int)config.mopeka_full_mm;
@@ -604,6 +610,10 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
     if (hasGasType && newGasType != config.gas_type) {
         config.gas_type = (uint8_t)newGasType;
         gasSensorChanged = true;
+    }
+    if (hasProp && newProp != config.lpg_propane) {
+        config.lpg_propane = (uint8_t)newProp;
+        gasSensorChanged = true;   // heights measured with the old mix are not valid any more
     }
     if (hasMm && (newEmpty != config.mopeka_empty_mm || newFull != config.mopeka_full_mm)) {
         config.mopeka_empty_mm = (uint16_t)newEmpty;
@@ -689,7 +699,9 @@ void loadConfig() {
     float stop = doc["fill_stop"] | DEFAULT_FILL_STOP;
     config.fill_stop = (stop >= 1.0f && stop <= 100.0f) ? stop : DEFAULT_FILL_STOP;
     int gt = doc["gas_type"] | DEFAULT_GAS_TYPE;
-    config.gas_type = (gt == GAS_TYPE_MOPEKA) ? GAS_TYPE_MOPEKA : GAS_TYPE_DEFINITION;
+    config.gas_type = (gt == GAS_TYPE_MOPEKA || gt == GAS_TYPE_MOPEKA_STD) ? (uint8_t)gt : GAS_TYPE_DEFINITION;
+    int lp = doc["lpg_propane"] | DEFAULT_LPG_PROPANE;
+    config.lpg_propane = (lp >= 0 && lp <= 100) ? (uint8_t)lp : DEFAULT_LPG_PROPANE;
     int me = doc["mopeka_empty_mm"] | DEFAULT_MOPEKA_EMPTY_MM;
     int mf = doc["mopeka_full_mm"] | DEFAULT_MOPEKA_FULL_MM;
     if (me >= 0 && mf <= 2000 && mf > me + 10) {
@@ -733,6 +745,7 @@ void saveConfig() {
     doc["gas_type"] = config.gas_type;
     doc["mopeka_empty_mm"] = config.mopeka_empty_mm;
     doc["mopeka_full_mm"] = config.mopeka_full_mm;
+    doc["lpg_propane"] = config.lpg_propane;
 
     // Write to a temp file first so a power loss cannot leave a half-written config
     const char* tmpPath = "/config.tmp";

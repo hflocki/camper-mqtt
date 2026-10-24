@@ -4,7 +4,7 @@ Eine Firmware für **einen** ESP32-C3 (oder klassischen ESP32), die zwei Projekt
 
 - **Frischwasser** aus [camper-waterlevel](https://github.com/hflocki/camper-waterlevel): Votronic-Tankgeber am analogen Eingang, Volt-zu-Füllstand-Matrix, Glättungsfilter
 - **Grauwasser** (optional): zweiter Votronic-Geber, wahlweise Tankelektrode (wie Frischwasser) oder kapazitiver Tank-Sensor FL, mit eigener Tankgröße, Matrix und Filter
-- **Gas** aus [camper-gaslevel](https://github.com/hflocki/camper-gaslevel): BLE-Gassensor (Standard: Rotarex DIMES / SRG WAVE), passiv über Bluetooth-Advertising, Füllstopp-Berechnung. Alternativ **Mopeka Pro** (Pro Check, Pro Check Universal, Pro Plus …), umschaltbar im Tab Gas
+- **Gas** aus [camper-gaslevel](https://github.com/hflocki/camper-gaslevel): BLE-Gassensor (Standard: Rotarex DIMES / SRG WAVE), passiv über Bluetooth-Advertising, Füllstopp-Berechnung. Alternativ **Mopeka Pro** (Pro Check, Pro Check Universal, Pro Plus …) oder **Mopeka Standard** (Std Check), umschaltbar im Tab Gas
 
 Alle Werte gehen per **MQTT** (mit Home-Assistant-Discovery) raus und sind in einer gemeinsamen **Web-Oberfläche** zu sehen und einzustellen. Jeder Sensor lässt sich einzeln ein- und ausschalten.
 
@@ -261,7 +261,14 @@ Ein ausgeschalteter Sensor verschwindet von der Live-Seite und aus Home Assistan
 
 ## Mopeka-Sensoren
 
-Im Tab **Gas** unter **Sensortyp** „Mopeka Pro“ wählen und speichern. Unterstützt werden alle aktuellen Mopeka-Modelle mit Bluetooth-Advertising: Pro Check (auch Lippert BottleCheck), Pro Check Universal, Pro Plus, Pro-200 und TD40/TD200. Die alte Mopeka **Std Check** sendet ein ganz anderes Format und wird nicht unterstützt.
+Im Tab **Gas** unter **Sensortyp** das passende Modell wählen und speichern:
+
+| Sensortyp | Modelle | Hersteller-ID in der Geräteliste |
+|---|---|---|
+| Mopeka Pro | Pro Check (auch Lippert BottleCheck), Pro Check Universal, Pro Plus, Pro-200, TD40/TD200 | `0059` |
+| Mopeka Standard | Std Check (älteres Modell, auch XL und baugleiche Varianten) | `000D` |
+
+Beim **Standard** rechnet der ESP die Füllhöhe selbst aus den Ultraschall-Echos. Die Schallgeschwindigkeit hängt vom Gas ab, deshalb gibt es dort zusätzlich das Feld **Propan-Anteil**: Deutsche Flaschen sind reines Propan (100 %), Mischgas z. B. 60 %, der Rest wird als Butan gerechnet.
 
 Mopeka misst per Ultraschall die **Füllhöhe in mm** von unten durch die Flaschenwand. Der Füllstand ergibt sich aus „Leer bei“ und „Voll bei“:
 
@@ -274,7 +281,7 @@ Mopeka misst per Ultraschall die **Füllhöhe in mm** von unten durch die Flasch
 
 Für andere Flaschen „Eigene Werte“ wählen und die angezeigte Füllhöhe einmal mit voller und einmal mit fast leerer Flasche ablesen. Messungen mit schlechter Qualität (z. B. Sensor verrutscht, Flasche fast leer) werden ignoriert, der letzte gute Wert bleibt stehen; die Qualität ist im Tab **Live** und per MQTT sichtbar. Der Inhalt in Litern wird aus Füllstand × Flaschenvolumen × Füllstopp berechnet.
 
-Die Dekodierung folgt der MIT-lizenzierten Bibliothek [mopeka-iot-ble](https://github.com/Bluetooth-Devices/mopeka-iot-ble), die auch Home Assistant verwendet.
+Die Dekodierung der Pro-Sensoren folgt der MIT-lizenzierten Bibliothek [mopeka-iot-ble](https://github.com/Bluetooth-Devices/mopeka-iot-ble), die auch Home Assistant verwendet. Für den Standard ist die Dekodierung eine eigene Umsetzung; das Datenformat ist in der ESPHome-Komponente [mopeka_std_check](https://esphome.io/components/sensor/mopeka_std_check/) dokumentiert.
 
 ## Anderer Gassensor
 
@@ -298,6 +305,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 | --- | --- |
+| 1.5.0 | Mopeka Standard (Std Check) als weiterer Sensortyp, Propan-Anteil einstellbar |
 | 1.4.0 | Mopeka-Pro-Sensoren als Gassensor (Sensortyp im Tab Gas), Füllhöhe, Temperatur und Messqualität per MQTT |
 | 1.3.0 | Optionaler Login für die Web-Oberfläche (Tab MQTT), Last Will mit QoS 1 |
 | 1.2.2 | ESP32-S3-Unterstützung (Pins automatisch), Sendeleistung und „AP nur als Notfall“ im Tab WiFi, Neustartgrund, Laufzeit und WLAN-Abbruchgrund in der Web-UI |

@@ -384,8 +384,9 @@ code { font-family: ui-monospace, Menlo, monospace; }
                 <select id="cfg-gas-type" onchange="applyGasType()">
                     <option value="0">Rotarex DIMES / SRG WAVE (oder eigene Definition in config.h)</option>
                     <option value="1">Mopeka Pro (Pro Check, Universal, Plus …)</option>
+                    <option value="2">Mopeka Standard (Std Check, älteres Modell)</option>
                 </select>
-                <div class="form-hint">Mopeka misst die Füllhöhe per Ultraschall von unten durch die Flaschenwand. Die alte Mopeka „Std Check“ wird nicht unterstützt.</div>
+                <div class="form-hint">Mopeka misst die Füllhöhe per Ultraschall von unten durch die Flaschenwand. Pro und Standard senden unterschiedliche Daten – das passende Modell wählen (Standard: Hersteller-ID 0x000D in der Geräteliste, Pro: 0x0059).</div>
             </div>
             <div class="btn-row"><button class="btn btn-gas" onclick="saveGasType()">💾 Sensortyp speichern</button></div>
         </div>
@@ -405,6 +406,11 @@ code { font-family: ui-monospace, Menlo, monospace; }
             <div class="form-row">
                 <div class="form-group"><label>Leer bei (mm)</label><input type="number" id="cfg-mopeka-empty" min="0" max="2000" step="1" oninput="syncMopekaPreset()"></div>
                 <div class="form-group"><label>Voll bei (mm)</label><input type="number" id="cfg-mopeka-full" min="10" max="2000" step="1" oninput="syncMopekaPreset()"></div>
+            </div>
+            <div class="form-group mopeka-std-only">
+                <label>Propan-Anteil im Gas (%)</label>
+                <input type="number" id="cfg-lpg-propane" min="0" max="100" step="5">
+                <div class="form-hint">Nur Mopeka Standard: beeinflusst die Schallgeschwindigkeit. Deutsche Flaschen (grau/rot) sind Propan = 100 %. Rest = Butan.</div>
             </div>
             <div class="info-row"><span class="info-label">Gemessene Füllhöhe</span><span id="m-mm">--</span></div>
             <div class="form-hint">Eigene Werte: Füllhöhe einmal mit voller und einmal mit leerer Flasche ablesen. Messwerte mit schlechter Qualität (unter „mittel“) werden ignoriert. Der Füllstopp unten wird bei Mopeka nur für den Inhalt in Litern verwendet.</div>
@@ -451,7 +457,8 @@ code { font-family: ui-monospace, Menlo, monospace; }
             <div class="card-title gas">Empfangene Daten (Rohbytes)</div>
             <div class="bytes" id="raw-bytes"><div class="empty">Noch keine Daten vom Sensor</div></div>
             <div class="form-hint definition-only" style="margin-top:8px"><span class="legend lv"></span> Füllstand &nbsp; <span class="legend bt"></span> Batterie &nbsp; (Zahl über dem Byte = Offset)</div>
-            <div class="form-hint mopeka-only" style="margin-top:8px">Mopeka: Byte 0 Modell, 1 Batterie, 2 Temperatur, 3–4 Füllhöhe + Qualität</div>
+            <div class="form-hint mopeka-pro-only" style="margin-top:8px">Mopeka Pro: Byte 0 Modell, 1 Batterie, 2 Temperatur, 3–4 Füllhöhe + Qualität</div>
+            <div class="form-hint mopeka-std-only" style="margin-top:8px">Mopeka Standard: Byte 1 Modell, 2 Batterie, 3 Temperatur, 4–18 Ultraschall-Echos</div>
         </div>
 
         <div class="card definition-only">
@@ -622,7 +629,7 @@ function updateLiveData(d) {
         $('g-content').textContent = (g.content || 0).toFixed(1);
         $('g-raw').textContent = (g.raw || 0).toFixed(0) + ' %';
         $('g-blerssi').textContent = g.ble_rssi ? g.ble_rssi + ' dBm' : '--';
-        if (gasType === 1) $('g-raw').textContent = (g.raw || 0).toFixed(0) + ' % (zwischen leer und voll)';
+        if (gasType !== 0) $('g-raw').textContent = (g.raw || 0).toFixed(0) + ' % (zwischen leer und voll)';
     } else {
         fill.style.height = '0%';
         $('g-level').textContent = '--';
@@ -707,7 +714,8 @@ async function loadSetup() {
         $('cfg-fillstop-on').checked = !!cfg.fill_stop_on;
         $('cfg-fillstop').value = cfg.fill_stop;
         updateFillStop();
-        gasType = cfg.gas_type === 1 ? 1 : 0;
+        gasType = [1, 2].includes(cfg.gas_type) ? cfg.gas_type : 0;
+        $('cfg-lpg-propane').value = cfg.lpg_propane ?? 100;
         $('cfg-gas-type').value = String(gasType);
         $('cfg-mopeka-empty').value = cfg.mopeka_empty_mm ?? 38;
         $('cfg-mopeka-full').value = cfg.mopeka_full_mm ?? 366;
@@ -886,13 +894,15 @@ async function toggleFilter(kind) {
 }
 
 // ---------- Gas ----------
-let gasType = 0;    // 0 = definition in config.h (DIMES), 1 = Mopeka Pro
+let gasType = 0;    // 0 = definition in config.h (DIMES), 1 = Mopeka Pro, 2 = Mopeka Standard
 
 // Shows the settings of the selected sensor type (stored = true: as saved on the device)
 function applyGasType(stored) {
     const t = stored ? gasType : parseInt($('cfg-gas-type').value);
-    document.querySelectorAll('.mopeka-only').forEach(e => e.classList.toggle('hidden', t !== 1));
-    document.querySelectorAll('.definition-only').forEach(e => e.classList.toggle('hidden', t === 1));
+    document.querySelectorAll('.mopeka-only').forEach(e => e.classList.toggle('hidden', t === 0));
+    document.querySelectorAll('.mopeka-pro-only').forEach(e => e.classList.toggle('hidden', t !== 1));
+    document.querySelectorAll('.mopeka-std-only').forEach(e => e.classList.toggle('hidden', t !== 2));
+    document.querySelectorAll('.definition-only').forEach(e => e.classList.toggle('hidden', t !== 0));
 }
 
 async function saveGasType() {
@@ -922,8 +932,14 @@ function syncMopekaPreset() {
 async function saveMopeka() {
     const e = parseInt($('cfg-mopeka-empty').value), f = parseInt($('cfg-mopeka-full').value);
     if (!(e >= 0 && f <= 2000 && f > e + 10)) { showToast('Voll muss über Leer liegen (0–2000 mm)'); return; }
+    const cfg = { mopeka_empty_mm: e, mopeka_full_mm: f };
+    if (gasType === 2) {
+        const p = parseInt($('cfg-lpg-propane').value);
+        if (!(p >= 0 && p <= 100)) { showToast('Propan-Anteil 0–100 %'); return; }
+        cfg.lpg_propane = p;
+    }
     try {
-        await postConfig({ mopeka_empty_mm: e, mopeka_full_mm: f });
+        await postConfig(cfg);
         showToast('✓ Mopeka gespeichert');
     } catch (err) { showToast('Fehler: ' + err.message); }
 }
@@ -972,6 +988,7 @@ function renderRawBytes(hex) {
         const c = document.createElement('div');
         c.className = 'byte';
         if (gasType === 1) { if (i === 3 || i === 4) c.classList.add('lv'); else if (i === 1) c.classList.add('bt'); }
+        else if (gasType === 2) { if (i >= 4 && i <= 18) c.classList.add('lv'); else if (i === 2) c.classList.add('bt'); }
         else if (def && inRange(i, def.level_offset, def.level_len)) c.classList.add('lv');
         else if (def && def.battery && inRange(i, def.battery_offset, def.battery_len)) c.classList.add('bt');
         const idx = document.createElement('i'); idx.textContent = i;
@@ -1036,7 +1053,7 @@ function renderDevices(devs) {
     }
     devs.forEach(d => {
         const row = document.createElement('div');
-        const match = gasType === 1 ? d.mfg === '0059' : (def && def.source === 0 && def.company && d.mfg === def.company);
+        const match = gasType === 1 ? d.mfg === '0059' : gasType === 2 ? d.mfg === '000D' : (def && def.source === 0 && def.company && d.mfg === def.company);
         row.className = 'dev' + (d.mac === currentMac ? ' current' : '') + (match ? ' match' : '');
 
         const main = document.createElement('div'); main.className = 'dev-main';
