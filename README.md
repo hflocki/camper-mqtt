@@ -110,6 +110,6 @@ Jeder Ordner behält seine Lizenz:
 | Ordner | Lizenz |
 | --- | --- |
 | `firmware/heater` | GPL-3.0 (Protokoll-Logik portiert aus GPL-Projekten, siehe dortige README) |
-| `firmware/level` | basiert auf dem Projekt von [klehnst](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT), dort ist bisher keine Lizenz angegeben |
+| `firmware/level` | basiert auf dem Projekt von [klehnst](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT), | MIT |
 | `firmware/tanklevel`, `temp`, `maxxfan`, `display` | MIT |
 | `firmware/roadbuddy` | MIT |
