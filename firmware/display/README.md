@@ -7,14 +7,14 @@ Passt zu den anderen Projekten:
 | Gerät | Repo | Standard-Topic |
 | --- | --- | --- |
 | Frischwasser, Grauwasser, Gas | [camper-tanklevel](../tanklevel) | `camper/tanklevel` |
-| Ausrichtung (BNO085) | [ESP32-Adafruit-BNO085 Levelsensor](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT) | `camper/level` ¹ |
+| Ausrichtung (BNO085) | [camper-level](../level) | `camper/level` ¹ |
 | Truma Combi Heizung | [camper-heater](../heater) | `camper/heater` ² |
 | MaxxFan (VanTurtle) | [camper-maxxfan](../maxxfan) | `camper/maxxfan` |
 | Temperaturen (DS18B20) | [camper-temp](../temp) | `camper/temp` |
 | Router (GPS, Mobilfunk) | Teltonika RUT956, siehe [Router-Daten](#router-daten-rut956) | frei |
 | Zigbee2MQTT & alles andere | eigene Seiten und Kacheln | frei |
 
-¹ Der Levelsensor steht ab Werk auf `wowa/level`. In seiner Weboberfläche den MQTT-Prefix auf `camper/level` stellen (oder hier unter *Topics der Geräte* `wowa/level` eintragen).
+¹ Wer noch die Original-Firmware von klehnst nutzt (ab Werk `wowa/level`): dort den MQTT-Prefix auf `camper/level` stellen oder hier unter *Topics der Geräte* `wowa/level` eintragen.
 ² Bis camper-heater 1.0 war der Standard `service/truma`. Ältere Geräte behalten ihre Einstellung; dann hier oder im Heizungs-Web-UI angleichen.
 
 <p>

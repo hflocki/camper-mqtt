@@ -58,6 +58,11 @@ jobs:
             fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
             sketch: firmware/maxxfan/_arduino/camper_maxxfan
             libs: ''
+          - device: level
+            target: esp32s3
+            fqbn: esp32:esp32:esp32s3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
+            sketch: firmware/level/_arduino/camper_level
+            libs: https://github.com/sparkfun/SparkFun_BNO08x_Arduino_Library.git#v1.0.6
           - device: display
             target: esp32s3
             fqbn: esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB

@@ -67,7 +67,7 @@ Weitere Topics unter diesen Präfixen (z. B. `rssi`, `voltage`, `raw_level`, Gra
 
 Die Sensoren dazu:
 
-- Level: [ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT) von klehnst (ESP32 + Adafruit BNO085), Topic-Präfix dort auf `camper/level` gestellt
+- Level: [camper-level](../level) (ESP32 + Adafruit BNO085, Fork des Levelsensors von klehnst)
 - Wasser und Gas: [camper-tanklevel](../tanklevel) (ein ESP32-C3 für Frischwasser, Grauwasser und Gas)
 
 Mehr zeigt der RoadBuddy bewusst nicht: Heizung, Lüfter, Temperaturen und Warnungen laufen auf dem großen Wandpanel [camper-display](../display).

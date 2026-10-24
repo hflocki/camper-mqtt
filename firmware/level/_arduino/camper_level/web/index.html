@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Camper Level</title>
+<style>
+:root {
+    --bg-primary: #0f1419;
+    --bg-secondary: #1a2332;
+    --bg-card: #1e2d3d;
+    --bg-input: #0d1b2a;
+    --accent: #4fc3f7;
+    --accent-glow: rgba(79,195,247,0.3);
+    --cold: #4fc3f7;
+    --mild: #00d4aa;
+    --warm: #ff9f43;
+    --hot: #ff4757;
+    --warning: #ffb800;
+    --danger: #ff4757;
+    --success: #00d4aa;
+    --text-primary: #e8f0f8;
+    --text-secondary: #8899aa;
+    --text-muted: #556677;
+    --border: #2a3a4a;
+    --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-primary); color: var(--text-primary);
+    min-height: 100vh; overflow-x: hidden;
+}
+.header {
+    background: var(--bg-secondary); padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+}
+.header h1 { font-size: 1.15rem; font-weight: 600; color: var(--accent); }
+.status-dots { display: flex; gap: 6px; align-items: center; font-size: 0.65rem; color: var(--text-muted); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); display: inline-block; margin-right: 4px; }
+.status-dot.active { background: var(--success); box-shadow: 0 0 8px rgba(0,212,170,0.3); }
+.status-dot.warning { background: var(--warning); }
+.tabs { display: flex; background: var(--bg-secondary); border-bottom: 1px solid var(--border); overflow-x: auto; }
+/* Icon above the label: all tabs fit even on small phones (320 px) */
+.tab {
+    flex: 1; min-width: 0; padding: 8px 1px 7px; text-align: center; font-size: 0.68rem; font-weight: 500; line-height: 1.2;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap;
+}
+.tab .ico { font-size: 1.05rem; line-height: 1; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(79,195,247,0.05); }
+.tab-content { display: none; padding: 16px; }
+.tab-content.active { display: block; }
+.card { background: var(--bg-card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+.card-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 12px; }
+.card-title.accent { color: var(--accent); }
+
+/* Values */
+.values-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.value-item { background: var(--bg-input); border-radius: 8px; padding: 12px; text-align: center; }
+.value-label { font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px; }
+.value-num { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Forms */
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; }
+.form-group input, .form-group select {
+    width: 100%; padding: 10px 12px; background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-primary); font-size: 0.9rem; outline: none;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+.form-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; width: 100%; }
+.btn-primary { background: var(--accent); color: var(--bg-primary); }
+.btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-danger { background: rgba(255,71,87,0.15); color: var(--danger); border: 1px solid var(--danger); }
+.btn-small { width: auto; padding: 6px 10px; font-size: 0.75rem; }
+.btn-row { display: flex; gap: 8px; margin-top: 12px; }
+
+.info-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+.info-row:last-child { border-bottom: none; }
+.info-label { color: var(--text-secondary); }
+
+.empty { font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 12px 0; }
+
+.enable-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.toggle { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle span { position: absolute; inset: 0; background: var(--border); border-radius: 13px; cursor: pointer; transition: 0.2s; }
+.toggle span::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: var(--text-primary); border-radius: 50%; transition: 0.2s; }
+.toggle input:checked + span { background: var(--accent); }
+.toggle input:checked + span::before { transform: translateX(20px); }
+
+code { font-family: ui-monospace, Menlo, monospace; }
+.hidden { display: none !important; }
+
+.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--bg-card); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 20px; font-size: 0.85rem; color: var(--accent); opacity: 0; transition: all 0.3s; z-index: 999; }
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast.err { border-color: var(--danger); color: var(--danger); }
+
+/* Small phones: keep the title on one line, one tile per row */
+@media (min-width: 600px) { body { display: flex; justify-content: center; } .app-wrap { width: 100%; max-width: 520px; } }
+
+/* Level: bubble */
+.level-wrap { display: flex; justify-content: center; padding: 6px 0 2px; }
+.level-ring { position: relative; width: 220px; height: 220px; border-radius: 50%;
+    border: 2px solid var(--border); background: radial-gradient(circle, #13202d 0%, var(--bg-input) 70%); }
+.level-ring::before, .level-ring::after { content: ''; position: absolute; background: var(--border); }
+.level-ring::before { left: 50%; top: 8px; bottom: 8px; width: 1px; }
+.level-ring::after { top: 50%; left: 8px; right: 8px; height: 1px; }
+.level-zone { position: absolute; left: 50%; top: 50%; border: 2px solid var(--success); border-radius: 50%;
+    transform: translate(-50%, -50%); opacity: 0.6; }
+.bubble { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; border-radius: 50%; z-index: 2;
+    background: var(--danger); box-shadow: 0 0 14px rgba(255,71,87,0.5); transform: translate(-50%, -50%);
+    transition: transform 0.2s ease-out, background 0.3s; }
+.bubble.warn { background: var(--warning); box-shadow: 0 0 14px rgba(255,184,0,0.5); }
+.bubble.ok { background: var(--success); box-shadow: 0 0 14px rgba(0,212,170,0.5); }
+.level-state { text-align: center; font-size: 1.1rem; font-weight: 700; margin-top: 10px; }
+.level-state.ok { color: var(--success); } .level-state.bad { color: var(--warning); }
+.value-num.ok { color: var(--success); } .value-num.warn { color: var(--warning); } .value-num.bad { color: var(--danger); }
+.value-unit { font-size: 0.7rem; color: var(--text-muted); }
+
+/* Level: vehicle top view with the four wedges */
+.van { display: grid; grid-template-columns: 1fr 110px 1fr; grid-template-rows: auto 1fr 1fr; gap: 8px; align-items: center; }
+.van-front { grid-column: 1 / 4; text-align: center; font-size: 0.7rem; color: var(--text-muted); }
+.van-body { grid-column: 2; grid-row: 2 / 4; height: 170px; border-radius: 22px 22px 10px 10px;
+    background: var(--bg-input); border: 2px solid var(--border); position: relative; }
+.van-body::before { content: ''; position: absolute; left: 12px; right: 12px; top: 12px; height: 30px;
+    border-radius: 10px 10px 4px 4px; background: var(--border); opacity: 0.6; }
+.wedge { background: var(--bg-input); border-radius: 10px; padding: 10px; text-align: center; border: 1px solid var(--border); }
+.wedge .wl { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; }
+.wedge .wv { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.wedge .wv small { font-size: 0.75rem; font-weight: 500; color: var(--text-secondary); margin-left: 2px; }
+.wedge.need { border-color: var(--warning); } .wedge.need .wv { color: var(--warning); }
+.wedge.zero .wv { color: var(--success); }
+.offline { opacity: 0.45; }
+@media (max-width: 374px) {
+    .header { padding: 14px 12px; gap: 8px; }
+    .header h1 { font-size: 1rem; white-space: nowrap; }
+    .status-dots { gap: 4px; font-size: 0.6rem; }
+    .level-ring { width: 190px; height: 190px; }
+    .van { grid-template-columns: 1fr 86px 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app-wrap">
+    <div class="header">
+        <h1>🚐 Camper Level</h1>
+        <div class="status-dots">
+            <span><span class="status-dot" id="dot-sensor"></span>Sensor</span>
+            <span><span class="status-dot" id="dot-wifi"></span>WiFi</span>
+            <span><span class="status-dot" id="dot-mqtt"></span>MQTT</span>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="live"><span class="ico">📐</span><span>Live</span></div>
+        <div class="tab" data-tab="vehicle"><span class="ico">🚐</span><span>Fahrzeug</span></div>
+        <div class="tab" data-tab="tare"><span class="ico">🎯</span><span>Tara</span></div>
+        <div class="tab" data-tab="mqtt"><span class="ico">⚙️</span><span>MQTT</span></div>
+        <div class="tab" data-tab="wifi"><span class="ico">📶</span><span>WiFi</span></div>
+    </div>
+
+    <!-- LIVE TAB -->
+    <div class="tab-content active" id="tab-live">
+        <div class="card" id="live-level">
+            <div class="level-wrap">
+                <div class="level-ring">
+                    <div class="level-zone" id="zone"></div>
+                    <div class="bubble" id="bubble"></div>
+                </div>
+            </div>
+            <div class="level-state" id="level-state">--</div>
+        </div>
+
+        <div class="card" id="live-values">
+            <div class="values-grid">
+                <div class="value-item">
+                    <div class="value-label">Längsneigung</div>
+                    <div class="value-num" id="v-pitch">--</div>
+                    <div class="value-unit" id="v-pitch-t">Grad</div>
+                </div>
+                <div class="value-item">
+                    <div class="value-label">Querneigung</div>
+                    <div class="value-num" id="v-roll">--</div>
+                    <div class="value-unit" id="v-roll-t">Grad</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="live-wedges">
+            <div class="card-title accent">Keile unterlegen</div>
+            <div class="van">
+                <div class="van-front">▲ Fahrtrichtung</div>
+                <div class="wedge" id="w-fl"><div class="wl">Vorne links</div><div class="wv"><span>--</span><small>cm</small></div></div>
+                <div class="van-body"></div>
+                <div class="wedge" id="w-fr"><div class="wl">Vorne rechts</div><div class="wv"><span>--</span><small>cm</small></div></div>
+                <div class="wedge" id="w-rl"><div class="wl">Hinten links</div><div class="wv"><span>--</span><small>cm</small></div></div>
+                <div class="wedge" id="w-rr"><div class="wl">Hinten rechts</div><div class="wv"><span>--</span><small>cm</small></div></div>
+            </div>
+            <div class="form-hint" style="margin-top:10px">Höhe, um die das jeweilige Rad angehoben werden muss. Das höchste Rad bleibt stehen.</div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-secondary" id="btn-fast" onclick="toggle('mqtt_fast')">⚡ Schnell senden</button>
+        </div>
+    </div>
+
+    <!-- VEHICLE TAB -->
+    <div class="tab-content" id="tab-vehicle">
+        <div class="card">
+            <div class="card-title accent">Fahrzeugmaße</div>
+            <div class="form-row">
+                <div class="form-group"><label>Spurweite (cm)</label><input type="number" id="cfg-track" min="100" max="300" step="1"></div>
+                <div class="form-group"><label>Radstand (cm)</label><input type="number" id="cfg-wheelbase" min="150" max="800" step="1"></div>
+            </div>
+            <div class="form-hint">Spurweite = Abstand Mitte linkes zu Mitte rechtes Rad. Radstand = Abstand Vorder- zu Hinterachse. Beides steht im Datenblatt des Fahrzeugs oder lässt sich mit dem Zollstock nachmessen.</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title accent">Einbaulage</div>
+            <div class="form-group">
+                <select id="cfg-mount">
+                    <optgroup label="Flach (USB zeigt nach …)">
+                        <option value="0">USB vorne (Fahrtrichtung)</option>
+                        <option value="1">USB hinten</option>
+                        <option value="2">USB links</option>
+                        <option value="3">USB rechts</option>
+                    </optgroup>
+                    <optgroup label="Wand (USB zeigt nach unten)">
+                        <option value="4">Vorderwand</option>
+                        <option value="5">Rückwand</option>
+                        <option value="6">Linke Wand</option>
+                        <option value="7">Rechte Wand</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-hint">Nach dem Ändern prüfen: Vorne anheben → Längsneigung wird positiv, links anheben → Querneigung wird positiv.</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title accent">Anzeige</div>
+            <div class="form-group">
+                <label>Toleranz „waagerecht“</label>
+                <select id="cfg-tolerance">
+                    <option value="0.2">± 0,2° (sehr genau)</option>
+                    <option value="0.3">± 0,3°</option>
+                    <option value="0.5">± 0,5° (Standard)</option>
+                    <option value="1">± 1,0° (grob)</option>
+                </select>
+            </div>
+            <div class="enable-row">
+                <div>
+                    <div style="font-size:0.85rem">Glättungsfilter</div>
+                    <div class="form-hint" style="margin-top:2px">Beruhigt die Werte, z. B. wenn jemand im Fahrzeug läuft. Reagiert dafür etwas langsamer.</div>
+                </div>
+                <label class="toggle"><input type="checkbox" id="cfg-filter"><span></span></label>
+            </div>
+        </div>
+        <div class="btn-row"><button class="btn btn-primary" onclick="saveVehicle()">💾 Speichern</button></div>
+    </div>
+
+    <!-- TARE TAB -->
+    <div class="tab-content" id="tab-tare">
+        <div class="card">
+            <div class="card-title accent">Nullpunkt (Tara)</div>
+            <div class="info-row"><span class="info-label">Tara aktiv</span><span id="tare-state">--</span></div>
+            <div class="info-row"><span class="info-label">Rohwert Längsneigung</span><span id="raw-pitch">--</span></div>
+            <div class="info-row"><span class="info-label">Rohwert Querneigung</span><span id="raw-roll">--</span></div>
+            <div class="form-hint">Fahrzeug auf einer ebenen Fläche mit einer Wasserwaage ausrichten (z. B. auf dem Küchenboden), dann „Tara setzen“. Die aktuelle Lage gilt danach als waagerecht.</div>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="tare('set')">🎯 Tara setzen</button>
+                <button class="btn btn-secondary" onclick="tare('reset')">✖ Tara löschen</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title accent">Tara-Werte von Hand</div>
+            <div class="form-row">
+                <div class="form-group"><label>Längsneigung (°)</label><input type="number" id="tare-pitch" step="0.05" min="-10" max="10"></div>
+                <div class="form-group"><label>Querneigung (°)</label><input type="number" id="tare-roll" step="0.05" min="-10" max="10"></div>
+            </div>
+            <div class="form-hint">Zum Feinabgleich mit einer Wasserwaage: Wert wird von der Messung abgezogen.</div>
+            <div class="btn-row"><button class="btn btn-primary" onclick="saveTare()">💾 Tara-Werte speichern</button></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Sensor</div>
+            <div class="info-row"><span class="info-label">BNO085</span><span id="sensor-state">--</span></div>
+            <div class="info-row"><span class="info-label">I2C-Pins</span><span id="pins">--</span></div>
+            <div class="btn-row"><button class="btn btn-secondary" onclick="post('/api/sensor_restart').then(()=>showToast('Sensor wird neu gestartet'))">🔄 Sensor neu starten</button></div>
+        </div>
+    </div>
+
+    <!-- MQTT TAB -->
+    <div class="tab-content" id="tab-mqtt">
+        <div class="card">
+            <div class="card-title">MQTT Settings (Home Assistant)</div>
+            <div class="form-row">
+                <div class="form-group"><label>Server</label><input type="text" id="cfg-mqtt-server"></div>
+                <div class="form-group"><label>Port</label><input type="number" id="cfg-mqtt-port" value="1883"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Benutzer</label><input type="text" id="cfg-mqtt-user"></div>
+                <div class="form-group"><label>Passwort</label><input type="password" id="cfg-mqtt-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            </div>
+            <div class="form-group">
+                <label>Topic-Prefix</label><input type="text" id="cfg-mqtt-prefix" value="camper/level">
+                <div class="form-hint">Werte unter <code>&lt;prefix&gt;/pitch</code>, <code>&lt;prefix&gt;/wedge_fl</code> …, Status unter <code>&lt;prefix&gt;/status</code></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">Web-Oberfläche Login</div>
+            <div class="form-row">
+                <div class="form-group"><label>Benutzer</label><input type="text" id="cfg-web-user" autocomplete="off" autocapitalize="none"></div>
+                <div class="form-group"><label>Passwort</label><input type="password" id="cfg-web-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            </div>
+            <div class="form-hint">Leerer Benutzer = kein Login. Login vergessen: über USB den Befehl <code>noauth</code> im seriellen Monitor senden.</div>
+        </div>
+        <div class="btn-row"><button class="btn btn-primary" onclick="saveSetup()">💾 Speichern</button></div>
+    </div>
+
+    <!-- WIFI TAB -->
+    <div class="tab-content" id="tab-wifi">
+        <div class="card">
+            <div class="card-title">Verbindungsstatus</div>
+            <div class="info-row"><span class="info-label">Status</span><span id="wifi-state">--</span></div>
+            <div class="info-row"><span class="info-label">RSSI</span><span id="wifi-rssi">--</span></div>
+            <div class="info-row"><span class="info-label">Firmware</span><span id="fw-version">--</span></div>
+            <div class="info-row"><span class="info-label">Laufzeit</span><span id="uptime">--</span></div>
+            <div class="info-row"><span class="info-label">Freier Speicher</span><span id="heap">--</span></div>
+            <div class="info-row"><span class="info-label">Letzter Neustart</span><span id="reset-reason">--</span></div>
+            <div class="info-row"><span class="info-label">WLAN-Abbrüche</span><span id="wifi-drops">--</span></div>
+            <div class="info-row"><span class="info-label">Letzter Abbruchgrund</span><span id="wifi-reason" style="text-align:right;word-break:break-all">--</span></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">WLAN-Verbindung</div>
+            <div class="form-group"><label>SSID</label><input type="text" id="cfg-wifi-ssid"></div>
+            <div class="form-group"><label>Passwort</label><input type="password" id="cfg-wifi-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            <div class="form-group">
+                <label>Sendeleistung</label>
+                <select id="cfg-tx-power">
+                    <option value="34">8,5 dBm</option><option value="44">11 dBm</option><option value="52">13 dBm</option>
+                    <option value="60">15 dBm</option><option value="70">17,5 dBm (Standard)</option><option value="78">19,5 dBm (Maximum)</option>
+                </select>
+                <div class="form-hint">Bricht die Verbindung oft ab, zuerst eine niedrigere Stufe probieren.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Access Point</div>
+            <div class="form-group"><label>Name (SSID)</label><input type="text" id="cfg-ap-ssid"></div>
+            <div class="form-group"><label>Passwort (min. 8 Zeichen)</label><input type="password" id="cfg-ap-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            <div class="enable-row">
+                <div>
+                    <div style="font-size:0.85rem">Access Point immer an</div>
+                    <div class="form-hint" style="margin-top:2px">Aus = AP nur als Notfall, wenn das WLAN 60 s nicht erreichbar ist. Das Gerät ist dann über seine IP im WLAN oder <code>camper-level.local</code> erreichbar.</div>
+                </div>
+                <label class="toggle"><input type="checkbox" id="cfg-ap-always"><span></span></label>
+            </div>
+        </div>
+
+        <div class="btn-row"><button class="btn btn-primary" onclick="saveWifi()">💾 Speichern & Verbinden</button></div>
+        <div class="btn-row"><button class="btn btn-danger" onclick="restartDevice()">🔄 Neustart</button></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let live = {};
+let tareEdited = false;
+
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        $('tab-' + tab.dataset.tab).classList.add('active');
+    });
+});
+['tare-pitch', 'tare-roll'].forEach(id => $(id).addEventListener('input', () => tareEdited = true));
+
+function connectWS() {
+    const ws = new WebSocket((location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + location.host + '/ws');
+    ws.onmessage = (evt) => { try { update(JSON.parse(evt.data)); } catch (e) {} };
+    ws.onclose = () => { setDots(false); setTimeout(connectWS, 3000); };
+}
+
+const fmt = (v, d = 1) => (v === null || v === undefined) ? '--' : Number(v).toFixed(d).replace('.', ',');
+function formatUptime(s) {
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    return (d ? d + ' d ' : '') + (d || h ? h + ' h ' : '') + m + ' min';
+}
+function cls(v, tol) { v = Math.abs(v); return v <= tol ? 'ok' : (v <= tol * 3 ? 'warn' : 'bad'); }
+function setDots(online, d) {
+    $('dot-sensor').className = 'status-dot ' + (online && d.ok ? 'active' : '');
+    $('dot-wifi').className = 'status-dot ' + (online && d.wifi === 'Verbunden' ? 'active' : (online ? 'warning' : ''));
+    $('dot-mqtt').className = 'status-dot ' + (online && d.mqtt ? 'active' : '');
+}
+
+function update(d) {
+    live = d;
+    setDots(true, d);
+    const tol = d.tol || 0.5;
+    ['live-level', 'live-values', 'live-wedges'].forEach(id => $(id).classList.toggle('offline', !d.ok));
+
+    // Bubble: 5 degrees = edge of the ring; it moves to the HIGH side like a real spirit level
+    const ring = 220, r = ring / 2 - 18, range = 5;
+    const c = (x) => Math.max(-1, Math.min(1, x / range));
+    const bx = d.ok ? -c(d.roll) * r : 0, by = d.ok ? -c(d.pitch) * r : 0;
+    const b = $('bubble');
+    b.style.transform = `translate(calc(-50% + ${bx}px), calc(-50% + ${by}px))`;
+    const total = Math.hypot(d.pitch, d.roll);
+    b.className = 'bubble' + (!d.ok ? '' : d.level ? ' ok' : (total <= tol * 3 ? ' warn' : ''));
+    const z = Math.max(24, tol / range * (ring - 36) * 2);
+    $('zone').style.width = $('zone').style.height = z + 'px';
+
+    const st = $('level-state');
+    st.textContent = !d.ok ? 'Sensor nicht bereit' : d.level ? '✓ Waagerecht' : 'Nicht waagerecht';
+    st.className = 'level-state ' + (!d.ok ? '' : d.level ? 'ok' : 'bad');
+
+    $('v-pitch').textContent = d.ok ? fmt(d.pitch) + '°' : '--';
+    $('v-roll').textContent = d.ok ? fmt(d.roll) + '°' : '--';
+    $('v-pitch').className = 'value-num ' + (d.ok ? cls(d.pitch, tol) : '');
+    $('v-roll').className = 'value-num ' + (d.ok ? cls(d.roll, tol) : '');
+    $('v-pitch-t').textContent = !d.ok || Math.abs(d.pitch) <= tol ? 'eben' : (d.pitch > 0 ? 'vorne höher' : 'hinten höher');
+    $('v-roll-t').textContent = !d.ok || Math.abs(d.roll) <= tol ? 'eben' : (d.roll > 0 ? 'links höher' : 'rechts höher');
+
+    for (const k of ['fl', 'fr', 'rl', 'rr']) {
+        const el = $('w-' + k), v = d[k];
+        el.querySelector('span').textContent = d.ok ? fmt(v) : '--';
+        el.classList.toggle('need', d.ok && !d.level && v >= 0.5);
+        el.classList.toggle('zero', d.ok && (d.level || v < 0.5));
+    }
+    $('btn-fast').textContent = d.fast ? '⚡ Schnell senden: an (5 Hz)' : '⚡ Schnell senden: aus';
+    $('btn-fast').className = 'btn ' + (d.fast ? 'btn-primary' : 'btn-secondary');
+
+    $('tare-state').textContent = d.tare ? `Ja (${fmt(d.tare_pitch, 2)}° / ${fmt(d.tare_roll, 2)}°)` : 'Nein';
+    $('raw-pitch').textContent = fmt(d.raw_pitch, 2) + '°';
+    $('raw-roll').textContent = fmt(d.raw_roll, 2) + '°';
+    $('sensor-state').textContent = d.ok ? 'OK' : 'nicht gefunden / keine Daten';
+    if (!tareEdited) { $('tare-pitch').value = d.tare_pitch; $('tare-roll').value = d.tare_roll; }
+
+    $('wifi-state').textContent = d.wifi;
+    $('wifi-rssi').textContent = d.rssi ? d.rssi + ' dBm' : '--';
+    $('uptime').textContent = formatUptime(d.uptime);
+    $('heap').textContent = Math.round(d.heap / 1024) + ' kB';
+    $('wifi-drops').textContent = d.wifi_drops;
+    $('wifi-reason').textContent = d.wifi_reason || '--';
+}
+
+async function post(url, obj) {
+    const resp = await fetch(url, obj === undefined ? {method: 'POST'} :
+        {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(obj)});
+    if (!resp.ok) {
+        let msg = 'HTTP ' + resp.status;
+        try { msg = (await resp.json()).error || msg; } catch (e) {}
+        throw new Error(msg);
+    }
+}
+async function saveConfig(obj, msg, restart) {
+    try {
+        await post('/api/config', obj);
+        showToast(msg || 'Gespeichert' + (restart ? ' – Neustart...' : ''));
+        if (restart) setTimeout(restartDevice, 800);
+    } catch (e) { showToast('Fehler: ' + e.message, true); }
+}
+
+async function loadSetup() {
+    try {
+        const resp = await fetch('/api/config');
+        if (!resp.ok) throw new Error();
+        const c = await resp.json();
+        $('cfg-track').value = c.track_width;
+        $('cfg-wheelbase').value = c.wheelbase;
+        $('cfg-mount').value = String(c.mount);
+        const tol = String(+c.tolerance);
+        if (![...$('cfg-tolerance').options].some(o => o.value === tol)) $('cfg-tolerance').add(new Option('± ' + fmt(c.tolerance) + '°', tol));
+        $('cfg-tolerance').value = tol;
+        $('cfg-filter').checked = !!c.filter_active;
+        $('pins').textContent = c.pins || '--';
+        $('cfg-mqtt-server').value = c.mqtt_server || '';
+        $('cfg-mqtt-port').value = c.mqtt_port || 1883;
+        $('cfg-mqtt-user').value = c.mqtt_user || '';
+        $('cfg-mqtt-prefix').value = c.mqtt_prefix || 'camper/level';
+        $('cfg-web-user').value = c.web_user || '';
+        $('cfg-wifi-ssid').value = c.wifi_ssid || '';
+        $('cfg-ap-ssid').value = c.ap_ssid || '';
+        $('cfg-tx-power').value = String(c.wifi_tx_power || 70);
+        $('cfg-ap-always').checked = c.ap_always !== false;
+        $('fw-version').textContent = c.version || '--';
+        $('reset-reason').textContent = c.reset_reason || '--';
+    } catch (e) { showToast('Fehler beim Laden der Einstellungen', true); }
+}
+
+function saveVehicle() {
+    const track = parseFloat($('cfg-track').value), wb = parseFloat($('cfg-wheelbase').value);
+    if (!(track >= 100 && track <= 300)) { showToast('Spurweite 100–300 cm', true); return; }
+    if (!(wb >= 150 && wb <= 800)) { showToast('Radstand 150–800 cm', true); return; }
+    saveConfig({track_width: track, wheelbase: wb, mount: parseInt($('cfg-mount').value),
+        tolerance: parseFloat($('cfg-tolerance').value), filter_active: $('cfg-filter').checked});
+}
+function toggle(key) { saveConfig({[key]: !live[key === 'mqtt_fast' ? 'fast' : key]}, ' '); }
+async function tare(action) {
+    try { await post('/api/tare?action=' + action); tareEdited = false; showToast(action === 'set' ? 'Tara gesetzt' : 'Tara gelöscht'); }
+    catch (e) { showToast('Fehler: ' + e.message, true); }
+}
+function saveTare() {
+    const p = parseFloat($('tare-pitch').value), r = parseFloat($('tare-roll').value);
+    if (!(Math.abs(p) <= 10 && Math.abs(r) <= 10)) { showToast('Tara-Werte max. ±10°', true); return; }
+    tareEdited = false;
+    saveConfig({tare_pitch: p, tare_roll: r}, 'Tara-Werte gespeichert');
+}
+function saveSetup() {
+    const cfg = {mqtt_server: $('cfg-mqtt-server').value.trim(), mqtt_port: parseInt($('cfg-mqtt-port').value) || 1883,
+        mqtt_user: $('cfg-mqtt-user').value.trim(), mqtt_prefix: $('cfg-mqtt-prefix').value.trim().replace(/\/+$/, ''),
+        web_user: $('cfg-web-user').value.trim()};
+    if ($('cfg-mqtt-pass').value) cfg.mqtt_pass = $('cfg-mqtt-pass').value;
+    if ($('cfg-web-pass').value) cfg.web_pass = $('cfg-web-pass').value;
+    saveConfig(cfg, null, true);
+}
+function saveWifi() {
+    const cfg = {wifi_ssid: $('cfg-wifi-ssid').value.trim(), ap_ssid: $('cfg-ap-ssid').value.trim(),
+        wifi_tx_power: parseInt($('cfg-tx-power').value), ap_always: $('cfg-ap-always').checked};
+    if ($('cfg-wifi-pass').value) cfg.wifi_pass = $('cfg-wifi-pass').value;
+    const ap = $('cfg-ap-pass').value;
+    if (ap) { if (ap.length < 8) { showToast('AP-Passwort: mindestens 8 Zeichen', true); return; } cfg.ap_pass = ap; }
+    saveConfig(cfg, null, true);
+}
+async function restartDevice() {
+    try { await post('/api/restart'); } catch (e) {}
+    showToast('Neustart... Seite lädt in 10 s neu');
+    setTimeout(() => location.reload(), 10000);
+}
+function showToast(msg, isErr) {
+    if (!msg.trim()) return;
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.toggle('err', !!isErr);
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+loadSetup();
+connectWS();
+</script>
+</body>
+</html>

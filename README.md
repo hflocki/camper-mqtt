@@ -9,7 +9,7 @@ flowchart LR
   temp["temp<br/>DS18B20 + Alarme"] --> broker
   heater["heater<br/>Truma Combi (LIN)"] <--> broker
   fan["maxxfan<br/>VanTurtle"] <--> broker
-  level["Levelsensor<br/>BNO085 (extern)"] --> broker
+  level["level<br/>BNO085 + Keile"] <--> broker
   broker <--> display["display<br/>4-Zoll-Wandpanel + Webseite"]
   broker --> rb["roadbuddy<br/>M5Stack Core2"]
   broker -.- ha["Home Assistant<br/>(optional)"]
@@ -23,12 +23,12 @@ flowchart LR
 | [`firmware/temp`](firmware/temp) | ESP8266 / ESP32-C3 | bis zu 8 DS18B20 (Kühlschrank, Gefrierfach …) mit Alarm-Grenzwerten | `camper/temp` |
 | [`firmware/heater`](firmware/heater) | ESP32 + LIN-Transceiver | Truma Combi / Vario Heat als iNet Box am CP Plus | `camper/heater` |
 | [`firmware/maxxfan`](firmware/maxxfan) | ESP32-C3 + VanTurtle | MaxxFan-Dachlüfter | `camper/maxxfan` |
+| [`firmware/level`](firmware/level) | ESP32 + BNO085 | Längs-/Querneigung und Keilhöhe für jedes Rad (Fork des Levelsensors von klehnst) | `camper/level` |
 | [`firmware/display`](firmware/display) | Guition ESP32-4848S040 | 4"-Wandpanel + gleiche Webseite fürs Handy, zeigt und steuert alles, Warnungen | `camper/display` |
 | [`firmware/roadbuddy`](firmware/roadbuddy) | M5Stack Core2 | kleines Akku-Display: Ausrichtung, Wasser, Gas | – (nur Empfänger) |
 
 Dazu, nicht in diesem Repo:
 
-- **Levelsensor:** [ESP32-Adafruit-BNO085 Caravan-Levelsensor](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT) von klehnst. In seiner Weboberfläche den MQTT-Prefix auf `camper/level` stellen (ab Werk `wowa/level`).
 - **Router-Daten (GPS, Mobilfunk):** Der RUT956 sendet sie selbst per MQTT, siehe [Router-Daten im Display-README](firmware/display/README.md#router-daten-rut956).
 
 Jeder Ordner ist für sich vollständig: eigene README mit Hardware, Board-Einstellungen, Bibliotheken und Topics, Arduino-Sketch unter `_arduino/` (bzw. `truma_heater/`), teils zusätzlich PlatformIO unter `_platformio/`.
@@ -68,7 +68,7 @@ Alles, was in `config_local.h` steht, gilt statt des Standardwerts aus `config.h
 
 Außerdem lässt sich jeder andere Wert aus `config.h` überschreiben (Pins, Prefix, Tankgröße …).
 
-Wichtig: WLAN, MQTT und Login ab Werk wirken nur, solange auf dem Gerät noch nichts gespeichert ist. Ein normales Update über bestehende Einstellungen ändert sie nicht. Neu übernommen werden sie nach **Werkseinstellungen** im Web-UI, nach dem Flashen mit **Erase All Flash Before Sketch Upload: Enabled** (Arduino IDE, Menü Werkzeuge) bzw. bei temp und tanklevel nach dem Hochladen des LittleFS-Images. Die Passwörter für Access Point und OTA gelten dagegen immer sofort.
+Wichtig: WLAN, MQTT und Login ab Werk wirken nur, solange auf dem Gerät noch nichts gespeichert ist. Ein normales Update über bestehende Einstellungen ändert sie nicht. Neu übernommen werden sie nach **Werkseinstellungen** im Web-UI, nach dem Flashen mit **Erase All Flash Before Sketch Upload: Enabled** (Arduino IDE, Menü Werkzeuge) bzw. bei temp, tanklevel und level nach dem Hochladen des LittleFS-Images. Die Passwörter für Access Point und OTA gelten dagegen immer sofort.
 
 Der Road Buddy hat keine Web-Oberfläche; dort ist die ganze `config.h` schon die persönliche Datei (Vorlage `config.example.h`).
 
@@ -87,7 +87,7 @@ git tag temp-v1.1.0
 git push origin temp-v1.1.0
 ```
 
-Dann wird nur dieses Gerät gebaut und die `.bin` ans Release gehängt. Heizung, MaxxFan und Display spielen sie direkt über ihr Web-UI ein; temp und tanklevel per USB oder Arduino-OTA (deren Web-Oberfläche liegt zusätzlich als LittleFS-Image in `data/`).
+Dann wird nur dieses Gerät gebaut und die `.bin` ans Release gehängt. Heizung, MaxxFan und Display spielen sie direkt über ihr Web-UI ein; temp, tanklevel und level per USB oder Arduino-OTA (deren Web-Oberfläche liegt zusätzlich als LittleFS-Image in `data/`).
 
 ## Nur ein Gerät nachbauen
 
@@ -110,5 +110,6 @@ Jeder Ordner behält seine Lizenz:
 | Ordner | Lizenz |
 | --- | --- |
 | `firmware/heater` | GPL-3.0 (Protokoll-Logik portiert aus GPL-Projekten, siehe dortige README) |
+| `firmware/level` | basiert auf dem Projekt von [klehnst](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT), dort ist bisher keine Lizenz angegeben |
 | `firmware/tanklevel`, `temp`, `maxxfan`, `display` | MIT |
 | `firmware/roadbuddy` | MIT |
