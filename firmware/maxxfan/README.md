@@ -1,3 +1,7 @@
+> [!WARNING]
+> **IN ENTWICKLUNG – kein fertiges Projekt.** Am echten LIN-Bus noch nicht getestet. Nutzung auf eigenes Risiko.
+
+
 # Camper MaxxFan – VanTurtle-Board per MQTT
 
 Firmware für einen **ESP32-C3** mit dem **VanTurtle**-Board (TCA9555-Port-Expander), die eine MaxxFan-Dachhaube per **MQTT** steuert – reines **Arduino**, ohne ESPHome. Aufbau wie [camper-tanklevel](../tanklevel) und [camper-heater](../heater):
