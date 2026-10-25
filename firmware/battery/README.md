@@ -1,3 +1,6 @@
+> [!WARNING]
+> **IN ENTWICKLUNG – kein fertiges Projekt.** Am echten LIN-Bus noch nicht getestet. Nutzung auf eigenes Risiko.
+
 # Camper Battery – BMS per Bluetooth auslesen, Werte per MQTT
 
 Firmware für einen ESP32-C3, der sich per Bluetooth mit bis zu **3 Batterie-BMS bzw. Batteriemonitoren** verbindet und ihre Werte per MQTT und in einer Web-Oberfläche bereitstellt – ohne ESPHome-Bluetooth-Proxy und ohne Home Assistant.
