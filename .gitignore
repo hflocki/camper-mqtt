@@ -11,3 +11,5 @@ build/
 
 # Personal settings of each device (see config_local.h.example)
 config_local.h
+
+plan/
