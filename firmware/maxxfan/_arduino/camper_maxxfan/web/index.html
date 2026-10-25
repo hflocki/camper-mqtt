@@ -126,9 +126,10 @@ progress{width:100%;margin-bottom:8px;accent-color:var(--acc)}
     <div class="fg"><label>Passwort (min. 8 Zeichen)</label><input name="appass" type="password" placeholder="(unverändert)" autocomplete="new-password"></div>
   </div>
   <div class="btn-row"><button class="btn btn-p" type="submit">💾 Speichern &amp; Verbinden</button></div>
-  <div class="card" style="margin-top:12px"><div class="ct">Firmware-Update</div>
-    <div class="hint" style="margin:0 0 8px">Arduino IDE: Sketch → Kompilierte Binärdatei exportieren, dann die .bin hier hochladen.</div>
-    <div class="fg"><input type="file" id="fw" accept=".bin"></div>
+  <div class="card" style="margin-top:12px"><div class="ct">Firmware- &amp; Web-Update</div>
+    <div class="hint" style="margin:0 0 8px">Firmware: Arduino IDE → Sketch → Kompilierte Binärdatei exportieren, die .bin hier hochladen.<br>
+      Web-Oberfläche: <code>data/index.html.gz</code> hochladen (ohne Neustart). Ein LittleFS-Image (Dateiname mit „littlefs“) wird ebenfalls erkannt.</div>
+    <div class="fg"><input type="file" id="fw" accept=".bin,.gz"></div>
     <progress id="pr" value="0" max="100" class="hide"></progress>
     <button class="btn btn-s" type="button" onclick="upload()">⬆ Hochladen</button></div>
   <div class="btn-row"><button class="btn btn-d" type="button" onclick="if(confirm('Neu starten?'))post('/api/reboot').then(restarting)">🔄 Neustart</button></div>
@@ -195,11 +196,12 @@ $("#f").onsubmit=e=>{e.preventDefault();const f=e.target,d={};
   if(d.appass&&d.appass.length<8){toast("AP-Passwort: mindestens 8 Zeichen",true);return}
   fetch("/api/config",{method:"POST",body:new URLSearchParams(d)}).then(r=>{
     if(r.ok)restarting();else toast("Fehler beim Speichern",true)}).catch(()=>toast("Keine Verbindung",true))};
-function upload(){const file=$("#fw").files[0];if(!file){toast("Erst eine .bin-Datei wählen",true);return}
+function upload(){const file=$("#fw").files[0];if(!file){toast("Erst eine Datei wählen",true);return}
   const fd=new FormData();fd.append("update",file);const x=new XMLHttpRequest();
   $("#pr").classList.remove("hide");
   x.upload.onprogress=e=>{if(e.lengthComputable)$("#pr").value=e.loaded/e.total*100};
-  x.onload=()=>{if(x.status===200){toast("Update erfolgreich – Neustart...");setTimeout(()=>location.reload(),12000)}else toast("Fehler: "+x.responseText,true)};
+  x.onload=()=>{if(x.status===200&&x.responseText==="OK web"){toast("Web-Oberfläche ersetzt – lädt neu...");setTimeout(()=>location.reload(),1500)}
+    else if(x.status===200){toast("Update erfolgreich – Neustart...");setTimeout(()=>location.reload(),12000)}else toast("Fehler: "+x.responseText,true)};
   x.open("POST","/api/update");x.send(fd);}
 loadCfg();poll();setInterval(poll,2000);
 </script></body></html>

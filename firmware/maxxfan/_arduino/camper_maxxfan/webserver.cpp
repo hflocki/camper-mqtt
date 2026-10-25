@@ -20,6 +20,14 @@ bool dnsRunning = false;
 bool updateAuthorized = false;
 bool fsReady = false;
 
+// Upload kinds, chosen by the file name (see handleUpdateChunk)
+enum UploadKind : uint8_t { UP_FIRMWARE, UP_FS_IMAGE, UP_WEBPAGE };
+UploadKind upKind = UP_FIRMWARE;
+File upFile;
+bool upFailed = false;
+const char* WEB_TMP = "/index.html.gz.tmp";
+const char* WEB_FILE = "/index.html.gz";
+
 // Shown when the LittleFS image (data/index.html.gz) has not been uploaded yet.
 // Keeps the firmware update working, so the device can always be recovered from the browser.
 const char FALLBACK_PAGE[] = R"HTML(<!doctype html><html lang="de"><head><meta charset="utf-8">
@@ -28,8 +36,9 @@ const char FALLBACK_PAGE[] = R"HTML(<!doctype html><html lang="de"><head><meta c
 code{background:#1e2d3d;padding:2px 6px;border-radius:4px}button{padding:10px 16px;margin-top:10px}</style></head><body>
 <h2>Camper MaxxFan</h2><p>Die Web-Oberfl&auml;che fehlt. Bitte das LittleFS-Image hochladen
 (<code>data/index.html.gz</code>, Arduino IDE: <em>Upload LittleFS</em>).</p>
-<p>Firmware-Update (.bin):</p><form method="POST" action="/api/update" enctype="multipart/form-data">
-<input type="file" name="fw" accept=".bin"><br><button>Hochladen</button></form></body></html>)HTML";
+<p>Hier hochladen: <code>data/index.html.gz</code> (Web-Oberfl&auml;che), ein LittleFS-Image oder die Firmware (.bin):</p>
+<form method="POST" action="/api/update" enctype="multipart/form-data">
+<input type="file" name="fw" accept=".bin,.gz"><br><button>Hochladen</button></form></body></html>)HTML";
 
 bool auth(AsyncWebServerRequest* r) {
   if (settings.webUser.isEmpty()) return true;
@@ -168,21 +177,65 @@ void handleLed(AsyncWebServerRequest* r) {
 
 void handleUpdateDone(AsyncWebServerRequest* r) {
   if (!auth(r)) return;
+  if (upKind == UP_WEBPAGE) {
+    // Only the web page was replaced: no restart needed
+    bool ok = updateAuthorized && !upFailed;
+    r->send(ok ? 200 : 500, "text/plain", ok ? "OK web" : "Upload failed");
+    return;
+  }
   bool ok = updateAuthorized && !Update.hasError();
   r->send(ok ? 200 : 500, "text/plain", ok ? "OK" : "Update failed");
   if (ok) requestReboot(1000);
 }
 
+// One upload field for everything, the file name decides:
+//   *.gz                         -> replaces the web page (index.html.gz) in LittleFS
+//   *littlefs* / *spiffs* (.bin) -> complete LittleFS image (Arduino IDE / mklittlefs)
+//   any other .bin               -> firmware
 void handleUpdateChunk(AsyncWebServerRequest* r, const String& filename, size_t index,
                        uint8_t* data, size_t len, bool final) {
   if (index == 0) {
     updateAuthorized = settings.webUser.isEmpty() ||
                        r->authenticate(settings.webUser.c_str(), settings.webPass.c_str());
     if (!updateAuthorized) return;
-    Serial.printf("[ota] web update: %s\n", filename.c_str());
-    if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) Update.printError(Serial);
+    String n = filename;
+    n.toLowerCase();
+    upFailed = false;
+    if (n.endsWith(".gz"))                                   upKind = UP_WEBPAGE;
+    else if (n.indexOf("littlefs") >= 0 || n.indexOf("spiffs") >= 0) upKind = UP_FS_IMAGE;
+    else                                                     upKind = UP_FIRMWARE;
+    Serial.printf("[ota] web upload (%s): %s\n",
+                  upKind == UP_WEBPAGE ? "web page" : upKind == UP_FS_IMAGE ? "filesystem" : "firmware",
+                  filename.c_str());
+    if (upKind == UP_WEBPAGE) {
+      upFile = fsReady ? LittleFS.open(WEB_TMP, "w") : File();
+      if (!upFile) { upFailed = true; Serial.println("[ota] cannot write to LittleFS"); }
+    } else if (upKind == UP_FS_IMAGE) {
+      if (fsReady) LittleFS.end();   // the image replaces the whole partition
+      fsReady = false;
+      if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_SPIFFS)) Update.printError(Serial);
+    } else {
+      if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) Update.printError(Serial);
+    }
   }
   if (!updateAuthorized) return;
+
+  if (upKind == UP_WEBPAGE) {
+    if (upFailed) return;
+    if (len && upFile.write(data, len) != len) upFailed = true;
+    if (final) {
+      upFile.close();
+      if (!upFailed) {
+        LittleFS.remove(WEB_FILE);
+        upFailed = !LittleFS.rename(WEB_TMP, WEB_FILE);
+      } else {
+        LittleFS.remove(WEB_TMP);
+      }
+      Serial.printf("[ota] web page %s, %u bytes\n", upFailed ? "FAILED" : "replaced", (unsigned)(index + len));
+    }
+    return;
+  }
+
   if (len && Update.write(data, len) != len) Update.printError(Serial);
   if (final) {
     if (Update.end(true)) Serial.printf("[ota] success, %u bytes\n", (unsigned)(index + len));

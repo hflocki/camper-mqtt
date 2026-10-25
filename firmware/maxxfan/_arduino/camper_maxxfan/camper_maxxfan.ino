@@ -10,6 +10,7 @@
 #include "system.h"
 #include <WiFi.h>
 #include <ArduinoOTA.h>
+#include <LittleFS.h>
 
 static volatile uint32_t rebootAt = 0;
 static bool otaStarted = false;
@@ -22,7 +23,11 @@ void requestReboot(uint32_t delayMs) {
 static void startArduinoOta() {
   ArduinoOTA.setHostname(settings.hostname.c_str());
   ArduinoOTA.setPassword(DEFAULT_OTA_PASSWORD);
-  ArduinoOTA.onStart([]() { Serial.println("[ota] start"); });
+  ArduinoOTA.onStart([]() {
+    // Filesystem upload over the network (espota -s): unmount LittleFS first
+    if (ArduinoOTA.getCommand() == U_SPIFFS) LittleFS.end();
+    Serial.printf("[ota] start (%s)\n", ArduinoOTA.getCommand() == U_SPIFFS ? "filesystem" : "firmware");
+  });
   ArduinoOTA.onEnd([]()   { Serial.println("[ota] done"); });
   ArduinoOTA.onError([](ota_error_t e) { Serial.printf("[ota] error %u\n", e); });
   ArduinoOTA.begin();

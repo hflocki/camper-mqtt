@@ -88,7 +88,15 @@ cd _arduino/camper_maxxfan
 gzip -9 -n -c web/index.html > data/index.html.gz
 ```
 
-Spätere Firmware-Updates per OTA (`camper-maxxfan` unter Netzwerk-Ports) oder im Web-UI unter **WiFi → Firmware-Update** (*Sketch → Kompilierte Binärdatei exportieren*). Ändert sich nur die Firmware, muss LittleFS nicht neu hochgeladen werden.
+**Updates ohne USB** (das Gerät sitzt im Lüftergehäuse): im Web-UI unter **WiFi → Firmware- & Web-Update**. Welche Datei gemeint ist, erkennt die Firmware am Namen:
+
+| Datei | Wirkung |
+| --- | --- |
+| `….ino.bin` (*Sketch → Kompilierte Binärdatei exportieren*) | neue Firmware, danach Neustart |
+| `data/index.html.gz` | nur die Web-Oberfläche wird ersetzt, ohne Neustart |
+| LittleFS-Image (Dateiname enthält `littlefs` oder `spiffs`) | ganzes Dateisystem, danach Neustart |
+
+Alternativ per Arduino-OTA (`camper-maxxfan` unter Netzwerk-Ports); auch ein Dateisystem-Upload über `espota -s` wird angenommen. Ändert sich nur die Firmware, muss die Web-Oberfläche nicht neu hochgeladen werden.
 
 ## Web-Oberfläche
 
@@ -153,7 +161,7 @@ Mit Discovery erscheint ein Gerät **„Camper MaxxFan“** mit Tasten-Entitäte
 
 | Version | Änderungen |
 | --- | --- |
-| 1.4.0 | „Schließen“ (Web-UI, MQTT `cmd/p<n>/close`, HA-Taste); Stufe setzen von oben (10× Schneller), damit die Haube dabei nicht zugeht |
+| 1.4.0 | „Schließen“ (Web-UI, MQTT `cmd/p<n>/close`, HA-Taste); Stufe setzen von oben (10× Schneller), damit die Haube dabei nicht zugeht; Web-Oberfläche und LittleFS-Image per Web-UI oder OTA hochladbar (kein USB nötig) |
 | 1.3.0 | Web-Oberfläche aus LittleFS (`data/index.html.gz`) wie bei tanklevel und temp, Notseite mit Firmware-Update, falls das Image fehlt |
 | 1.2.0 | Web-Oberfläche im gleichen Stil wie die anderen Camper-Geräte (Statuspunkte, Reiter Live / MaxxFan / MQTT / WiFi) |
 | 1.1.0 | Stufe 1–10 setzen (MQTT, HA-Regler, Web-UI) |
