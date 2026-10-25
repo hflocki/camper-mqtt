@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "1.1.0"
+#define FW_VERSION              "1.2.0"
 
 // ---- Device / access point ------------------------------------------
 #ifndef DEFAULT_HOSTNAME
@@ -84,6 +84,34 @@
 #ifndef DEFAULT_FINDER_FILTER
 #define DEFAULT_FINDER_FILTER   "zigbee2mqtt/#"
 #endif
+// ---- Pushover (push messages for warnings) --------------------------
+// Token of your Pushover application and your user key. Can also be entered in the
+// web page (Einstellungen -> Pushover); these are only the factory defaults.
+#ifndef DEFAULT_PUSHOVER_TOKEN
+#define DEFAULT_PUSHOVER_TOKEN  ""
+#endif
+#ifndef DEFAULT_PUSHOVER_USER
+#define DEFAULT_PUSHOVER_USER   ""
+#endif
+#ifndef DEFAULT_PUSHOVER_TITLE
+#define DEFAULT_PUSHOVER_TITLE  "Camper"
+#endif
+#ifndef PUSHOVER_URL
+#define PUSHOVER_URL            "https://api.pushover.net/1/messages.json"
+#endif
+#ifndef PUSHOVER_STABLE_MS
+#define PUSHOVER_STABLE_MS      30000   // a warning must be active this long before it is sent
+#endif
+#ifndef PUSHOVER_RETRIES
+#define PUSHOVER_RETRIES        5       // attempts per message (no WiFi / server error)
+#endif
+#ifndef PUSHOVER_RETRY_MS
+#define PUSHOVER_RETRY_MS       60000
+#endif
+#ifndef PUSHOVER_QUEUE
+#define PUSHOVER_QUEUE          8
+#endif
+
 #ifndef MQTT_BUFFER_SIZE
 #define MQTT_BUFFER_SIZE        4096                // larger messages are dropped by PubSubClient
 #endif

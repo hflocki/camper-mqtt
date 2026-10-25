@@ -6,6 +6,7 @@
 #include "wifi_manager.h"
 #include "display_hw.h"
 #include "ui.h"
+#include "notify.h"
 #include "web_ui.h"
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
@@ -210,6 +211,13 @@ void getSettings(AsyncWebServerRequest* r) {
   d["fanPort"] = settings.fanPort;
   d["ntpServer"] = settings.ntpServer;
   d["tz"] = settings.tz;
+  d["poOn"] = settings.poOn;
+  d["poClear"] = settings.poClear;
+  d["poPrio"] = settings.poPrio;
+  d["poToken"] = settings.poToken.isEmpty() ? "" : MASK;
+  d["poUser"] = settings.poUser.isEmpty() ? "" : MASK;
+  d["poTitle"] = settings.poTitle;
+  d["poStatus"] = notify::status();
   d["brightness"] = settings.brightness;
   d["dimBrightness"] = settings.dimBrightness;
   d["screenTimeout"] = settings.screenTimeout;
@@ -274,6 +282,13 @@ bool applySettings(JsonObject o, bool apply) {
   str("prefixHeater", settings.prefixHeater, false);
   str("prefixFan", settings.prefixFan, false);
   str("prefixTemp", settings.prefixTemp, false);
+  str("poToken", settings.poToken, false, true);
+  str("poUser", settings.poUser, false, true);
+  str("poTitle", settings.poTitle, false);
+  if (settings.poTitle.isEmpty()) settings.poTitle = DEFAULT_PUSHOVER_TITLE;
+  if (o["poOn"].is<bool>()) settings.poOn = o["poOn"];
+  if (o["poClear"].is<bool>()) settings.poClear = o["poClear"];
+  if (o["poPrio"].is<int>()) settings.poPrio = constrain(o["poPrio"].as<int>(), -1, 1);
   settings.prefixSelf = cleanPrefix(settings.prefixSelf);
   if (settings.prefixSelf.isEmpty()) settings.prefixSelf = DEFAULT_PREFIX_SELF;
   settings.prefixTank = cleanPrefix(settings.prefixTank);
@@ -428,6 +443,11 @@ void begin() {
     rebootAt = millis() + 1000;
   });
   server.on("/update", HTTP_POST, otaDone, otaUpload);
+  server.on("/api/pushover/test", HTTP_POST, [](AsyncWebServerRequest* r) {
+    if (!auth(r)) return;
+    notify::requestTest();
+    sendResult(r, true, "Testnachricht wird gesendet ...");
+  });
 
   auto* hs = new AsyncCallbackJsonWebHandler("/api/settings", postSettings);
   hs->setMethod(HTTP_POST);

@@ -19,6 +19,7 @@
 #include "display_hw.h"
 #include "ui.h"
 #include "web.h"
+#include "notify.h"
 #include <ArduinoOTA.h>
 
 void setup() {
@@ -35,6 +36,7 @@ void setup() {
   ui::begin();
   mqttc::begin();
   web::begin();
+  notify::begin();
 }
 
 static bool otaStarted = false;
@@ -44,6 +46,7 @@ void loop() {
   mqttc::loop();
   web::loop();
   ui::loop();
+  notify::loop();
   disp::loop();
   if (!otaStarted && wifimgr::staConnected()) {   // network upload from the Arduino IDE
     ArduinoOTA.setHostname(settings.hostname.c_str());

@@ -7,4 +7,5 @@ namespace ui {
   void loop();                          // refresh values, header, pending commands
   void requestRebuild();                // pages / tiles / builtin pages changed
   void showPageByName(const String& nameOrIndex);
+  String warningText();                 // all active warnings, one per line ("" = none)
 }

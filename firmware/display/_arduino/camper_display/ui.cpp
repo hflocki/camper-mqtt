@@ -1032,4 +1032,6 @@ void showPageByName(const String& nameOrIndex) {
   }
 }
 
+String warningText() { return warnings(); }
+
 } // namespace ui

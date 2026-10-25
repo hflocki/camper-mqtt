@@ -44,6 +44,11 @@ struct Settings {
   uint8_t fanPort = 1;
   // time
   String ntpServer, tz;
+  // pushover
+  bool   poOn = false;          // send warnings as push messages
+  bool   poClear = true;        // also send a message when a warning is gone
+  int8_t poPrio = 0;            // Pushover priority: 0 normal, 1 high (bypasses quiet hours)
+  String poToken, poUser, poTitle;
   // display
   uint8_t  brightness, dimBrightness;
   uint16_t screenTimeout;

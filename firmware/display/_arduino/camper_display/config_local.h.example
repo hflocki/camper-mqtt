@@ -20,6 +20,10 @@
 // #define DEFAULT_WEB_USER      "admin"
 // #define DEFAULT_WEB_PASSWORD  "web-password"
 
+// ---- Pushover (can also be entered in the web page) -----------------
+// #define DEFAULT_PUSHOVER_TOKEN "application-api-token"
+// #define DEFAULT_PUSHOVER_USER  "user-key"
+
 // ---- Device ----------------------------------------------------------
 // #define DEFAULT_NTP_SERVER   "192.168.1.1"     // e.g. the router
 // #define LCD_ROTATION         0                 // 0..3, wall mount orientation

@@ -294,6 +294,14 @@ function pgSettings(){
    <p class="mu">Hört kurz auf einem Topic-Filter mit und zeigt, was ankommt. Aus jedem Wert lässt sich direkt eine Kachel machen.</p>
    <div class="row"><input type="text" id="ffilter" class="grow" value="zigbee2mqtt/#" style="flex:1"><button class="btn pri" id="fstart">Start</button></div>
    <div id="flist" style="margin:10px 0 14px"></div></details>
+  <details><summary>📲 Pushover</summary>
+   <p class="mu">Schickt die Warnungen der Übersicht (Temperatur-Alarme, Heizungsfehler) als Push-Nachricht aufs Handy. Token einer eigenen Pushover-Anwendung und User-Key von <a href="https://pushover.net" target="_blank" rel="noopener">pushover.net</a>. Eine Warnung wird gesendet, wenn sie 30 s besteht.</p>
+   <label class="chk"><input type="checkbox" id="poOn"> Warnungen senden</label>
+   <label class="chk"><input type="checkbox" id="poClear"> Nachricht, wenn eine Warnung vorbei ist</label>
+   <div class="f2">${inp('poToken','API-Token (Anwendung)','password')}${inp('poUser','User-Key','password')}</div>
+   <div class="f2">${inp('poTitle','Titel der Nachricht')}<div><label>Priorität</label><select id="poPrio"><option value="0">Normal</option><option value="1">Hoch (auch in Ruhezeiten)</option><option value="-1">Leise</option></select></div></div>
+   <div class="row"><button class="btn" id="potest">Testnachricht</button><span class="mu grow" id="postat"></span></div>
+   <p class="mu">Erst speichern, dann testen.</p></details>
   <details><summary>🔧 System</summary>
    ${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
    <div class="f2">${inp('webUser','Web-Benutzer')}${inp('webPass','Web-Passwort (leer = kein Schutz)','password')}</div>
@@ -303,13 +311,15 @@ function pgSettings(){
    <div class="actions"><button class="btn" id="reboot">Neustart</button><button class="btn danger" id="factory">Werkseinstellungen</button></div></details>
   <div class="actions"><button class="btn pri" id="save" style="flex:1">Einstellungen speichern</button></div>`;
 }
-const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixSelf','dimBrightness','screenTimeout','hostname','apPass','webUser','webPass','ntpServer','tz'];
+const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixSelf','dimBrightness','screenTimeout','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle'];
 async function loadSettings(){
   try{
     const r=await fetch('/api/settings');if(!r.ok)throw 0;ST=await r.json();
     FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)e.value=ST[f]??''});
     $('#staticIp').checked=ST.staticIp;$('#fanPort').value=ST.fanPort;$('#brightness').value=ST.brightness;
     BUILTIN.forEach((b,i)=>$('#bp'+i).checked=ST.builtin[i]);
+    $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#poPrio').value=String(ST.poPrio||0);
+    $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
     $('#sysinfo').textContent=`Firmware ${ST.fw} · MAC ${ST.mac} · IP ${S.ip||''}`;
     const p=await fetch('/api/pages');PG=await p.json();PG.pages=PG.pages||[];PG.tiles=PG.tiles||[];renderPages();
   }catch(e){toast('Einstellungen konnten nicht geladen werden')}
@@ -319,6 +329,7 @@ async function loadSettings(){
   $('#reboot').onclick=()=>{if(confirm('Neu starten?'))post('/api/reboot')};
   $('#factory').onclick=()=>{if(confirm('Alle Einstellungen löschen?'))post('/api/factory')};
   $('#fwup').onclick=upload;
+  $('#potest').onclick=async()=>{await post('/api/pushover/test');setTimeout(async()=>{try{const r=await fetch('/api/settings');const s=await r.json();$('#postat').textContent=s.poStatus?'Zuletzt: '+s.poStatus:''}catch(e){}},6000)};
   $('#fstart').onclick=()=>send({c:'finder',on:!finder.on,f:$('#ffilter').value});
   renderFinder();
 }
@@ -334,6 +345,7 @@ function saveSettings(){
   ['mqttPort','dimBrightness','screenTimeout'].forEach(f=>o[f]=parseInt(o[f])||0);
   o.staticIp=$('#staticIp').checked;o.fanPort=+$('#fanPort').value;o.brightness=+$('#brightness').value;
   o.builtin=BUILTIN.map((b,i)=>$('#bp'+i).checked);
+  o.poOn=$('#poOn').checked;o.poClear=$('#poClear').checked;o.poPrio=+$('#poPrio').value;
   post('/api/settings',o);
 }
 async function scan(){

@@ -30,7 +30,7 @@ Passt zu den anderen Projekten:
 - **Wandpanel** mit LVGL-Oberfläche, Wischen oder Pfeile zum Blättern, deutsche Umlaute und Icons
 - **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert, hell/dunkel automatisch
 - **Feste Seiten:** Übersicht · Heizung · Dachlüfter · Ausrichtung · Temperaturen (einzeln abschaltbar) und **System** (IP, QR-Code, Helligkeit)
-- **Warnungen:** Temperatur-Alarme von camper-temp und Heizungsfehler erscheinen als rote Leiste auf der Übersicht und als ⚠ in der Kopfzeile. Eine neue Warnung weckt das Display; war es dunkel, springt es auf die Übersicht
+- **Warnungen:** Temperatur-Alarme von camper-temp und Heizungsfehler erscheinen als rote Leiste auf der Übersicht und als ⚠ in der Kopfzeile. Eine neue Warnung weckt das Display; war es dunkel, springt es auf die Übersicht. Optional zusätzlich als **Push-Nachricht** per Pushover
 - **Eigene Seiten und Kacheln** für beliebige MQTT-Topics: *Wert*, *Schalter*, *Taster*, *Regler* – erscheinen automatisch auf Display **und** Webseite
 - **Topic-Finder:** lauscht z. B. auf `zigbee2mqtt/#`, zeigt alle Geräte mit ihren JSON-Werten; ein Klick legt eine Kachel an (Temperatur, Luftfeuchte, Licht an/aus, Helligkeit …)
 - **Setup-WLAN** wie bei den anderen Projekten: ohne WLAN-Daten oder nach 1 Minute ohne Verbindung öffnet sich `Camper-Display-XXXXXX`, Captive Portal unter `http://192.168.4.1`. Das Display zeigt dazu einen QR-Code zum Verbinden.
@@ -58,6 +58,7 @@ docs/                      Screenshots
 | `web.*`, `web_ui.h`, `web/index.html` | Webserver, WebSocket, Einstellungs-API, Firmware-Update |
 | `wifi_manager.*` | WLAN, feste IP, Setup-AP, mDNS, NTP |
 | `settings.*` | Einstellungen, Seiten und Kacheln im NVS |
+| `notify.*` | Push-Nachrichten per Pushover (eigener Task, HTTPS mit Zertifikatsprüfung) |
 | `font_de_*.c` | Montserrat mit Umlauten + Font-Awesome-Icons (mit `lv_font_conv` erzeugt) |
 
 ## Hardware
@@ -196,6 +197,23 @@ Die Übersicht zeigt oben eine rote Leiste, solange etwas nicht stimmt:
 | camper-heater | `control_status/heater_error` = `ON`, mit Fehlercode |
 
 Warnungen von Geräten, die `offline` sind, werden nicht gezeigt (alte retained Werte sollen keinen Fehlalarm auslösen). Grenzwerte und Verzögerung stellt man direkt in camper-temp ein, nicht am Display.
+
+### Push-Nachrichten (Pushover)
+
+Das Display kann jede Warnung zusätzlich aufs Handy schicken, auch wenn niemand im Camper ist. Es läuft ohnehin immer und sieht alle Warnungen, deshalb sitzt das hier und nicht in den einzelnen Geräten.
+
+1. Bei [pushover.net](https://pushover.net) anmelden, App aufs Handy. Der **User-Key** steht auf der Startseite.
+2. Unter *Your Applications → Create an Application* eine Anwendung anlegen (Name z. B. „Camper“). Deren **API-Token** brauchst du.
+3. Am Display unter *Einstellungen → 📲 Pushover*: Token und User-Key eintragen, **Warnungen senden** anhaken, *Einstellungen speichern*, dann **Testnachricht**.
+
+| Einstellung | Wirkung |
+| --- | --- |
+| Warnungen senden | Eine Warnung wird gesendet, sobald sie 30 s ununterbrochen besteht (`PUSHOVER_STABLE_MS`) |
+| Nachricht, wenn eine Warnung vorbei ist | „✓ Erledigt: Kühlschrank zu warm“, leise (Priorität −1) |
+| Priorität | Normal, Hoch (klingelt auch in den Pushover-Ruhezeiten) oder Leise |
+| Titel | Überschrift der Nachricht, Standard „Camper“ |
+
+Eine Warnung wird pro Ereignis nur einmal gesendet. Ändert sich nur der Wert („9,2 °C“ → „9,8 °C“), kommt keine neue Nachricht. Geht ein Gerät offline, gilt seine Warnung nicht als erledigt. Ohne WLAN oder bei einem Serverfehler versucht das Display es bis zu 5-mal im Minutenabstand. Token und User-Key lassen sich auch in `config_local.h` vorbelegen (`DEFAULT_PUSHOVER_TOKEN`, `DEFAULT_PUSHOVER_USER`).
 
 ## Router-Daten (RUT956)
 

@@ -1,5 +1,5 @@
 > [!WARNING]
-> **IN ENTWICKLUNG – kein fertiges Projekt.** Am echten LIN-Bus noch nicht getestet. Nutzung auf eigenes Risiko.
+> **IN ENTWICKLUNG – kein fertiges Projekt.** Mit echten BMS (Daly, Ective BM X) noch nicht getestet. Nutzung auf eigenes Risiko.
 
 # Camper Battery – BMS per Bluetooth auslesen, Werte per MQTT
 

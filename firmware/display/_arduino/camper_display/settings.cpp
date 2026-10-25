@@ -46,6 +46,12 @@ void load() {
   settings.fanPort      = prefs.getUChar ("fport",  DEFAULT_FAN_PORT);
   settings.ntpServer    = prefs.getString("ntp",    DEFAULT_NTP_SERVER);
   settings.tz           = prefs.getString("tz",     DEFAULT_TZ);
+  settings.poOn         = prefs.getBool  ("pon",    false);
+  settings.poClear      = prefs.getBool  ("pclr",   true);
+  settings.poPrio       = prefs.getChar  ("pprio",  0);
+  settings.poToken      = prefs.getString("ptok",   DEFAULT_PUSHOVER_TOKEN);
+  settings.poUser       = prefs.getString("pusr",   DEFAULT_PUSHOVER_USER);
+  settings.poTitle      = prefs.getString("ptitle", DEFAULT_PUSHOVER_TITLE);
   settings.brightness   = prefs.getUChar ("bri",    DEFAULT_BRIGHTNESS);
   settings.dimBrightness= prefs.getUChar ("dim",    DEFAULT_DIM_BRIGHTNESS);
   settings.screenTimeout= prefs.getUShort("sto",    DEFAULT_SCREEN_TIMEOUT);
@@ -67,6 +73,8 @@ void load() {
   if (settings.apPass.length() < 8) settings.apPass = DEFAULT_AP_PASSWORD;
   if (settings.brightness < 5) settings.brightness = 5;
   if (settings.fanPort > 1) settings.fanPort = 1;
+  if (settings.poPrio < -1 || settings.poPrio > 1) settings.poPrio = 0;
+  if (settings.poTitle.isEmpty()) settings.poTitle = DEFAULT_PUSHOVER_TITLE;
 
   String err;
   if (pagesJson.isEmpty() || !pagesFromJson(pagesJson, err)) {
@@ -101,6 +109,12 @@ void save() {
   prefs.putUChar ("fport",  settings.fanPort);
   prefs.putString("ntp",    settings.ntpServer);
   prefs.putString("tz",     settings.tz);
+  prefs.putBool  ("pon",    settings.poOn);
+  prefs.putBool  ("pclr",   settings.poClear);
+  prefs.putChar  ("pprio",  settings.poPrio);
+  prefs.putString("ptok",   settings.poToken);
+  prefs.putString("pusr",   settings.poUser);
+  prefs.putString("ptitle", settings.poTitle);
   prefs.putUChar ("bri",    settings.brightness);
   prefs.putUChar ("dim",    settings.dimBrightness);
   prefs.putUShort("sto",    settings.screenTimeout);
