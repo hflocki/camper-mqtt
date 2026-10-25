@@ -1,6 +1,6 @@
 # RoadBuddy – M5Stack Core2 Camper-Display
 
-Kleines Touch-Display für das Wohnmobil auf Basis des **M5Stack Core2**. Es zeigt die wichtigsten Werte aus dem Bordnetz per MQTT an: Neigung (Wasserwaage), Frischwassertank und Gasflasche. Zum Akku-Sparen schaltet sich das Display automatisch aus, danach geht das Gerät in den Deep Sleep, WLAN und MQTT sind dann komplett aus.
+Kleines Touch-Display für das Wohnmobil auf Basis des **M5Stack Core2**. Es zeigt die wichtigsten Werte aus dem Bordnetz per MQTT an: Neigung (Wasserwaage), Frischwassertank, Gasflasche und Temperaturen. Zum Akku-Sparen schaltet sich das Display automatisch aus, danach geht das Gerät in den Deep Sleep, WLAN und MQTT sind dann komplett aus.
 
 ---
 
@@ -23,10 +23,13 @@ Die Seiten werden mit den beiden äußeren Touch-Tasten (links/rechts) umgeschal
 
 | Seite | Inhalt |
 | ----- | ------ |
-| 1 – Level | Wasserwaage mit Blase (grün ≤ 1°, gelb ≤ 3°, rot darüber) und zwei kippende Fahrzeug-Icons für Pitch (Seitenansicht) und Roll (Heckansicht) mit Gradzahl |
-| 2 – System | WLAN-Status mit Signalstärke, IP, Broker, MQTT-Status, Akku, Laufzeit |
-| 3 – Wassertank | Tank mit animierter Wasseroberfläche, Füllstand in % und Liter, Sensor-Status |
-| 4 – Gas | Gasflasche mit Füllstand, in % und Restmenge, Status, Akku des Gassensors |
+| Level | Wasserwaage mit Blase (grün ≤ 1°, gelb ≤ 3°, rot darüber) und zwei kippende Fahrzeug-Icons für Pitch (Seitenansicht) und Roll (Heckansicht) mit Gradzahl |
+| Wassertank | Tank mit animierter Wasseroberfläche, Füllstand in % und Liter, Sensor-Status |
+| Gas | Gasflasche mit Füllstand, in % und Restmenge, Status, Akku des Gassensors |
+| Temperaturen | Sensoren von camper-temp mit Namen und Wert. 1–2 Sensoren als große Zeilen, 3–4 als 2×2-Kacheln. Bei 5–8 Sensoren kommt automatisch eine zweite Temperaturseite dazu. Alarm (zu warm/zu kalt) = roter Rahmen. Farbe: blau unter 10 °C, grün bis 28 °C, gelb bis 45 °C, rot darüber |
+| System | WLAN-Status mit Signalstärke, IP, Broker, MQTT-Status, Akku, Laufzeit |
+
+Welche Seiten es gibt, steht in `config.h` (`USE_LEVEL`, `USE_WATER`, `USE_GAS`, `USE_TEMP`).
 
 In der Kopfzeile stehen links ein WLAN-Symbol (grün = WLAN und MQTT ok, gelb = MQTT fehlt, rotes Kreuz = kein WLAN), in der Mitte die Seitenpunkte und rechts der Akku des Core2 (blau mit „+“ beim Laden).
 
@@ -62,6 +65,8 @@ Das Display ist reiner Empfänger und fragt nichts ab, die Aktualisierungsrate b
 | `camper/tanklevel/gas/battery` | Akku des Gassensors in % |
 | `camper/tanklevel/gas/ble_state` | `OK`, sonst wird „BLE“ als Warnung gezeigt |
 | `camper/tanklevel/status` | `online` / `offline` (Last Will, gilt für Wasser und Gas) |
+| `camper/temp/sensors` | Alle Temperatursensoren als JSON-Liste: `[{"id":"fridge","name":"Kühlschrank","t":4.31,"alarm":0}, …]` |
+| `camper/temp/status` | `online` / `offline` von camper-temp |
 
 Weitere Topics unter diesen Präfixen (z. B. `rssi`, `voltage`, `raw_level`, Grauwasser) werden ignoriert. Die Topics für Wasser und Gas stehen als Konstanten am Anfang des Sketches, das Level-Topic in `config.h`. Die früheren getrennten Geräte (`camper/waterlevel`, `camper/gaslevel`) werden nicht mehr unterstützt.
 
@@ -69,8 +74,9 @@ Die Sensoren dazu:
 
 - Level: [camper-level](../level) (ESP32 + Adafruit BNO085, Fork des Levelsensors von klehnst)
 - Wasser und Gas: [camper-tanklevel](../tanklevel) (ein ESP32-C3 für Frischwasser, Grauwasser und Gas)
+- Temperaturen: [camper-temp](../temp) (bis zu 8 DS18B20 mit Alarm-Grenzwerten)
 
-Mehr zeigt der RoadBuddy bewusst nicht: Heizung, Lüfter, Temperaturen und Warnungen laufen auf dem großen Wandpanel [camper-display](../display).
+Mehr zeigt der RoadBuddy bewusst nicht: Heizung, Lüfter und Warnungen laufen auf dem großen Wandpanel [camper-display](../display).
 
 ---
 
@@ -88,6 +94,7 @@ Alle Einstellungen stehen am Anfang von `roadbuddy.ino`:
 | `ICON_SIGN_PITCH` / `ICON_SIGN_ROLL` | Kipprichtung der Fahrzeug-Icons umdrehen |
 | `ICON_GAIN` | Übertreibung des Kippwinkels, damit kleine Winkel sichtbar sind |
 | `TOPIC_TANK_*` | MQTT-Topics für Wasser und Gas |
+| `TOPIC_TEMP_*` | MQTT-Topics von camper-temp |
 
 WLAN-Hostname und MQTT-Client-ID beginnen mit `roadbuddy`.
 

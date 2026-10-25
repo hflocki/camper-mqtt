@@ -2,6 +2,7 @@
 #include <M5Unified.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <ArduinoJson.h>
 #include <esp_sleep.h>
 #include "config.h"
 
@@ -17,6 +18,9 @@
 #ifndef USE_GAS
 #define USE_GAS 1     // gas bottle
 #endif
+#ifndef USE_TEMP
+#define USE_TEMP 1    // temperatures from camper-temp (1-4 sensors on one page, 5-8 on a second)
+#endif
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -27,6 +31,9 @@ M5Canvas canvas(&M5.Display);  // off-screen buffer, avoids flicker
 const char* TOPIC_TANK_WATER      = "camper/tanklevel/water/";
 const char* TOPIC_TANK_GAS        = "camper/tanklevel/gas/";   // level, content, battery, ble_state
 const char* TOPIC_TANK_STATUS     = "camper/tanklevel/status";
+// camper-temp firmware: all sensors as one JSON list [{"id","name","t","alarm"}, ...]
+const char* TOPIC_TEMP_SENSORS    = "camper/temp/sensors";
+const char* TOPIC_TEMP_STATUS     = "camper/temp/status";
 
 // ---------- Power management ----------
 const unsigned long DISPLAY_TIMEOUT_MS = 60UL * 1000UL;        // display off after this much inactivity
@@ -39,7 +46,7 @@ const uint64_t SLEEP_SAFETY_TIMER_US   = 24ULL * 3600ULL * 1000000ULL;
 // ---------- State ----------
 
 // Pages in display order; the system page is always present
-enum PageId { PAGE_LEVEL, PAGE_WATER, PAGE_GAS, PAGE_SYSTEM };
+enum PageId { PAGE_LEVEL, PAGE_WATER, PAGE_GAS, PAGE_TEMP1, PAGE_TEMP2, PAGE_SYSTEM };
 static const PageId PAGES[] = {
 #if USE_LEVEL
   PAGE_LEVEL,
@@ -49,6 +56,10 @@ static const PageId PAGES[] = {
 #endif
 #if USE_GAS
   PAGE_GAS,
+#endif
+#if USE_TEMP
+  PAGE_TEMP1,
+  PAGE_TEMP2,   // only shown when camper-temp reports more than 4 sensors
 #endif
   PAGE_SYSTEM
 };
@@ -81,6 +92,19 @@ RTC_DATA_ATTR int gasBattery = -1;         // sensor battery in %, -1 = unknown
 bool gasBleOk = true;        // false if the gas ESP reports a BLE problem
 bool gasOnline = false;
 bool gasStatusKnown = false;
+
+// Temperatures (camper-temp)
+const int TEMP_MAX = 8;
+const int TEMP_PER_PAGE = 4;
+struct TempEntry {
+  char name[20];
+  float t;        // NAN = sensor has no valid reading
+  int8_t alarm;   // 0 = none, 1 = too cold, 2 = too warm
+};
+RTC_DATA_ATTR TempEntry temps[TEMP_MAX];
+RTC_DATA_ATTR int tempCount = -1;   // -1 = no list received yet
+bool tempOnline = false;
+bool tempStatusKnown = false;
 
 unsigned long lastMqttAttempt = 0;
 const unsigned long MQTT_RETRY_MS = 5000;
@@ -127,6 +151,34 @@ void startWifi() {
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
   WiFi.begin(ssid, password);
+}
+
+// ---------- Pages ----------
+// The second temperature page only exists while more than TEMP_PER_PAGE sensors are reported
+bool pageVisible(int i) {
+  if (PAGES[i] == PAGE_TEMP2) return tempCount > TEMP_PER_PAGE;
+  return true;
+}
+
+int visibleCount() {
+  int n = 0;
+  for (int i = 0; i < PAGE_COUNT; i++) if (pageVisible(i)) n++;
+  return n;
+}
+
+int visiblePosition(int index) {   // position of PAGES[index] among the visible pages
+  int n = 0;
+  for (int i = 0; i < index; i++) if (pageVisible(i)) n++;
+  return n;
+}
+
+int stepPage(int from, int dir) {
+  int i = from;
+  for (int k = 0; k < PAGE_COUNT; k++) {
+    i = (i + dir + PAGE_COUNT) % PAGE_COUNT;
+    if (pageVisible(i)) return i;
+  }
+  return from;
 }
 
 // ---------- Header / footer ----------
@@ -183,10 +235,12 @@ void drawHeader() {
   canvas.fillRect(0, 0, canvas.width(), 32, COL_PANEL);
   drawConnectionIcon(10, 8);
 
-  // Page dots, centered
-  for (int i = 0; i < PAGE_COUNT; i++) {
-    int cx = canvas.width() / 2 + (int)((i - (PAGE_COUNT - 1) / 2.0f) * 16);
-    if (i == page_index) canvas.fillCircle(cx, 16, 5, COL_ACCENT);
+  // Page dots, centered (only visible pages)
+  int count = visibleCount();
+  int current = visiblePosition(page_index);
+  for (int i = 0; i < count; i++) {
+    int cx = canvas.width() / 2 + (int)((i - (count - 1) / 2.0f) * 16);
+    if (i == current) canvas.fillCircle(cx, 16, 5, COL_ACCENT);
     else canvas.fillCircle(cx, 16, 3, COL_GRID);
   }
 
@@ -546,6 +600,120 @@ void drawPageGas() {
   }
 }
 
+// ---------- Temperature pages ----------
+uint16_t tempColor(float t) {
+  if (t < 10.0f) return COL_ACCENT;   // fridge / freezer range
+  if (t < 28.0f) return COL_OK;
+  if (t < 45.0f) return COL_WARN;
+  return COL_BAD;
+}
+
+// Value with a degree sign (the GFX fonts have none), centered at cx
+// Value with a degree sign (the GFX fonts have none); datum: middle_center or middle_right at (x, cy)
+void drawDegrees(int x, int cy, float t, uint16_t col, const lgfx::IFont* font, int ring, bool alignRight) {
+  String s = String(t, 1);
+  s.replace('.', ',');
+  canvas.setFont(font);
+  int w = canvas.textWidth(s);
+  int total = w + ring * 2 + 4;
+  int x0 = alignRight ? x - total : x - total / 2;
+  canvas.setTextDatum(middle_left);
+  canvas.setTextColor(col);
+  canvas.drawString(s, x0, cy);
+  canvas.drawCircle(x0 + w + ring + 3, cy - (int)(canvas.fontHeight() * 0.22f), ring, col);
+}
+
+// Cuts a text until it fits into maxW pixels (current font)
+String fitText(String txt, int maxW) {
+  while (txt.length() > 1 && canvas.textWidth(txt) > maxW) txt.remove(txt.length() - 1);
+  return txt;
+}
+
+// big = one or two sensors: wide row with name left and a large value right
+void drawTempTile(int x, int y, int w, int h, const TempEntry& e, bool offline, bool big) {
+  bool valid = !isnan(e.t);
+  bool alarm = e.alarm != 0 && !offline;
+  uint16_t valCol = !valid || offline ? COL_DIM : (alarm ? COL_BAD : tempColor(e.t));
+  canvas.fillRoundRect(x, y, w, h, 8, COL_PANEL);
+  if (alarm) {
+    canvas.drawRoundRect(x, y, w, h, 8, COL_BAD);
+    canvas.drawRoundRect(x + 1, y + 1, w - 2, h - 2, 7, COL_BAD);
+  }
+  const char* note = alarm ? (e.alarm == 2 ? "zu warm" : "zu kalt") : nullptr;
+
+  if (big) {
+    int cy = y + h / 2;
+    canvas.setFont(&fonts::FreeSansBold12pt7b);
+    canvas.setTextDatum(note ? bottom_left : middle_left);
+    canvas.setTextColor(alarm ? COL_BAD : COL_TEXT);
+    canvas.drawString(fitText(e.name, w / 2 - 12), x + 12, note ? cy + 2 : cy);
+    if (note) {
+      canvas.setFont(&fonts::FreeSans9pt7b);
+      canvas.setTextDatum(top_left);
+      canvas.drawString(note, x + 12, cy + 8);
+    }
+    if (valid) drawDegrees(x + w - 14, cy + 2, e.t, valCol, &fonts::FreeSansBold24pt7b, 4, true);
+    else {
+      canvas.setFont(&fonts::FreeSansBold24pt7b);
+      canvas.setTextDatum(middle_right);
+      canvas.setTextColor(COL_DIM);
+      canvas.drawString("--", x + w - 14, cy + 2);
+    }
+    return;
+  }
+
+  // Small tile (3-4 sensors): name on top, value below
+  canvas.setFont(&fonts::FreeSans9pt7b);
+  canvas.setTextDatum(top_left);
+  canvas.setTextColor(alarm ? COL_BAD : COL_DIM);
+  canvas.drawString(fitText(e.name, w - 16 - (note ? 64 : 0)), x + 8, y + 6);
+  if (note) {
+    canvas.setTextDatum(top_right);
+    canvas.drawString(note, x + w - 8, y + 6);
+  }
+  int vy = y + h / 2 + 10;
+  if (valid) drawDegrees(x + w / 2, vy, e.t, valCol, &fonts::FreeSansBold18pt7b, 3, false);
+  else {
+    canvas.setFont(&fonts::FreeSansBold18pt7b);
+    canvas.setTextDatum(middle_center);
+    canvas.setTextColor(COL_DIM);
+    canvas.drawString("--", x + w / 2, vy);
+  }
+}
+
+// page 0 = sensors 1-4, page 1 = sensors 5-8
+void drawPageTemp(int page) {
+  drawHeader();
+  bool offline = tempStatusKnown && !tempOnline;
+  int first = page * TEMP_PER_PAGE;
+  int n = tempCount - first;
+  if (n > TEMP_PER_PAGE) n = TEMP_PER_PAGE;
+
+  const int top = 40, bottom = canvas.height() - 28, left = 8, right = canvas.width() - 8, gap = 8;
+  if (n <= 0) {
+    canvas.setFont(&fonts::FreeSans9pt7b);
+    canvas.setTextDatum(middle_center);
+    canvas.setTextColor(COL_DIM);
+    canvas.drawString(tempCount < 0 ? "Noch keine Temperaturen" : "Keine Sensoren", canvas.width() / 2, (top + bottom) / 2);
+  } else if (n <= 2) {
+    // One or two sensors: full-width rows with large numbers
+    int h = (bottom - top - gap) / 2;
+    for (int i = 0; i < n; i++) {
+      drawTempTile(left, top + i * (h + gap), right - left, h, temps[first + i], offline, true);
+    }
+  } else {
+    // Three or four sensors: 2 x 2 grid
+    int w = (right - left - gap) / 2;
+    int h = (bottom - top - gap) / 2;
+    for (int i = 0; i < n; i++) {
+      drawTempTile(left + (i % 2) * (w + gap), top + (i / 2) * (h + gap), w, h, temps[first + i], offline, false);
+    }
+  }
+
+  // camper-temp offline: values are drawn dimmed, plus a red dot in the first tile
+  if (offline && n > 0) canvas.fillCircle(right - 10, top + 10, 4, COL_BAD);
+}
+
 // ---------- Rendering / power ----------
 void render() {
   if (!display_on) return;
@@ -559,6 +727,10 @@ void render() {
 #endif
 #if USE_GAS
     case PAGE_GAS:    drawPageGas();    break;
+#endif
+#if USE_TEMP
+    case PAGE_TEMP1:  drawPageTemp(0);  break;
+    case PAGE_TEMP2:  drawPageTemp(1);  break;
 #endif
     default:          drawPageSystem(); break;
   }
@@ -612,6 +784,26 @@ void handleGas(const String& t, const String& message) {
   }
 }
 
+// <temp prefix>/sensors: [{"id":"fridge","name":"Kühlschrank","t":4.31,"alarm":0}, ...]
+void handleTempList(const String& message) {
+  JsonDocument doc;
+  if (deserializeJson(doc, message)) return;
+  JsonArray arr = doc.as<JsonArray>();
+  if (arr.isNull()) return;
+  int n = 0;
+  for (JsonObject o : arr) {
+    if (n >= TEMP_MAX) break;
+    TempEntry& e = temps[n];
+    strlcpy(e.name, o["name"] | "", sizeof(e.name));
+    e.t = o["t"].is<float>() ? o["t"].as<float>() : NAN;
+    e.alarm = o["alarm"] | 0;
+    n++;
+  }
+  tempCount = n;
+  // The second page may have disappeared
+  if (!pageVisible(page_index)) page_index = stepPage(page_index, -1);
+}
+
 void callback(char* topic, byte* payload, unsigned int length) {
   String message;
   message.reserve(length);
@@ -640,6 +832,20 @@ void callback(char* topic, byte* payload, unsigned int length) {
 #if USE_GAS
   if (t.startsWith(TOPIC_TANK_GAS)) {
     handleGas(t, message);
+    dirty = true;
+    return;
+  }
+#endif
+
+#if USE_TEMP
+  if (t == TOPIC_TEMP_SENSORS) {
+    handleTempList(message);
+    dirty = true;
+    return;
+  }
+  if (t == TOPIC_TEMP_STATUS) {
+    tempOnline = (message == "online");
+    tempStatusKnown = true;
     dirty = true;
     return;
   }
@@ -683,6 +889,10 @@ void mqttReconnect() {
 #if USE_GAS
     client.subscribe((String(TOPIC_TANK_GAS) + "#").c_str());
 #endif
+#if USE_TEMP
+    client.subscribe(TOPIC_TEMP_SENSORS);
+    client.subscribe(TOPIC_TEMP_STATUS);
+#endif
     dirty = true;
   }
 }
@@ -697,7 +907,7 @@ void setup() {
     M5.Power.deepSleep(SLEEP_SAFETY_TIMER_US, true);
   }
 
-  if (page_index < 0 || page_index >= PAGE_COUNT) page_index = 0;
+  if (page_index < 0 || page_index >= PAGE_COUNT || !pageVisible(page_index)) page_index = 0;
 
   M5.Display.setBrightness(128);
   canvas.setColorDepth(16);
@@ -705,6 +915,7 @@ void setup() {
 
   startWifi();
   client.setServer(mqtt_server, mqtt_port);
+  client.setBufferSize(1280);   // the temperature list with 8 long names is about 1 kB
   client.setCallback(callback);
 
   lastActivityMs = millis();
@@ -736,7 +947,7 @@ void loop() {
     if (b) {
       setDisplay(false);
     } else if (a || c) {
-      page_index = (page_index + (a ? PAGE_COUNT - 1 : 1)) % PAGE_COUNT;
+      page_index = stepPage(page_index, a ? -1 : 1);
       dirty = true;
     }
   }

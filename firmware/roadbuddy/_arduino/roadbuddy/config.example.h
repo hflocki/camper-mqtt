@@ -23,5 +23,6 @@ const char* mqtt_topic = "camper/level/#";
 #define USE_LEVEL 1   // pitch / roll level sensor
 #define USE_WATER 1   // fresh water tank
 #define USE_GAS   1   // gas bottle
+#define USE_TEMP  1   // temperatures from camper-temp (sensors 1-4 on one page, 5-8 on a second)
 
 #endif

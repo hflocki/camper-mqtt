@@ -10,6 +10,7 @@ Anleitung zum Flashen des RoadBuddy mit der Arduino IDE (1.x oder 2.x). Eine Bes
 2. **Bibliotheken** über den Bibliotheksverwalter:
    - **M5Unified** (zieht **M5GFX** automatisch mit)
    - **PubSubClient** von Nick O'Leary
+   - **ArduinoJson** von Benoit Blanchon (für die Temperaturliste)
 3. Falls vorhanden, die alte Bibliothek **M5Core2** entfernen (Ordner `Documents/Arduino/libraries/M5Core2` löschen oder verschieben). Sie ist mit neuen ESP32-Cores nicht mehr kompatibel und führt zum Fehler `rom/miniz.h: No such file or directory`.
 
 ---
