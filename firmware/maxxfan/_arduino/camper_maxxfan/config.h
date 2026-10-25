@@ -9,7 +9,7 @@
 //  Camper MaxxFan - VanTurtle board (TCA9555) -> MQTT / Home Assistant
 // =====================================================================
 
-#define FW_VERSION              "1.3.0"
+#define FW_VERSION              "1.4.0"
 
 // ---- Device / access point ------------------------------------------
 #ifndef DEFAULT_HOSTNAME
@@ -52,6 +52,9 @@
 // ---- Behaviour defaults (all editable in the web UI) -----------------
 #ifndef DEFAULT_PULSE_MS
 #define DEFAULT_PULSE_MS        150     // length of a simulated button press
+#endif
+#ifndef CLOSE_PRESSES
+#define CLOSE_PRESSES           11      // "slower" presses to close the lid from any speed
 #endif
 #ifndef DEFAULT_PORT0_ENABLED
 #define DEFAULT_PORT0_ENABLED   0       // Port 0 = RJ11

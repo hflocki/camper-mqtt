@@ -472,10 +472,11 @@ void buildFan(lv_obj_t* tab) {
   lv_obj_align(fStatus, LV_ALIGN_LEFT_MID, 0, 0);
 
   struct B { const char* txt; const char* key; };
-  static const B row1[] = {{LV_SYMBOL_POWER "  Ein/Aus", "on_off"}, {"Auto", "auto"}};
+  // On/Off only opens the lid; "close" presses Slower until the lid shuts (camper-maxxfan 1.4.0+)
+  static const B row1[] = {{LV_SYMBOL_POWER "  Ein", "on_off"}, {"Schließen", "close"}, {"Auto", "auto"}};
   static const B row2[] = {{LV_SYMBOL_DOWN "  Langsamer", "slower"}, {LV_SYMBOL_UP "  Schneller", "faster"}};
   static const B row3[] = {{LV_SYMBOL_REFRESH "  Richtung", "direction"}, {"Sync AUS", "sync_off"}};
-  for (auto& b : row1) button(tab, b.txt, 225, 76, onFanBtn, (void*)b.key, C_CARD);
+  for (auto& b : row1) button(tab, b.txt, 146, 76, onFanBtn, (void*)b.key, C_CARD);
   for (auto& b : row2) button(tab, b.txt, 225, 76, onFanBtn, (void*)b.key, C_CARD);
 
   lv_obj_t* sc = card(tab, PAGE_W - 20, 96);

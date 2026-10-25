@@ -89,7 +89,7 @@ progress{width:100%;margin-bottom:8px;accent-color:var(--acc)}
       <div class="fg"><label>Tastendruck (ms)</label><input name="pulse" type="number" min="50" max="2000"></div>
       <div class="fg"><label>Port für Synchronisation</label><select name="syncport"><option value="0">Port 0 (RJ11)</option><option value="1">Port 1 (RJ45)</option></select></div>
     </div>
-    <div class="hint">Stufe setzen = 10× Langsamer, dann (Stufe−1)× Schneller.</div>
+    <div class="hint">Stufe setzen = 10× Schneller, dann (10−Stufe)× Langsamer, damit die Haube offen bleibt. Schließen = 11× Langsamer (auf der kleinsten Stufe schließt „Langsamer“ die Haube).</div>
   </div>
   <div class="btn-row"><button class="btn btn-p" type="submit">💾 Speichern &amp; Neustart</button></div>
 </div>
@@ -155,7 +155,8 @@ function buildPorts(s){
   const key=s.ports.map(p=>p.enabled).join();
   if(key===built)return; built=key;
   $("#ports").innerHTML=s.ports.map((p,i)=>!p.enabled?"":`<div class="card"><div class="ct acc">${p.label} · Port ${i} <span class="badge" id="h${i}">Auto Hold</span></div>
-    <button class="btn btn-p btn-big" type="button" style="margin-bottom:8px" onclick="post('/api/press',{port:${i},btn:'on_off'})">⏻ Ein / Aus</button>
+    <div class="g2" style="margin-bottom:8px"><button class="btn btn-p btn-big" type="button" onclick="post('/api/press',{port:${i},btn:'on_off'})">⏻ Ein / Öffnen</button>
+    <button class="btn btn-s btn-big" type="button" onclick="post('/api/close',{port:${i}}).then(()=>toast('Haube wird geschlossen'))">⏬ Schließen</button></div>
     <div class="g2">${BTN.map(b=>`<button class="btn btn-s" type="button" onclick="post('/api/press',{port:${i},btn:'${b[0]}'})">${b[1]}</button>`).join("")}</div>
     <div class="speed"><span>Stufe setzen</span><select class="in" id="s${i}">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option>${n}</option>`).join("")}</select>
     <button class="btn btn-s btn-sm" type="button" onclick="post('/api/speed',{port:${i},level:$('#s${i}').value}).then(()=>toast('Stufe wird gesetzt'))">Setzen</button></div>

@@ -215,12 +215,24 @@ bool requestSyncOff() {
   return enqueue({CMD_SYNC, settings.syncPort, 0});
 }
 
+// "Slower" on the lowest speed closes the lid, so a speed is set from the top:
+// 10x faster (stops at 10), then down to the wanted level. The lid stays open.
 bool requestSpeed(uint8_t port, uint8_t level) {
   if (port > 1 || level < 1 || level > 10) return false;
-  if (uxQueueSpacesAvailable(queue) < 10u + level - 1) return false;
-  for (uint8_t i = 0; i < 10; i++)        enqueue({CMD_PRESS, port, (uint8_t)BTN_SLOWER});
-  for (uint8_t i = 1; i < level; i++)     enqueue({CMD_PRESS, port, (uint8_t)BTN_FASTER});
+  if (uxQueueSpacesAvailable(queue) < 10u + (10u - level)) return false;
+  for (uint8_t i = 0; i < 10; i++)        enqueue({CMD_PRESS, port, (uint8_t)BTN_FASTER});
+  for (uint8_t i = level; i < 10; i++)    enqueue({CMD_PRESS, port, (uint8_t)BTN_SLOWER});
   Serial.printf("[fan] %s: set speed %u\n", PORT_LABELS[port], level);
+  return true;
+}
+
+// The On/Off key only opens the lid; it closes after one more "slower" on the lowest speed.
+// CLOSE_PRESSES covers the way down from speed 10 plus that final press.
+bool requestClose(uint8_t port) {
+  if (port > 1) return false;
+  if (uxQueueSpacesAvailable(queue) < CLOSE_PRESSES) return false;
+  for (uint8_t i = 0; i < CLOSE_PRESSES; i++) enqueue({CMD_PRESS, port, (uint8_t)BTN_SLOWER});
+  Serial.printf("[fan] %s: close lid\n", PORT_LABELS[port]);
   return true;
 }
 

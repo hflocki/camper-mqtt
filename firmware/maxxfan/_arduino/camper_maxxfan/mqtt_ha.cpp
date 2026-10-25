@@ -99,6 +99,16 @@ void sendDiscovery() {
       sendConfig("number", speedObj, d);
     } else removeConfig("number", speedObj);
 
+    const String closeObj = pk + "_close";
+    if (en) {
+      JsonDocument d;
+      d["name"]          = label + " Close Lid";
+      d["command_topic"] = topic("cmd/" + pk + "/close");
+      d["payload_press"] = "PRESS";
+      d["icon"]          = "mdi:window-shutter";
+      sendConfig("button", closeObj, d);
+    } else removeConfig("button", closeObj);
+
     const String holdObj = pk + "_auto_hold";
     if (en) {
       JsonDocument d;
@@ -186,6 +196,11 @@ void onMessage(char* t, byte* payload, unsigned int len) {
     String m = msg; m.toUpperCase();
     bool on = (m == "TOGGLE") ? !fan::led(port) : (m == "ON" || m == "1" || m == "TRUE");
     fan::requestLed(port, on);
+    return;
+  }
+
+  if (rest == "close") {
+    fan::requestClose(port);
     return;
   }
 

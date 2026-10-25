@@ -169,7 +169,7 @@ Das Display abonniert `<Basis-Topic>/#` jedes Geräts und die Topics der Kacheln
 | Gebläse | `<heizung>/set/fan_mode` | `eco` / `high` |
 | Warmwasser | `<heizung>/set/water_mode` | `off` / `eco` / `high` |
 | Freibrennen | `<heizung>/set/decoke` | `ON` / `OFF` (am Display lange drücken) |
-| Lüfter-Tasten | `<maxxfan>/cmd/p<n>/<taste>` | `PRESS` (`on_off`, `auto`, `faster`, `slower`, `direction`) |
+| Lüfter-Tasten | `<maxxfan>/cmd/p<n>/<taste>` | `PRESS` (`on_off`, `auto`, `faster`, `slower`, `direction`, `close` = Haube schließen, ab camper-maxxfan 1.4.0) |
 | Lüfter-Stufe | `<maxxfan>/cmd/p<n>/speed/set` | `1` … `10` |
 | Sync AUS | `<maxxfan>/cmd/sync_off` | `PRESS` |
 | Tara | `<level>/cmd/tare/set` | `PRESS` (am Display lange drücken) |

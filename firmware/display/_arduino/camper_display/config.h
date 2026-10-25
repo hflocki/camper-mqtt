@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "1.2.0"
+#define FW_VERSION              "1.3.0"
 
 // ---- Device / access point ------------------------------------------
 #ifndef DEFAULT_HOSTNAME

@@ -163,9 +163,9 @@ function pgHeater(){
 function pgFan(){
   const b=(k,t)=>`<button class="btn" data-fan="${k}">${t}</button>`;
   return `<div class="card" style="margin-bottom:12px"><span id="f_st" class="mu"></span></div>
-  <div class="fanbtns">${b('on_off','⏻ Ein/Aus')}${b('auto','Auto')}${b('slower','▼ Langsamer')}${b('faster','▲ Schneller')}</div>
+  <div class="fanbtns">${b('on_off','⏻ Ein / Öffnen')}${b('close','⏬ Schließen')}${b('slower','▼ Langsamer')}${b('faster','▲ Schneller')}</div>
   <div class="card" style="margin:12px 0"><h3>Stufe <span id="f_sv">5</span></h3><input type="range" min="1" max="10" value="5" id="f_speed"></div>
-  <div class="fanbtns">${b('direction','⇅ Richtung')}${b('sync_off','Sync AUS')}</div>`;
+  <div class="fanbtns">${b('auto','Auto')}${b('direction','⇅ Richtung')}${b('sync_off','Sync AUS')}</div>`;
 }
 function pgLevel(){
   return `<div class="grid"><div class="card" style="text-align:center"><svg viewBox="0 0 200 200" width="100%" style="max-width:260px">

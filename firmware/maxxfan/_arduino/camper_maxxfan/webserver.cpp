@@ -219,6 +219,11 @@ void begin() {
   server.on("/api/press",  HTTP_POST, handlePress);
   server.on("/api/led",    HTTP_POST, handleLed);
   server.on("/api/speed",  HTTP_POST, handleSpeed);
+  server.on("/api/close",  HTTP_POST, [](AsyncWebServerRequest* r) {
+    if (!auth(r)) return;
+    int port = param(r, "port", "-1").toInt();
+    sendOk(r, port >= 0 && port <= 1 && fan::requestClose(port));
+  });
   server.on("/api/sync",   HTTP_POST, [](AsyncWebServerRequest* r) {
     if (!auth(r)) return;
     sendOk(r, fan::requestSyncOff());
