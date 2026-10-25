@@ -15,8 +15,10 @@ Firmware für einen **ESP32-C3** mit dem **VanTurtle**-Board (TCA9555-Port-Expan
 ## Ordner
 
 ```
-_arduino/camper_maxxfan/   Sketch für die Arduino IDE
-_platformio/               platformio.ini, nutzt dieselben Quellen
+_arduino/camper_maxxfan/        Sketch für die Arduino IDE
+_arduino/camper_maxxfan/web/    Quelle der Web-Oberfläche (index.html)
+_arduino/camper_maxxfan/data/   LittleFS-Inhalt: index.html.gz (komprimiert, wird hochgeladen)
+_platformio/                    platformio.ini, nutzt dieselben Quellen
 ```
 
 | Datei | Inhalt |
@@ -25,7 +27,7 @@ _platformio/               platformio.ini, nutzt dieselben Quellen
 | `tca9555.*` | Treiber für den Port-Expander (keine Library nötig) |
 | `fan_control.*` | Tastendrücke (nicht blockierend), Auto-Hold-Eingang, LED, Sync-Ablauf |
 | `mqtt_ha.*` | MQTT, Home-Assistant-Discovery |
-| `webserver.*`, `web_ui.h` | Web-Oberfläche, REST-API, Firmware-Update |
+| `webserver.*` | Web-Oberfläche aus LittleFS, REST-API, Firmware-Update |
 | `wifi_manager.*` | WLAN, feste IP, Setup-AP |
 | `settings.*` | Einstellungen im NVS |
 
@@ -74,8 +76,18 @@ Die Firmware ist ca. 1,18 MB groß und passt knapp in die Standard-Partition; mi
 
 1. In `config.h` `DEFAULT_AP_PASSWORD` und `DEFAULT_OTA_PASSWORD` ändern.
 2. `camper_maxxfan.ino` öffnen, Partition Scheme prüfen, hochladen.
+3. Serial Monitor schließen, `Cmd+Shift+P` → **Upload LittleFS to Pico/ESP8266/ESP32** (Plugin [arduino-littlefs-upload](https://github.com/earlephilhower/arduino-littlefs-upload)). Das lädt die Web-Oberfläche `data/index.html.gz` hoch.
 
-Die Web-Oberfläche steckt in `web_ui.h` – kein LittleFS-Upload nötig. Spätere Updates per OTA (`camper-maxxfan` unter Netzwerk-Ports) oder im Web-UI unter **WiFi → Firmware-Update** (*Sketch → Kompilierte Binärdatei exportieren*).
+Ohne LittleFS-Image zeigt das Gerät eine Notseite mit Hinweis und Firmware-Update. Die Einstellungen liegen im NVS, nicht im Dateisystem: Ein LittleFS-Upload löscht sie nicht.
+
+**Web-Oberfläche ändern:** Quelle ist `web/index.html`, hochgeladen wird `data/index.html.gz`:
+
+```
+cd _arduino/camper_maxxfan
+gzip -9 -n -c web/index.html > data/index.html.gz
+```
+
+Spätere Firmware-Updates per OTA (`camper-maxxfan` unter Netzwerk-Ports) oder im Web-UI unter **WiFi → Firmware-Update** (*Sketch → Kompilierte Binärdatei exportieren*). Ändert sich nur die Firmware, muss LittleFS nicht neu hochgeladen werden.
 
 ## Web-Oberfläche
 
@@ -86,7 +98,7 @@ Gleicher Aufbau und gleiche Optik wie bei camper-tanklevel, camper-temp und camp
 - **MQTT:** Broker, Topic-Prefix, Home-Assistant-Discovery, Web-Login
 - **WiFi:** Verbindungsstatus, WLAN, feste IP, Access Point, Firmware-Update, Neustart, Werkseinstellungen
 
-`docs/mockup.html` zeigt die Oberfläche mit Beispieldaten im Browser (ohne ESP). Nach Änderungen an `web_ui.h` mit `python3 tools/make_mockup.py` neu erzeugen (nur Python-Standardbibliothek).
+`docs/mockup.html` zeigt die Oberfläche mit Beispieldaten im Browser (ohne ESP). Nach Änderungen an `web/index.html` mit `python3 tools/make_mockup.py` neu erzeugen (nur Python-Standardbibliothek).
 
 ## Erstbenutzung
 
@@ -139,6 +151,7 @@ Mit Discovery erscheint ein Gerät **„Camper MaxxFan“** mit Tasten-Entitäte
 
 | Version | Änderungen |
 | --- | --- |
+| 1.3.0 | Web-Oberfläche aus LittleFS (`data/index.html.gz`) wie bei tanklevel und temp, Notseite mit Firmware-Update, falls das Image fehlt |
 | 1.2.0 | Web-Oberfläche im gleichen Stil wie die anderen Camper-Geräte (Statuspunkte, Reiter Live / MaxxFan / MQTT / WiFi) |
 | 1.1.0 | Stufe 1–10 setzen (MQTT, HA-Regler, Web-UI) |
 | 1.0.0 | Erste Arduino/MQTT-Version, ersetzt die ESPHome-Konfiguration |

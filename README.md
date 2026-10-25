@@ -89,7 +89,7 @@ git tag temp-v1.1.0
 git push origin temp-v1.1.0
 ```
 
-Dann wird nur dieses Gerät gebaut und die `.bin` ans Release gehängt. Heizung, MaxxFan und Display spielen sie direkt über ihr Web-UI ein; temp, tanklevel, level und battery per USB oder Arduino-OTA (deren Web-Oberfläche liegt zusätzlich als LittleFS-Image in `data/`).
+Dann wird nur dieses Gerät gebaut und die `.bin` ans Release gehängt. Heizung, MaxxFan und Display spielen sie direkt über ihr Web-UI ein; temp, tanklevel, level und battery per USB oder Arduino-OTA. Bei temp, tanklevel, level, battery und MaxxFan liegt die Web-Oberfläche zusätzlich als LittleFS-Image in `data/`.
 
 ## Nur ein Gerät nachbauen
 

@@ -1,8 +1,4 @@
-#pragma once
-// Web UI served from flash. Edit the HTML between the R"HTML( ... )HTML" markers.
-// Look and tab layout follow camper-tanklevel / camper-temp / camper-heater.
-
-static const char WEB_UI[] = R"HTML(<!doctype html>
+<!doctype html>
 <html lang="de"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Camper MaxxFan</title>
@@ -205,4 +201,4 @@ function upload(){const file=$("#fw").files[0];if(!file){toast("Erst eine .bin-D
   x.onload=()=>{if(x.status===200){toast("Update erfolgreich – Neustart...");setTimeout(()=>location.reload(),12000)}else toast("Fehler: "+x.responseText,true)};
   x.open("POST","/api/update");x.send(fd);}
 loadCfg();poll();setInterval(poll,2000);
-</script></body></html>)HTML";
+</script></body></html>

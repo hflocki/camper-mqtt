@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Build docs/mockup.html from the web UI in web_ui.h.
+"""Build docs/mockup.html from the web UI in web/index.html.
 
 The mockup is the real page plus a fake fetch() with sample data, so the UI can be
-viewed in any browser without an ESP. Run after editing web_ui.h:
+viewed in any browser without an ESP. Run after editing web/index.html:
     python3 tools/make_mockup.py
 Uses only the Python standard library.
 """
@@ -10,7 +10,7 @@ import pathlib
 import re
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SRC = ROOT / "_arduino" / "camper_maxxfan" / "web_ui.h"
+SRC = ROOT / "_arduino" / "camper_maxxfan" / "web" / "index.html"
 DST = ROOT / "docs" / "mockup.html"
 
 MOCK = """<script>
@@ -32,8 +32,7 @@ window.fetch=(url,opt={})=>{const p=Object.fromEntries(opt.body instanceof URLSe
 
 
 def main():
-    src = SRC.read_text(encoding="utf-8")
-    html = re.search(r'WEB_UI\[\] = R"HTML\((.*)\)HTML"', src, re.S).group(1)
+    html = SRC.read_text(encoding="utf-8")
     html = html.replace("<body>", "<body>\n" + MOCK, 1)
     DST.write_text(html, encoding="utf-8")
     print(f"{DST.relative_to(ROOT)}: {len(html)} bytes")

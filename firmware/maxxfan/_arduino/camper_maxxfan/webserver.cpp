@@ -5,8 +5,8 @@
 #include "wifi_manager.h"
 #include "mqtt_ha.h"
 #include "system.h"
-#include "web_ui.h"
 #include <WiFi.h>
+#include <LittleFS.h>
 #include <ESPAsyncWebServer.h>
 #include <DNSServer.h>
 #include <Update.h>
@@ -18,6 +18,18 @@ AsyncWebServer server(80);
 DNSServer dns;
 bool dnsRunning = false;
 bool updateAuthorized = false;
+bool fsReady = false;
+
+// Shown when the LittleFS image (data/index.html.gz) has not been uploaded yet.
+// Keeps the firmware update working, so the device can always be recovered from the browser.
+const char FALLBACK_PAGE[] = R"HTML(<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Camper MaxxFan</title>
+<style>body{font-family:system-ui,sans-serif;background:#0f1419;color:#e8f0f8;max-width:520px;margin:40px auto;padding:0 16px}
+code{background:#1e2d3d;padding:2px 6px;border-radius:4px}button{padding:10px 16px;margin-top:10px}</style></head><body>
+<h2>Camper MaxxFan</h2><p>Die Web-Oberfl&auml;che fehlt. Bitte das LittleFS-Image hochladen
+(<code>data/index.html.gz</code>, Arduino IDE: <em>Upload LittleFS</em>).</p>
+<p>Firmware-Update (.bin):</p><form method="POST" action="/api/update" enctype="multipart/form-data">
+<input type="file" name="fw" accept=".bin"><br><button>Hochladen</button></form></body></html>)HTML";
 
 bool auth(AsyncWebServerRequest* r) {
   if (settings.webUser.isEmpty()) return true;
@@ -183,9 +195,22 @@ void handleUpdateChunk(AsyncWebServerRequest* r, const String& filename, size_t 
 namespace web {
 
 void begin() {
+  fsReady = LittleFS.begin(true);   // formats automatically if the mount fails
+  if (!fsReady) Serial.println("[web] LittleFS mount failed");
+
+  // Serve ONLY the web page from the filesystem (stored gzip compressed)
   server.on("/", HTTP_GET, [](AsyncWebServerRequest* r) {
     if (!auth(r)) return;
-    r->send(200, "text/html", WEB_UI);
+    if (fsReady && LittleFS.exists("/index.html.gz")) {
+      AsyncWebServerResponse* resp = r->beginResponse(LittleFS, "/index.html.gz", "text/html");
+      resp->addHeader("Content-Encoding", "gzip");
+      resp->addHeader("Cache-Control", "no-cache");
+      r->send(resp);
+    } else if (fsReady && LittleFS.exists("/index.html")) {
+      r->send(LittleFS, "/index.html", "text/html");
+    } else {
+      r->send(200, "text/html", FALLBACK_PAGE);
+    }
   });
 
   server.on("/api/state",  HTTP_GET,  handleState);
