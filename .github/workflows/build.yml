@@ -43,6 +43,11 @@ jobs:
             fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
             sketch: firmware/battery/_arduino/camper_battery
             libs: https://github.com/h2zero/NimBLE-Arduino.git#2.5.1
+          - device: battery
+            target: atoms3
+            fqbn: esp32:esp32:m5stack_atoms3:CDCOnBoot=cdc,PartitionScheme=default_8MB
+            sketch: firmware/battery/_arduino/camper_battery
+            libs: https://github.com/h2zero/NimBLE-Arduino.git#2.5.1
           - device: temp
             target: esp8266
             fqbn: esp8266:esp8266:nodemcuv2:eesz=4M1M

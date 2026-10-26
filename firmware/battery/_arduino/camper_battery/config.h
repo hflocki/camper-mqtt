@@ -13,7 +13,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.0.0"
+#define FW_VERSION            "1.1.0"
 
 #ifndef DEFAULT_AP_SSID
 #define DEFAULT_AP_SSID       "Camper-Battery"   // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
@@ -118,6 +118,26 @@
 #endif
 #ifndef BMS_STALE_MS
 #define BMS_STALE_MS          120000 // Values older than this count as unavailable
+#endif
+
+// ============================================================
+// STATUS LED (optional RGB LED, WS2812)
+// M5Stack AtomS3 Lite: switched on automatically (board "M5AtomS3", RGB LED on GPIO35).
+// Other boards with an RGB LED: set STATUS_LED_PIN in config_local.h. -1 = no LED.
+//   green  = every configured BMS delivers values
+//   yellow = at least one BMS missing / no answer
+//   red    = no WiFi or no MQTT connection (blinking)
+//   blue   = no BMS set up yet / scanning
+// ============================================================
+#ifndef STATUS_LED_PIN
+#if defined(ARDUINO_M5STACK_ATOMS3) && defined(PIN_RGB_LED)
+#define STATUS_LED_PIN        PIN_RGB_LED
+#else
+#define STATUS_LED_PIN        -1
+#endif
+#endif
+#ifndef STATUS_LED_BRIGHTNESS
+#define STATUS_LED_BRIGHTNESS 24     // 0-255, kept low so it does not light up the camper at night
 #endif
 
 // ============================================================

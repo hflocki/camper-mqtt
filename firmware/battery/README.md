@@ -48,7 +48,18 @@ _arduino/camper_battery/data/   LittleFS-Inhalt: index.html.gz (komprimiert, wir
 
 ## Hardware
 
-Ein **ESP32-C3** (z. B. Super Mini) reicht, sonst wird nichts angeschlossen. Jeder andere ESP32 mit Bluetooth LE geht auch (ESP32, ESP32-S3). Der ESP sollte nicht weiter als ein paar Meter von den BMS entfernt sein; Batteriekästen aus Metall dämpfen stark. Die Signalstärke jedes BMS steht in der Web-UI.
+Ein **ESP32-C3** (z. B. Super Mini) reicht, sonst wird nichts angeschlossen. Jeder andere ESP32 mit Bluetooth LE geht auch (ESP32, ESP32-S3).
+
+Empfehlung für den festen Einbau: **M5Stack AtomS3 Lite** (ESP32-S3). Zwei Kerne (WLAN und Bluetooth stören sich weniger), bessere Antenne als der C3 Super Mini, fertiges Gehäuse. Seine RGB-LED zeigt den Zustand:
+
+| LED | Bedeutung |
+| --- | --- |
+| grün | alle eingerichteten BMS liefern Werte |
+| gelb | mindestens ein BMS fehlt oder antwortet nicht |
+| rot, blinkend | kein WLAN oder keine MQTT-Verbindung |
+| blau | noch kein BMS eingerichtet (blinkend: Suche läuft) |
+
+Die LED ist beim Board „M5AtomS3“ automatisch an. Andere Boards mit WS2812-LED: `STATUS_LED_PIN` in `config_local.h` setzen, Helligkeit mit `STATUS_LED_BRIGHTNESS` (Standard 24 von 255). Der ESP sollte nicht weiter als ein paar Meter von den BMS entfernt sein; Batteriekästen aus Metall dämpfen stark. Die Signalstärke jedes BMS steht in der Web-UI.
 
 Mehr als 3 gleichzeitige Verbindungen erlaubt NimBLE in der Grundeinstellung nicht (`MAX_BMS` in `config.h`).
 
@@ -58,13 +69,14 @@ Mehr als 3 gleichzeitige Verbindungen erlaubt NimBLE in der Grundeinstellung nic
 
 **Board-Einstellungen**
 
-| Einstellung | Wert |
-|---|---|
-| Board | ESP32C3 Dev Module |
-| USB CDC On Boot | **Enabled** |
-| Partition Scheme | **Minimal SPIFFS (1.9MB APP with OTA/190KB SPIFFS)** |
+| Einstellung | ESP32-C3 Super Mini | M5Stack AtomS3 Lite |
+|---|---|---|
+| Board | ESP32C3 Dev Module | **M5AtomS3** (im esp32-Paket enthalten) |
+| USB CDC On Boot | **Enabled** | **Enabled** |
+| Flash Size | 4MB | 8MB |
+| Partition Scheme | **Minimal SPIFFS (1.9MB APP with OTA/190KB SPIFFS)** | **8M with spiffs (3MB APP/1.5MB SPIFFS)** |
 
-Board-Paket: esp32 von Espressif Systems, 3.3.x (getestet 3.3.2). Die Firmware ist ca. 1,4 MB groß, mit der Standard-Partition (1,2 MB) passt sie nicht.
+Board-Paket: esp32 von Espressif Systems, 3.3.x (getestet 3.3.2). Die Firmware ist ca. 1,4 MB groß, mit der Standard-Partition (1,2 MB) passt sie bei keinem der beiden. Wird der AtomS3 beim Hochladen nicht gefunden: Knopf am Gehäuse beim Einstecken des USB-Kabels ca. 2 s halten (Download-Modus).
 
 **Libraries** (Bibliotheksverwalter)
 
@@ -154,6 +166,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 |---|---|
+| 1.1.0 | Status-LED (M5Stack AtomS3 Lite automatisch, sonst `STATUS_LED_PIN`), AtomS3 als empfohlenes Board, CI-Build für ESP32-S3 |
 | 1.0.0 | Erste Version: Daly Smart BMS und Ective BM X, bis zu 3 BMS, Web-UI, MQTT mit HA-Discovery |
 
 ## Fertige Firmware

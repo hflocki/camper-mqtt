@@ -25,6 +25,44 @@ SensorData sensorData;
 
 static unsigned long lastStatusPrint = 0;
 
+// ---- Status LED ----------------------------------------------------------
+#if STATUS_LED_PIN >= 0
+static void ledColor(uint8_t r, uint8_t g, uint8_t b) {
+    const uint16_t k = STATUS_LED_BRIGHTNESS;
+    rgbLedWrite(STATUS_LED_PIN, r * k / 255, g * k / 255, b * k / 255);
+}
+
+static void statusLedLoop() {
+    static unsigned long last = 0;
+    static bool phase = false;
+    if (millis() - last < 500) return;
+    last = millis();
+    phase = !phase;
+
+    if (!isConnected() || !mqttIsConnected()) {   // red, blinking
+        if (phase) ledColor(255, 0, 0); else ledColor(0, 0, 0);
+        return;
+    }
+    int used = 0, ok = 0;
+    BmsLive l;
+    for (int i = 0; i < MAX_BMS; i++) {
+        if (!config.bms[i].used) continue;
+        used++;
+        bmsGetLive(i, l);
+        if (l.valid) ok++;
+    }
+    if (bmsScanning() || used == 0) {             // blue (blinking while scanning)
+        if (!bmsScanning() || phase) ledColor(0, 0, 255); else ledColor(0, 0, 0);
+    } else if (ok == used) {
+        ledColor(0, 255, 0);                      // green
+    } else {
+        ledColor(255, 160, 0);                    // yellow
+    }
+}
+#else
+static void statusLedLoop() {}
+#endif
+
 void setupOTA() {
     ArduinoOTA.setHostname(OTA_HOSTNAME);
     ArduinoOTA.setPassword(DEFAULT_OTA_PASSWORD);
@@ -84,6 +122,7 @@ void loop() {
 
     webserverLoop();
     mqttLoop();
+    statusLedLoop();
 
     if (Serial.available()) {
         String cmd = Serial.readStringUntil('\n');
