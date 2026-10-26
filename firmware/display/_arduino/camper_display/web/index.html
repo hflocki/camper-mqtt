@@ -11,7 +11,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
 header{position:sticky;top:0;z-index:5;background:var(--card);padding:10px 14px 0;box-shadow:0 1px 0 #0003}
-.top{display:flex;align-items:center;gap:10px}
+.top{display:flex;align-items:center;gap:10px;position:relative}
 .top h1{font-size:18px;margin:0;flex:1}
 #clock{font-variant-numeric:tabular-nums;font-weight:600}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--warn);display:inline-block}
@@ -74,7 +74,7 @@ code{font-size:12px;color:var(--mu)}
 </head>
 <body>
 <header>
-  <div class="top"><span class="dot" id="dot" title="Verbindung"></span><h1 id="title">Camper</h1><span id="clock"></span></div>
+  <div class="top"><span class="dot" id="dot" title="Verbindung"></span><h1 id="title">Camper</h1><span class="mu" id="dname" style="position:absolute;left:50%;transform:translateX(-50%);font-weight:600;pointer-events:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn" id="wake" hidden title="Display ist dunkel" style="padding:6px 12px;font-size:14px">💡 Display an</button><span id="clock"></span></div>
   <nav id="nav"></nav>
 </header>
 <main id="main"></main>
@@ -123,6 +123,7 @@ function render(){
   $('#nav').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.p===page));
   const p=pages().find(x=>x.id===page);if(!p)return;
   $('#title').textContent=p.title.replace('⚙ ','');
+  $('#dname').textContent=cfg.name||'';document.title=cfg.name?cfg.name+' · Camper Display':'Camper Display';
   const m=$('#main');
   if(p.id==='overview')m.innerHTML=pgOverview();
   else if(p.id==='heater')m.innerHTML=pgHeater();
@@ -228,6 +229,7 @@ function setTank(p,pk,lk,dev){
   e.closest('.card').classList.toggle('offline',!online(dev));
 }
 function update(){
+  if(S.awake!==undefined)$('#wake').hidden=!!S.awake;
   if(S.ip!==undefined){$('#dot').classList.toggle('ok',ws&&ws.readyState==1&&S.mqtt);$('#dot').title=S.mqtt?'MQTT verbunden':'MQTT getrennt'}
   const d=new Date();$('#clock').textContent=d.toTimeString().slice(0,5);
   // overview
@@ -336,7 +338,7 @@ function pgSettings(){
    <div class="row"><button class="btn" id="potest">Testnachricht</button><span class="mu grow" id="postat"></span></div>
    <p class="mu">Erst speichern, dann testen.</p></details>
   <details><summary>🔧 System</summary>
-   ${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
+   ${inp('displayName','Anzeigename (oben in der Mitte, z. B. Wohnraum)')}${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
    <div class="f2">${inp('webUser','Web-Benutzer')}${inp('webPass','Web-Passwort (leer = kein Schutz)','password')}</div>
    <div class="f2">${inp('ntpServer','Zeitserver')}${inp('tz','Zeitzone (POSIX)')}</div>
    <label>Firmware-Update (.bin)</label><div class="row"><input type="file" id="fw" accept=".bin" class="grow"><button class="btn" id="fwup">Hochladen</button></div>
@@ -344,7 +346,7 @@ function pgSettings(){
    <div class="actions"><button class="btn" id="reboot">Neustart</button><button class="btn danger" id="factory">Werkseinstellungen</button></div></details>
   <div class="actions"><button class="btn pri" id="save" style="flex:1">Einstellungen speichern</button></div>`;
 }
-const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle'];
+const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle'];
 async function loadSettings(){
   try{
     const r=await fetch('/api/settings');if(!r.ok)throw 0;ST=await r.json();
@@ -467,6 +469,7 @@ function addFromFinder(topic,key){
   PG.tiles.push(t);renderPages();toast('Kachel hinzugefügt – unter „Seiten & Kacheln“ prüfen und speichern');
 }
 
+$('#wake').onclick=()=>{send({c:'screen',v:'on'});S.awake=true;$('#wake').hidden=true};
 setInterval(()=>{const d=new Date();$('#clock').textContent=d.toTimeString().slice(0,5)},10000);
 connect();
 </script>

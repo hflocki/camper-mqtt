@@ -95,6 +95,7 @@ void buildCfg(JsonDocument& d) {
   d["t"] = "cfg";
   d["fw"] = FW_VERSION;
   d["host"] = settings.hostname;
+  d["name"] = settings.displayName;
   d["ap"] = wifimgr::apActive() && !wifimgr::staConnected();
   d["setup"] = settings.wifiSsid.isEmpty() || settings.mqttHost.isEmpty();
   JsonArray b = d["builtin"].to<JsonArray>();
@@ -120,6 +121,7 @@ void buildSys(JsonObject s) {
   s["ip"] = wifimgr::ipString();
   s["bri"] = settings.brightness;
   s["finder"] = mqttc::finderActive();
+  s["awake"] = disp::isAwake();   // the web page shows a wake button while the screen is dark
 }
 
 void sendTo(uint32_t client, JsonDocument& d) {
@@ -164,6 +166,10 @@ void handleCmd(const Cmd& c) {
     disp::wake();
     cfg::save();
     mqttc::publishSelfState();
+  } else if (!strcmp(c.c, "screen")) {
+    Serial.printf("[disp] screen %s via web page\n", v.c_str());
+    if (v == "off") disp::sleep(); else disp::wake();
+    mqttc::publishSelfState();
   } else if (!strcmp(c.c, "finder")) {
     if (k == "on") mqttc::finderStart(v); else mqttc::finderStop();
     JsonDocument f;
@@ -188,6 +194,7 @@ void getSettings(AsyncWebServerRequest* r) {
   if (!auth(r)) return;
   JsonDocument d;
   d["hostname"] = settings.hostname;
+  d["displayName"] = settings.displayName;
   d["apPass"] = MASK;
   d["webUser"] = settings.webUser;
   d["webPass"] = settings.webPass.isEmpty() ? "" : MASK;
@@ -250,6 +257,8 @@ bool applySettings(JsonObject o, bool apply) {
   };
 
   str("hostname", settings.hostname, true);
+  str("displayName", settings.displayName, false);
+  if (settings.displayName.length() > 32) settings.displayName = settings.displayName.substring(0, 32);
   str("webUser", settings.webUser, false);
   str("webPass", settings.webPass, false, true);
   str("wifiSsid", settings.wifiSsid, true);

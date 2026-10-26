@@ -46,6 +46,7 @@ void handleSelfCommand(const String& sub, const String& msg) {
     disp::wake();
     mqttc::publishSelfState();
   } else if (sub == "screen") {
+    Serial.printf("[disp] screen %s via MQTT\n", msg.c_str());
     if (msg.equalsIgnoreCase("OFF")) disp::sleep(); else disp::wake();
     mqttc::publishSelfState();
   } else if (sub == "page") {

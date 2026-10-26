@@ -11,9 +11,12 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "1.5.0"
+#define FW_VERSION              "1.6.0"
 
 // ---- Device / access point ------------------------------------------
+#ifndef DEFAULT_DISPLAY_NAME
+#define DEFAULT_DISPLAY_NAME    ""                  // name shown in the header (web UI: Einstellungen)
+#endif
 #ifndef DEFAULT_HOSTNAME
 #define DEFAULT_HOSTNAME        "camper-display"
 #endif
@@ -275,4 +278,7 @@
 // LVGL draw buffer: lines per partial buffer (two buffers)
 #ifndef LV_BUF_LINES
 #define LV_BUF_LINES            48
+#endif
+#ifndef LV_BUF_IN_PSRAM
+#define LV_BUF_IN_PSRAM         1       // 0 = internal RAM (slightly faster drawing, but HTTPS / Pushover then lacks memory)
 #endif

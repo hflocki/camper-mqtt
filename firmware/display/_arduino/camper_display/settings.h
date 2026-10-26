@@ -31,6 +31,7 @@ struct Page {
 struct Settings {
   // device
   String hostname;
+  String displayName;   // shown centered in the header, e.g. what this panel is ("" = none)
   String apPass;
   String webUser, webPass;
   // wifi

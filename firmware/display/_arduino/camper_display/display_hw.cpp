@@ -135,6 +135,7 @@ void touchCb(lv_indev_t*, lv_indev_data_t* data) {
   if (lastPressed) {
     lastActivity = millis();
     if (!awake) {
+      Serial.println("[disp] wake: touch");
       disp::wake();
       swallowTouch = true;
     }
@@ -150,9 +151,16 @@ void touchCb(lv_indev_t*, lv_indev_data_t* data) {
   }
 }
 
+// The draw buffers go to PSRAM by default: two internal buffers took about 90 kB of
+// internal RAM, which mbedTLS needs for the HTTPS handshake (Pushover).
 void* allocBuf(size_t bytes) {
+#if LV_BUF_IN_PSRAM
+  void* p = heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+  if (!p) p = heap_caps_malloc(bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
+#else
   void* p = heap_caps_malloc(bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
   if (!p) p = heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+#endif
   return p;
 }
 
@@ -215,6 +223,7 @@ void wake() {
 }
 
 void sleep() {
+  if (awake) Serial.printf("[disp] screen dimmed to %u %%\n", settings.dimBrightness);
   awake = false;
   applyBacklight(settings.dimBrightness);
 }

@@ -30,8 +30,11 @@ Passt zu den anderen Projekten:
 
 - **Wandpanel** mit LVGL-Oberfläche, Wischen oder Pfeile zum Blättern, deutsche Umlaute und Icons
 - **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert, hell/dunkel automatisch
+- **Display aufwecken:** Ist der Bildschirm gedimmt oder aus, zeigt die Webseite oben den Knopf **💡 Display an**.
+- **Anzeigename:** Unter *Einstellungen* lässt sich ein Name eintragen (z. B. „Wohnraum“), der oben in der Mitte neben dem Seitentitel steht – am Display und auf der Webseite. Leer = kein Name
+- **Übersicht ohne Scrollen:** 3 × 3 Kacheln – Frischwasser, Grauwasser, Gas, Heizung, Ausrichtung, Dachlüfter, Temperaturen (bis 3 Sensoren), Batterien (bis 3) und Status (grün „OK“ oder die Warnungen auf Rot). Antippen öffnet die jeweilige Seite
 - **Feste Seiten:** Übersicht · Heizung · Dachlüfter · Ausrichtung · Temperaturen · Batterien (einzeln abschaltbar) und **System** (IP, QR-Code, Helligkeit)
-- **Warnungen:** Temperatur-Alarme von camper-temp, Heizungsfehler und Batterie-Warnungen erscheinen als rote Leiste auf der Übersicht und als ⚠ in der Kopfzeile. Eine neue Warnung weckt das Display; war es dunkel, springt es auf die Übersicht. Optional zusätzlich als **Push-Nachricht** per Pushover
+- **Warnungen:** Temperatur-Alarme von camper-temp, Heizungsfehler und Batterie-Warnungen erscheinen in der roten Status-Kachel der Übersicht und als ⚠ in der Kopfzeile. Eine neue Warnung weckt das Display; war es dunkel, springt es auf die Übersicht. Optional zusätzlich als **Push-Nachricht** per Pushover
 - **Eigene Seiten und Kacheln** für beliebige MQTT-Topics: *Wert*, *Schalter*, *Taster*, *Regler* – erscheinen automatisch auf Display **und** Webseite
 - **Topic-Finder:** lauscht z. B. auf `zigbee2mqtt/#`, zeigt alle Geräte mit ihren JSON-Werten; ein Klick legt eine Kachel an (Temperatur, Luftfeuchte, Licht an/aus, Helligkeit …)
 - **Setup-WLAN** wie bei den anderen Projekten: ohne WLAN-Daten oder nach 1 Minute ohne Verbindung öffnet sich `Camper-Display-XXXXXX`, Captive Portal unter `http://192.168.4.1`. Das Display zeigt dazu einen QR-Code zum Verbinden.
@@ -191,7 +194,7 @@ Beispiel: `mosquitto_pub -h <broker> -t camper/display/cmd/screen -m OFF`
 
 ## Warnungen
 
-Die Übersicht zeigt oben eine rote Leiste, solange etwas nicht stimmt:
+Die Status-Kachel der Übersicht wird rot und zeigt die Warnungen, solange etwas nicht stimmt:
 
 | Quelle | Wann |
 | --- | --- |
