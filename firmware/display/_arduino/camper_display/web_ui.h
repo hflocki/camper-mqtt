@@ -92,6 +92,16 @@ let pendingSet=null,setTimer=null,setHold=0;
 const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie']];
 // page title: name from the display settings, otherwise the default above
 const ptitle=i=>(cfg&&cfg.pageNames&&cfg.pageNames[i])||BUILTIN[i][1];
+// overview tiles (same list as on the panel)
+const OV_DEFAULT='water,grey,gas,heater,level,fan,temp,bat,status';
+const ovList=()=>((cfg&&cfg.ovTiles)||OV_DEFAULT).split(',').map(x=>x.trim()).filter(x=>x);
+function ovChoices(){
+  const c=[['water','Frischwasser'],['grey','Grauwasser'],['gas','Gas'],['heater',ptitle(1)],['level',ptitle(3)],['fan',ptitle(2)],
+    ['temp',ptitle(4)],['bat',ptitle(5)+' (alle)'],['bat1','Batterie 1 (einzeln)'],['bat2','Batterie 2 (einzeln)'],['bat3','Batterie 3 (einzeln)'],
+    ['status','Status / Warnungen'],['clock','Uhr / Datum'],['none','(leer)']];
+  ((cfg&&cfg.tiles)||[]).forEach((t,i)=>c.push(['t'+i,'Kachel: '+t.n]));
+  return c;
+}
 
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2200)}
 function send(o){if(ws&&ws.readyState==1)ws.send(JSON.stringify(o));else toast('Keine Verbindung')}
@@ -145,10 +155,20 @@ function render(){
 function tank(id,icon,title,col){return `<div class="card"><h3>${icon} ${title}</h3><div class="row"><span class="big grow" id="${id}_v">--</span><span class="mu" id="${id}_l"></span></div><div class="bar"><i id="${id}_b" style="background:${col}"></i></div></div>`}
 function info(id,icon,title,go){return `<div class="card click" data-go="${go}"><h3>${icon} ${title}</h3><div class="big" id="${id}_v">--</div><div class="mu" id="${id}_s"></div></div>`}
 function pgOverview(){
-  return `<div class="warnbox" id="warn" hidden></div><div class="grid">${tank('w','💧','Frischwasser','var(--water)')}${tank('g','🚿','Grauwasser','var(--grey)')}${tank('gas','🔥','Gas','var(--gas)')}
-  ${info('oh','♨️',esc(ptitle(1)),'heater')}${info('ol','📐',esc(ptitle(3)),'level')}${info('of','🌀',esc(ptitle(2)),'fan')}
-  <div class="card wide click" data-go="temp"><h3>🌡️ ${esc(ptitle(4))}</h3><div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>
-  <div class="card wide click" data-go="bat"><h3>🔋 ${esc(ptitle(5))}</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div></div>`;
+  const parts=ovList().map(t=>{
+    if(t==='water')return tank('w','💧','Frischwasser','var(--water)');
+    if(t==='grey')return tank('g','🚿','Grauwasser','var(--grey)');
+    if(t==='gas')return tank('gas','🔥','Gas','var(--gas)');
+    if(t==='heater')return info('oh','♨️',esc(ptitle(1)),'heater');
+    if(t==='level')return info('ol','📐',esc(ptitle(3)),'level');
+    if(t==='fan')return info('of','🌀',esc(ptitle(2)),'fan');
+    if(t==='temp')return `<div class="card wide click" data-go="temp"><h3>🌡️ ${esc(ptitle(4))}</h3><div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>`;
+    if(t==='bat')return `<div class="card wide click" data-go="bat"><h3>🔋 ${esc(ptitle(5))}</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
+    if(/^bat[123]$/.test(t)){const n=t[3];return `<div class="card click" data-go="bat"><h3 id="ob${n}_t">🔋 Batterie ${n}</h3><div class="big" id="ob${n}_v">--</div><div class="mu" id="ob${n}_s"></div></div>`}
+    if(/^t\d+$/.test(t)){const i=+t.slice(1),k=(cfg.tiles||[])[i];if(!k)return '';return `<div class="card"><h3>${esc(k.n)}</h3><div class="big" id="t${i}_v">--</div></div>`}
+    return '';   // status (warning box above), clock (header), none
+  });
+  return `<div class="warnbox" id="warn" hidden></div><div class="grid">${parts.join('')}</div>`;
 }
 function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div>`}
 // camper-battery: <prefix>/batteries = [{name,ok,soc,v,w,rt,st,p}]
@@ -279,6 +299,14 @@ function update(){
       <div class="bar"><i style="width:${b.soc==null?0:Math.max(0,Math.min(100,b.soc))}%;background:${c}"></i></div></div>`}).join(''));
     set('b_st',!bOn?'Batterie-Gateway offline':bl.length?'':'Keine Batterien gemeldet');
   }
+  [1,2,3].forEach(n=>{
+    if(!$('#ob'+n+'_v'))return;const b=bl[n-1];
+    if(!b){set('ob'+n+'_v','--');set('ob'+n+'_s',bOn?'keine Batterie':'offline');return}
+    set('ob'+n+'_t','🔋 '+esc(b.name));
+    set('ob'+n+'_v',!b.ok?'--':`<span${batBad(b)?' class="err"':''}>${b.st?cnum(b.v,1)+' V':(b.soc==null?'--':Math.round(b.soc)+' %')}</span>`);
+    set('ob'+n+'_s',!bOn?'offline':!b.ok?'keine Verbindung':b.st?esc(b.st):b.w>1?'▲ '+Math.round(b.w)+' W':b.rt!=null?'noch '+rtText(b.rt):(b.w!=null?Math.round(b.w)+' W':''));
+    $('#ob'+n+'_v').closest('.card').classList.toggle('offline',!bOn||!b.ok);
+  });
   // heater
   if($('#h_room')){
     set('h_room',fmt(V.heat_room,1,'°C'));
@@ -331,7 +359,9 @@ function pgSettings(){
    <div class="f2">${inp('dimBrightness','Helligkeit gedimmt (%, 0 = aus)','number')}${inp('screenTimeout','Dimmen nach (s, 0 = nie)','number')}</div>
    ${inp('displayName','Anzeigename (oben in der Mitte, z. B. Wohnraum)')}
    <label>Feste Seiten (Haken = anzeigen, Feld = Name)</label>${BUILTIN.map((b,i)=>`<div class="row" style="gap:8px;margin:4px 0"><input type="checkbox" id="bp${i}" style="width:auto"><input id="pn${i}" placeholder="${b[1]}" maxlength="24" style="flex:1;min-width:0"></div>`).join('')}
-   <div class="row" style="gap:8px;margin:4px 0"><span style="width:20px"></span><input id="pn${BUILTIN.length}" placeholder="System" maxlength="24" style="flex:1;min-width:0"></div></details>
+   <div class="row" style="gap:8px;margin:4px 0"><span style="width:20px"></span><input id="pn${BUILTIN.length}" placeholder="System" maxlength="24" style="flex:1;min-width:0"></div>
+   <label>Kacheln der Übersicht (3 × 3, von links oben nach rechts unten)</label>
+   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[0,1,2,3,4,5,6,7,8].map(i=>`<select id="ov${i}" style="padding:8px 4px;font-size:13px">${ovChoices().map(c=>`<option value="${c[0]}">${esc(c[1])}</option>`).join('')}</select>`).join('')}</div></details>
   <details><summary>🧩 Seiten &amp; Kacheln</summary><div id="pged"></div></details>
   <details id="fd"><summary>🔎 Topic-Finder (z.B. Zigbee2MQTT)</summary>
    <p class="mu">Hört kurz auf einem Topic-Filter mit und zeigt, was ankommt. Aus jedem Wert lässt sich direkt eine Kachel machen.</p>
@@ -362,6 +392,7 @@ async function loadSettings(){
     $('#staticIp').checked=ST.staticIp;$('#fanPort').value=ST.fanPort;$('#brightness').value=ST.brightness;
     BUILTIN.forEach((b,i)=>$('#bp'+i).checked=ST.builtin[i]);
     for(let i=0;i<=BUILTIN.length;i++){const e=$('#pn'+i);if(e)e.value=(ST.pageNames||[])[i]||''}
+    {const l=(ST.ovTiles||OV_DEFAULT).split(',');for(let i=0;i<9;i++){const e=$('#ov'+i);if(e)e.value=l[i]||'none'}}
     $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#poPrio').value=String(ST.poPrio||0);
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
     $('#sysinfo').textContent=`Firmware ${ST.fw} · MAC ${ST.mac} · IP ${S.ip||''}`;
@@ -389,6 +420,7 @@ function saveSettings(){
   ['mqttPort','dimBrightness','screenTimeout'].forEach(f=>o[f]=parseInt(o[f])||0);
   o.staticIp=$('#staticIp').checked;o.fanPort=+$('#fanPort').value;o.brightness=+$('#brightness').value;
   o.builtin=BUILTIN.map((b,i)=>$('#bp'+i).checked);
+  o.ovTiles=[0,1,2,3,4,5,6,7,8].map(i=>$('#ov'+i).value).join(',').replace(/(,none)+$/,'');
   o.pageNames=[...BUILTIN.map((b,i)=>$('#pn'+i).value.trim()),$('#pn'+BUILTIN.length).value.trim()];
   o.poOn=$('#poOn').checked;o.poClear=$('#poClear').checked;o.poPrio=+$('#poPrio').value;
   post('/api/settings',o);

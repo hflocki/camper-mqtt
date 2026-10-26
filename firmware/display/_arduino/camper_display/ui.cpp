@@ -79,6 +79,10 @@ lv_obj_t *ovWarn, *ovWarnLbl;
 // overview tiles with up to three single lines (temperatures, batteries)
 struct ListW { lv_obj_t* line[3] = {nullptr, nullptr, nullptr}; lv_obj_t* sub = nullptr; };
 ListW ovTemp, ovBat;
+// optional overview tiles: one battery each, clock, custom MQTT tiles
+struct OneW { lv_obj_t *title = nullptr, *val = nullptr, *sub = nullptr; int idx = 0; };
+std::vector<OneW> ovOneBat, ovCustom;
+OneW ovClock;
 lv_obj_t *tStatus;
 std::vector<lv_obj_t*> tRows, tVals;
 // battery page: one card per battery
@@ -518,23 +522,53 @@ void buildOverview(lv_obj_t* tab) {
   pageContainer(tab);
   lv_obj_set_style_pad_gap(tab, TILE_GAP, 0);
 
-  tankCard(tab, ICON_TINT, "Frischwasser", C_WATER, ovWater);
-  tankCard(tab, ICON_DRIP, "Grauwasser", C_GREY, ovGrey);
-  tankCard(tab, ICON_GAS, "Gas", C_GAS, ovGas);
-  infoCard(tab, ICON_FIRE, pageTitle(BP_HEATER).c_str(), ovHeatVal, ovHeatSub, BP_HEATER);
-  infoCard(tab, ICON_BALANCE, pageTitle(BP_LEVEL).c_str(), ovLvlVal, ovLvlSub, BP_LEVEL);
-  infoCard(tab, ICON_FAN, pageTitle(BP_FAN).c_str(), ovFanVal, ovFanSub, BP_FAN);
-  if (settings.prefixTemp.length())
-    listCard(tab, ICON_THERMOMETER, pageTitle(BP_TEMP).c_str(), ovTemp, BP_TEMP);
-  if (settings.prefixBattery.length())
-    listCard(tab, LV_SYMBOL_BATTERY_FULL, pageTitle(BP_BATTERY).c_str(), ovBat, BP_BATTERY);
-
-  // Status tile: green "OK" or the active warnings on red
-  ovWarn = tile(tab, LV_SYMBOL_WARNING, "Status", -1);
-  ovWarnLbl = label(ovWarn, &font_de_14, C_TEXT, "");
-  lv_obj_set_width(ovWarnLbl, TILE_IN);
-  lv_label_set_long_mode(ovWarnLbl, LV_LABEL_LONG_WRAP);
-  lv_obj_align(ovWarnLbl, LV_ALIGN_TOP_LEFT, 0, 22);
+  // Tiles in the order set on the web page (Einstellungen -> Display & Seiten)
+  String list = settings.ovTiles.length() ? settings.ovTiles : String(DEFAULT_OV_TILES);
+  int start = 0, count = 0;
+  while (start <= (int)list.length() && count < 9) {
+    int c = list.indexOf(',', start);
+    String t = list.substring(start, c < 0 ? list.length() : c);
+    t.trim();
+    start = (c < 0) ? list.length() + 1 : c + 1;
+    count++;
+    if (t == "water")       tankCard(tab, ICON_TINT, "Frischwasser", C_WATER, ovWater);
+    else if (t == "grey")   tankCard(tab, ICON_DRIP, "Grauwasser", C_GREY, ovGrey);
+    else if (t == "gas")    tankCard(tab, ICON_GAS, "Gas", C_GAS, ovGas);
+    else if (t == "heater") infoCard(tab, ICON_FIRE, pageTitle(BP_HEATER).c_str(), ovHeatVal, ovHeatSub, BP_HEATER);
+    else if (t == "level")  infoCard(tab, ICON_BALANCE, pageTitle(BP_LEVEL).c_str(), ovLvlVal, ovLvlSub, BP_LEVEL);
+    else if (t == "fan")    infoCard(tab, ICON_FAN, pageTitle(BP_FAN).c_str(), ovFanVal, ovFanSub, BP_FAN);
+    else if (t == "temp")   listCard(tab, ICON_THERMOMETER, pageTitle(BP_TEMP).c_str(), ovTemp, BP_TEMP);
+    else if (t == "bat")    listCard(tab, LV_SYMBOL_BATTERY_FULL, pageTitle(BP_BATTERY).c_str(), ovBat, BP_BATTERY);
+    else if (t == "status") {
+      // green "OK" or the active warnings on red
+      ovWarn = tile(tab, LV_SYMBOL_WARNING, "Status", -1);
+      ovWarnLbl = label(ovWarn, &font_de_14, C_TEXT, "");
+      lv_obj_set_width(ovWarnLbl, TILE_IN);
+      lv_label_set_long_mode(ovWarnLbl, LV_LABEL_LONG_WRAP);
+      lv_obj_align(ovWarnLbl, LV_ALIGN_TOP_LEFT, 0, 22);
+    } else if (t == "bat1" || t == "bat2" || t == "bat3") {
+      OneW w;
+      w.idx = t[3] - '1';
+      lv_obj_t* c = infoCard(tab, LV_SYMBOL_BATTERY_FULL, "Batterie", w.val, w.sub, BP_BATTERY);
+      w.title = lv_obj_get_child(c, 0);
+      ovOneBat.push_back(w);
+    } else if (t == "clock") {
+      lv_obj_t* c = infoCard(tab, LV_SYMBOL_BELL, "Uhr", ovClock.val, ovClock.sub, -1);
+      ovClock.title = lv_obj_get_child(c, 0);
+    } else if (t.length() > 1 && t[0] == 't' && isdigit(t[1])) {
+      int n = t.substring(1).toInt();
+      if (n >= (int)settings.tiles.size()) continue;
+      OneW w;
+      w.idx = n;
+      lv_obj_t* c = infoCard(tab, LV_SYMBOL_LIST, settings.tiles[n].name.c_str(), w.val, w.sub, -1);
+      w.title = lv_obj_get_child(c, 0);
+      ovCustom.push_back(w);
+    } else {
+      // "none" or unknown: empty slot, keeps the grid position
+      lv_obj_t* c = card(tab, TILE_W, TILE_H);
+      lv_obj_set_style_bg_opa(c, LV_OPA_TRANSP, 0);
+    }
+  }
 }
 
 void buildBattery(lv_obj_t* tab) {
@@ -888,24 +922,75 @@ void refreshValues() {
   bool fanOn  = store::devOnline(DEV_FAN);
 
   // overview
-  if (ovWater.pct) {
-    setTank(ovWater, DP_WATER_PCT, DP_WATER_L, tankOn);
-    setTank(ovGrey, DP_GREY_PCT, DP_GREY_L, tankOn);
-    setTank(ovGas, DP_GAS_PCT, DP_GAS_L, tankOn);
+  setTank(ovWater, DP_WATER_PCT, DP_WATER_L, tankOn);   // each returns if its tile is not shown
+  setTank(ovGrey, DP_GREY_PCT, DP_GREY_L, tankOn);
+  setTank(ovGas, DP_GAS_PCT, DP_GAS_L, tankOn);
+  if (ovHeatVal) {
     lv_label_set_text(ovHeatVal, fmt(store::get(DP_HEAT_ROOM), 1, "\xC2\xB0""C").c_str());
     String hs = !heatOn ? "offline"
               : (store::get(DP_HEAT_HVAC) == "heat" ? "An, Soll " + fmt(store::get(DP_HEAT_SETPOINT), 0, "\xC2\xB0""C") : "Aus");
     lv_label_set_text(ovHeatSub, hs.c_str());
     lv_obj_set_style_text_color(ovHeatVal, store::get(DP_HEAT_HVAC) == "heat" ? C_HEAT : C_TEXT, 0);
-
+  }
+  if (ovLvlVal) {
     bool level = store::get(DP_LVL_OK) == "ON";
     lv_label_set_text(ovLvlVal, !store::has(DP_LVL_OK) ? "--" : (level ? "Eben" : "Schief"));
     lv_obj_set_style_text_color(ovLvlVal, !store::has(DP_LVL_OK) ? C_TEXT : (level ? C_OK : C_WARN), 0);
     lv_label_set_text(ovLvlSub, lvlOn ? ("Nick " + fmt(store::get(DP_LVL_PITCH), 1, "\xC2\xB0") +
                                          "  Roll " + fmt(store::get(DP_LVL_ROLL), 1, "\xC2\xB0")).c_str() : "offline");
-
+  }
+  if (ovFanVal) {
     lv_label_set_text(ovFanVal, fanOn ? "Bereit" : "--");
     lv_label_set_text(ovFanSub, fanOn ? (store::get(DP_FAN_HOLD) == "ON" ? "Auto-Hold aktiv" : "Tippen zum Steuern") : "offline");
+  }
+
+  // single batteries
+  if (!ovOneBat.empty()) {
+    bool batOn = store::devOnline(DEV_BATTERY);
+    std::vector<BatItem> items = batItems();
+    for (auto& w : ovOneBat) {
+      if (w.idx >= (int)items.size()) {
+        lv_label_set_text(w.val, "--");
+        lv_label_set_text(w.sub, batOn ? "keine Batterie" : "offline");
+        continue;
+      }
+      const BatItem& b = items[w.idx];
+      lv_label_set_text(w.title, dispText(String(LV_SYMBOL_BATTERY_FULL "  ") + b.name).c_str());
+      bool bm2 = b.state.length() > 0;
+      String v = !b.ok ? String("--") : bm2 ? commaNum(b.v, 1) + " V"
+               : isnan(b.soc) ? String("--") : String((int)lroundf(b.soc)) + " %";
+      bool bad = b.ok && (b.problem || b.state == "Kritisch" || b.state == "Schwach" ||
+                          (!bm2 && !isnan(b.soc) && b.soc < BAT_WARN_SOC));
+      lv_label_set_text(w.val, v.c_str());
+      lv_obj_set_style_text_color(w.val, !batOn || !b.ok ? C_MUTED : (bad ? C_WARN : C_TEXT), 0);
+      String sub = !batOn ? String("offline") : !b.ok ? String("keine Verbindung")
+                 : bm2 ? b.state
+                 : (!isnan(b.w) && b.w > 1) ? LV_SYMBOL_UP " " + String((int)lroundf(b.w)) + " W"
+                 : b.rt >= 0 ? "noch " + runtimeText(b.rt)
+                 : !isnan(b.w) ? String((int)lroundf(b.w)) + " W" : String("");
+      lv_label_set_text(w.sub, dispText(sub).c_str());
+    }
+  }
+  // clock
+  if (ovClock.val) {
+    struct tm tm;
+    if (getLocalTime(&tm, 0)) {
+      static const char* const days[] = {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"};
+      lv_label_set_text_fmt(ovClock.val, "%02d:%02d", tm.tm_hour, tm.tm_min);
+      lv_label_set_text_fmt(ovClock.sub, "%s, %02d.%02d.%04d", days[tm.tm_wday], tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900);
+    } else {
+      lv_label_set_text(ovClock.val, "--:--");
+      lv_label_set_text(ovClock.sub, "keine Uhrzeit");
+    }
+  }
+  // custom MQTT tiles (read only on the overview)
+  for (auto& w : ovCustom) {
+    if (w.idx >= (int)settings.tiles.size()) continue;
+    const Tile& t = settings.tiles[w.idx];
+    String v = store::tileHas(w.idx) ? store::tile(w.idx) : String("--");
+    if (t.type == TILE_SWITCH) v = store::tileOn(w.idx) ? "An" : "Aus";
+    else if (t.unit.length() && store::tileHas(w.idx)) v += " " + t.unit;
+    lv_label_set_text(w.val, dispText(v).c_str());
   }
 
   // warnings
@@ -1213,6 +1298,9 @@ void clearHandles() {
   sIp = sNet = sQr = sQrLbl = sBri = sInfo = nullptr;
   ovWarn = ovWarnLbl = nullptr;
   ovTemp = ovBat = ListW();
+  ovOneBat.clear();
+  ovCustom.clear();
+  ovClock = OneW();
   tStatus = nullptr;
   bStatus = nullptr;
   bRows.clear();

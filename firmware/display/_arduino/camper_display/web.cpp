@@ -100,6 +100,7 @@ void buildCfg(JsonDocument& d) {
   d["setup"] = settings.wifiSsid.isEmpty() || settings.mqttHost.isEmpty();
   JsonArray b = d["builtin"].to<JsonArray>();
   for (int i = 0; i < BP_COUNT; i++) b.add(settings.builtin[i]);
+  d["ovTiles"] = settings.ovTiles.length() ? settings.ovTiles : String(DEFAULT_OV_TILES);
   JsonArray pn = d["pageNames"].to<JsonArray>();      // titles incl. defaults, last = system page
   for (int i = 0; i <= BP_COUNT; i++) pn.add(pageTitle(i));
   JsonArray p = d["pages"].to<JsonArray>();
@@ -235,6 +236,7 @@ void getSettings(AsyncWebServerRequest* r) {
   for (int i = 0; i < BP_COUNT; i++) b.add(settings.builtin[i]);
   JsonArray pn = d["pageNames"].to<JsonArray>();
   for (int i = 0; i <= BP_COUNT; i++) pn.add(pageTitle(i));
+  d["ovTiles"] = settings.ovTiles.length() ? settings.ovTiles : String(DEFAULT_OV_TILES);
   d["fw"] = FW_VERSION;
   d["mac"] = WiFi.macAddress();
   sendJson(r, d);
@@ -320,6 +322,26 @@ bool applySettings(JsonObject o, bool apply) {
   if (o["builtin"].is<JsonArray>()) {
     JsonArray b = o["builtin"];
     for (int i = 0; i < BP_COUNT && i < (int)b.size(); i++) settings.builtin[i] = b[i].as<bool>();
+  }
+  if (o["ovTiles"].is<const char*>()) {
+    // keep only known tokens, at most 9
+    String in = o["ovTiles"].as<const char*>(), out;
+    int n = 0, start = 0;
+    while (start <= (int)in.length() && n < 9) {
+      int c = in.indexOf(',', start);
+      String t = in.substring(start, c < 0 ? in.length() : c);
+      t.trim();
+      static const char* const known[] = {"water", "grey", "gas", "heater", "level", "fan", "temp", "bat",
+                                          "status", "bat1", "bat2", "bat3", "clock", "none"};
+      bool ok = false;
+      for (const char* k : known) if (t == k) ok = true;
+      if (t.length() > 1 && t[0] == 't' && isdigit(t[1]) && t.substring(1).toInt() < (int)settings.tiles.size()) ok = true;
+      if (ok) { if (out.length()) out += ','; out += t; n++; }
+      if (c < 0) break;
+      start = c + 1;
+    }
+    if (out == DEFAULT_OV_TILES) out = "";
+    if (apply) settings.ovTiles = out;
   }
   if (o["pageNames"].is<JsonArray>()) {
     JsonArray pn = o["pageNames"];

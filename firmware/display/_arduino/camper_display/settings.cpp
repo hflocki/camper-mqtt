@@ -70,6 +70,7 @@ void load() {
   for (int i = bknown; i < BP_COUNT; i++) bmask |= (1 << i);
   for (int i = 0; i < BP_COUNT; i++) settings.builtin[i] = bmask & (1 << i);
   for (int i = 0; i <= BP_COUNT; i++) settings.pageName[i] = prefs.getString((String("pgn") + i).c_str(), "");
+  settings.ovTiles      = prefs.getString("ovt",    DEFAULT_OV_TILES);
 
   String pagesJson;
   size_t len = prefs.getBytesLength("pages");
@@ -134,6 +135,7 @@ void save() {
   for (int i = 0; i < BP_COUNT; i++) if (settings.builtin[i]) bmask |= (1 << i);
   prefs.putUChar("bpages", bmask);
   for (int i = 0; i <= BP_COUNT; i++) prefs.putString((String("pgn") + i).c_str(), settings.pageName[i]);
+  prefs.putString("ovt",    settings.ovTiles);
   prefs.putUChar("bpknown", BP_COUNT);
   prefs.end();
 }

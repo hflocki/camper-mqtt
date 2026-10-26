@@ -56,6 +56,9 @@ struct Settings {
   bool     builtin[BP_COUNT];
   // Titles of the fixed pages (index BP_*) and of the system page (index BP_COUNT), "" = default
   String   pageName[BP_COUNT + 1];
+  // Overview tiles in order, comma separated (max. 9): water grey gas heater level fan temp bat
+  // status bat1 bat2 bat3 clock none t<n> (custom tile n). "" = default layout
+  String   ovTiles;
   // user pages
   std::vector<Page> pages;
   std::vector<Tile> tiles;

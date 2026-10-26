@@ -11,11 +11,14 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "1.7.1"
+#define FW_VERSION              "1.8.0"
 
 // ---- Device / access point ------------------------------------------
 #ifndef STATIC_IP_FALLBACK_MS
 #define STATIC_IP_FALLBACK_MS   180000  // static IP, WiFi ok but no MQTT this long -> DHCP until restart
+#endif
+#ifndef DEFAULT_OV_TILES
+#define DEFAULT_OV_TILES        "water,grey,gas,heater,level,fan,temp,bat,status"   // overview tiles in order
 #endif
 #ifndef DEFAULT_DISPLAY_NAME
 #define DEFAULT_DISPLAY_NAME    ""                  // name shown in the header (web UI: Einstellungen)
