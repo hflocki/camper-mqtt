@@ -1,0 +1,3 @@
+# new_device.py only needs the Python standard library (Python 3.9+).
+# The file exists so the usual venv workflow works the same as for the other tools:
+#   python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt

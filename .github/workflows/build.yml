@@ -78,6 +78,12 @@ jobs:
             fqbn: esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB
             sketch: firmware/display/_arduino/camper_display
             libs: https://github.com/moononournation/Arduino_GFX.git#v1.6.0 https://github.com/lvgl/lvgl.git#v9.2.2
+          # Template for new devices (firmware/_template/ANLEITUNG.md), built so it always compiles
+          - device: template
+            target: esp32c3
+            fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
+            sketch: firmware/_template/_arduino/camper_example
+            libs: ''
           - device: roadbuddy
             target: core2
             fqbn: esp32:esp32:m5stack_core2
