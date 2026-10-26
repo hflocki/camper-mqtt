@@ -29,11 +29,11 @@ void load() {
   settings.webPass      = prefs.getString("wpw",    DEFAULT_WEB_PASSWORD);
   settings.wifiSsid     = prefs.getString("ssid",   DEFAULT_WIFI_SSID);
   settings.wifiPass     = prefs.getString("wpass",  DEFAULT_WIFI_PASSWORD);
-  settings.staticIp     = prefs.getBool  ("sip",    false);
-  settings.ip           = prefs.getString("ip",     "");
-  settings.gateway      = prefs.getString("gw",     "");
-  settings.subnet       = prefs.getString("sn",     "255.255.255.0");
-  settings.dns          = prefs.getString("dns",    "");
+  settings.ip           = prefs.getString("ip",     DEFAULT_STATIC_IP);
+  settings.staticIp     = prefs.getBool  ("sip",    strlen(DEFAULT_STATIC_IP) > 0);
+  settings.gateway      = prefs.getString("gw",     DEFAULT_GATEWAY);
+  settings.subnet       = prefs.getString("sn",     DEFAULT_SUBNET);
+  settings.dns          = prefs.getString("dns",    DEFAULT_DNS);
   settings.mqttHost     = prefs.getString("mhost",  DEFAULT_MQTT_SERVER);
   settings.mqttPort     = prefs.getUShort("mport",  DEFAULT_MQTT_PORT);
   settings.mqttUser     = prefs.getString("muser",  DEFAULT_MQTT_USER);

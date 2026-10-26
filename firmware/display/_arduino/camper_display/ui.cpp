@@ -257,6 +257,13 @@ void updateHeaderTitle() {
 void onTabChanged(lv_event_t*) { updateHeaderTitle(); }
 void onPrev(lv_event_t*) { int i = lv_tabview_get_tab_active(tv); gotoTab(i > 0 ? i - 1 : pages.size() - 1); }
 void onNext(lv_event_t*) { int i = lv_tabview_get_tab_active(tv); gotoTab((i + 1) % pages.size()); }
+void onDhcp(lv_event_t*) {
+  Serial.println("[wifi] static IP switched off on the panel, restarting with DHCP");
+  settings.staticIp = false;
+  cfg::save();
+  delay(300);
+  ESP.restart();
+}
 void onOverviewCard(lv_event_t* e) { gotoTab(tabIndexOfBuiltin((int)(intptr_t)lv_event_get_user_data(e))); }
 
 void onSetpoint(lv_event_t* e) {
@@ -829,6 +836,13 @@ void buildSystem(lv_obj_t* tab) {
   lv_obj_add_event_cb(sBri, onBrightness, LV_EVENT_VALUE_CHANGED, nullptr);
   lv_obj_add_event_cb(sBri, onBrightnessDone, LV_EVENT_RELEASED, nullptr);
 
+  // Rescue: switch a static IP back to DHCP (long press, then restart)
+  if (settings.staticIp) {
+    lv_obj_t* b = button(tab, "Feste IP aus (DHCP) \xE2\x80\x93 lange dr\xC3\xBC" "cken", PAGE_W - 20, 56, nullptr, nullptr,
+                         C_CARD_HI, &font_de_18);
+    lv_obj_add_event_cb(b, onDhcp, LV_EVENT_LONG_PRESSED, nullptr);
+  }
+
   sInfo = label(tab, &font_de_14, C_MUTED, "");
   lv_obj_set_width(sInfo, PAGE_W - 20);
 }
@@ -1167,6 +1181,7 @@ void refreshHeader() {
     }
     lv_label_set_text(sQrLbl, wifimgr::staConnected() ? "Webseite öffnen" : "Setup-WLAN");
     lv_label_set_text(sIp, wifimgr::ipString().c_str());
+    if (wifimgr::dhcpFallback()) info += "\nFeste IP ging nicht \xE2\x80\x93 DHCP bis zum Neustart";
     String net = info + "\n\nWLAN: " + (wifimgr::staConnected() ? settings.wifiSsid + " (" + String(wifimgr::rssi()) + " dBm)" : String("nicht verbunden")) +
                  "\nMQTT: " + (settings.mqttHost.isEmpty() ? String("nicht eingerichtet") : settings.mqttHost + (mqttc::connected() ? " ok" : " getrennt"));
     lv_label_set_text(sNet, net.c_str());

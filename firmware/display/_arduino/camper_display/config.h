@@ -11,9 +11,12 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "1.6.0"
+#define FW_VERSION              "1.6.1"
 
 // ---- Device / access point ------------------------------------------
+#ifndef STATIC_IP_FALLBACK_MS
+#define STATIC_IP_FALLBACK_MS   180000  // static IP, WiFi ok but no MQTT this long -> DHCP until restart
+#endif
 #ifndef DEFAULT_DISPLAY_NAME
 #define DEFAULT_DISPLAY_NAME    ""                  // name shown in the header (web UI: Einstellungen)
 #endif
@@ -73,6 +76,20 @@
 #endif
 #ifndef DEFAULT_WIFI_PASSWORD
 #define DEFAULT_WIFI_PASSWORD   ""
+#endif
+// Static IP (optional): set DEFAULT_STATIC_IP to use it, "" = DHCP.
+// Simpler: keep DHCP and reserve the address for the MAC in the router.
+#ifndef DEFAULT_STATIC_IP
+#define DEFAULT_STATIC_IP       ""
+#endif
+#ifndef DEFAULT_GATEWAY
+#define DEFAULT_GATEWAY         ""
+#endif
+#ifndef DEFAULT_SUBNET
+#define DEFAULT_SUBNET          "255.255.255.0"
+#endif
+#ifndef DEFAULT_DNS
+#define DEFAULT_DNS             ""                  // "" = gateway
 #endif
 #ifndef DEFAULT_MQTT_SERVER
 #define DEFAULT_MQTT_SERVER     ""

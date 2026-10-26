@@ -31,6 +31,7 @@ Passt zu den anderen Projekten:
 - **Wandpanel** mit LVGL-Oberfläche, Wischen oder Pfeile zum Blättern, deutsche Umlaute und Icons
 - **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert, hell/dunkel automatisch
 - **Display aufwecken:** Ist der Bildschirm gedimmt oder aus, zeigt die Webseite oben den Knopf **💡 Display an**.
+- **Feste IP abgesichert:** Eine feste IP, die nicht funktionieren kann (Gateway außerhalb des Netzes, falsches Subnetz), wird beim Speichern abgelehnt. Verbindet sich das Display mit fester IP zwar mit dem WLAN, erreicht aber 3 Minuten lang den MQTT-Broker nicht, schaltet es bis zum nächsten Neustart auf DHCP (Hinweis auf der Systemseite). Auf der Systemseite gibt es außerdem den Knopf *Feste IP aus (DHCP)* – lange drücken, das Display startet mit DHCP neu
 - **Anzeigename:** Unter *Einstellungen* lässt sich ein Name eintragen (z. B. „Wohnraum“), der oben in der Mitte neben dem Seitentitel steht – am Display und auf der Webseite. Leer = kein Name
 - **Übersicht ohne Scrollen:** 3 × 3 Kacheln – Frischwasser, Grauwasser, Gas, Heizung, Ausrichtung, Dachlüfter, Temperaturen (bis 3 Sensoren), Batterien (bis 3) und Status (grün „OK“ oder die Warnungen auf Rot). Antippen öffnet die jeweilige Seite
 - **Feste Seiten:** Übersicht · Heizung · Dachlüfter · Ausrichtung · Temperaturen · Batterien (einzeln abschaltbar) und **System** (IP, QR-Code, Helligkeit)

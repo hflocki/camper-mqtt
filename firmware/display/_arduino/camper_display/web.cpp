@@ -343,7 +343,18 @@ String takePending(String& slot) {
 void postSettings(AsyncWebServerRequest* r, JsonVariant& j) {
   if (!auth(r)) return;
   if (!j.is<JsonObject>()) { sendResult(r, false, "Ungültige Daten"); return; }
-  bool reboot = applySettings(j.as<JsonObject>(), false);
+  JsonObject o = j.as<JsonObject>();
+  // Refuse a static IP that cannot work, otherwise the panel is no longer reachable
+  bool sip = o["staticIp"].is<bool>() ? o["staticIp"].as<bool>() : settings.staticIp;
+  if (sip) {
+    String err;
+    if (!wifimgr::staticIpValid(o["ip"] | settings.ip.c_str(), o["gateway"] | settings.gateway.c_str(),
+                                o["subnet"] | settings.subnet.c_str(), err)) {
+      sendResult(r, false, "Feste IP: " + err);
+      return;
+    }
+  }
+  bool reboot = applySettings(o, false);
   String json;
   serializeJson(j, json);
   setPending(pendingSettings, json);
