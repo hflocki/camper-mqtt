@@ -27,7 +27,7 @@ namespace fan {
   bool requestPress(uint8_t port, FanButton btn);
   bool requestLed(uint8_t port, bool on);
   bool requestSyncOff();
-  bool requestSpeed(uint8_t port, uint8_t level);   // 1..10 via 10x faster + (10-level)x slower
+  bool requestSpeed(uint8_t port, uint8_t level);   // 1..10 via 10x slower + (level-1)x faster, 0 = close
   bool requestClose(uint8_t port);                  // close the lid: slower until past the lowest speed
 
   bool autoHold(uint8_t port);

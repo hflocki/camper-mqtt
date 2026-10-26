@@ -7,6 +7,7 @@
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
+#include <Update.h>
 
 static AsyncWebServer server(80);
 static AsyncWebSocket ws("/ws");
@@ -20,6 +21,15 @@ static volatile bool tareResetPending = false;
 static volatile bool sensorRestartPending = false;
 static volatile bool restartPending = false;
 static unsigned long restartAt = 0;
+
+// ---- Upload (web UI): firmware .bin or the web page index.html.gz --------------
+// A complete LittleFS image is NOT accepted here: it would also replace /config.json.
+static bool upAuthorized = false;
+static bool upWebPage = false;
+static bool upFailed = false;
+static File upFile;
+static const char* WEB_FILE = "/index.html.gz";
+static const char* WEB_TMP = "/index.html.gz.tmp";
 
 static const size_t MAX_BODY_SIZE = 4096;
 
@@ -278,7 +288,9 @@ void webserverInit() {
             request->send(response);
         } else {
             request->send(200, "text/html",
-                "<h1>Camper Level</h1><p>Please upload the LittleFS image (data/index.html.gz).</p>");
+                "<h1>Camper Level</h1><p>Web page missing. Upload <code>data/index.html.gz</code> "
+                "or a firmware (.bin):</p><form method=POST action=/api/update enctype=multipart/form-data>"
+                "<input type=file name=f accept='.bin,.gz'> <button>Upload</button></form>");
         }
     });
 
@@ -297,6 +309,60 @@ void webserverInit() {
         sensorRestartPending = true;
         sendOk(request);
     });
+    // Firmware (.bin) or web page (.gz) upload; the file name decides
+    server.on("/api/update", HTTP_POST,
+        [](AsyncWebServerRequest* request) {
+            if (!auth(request)) return;
+            if (upWebPage) {
+                bool ok = upAuthorized && !upFailed;
+                request->send(ok ? 200 : 500, "text/plain", ok ? "OK web" : "Upload failed");
+                return;
+            }
+            bool ok = upAuthorized && !Update.hasError();
+            request->send(ok ? 200 : 500, "text/plain", ok ? "OK" : "Update failed");
+            if (ok) { restartPending = true; restartAt = millis() + 1000; }
+        },
+        [](AsyncWebServerRequest* request, const String& filename, size_t index, uint8_t* data, size_t len, bool final) {
+            if (index == 0) {
+                upAuthorized = authOk(request);
+                if (!upAuthorized) return;
+                String n = filename;
+                n.toLowerCase();
+                upWebPage = n.endsWith(".gz");
+                upFailed = false;
+                Serial.printf("[OTA] Web upload (%s): %s\n", upWebPage ? "web page" : "firmware", filename.c_str());
+                if (upWebPage) {
+                    upFile = fsReady ? LittleFS.open(WEB_TMP, "w") : File();
+                    if (!upFile) upFailed = true;
+                } else {
+#if defined(ESP8266)
+                    Update.runAsync(true);   // called from the async web server
+                    uint32_t maxSize = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+                    if (!Update.begin(maxSize, U_FLASH)) Update.printError(Serial);
+#else
+                    if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) Update.printError(Serial);
+#endif
+                }
+            }
+            if (!upAuthorized) return;
+            if (upWebPage) {
+                if (upFailed) return;
+                if (len && upFile.write(data, len) != len) upFailed = true;
+                if (final) {
+                    upFile.close();
+                    if (!upFailed) { LittleFS.remove(WEB_FILE); upFailed = !LittleFS.rename(WEB_TMP, WEB_FILE); }
+                    else LittleFS.remove(WEB_TMP);
+                    Serial.printf("[OTA] Web page %s\n", upFailed ? "FAILED" : "replaced");
+                }
+                return;
+            }
+            if (len && Update.write(data, len) != len) Update.printError(Serial);
+            if (final) {
+                if (Update.end(true)) Serial.printf("[OTA] Firmware ok, %u bytes\n", (unsigned)(index + len));
+                else Update.printError(Serial);
+            }
+        });
+
     server.on("/api/restart", HTTP_POST, [](AsyncWebServerRequest* request) {
         if (!auth(request)) return;
         request->send(200, "application/json", "{\"status\":\"restarting\"}");

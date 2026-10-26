@@ -8,7 +8,7 @@ Firmware für einen **ESP32-C3** mit dem **VanTurtle**-Board (TCA9555-Port-Expan
 
 - Tastendrücke der MaxxFan-Bedienung (Auto, Richtung, Ein/Aus, Schneller, Langsamer, Piep) für **Port 0 (RJ11)** und **Port 1 (RJ45)**
 - Eingang **Auto Hold** und **Controller-LED** je Port
-- **Stufe setzen** (1–10): 10× Schneller, dann (10−Stufe)× Langsamer. So bleibt die Haube offen (auf der kleinsten Stufe schließt „Langsamer“ die Haube)
+- **Stufe setzen** (0–10): 1–10 wie früher: 10× Langsamer bis zur kleinsten Stufe, dann (Stufe−1)× Schneller. **Stufe 0 = Haube zu** (wie „Schließen“)
 - **Schließen:** 11× Langsamer, schließt die Haube aus jeder Stufe. „Ein/Aus“ öffnet die Haube nur
 - **Sync auf AUS** (Auto drücken → auf Auto Hold warten → Ein/Aus), wie das bisherige ESPHome-Script
 - Home-Assistant-Auto-Discovery, Web-Oberfläche mit Bedienung, Einstellungen und Firmware-Update
@@ -136,7 +136,7 @@ Prefix (Web-UI) Standard `camper/maxxfan`. Zustände sind retained.
 | --- | --- | --- |
 | `<prefix>/cmd/p<n>/<taste>` | beliebig (HA: `PRESS`) | Taste drücken: `auto`, `direction`, `on_off`, `faster`, `slower`, `beep` |
 | `<prefix>/cmd/p<n>/press` | Tastenname | dasselbe, Taste im Payload |
-| `<prefix>/cmd/p<n>/speed/set` | `1` … `10` | Stufe setzen (Lüfter muss laufen) |
+| `<prefix>/cmd/p<n>/speed/set` | `0` … `10` | Stufe setzen (Lüfter muss laufen), `0` = Haube schließen |
 | `<prefix>/cmd/p<n>/close` | beliebig | Haube schließen (11× Langsamer) |
 | `<prefix>/cmd/p<n>/led/set` | `ON` / `OFF` / `TOGGLE` | Controller-LED |
 | `<prefix>/cmd/sync_off` | beliebig | Lüfter auf AUS synchronisieren |
@@ -151,7 +151,7 @@ mosquitto_sub -h <broker> -t 'camper/maxxfan/#' -v
 
 ### Home Assistant
 
-Mit Discovery erscheint ein Gerät **„Camper MaxxFan“** mit Tasten-Entitäten je aktivem Port (Piep und LED unter *Konfiguration*), Stufen-Regler (1–10), Taste „Close Lid“, LED-Schalter, Auto-Hold-Sensor, „Sync to OFF“, Neustart und Diagnose (WLAN, Port-Expander). Deaktivierte Ports werden aus HA entfernt.
+Mit Discovery erscheint ein Gerät **„Camper MaxxFan“** mit Tasten-Entitäten je aktivem Port (Piep und LED unter *Konfiguration*), Stufen-Regler (0–10, 0 = zu), Taste „Close Lid“, LED-Schalter, Auto-Hold-Sensor, „Sync to OFF“, Neustart und Diagnose (WLAN, Port-Expander). Deaktivierte Ports werden aus HA entfernt.
 
 **Umstieg von ESPHome:** Das alte ESPHome-Gerät in HA unter *Einstellungen → Geräte & Dienste → ESPHome* löschen. Die Entity-IDs ändern sich, Automationen und Dashboards (z. B. Display-Panels) müssen auf die neuen Entitäten oder direkt auf die MQTT-Topics umgestellt werden.
 
@@ -161,6 +161,7 @@ Mit Discovery erscheint ein Gerät **„Camper MaxxFan“** mit Tasten-Entitäte
 
 | Version | Änderungen |
 | --- | --- |
+| 1.5.0 | Stufe setzen wieder wie in 1.3.0 (von unten), Stufe 0 schließt die Haube (Web-UI, MQTT, HA-Regler) |
 | 1.4.0 | „Schließen“ (Web-UI, MQTT `cmd/p<n>/close`, HA-Taste); Stufe setzen von oben (10× Schneller), damit die Haube dabei nicht zugeht; Web-Oberfläche und LittleFS-Image per Web-UI oder OTA hochladbar (kein USB nötig) |
 | 1.3.0 | Web-Oberfläche aus LittleFS (`data/index.html.gz`) wie bei tanklevel und temp, Notseite mit Firmware-Update, falls das Image fehlt |
 | 1.2.0 | Web-Oberfläche im gleichen Stil wie die anderen Camper-Geräte (Statuspunkte, Reiter Live / MaxxFan / MQTT / WiFi) |

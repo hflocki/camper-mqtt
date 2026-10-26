@@ -13,7 +13,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "2.0.0"
+#define FW_VERSION            "2.1.0"
 
 #ifndef DEFAULT_AP_SSID
 #define DEFAULT_AP_SSID       "Camper-Level"     // Base name; "-XXXXXX" (last 3 MAC bytes) is appended

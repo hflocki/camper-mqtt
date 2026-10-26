@@ -11,6 +11,7 @@
 
 #include <Arduino.h>
 #include <ArduinoOTA.h>
+#include <LittleFS.h>
 
 #include "config.h"
 #include "wifi_manager.h"
@@ -28,6 +29,8 @@ void setupOTA() {
     ArduinoOTA.setPassword(DEFAULT_OTA_PASSWORD);
 
     ArduinoOTA.onStart([]() {
+        // Filesystem upload over the network replaces config.json too; unmount first
+        if (ArduinoOTA.getCommand() != U_FLASH) LittleFS.end();
         String type = (ArduinoOTA.getCommand() == U_FLASH) ? "sketch" : "filesystem";
         Serial.println("[OTA] Start updating " + type);
     });

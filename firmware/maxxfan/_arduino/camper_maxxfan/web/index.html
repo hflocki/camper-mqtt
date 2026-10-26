@@ -159,7 +159,7 @@ function buildPorts(s){
     <div class="g2" style="margin-bottom:8px"><button class="btn btn-p btn-big" type="button" onclick="post('/api/press',{port:${i},btn:'on_off'})">⏻ Ein / Öffnen</button>
     <button class="btn btn-s btn-big" type="button" onclick="post('/api/close',{port:${i}}).then(()=>toast('Haube wird geschlossen'))">⏬ Schließen</button></div>
     <div class="g2">${BTN.map(b=>`<button class="btn btn-s" type="button" onclick="post('/api/press',{port:${i},btn:'${b[0]}'})">${b[1]}</button>`).join("")}</div>
-    <div class="speed"><span>Stufe setzen</span><select class="in" id="s${i}">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option>${n}</option>`).join("")}</select>
+    <div class="speed"><span>Stufe setzen</span><select class="in" id="s${i}"><option value="0">0 (zu)</option>${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option>${n}</option>`).join("")}</select>
     <button class="btn btn-s btn-sm" type="button" onclick="post('/api/speed',{port:${i},level:$('#s${i}').value}).then(()=>toast('Stufe wird gesetzt'))">Setzen</button></div>
     </div>`).join("")
     || '<div class="card"><div class="empty">Kein Port aktiv – im Tab MaxxFan einschalten.</div></div>';

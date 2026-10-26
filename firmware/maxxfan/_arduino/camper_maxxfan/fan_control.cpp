@@ -215,13 +215,16 @@ bool requestSyncOff() {
   return enqueue({CMD_SYNC, settings.syncPort, 0});
 }
 
-// "Slower" on the lowest speed closes the lid, so a speed is set from the top:
-// 10x faster (stops at 10), then down to the wanted level. The lid stays open.
+bool requestClose(uint8_t port);
+
+// Level 1..10: 10x slower (down to the lowest speed), then (level-1)x faster, as in 1.3.0.
+// Level 0 closes the lid ("slower" once more on the lowest speed), same as requestClose().
 bool requestSpeed(uint8_t port, uint8_t level) {
-  if (port > 1 || level < 1 || level > 10) return false;
-  if (uxQueueSpacesAvailable(queue) < 10u + (10u - level)) return false;
-  for (uint8_t i = 0; i < 10; i++)        enqueue({CMD_PRESS, port, (uint8_t)BTN_FASTER});
-  for (uint8_t i = level; i < 10; i++)    enqueue({CMD_PRESS, port, (uint8_t)BTN_SLOWER});
+  if (port > 1 || level > 10) return false;
+  if (level == 0) return requestClose(port);
+  if (uxQueueSpacesAvailable(queue) < 10u + level - 1) return false;
+  for (uint8_t i = 0; i < 10; i++)        enqueue({CMD_PRESS, port, (uint8_t)BTN_SLOWER});
+  for (uint8_t i = 1; i < level; i++)     enqueue({CMD_PRESS, port, (uint8_t)BTN_FASTER});
   Serial.printf("[fan] %s: set speed %u\n", PORT_LABELS[port], level);
   return true;
 }

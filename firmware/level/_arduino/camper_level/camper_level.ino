@@ -11,6 +11,7 @@
 
 #include <Arduino.h>
 #include <ArduinoOTA.h>
+#include <LittleFS.h>
 #include <WiFi.h>
 
 #include "config.h"
@@ -33,7 +34,11 @@ static unsigned long fastSince = 0;
 static void setupOTA() {
     ArduinoOTA.setHostname(OTA_HOSTNAME);
     ArduinoOTA.setPassword(DEFAULT_OTA_PASSWORD);
-    ArduinoOTA.onStart([]() { Serial.println("[OTA] Start"); });
+    ArduinoOTA.onStart([]() {
+        // Filesystem upload over the network replaces config.json too; unmount first
+        if (ArduinoOTA.getCommand() != U_FLASH) LittleFS.end();
+        Serial.println("[OTA] Start");
+    });
     ArduinoOTA.onEnd([]() { Serial.println("\n[OTA] Done"); });
     ArduinoOTA.onError([](ota_error_t e) { Serial.printf("[OTA] Error[%u]\n", e); });
     ArduinoOTA.begin();

@@ -299,12 +299,21 @@ Im Tab **MQTT** unter „Web-Oberfläche Login“ Benutzer und Passwort setzen. 
 
 115200 Baud. Befehle: `read`, `scan` (BLE-Geräte), `filter` (Frischwasser-Filter umschalten), `noauth` (Web-Login entfernen), `help`.
 
+## Updates ohne USB
+
+| Was | Wie |
+|---|---|
+| Firmware | Arduino IDE → *Sketch → Kompilierte Binärdatei exportieren*, die `.bin` im Web-UI unter **WiFi → Firmware- & Web-Update** hochladen (Neustart), oder per Netzwerkport in der IDE (OTA-Passwort) |
+| Web-Oberfläche | `data/index.html.gz` im Web-UI hochladen – ersetzt nur die Seite, ohne Neustart, Einstellungen bleiben |
+| Komplettes LittleFS-Image | Nur per USB oder IDE-Netzwerkport; löscht dabei auch die Einstellungen (`config.json`) |
+
 ## Versionen
 
 Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant in der Geräteinfo. Bei Änderungen `FW_VERSION` in `config.h` hochzählen.
 
 | Version | Änderungen |
 | --- | --- |
+| 1.6.0 | Firmware (.bin) und Web-Oberfläche (index.html.gz) im Web-UI unter WiFi hochladbar, ohne USB; Arduino-OTA-Dateisystem-Upload hängt LittleFS vorher aus |
 | 1.5.0 | Mopeka Standard (Std Check) als weiterer Sensortyp, Propan-Anteil einstellbar |
 | 1.4.0 | Mopeka-Pro-Sensoren als Gassensor (Sensortyp im Tab Gas), Füllhöhe, Temperatur und Messqualität per MQTT |
 | 1.3.0 | Optionaler Login für die Web-Oberfläche (Tab MQTT), Last Will mit QoS 1 |

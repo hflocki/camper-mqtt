@@ -90,7 +90,7 @@ void sendDiscovery() {
       JsonDocument d;
       d["name"]          = label + " Set Speed";
       d["command_topic"] = topic("cmd/" + pk + "/speed/set");
-      d["min"]           = 1;
+      d["min"]           = 0;   // 0 = close the lid
       d["max"]           = 10;
       d["step"]          = 1;
       d["mode"]          = "slider";

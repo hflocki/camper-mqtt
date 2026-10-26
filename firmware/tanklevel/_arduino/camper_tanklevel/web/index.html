@@ -538,6 +538,15 @@ code { font-family: ui-monospace, Menlo, monospace; }
         </div>
 
         <div class="btn-row"><button class="btn btn-primary" onclick="saveWifi()">💾 Speichern & Verbinden</button></div>
+        <div class="card" style="margin-top:12px">
+            <div class="card-title">Firmware- &amp; Web-Update</div>
+            <div class="form-hint" style="margin:0 0 8px">Firmware: Arduino IDE → Sketch → Kompilierte Binärdatei exportieren, die .bin hier hochladen (danach Neustart).<br>
+                Web-Oberfläche: <code>data/index.html.gz</code> hochladen, ohne Neustart. Die Einstellungen bleiben erhalten.</div>
+            <div class="form-group"><input type="file" id="cfg-upload" accept=".bin,.gz"></div>
+            <progress id="up-progress" value="0" max="100" class="hidden" style="width:100%"></progress>
+            <div class="btn-row"><button class="btn btn-secondary" onclick="uploadFile()">⬆ Hochladen</button></div>
+        </div>
+
         <div class="btn-row"><button class="btn btn-danger" onclick="restartDevice()">🔄 Neustart</button></div>
     </div>
 
@@ -1138,6 +1147,24 @@ async function restartDevice() {
         await fetch('/api/restart', { method: 'POST' });
         showToast('Gerät startet neu...');
     } catch (e) {}
+}
+
+function uploadFile() {
+    const file = $('cfg-upload').files[0];
+    if (!file) { showToast('Erst eine Datei wählen', true); return; }
+    const fd = new FormData();
+    fd.append('f', file);
+    const x = new XMLHttpRequest();
+    $('up-progress').classList.remove('hidden');
+    x.upload.onprogress = e => { if (e.lengthComputable) $('up-progress').value = e.loaded / e.total * 100; };
+    x.onload = () => {
+        if (x.status === 200 && x.responseText === 'OK web') { showToast('Web-Oberfläche ersetzt – lädt neu...'); setTimeout(() => location.reload(), 1500); }
+        else if (x.status === 200) { showToast('Update ok – Neustart...'); setTimeout(() => location.reload(), 12000); }
+        else showToast('Fehler: ' + x.responseText, true);
+    };
+    x.onerror = () => showToast('Upload fehlgeschlagen', true);
+    x.open('POST', '/api/update');
+    x.send(fd);
 }
 
 function showToast(msg) {
