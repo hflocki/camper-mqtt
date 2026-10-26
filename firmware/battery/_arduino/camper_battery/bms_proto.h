@@ -50,7 +50,19 @@ struct BmsSample {
     uint64_t problem_code;
     int8_t charge_fet;    // 1 on, 0 off, -1 unknown
     int8_t discharge_fet;
+    int8_t bat_state;     // battery state reported by the monitor (BatState), -1 unknown
 };
+
+// Battery state of a monitor without current sensor (BM2), derived from the voltage
+enum BatState : int8_t {
+    BAT_STATE_UNKNOWN  = -1,
+    BAT_STATE_CRITICAL = 0,
+    BAT_STATE_LOW      = 1,
+    BAT_STATE_NORMAL   = 2,
+    BAT_STATE_CHARGING = 4,   // charging voltage (e.g. engine running)
+    BAT_STATE_FLOATING = 8,   // float / maintenance charge
+};
+const char* batStateName(int8_t st);   // German text for UI and MQTT, nullptr if unknown
 
 void bmsClear(BmsSample& s);
 
@@ -87,7 +99,21 @@ bool ectiveDecode(const uint8_t* f, size_t n, BmsSample& s);
 // AES-128 (CBC, zero IV, one block = ECB) with a key found in the vendor app.
 // Protocol documented by haxrob, https://haxrob.net/bm2-reversing-the-ble-protocol-of-the-bm2-battery-monitor/
 extern const uint8_t BM2_AES_KEY[16];
-// plain = decrypted block; byte 0 = 0xF5, then 12 bit voltage in 10 mV, byte 3 = state of charge in %
+// plain = decrypted block; byte 0 = 0xF5, then 12 bit voltage in 10 mV, byte 3 = state of charge in %.
+// The low nibble of byte 2 is a status code in some integrations, but captures disagree on its
+// meaning, so the state is derived from the voltage instead (thresholds below, 12 V lead/AGM battery).
+#ifndef BM2_V_CHARGING
+#define BM2_V_CHARGING   13.8f   // at or above: charging (alternator / charger)
+#endif
+#ifndef BM2_V_FLOATING
+#define BM2_V_FLOATING   13.2f   // at or above: float / maintenance charge
+#endif
+#ifndef BM2_V_LOW
+#define BM2_V_LOW        12.2f   // at or below: low
+#endif
+#ifndef BM2_V_CRITICAL
+#define BM2_V_CRITICAL   11.9f   // at or below: critical
+#endif
 bool bm2Decode(const uint8_t plain[16], BmsSample& s);
 
 // Fills power, energy, delta, mean temperature and runtime from the raw values

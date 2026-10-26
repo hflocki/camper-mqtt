@@ -18,6 +18,7 @@ void bmsClear(BmsSample& s) {
     s.temperature = s.delta_v = s.runtime_s = NAN;
     s.cycles = -1;
     s.charge_fet = s.discharge_fet = -1;
+    s.bat_state = BAT_STATE_UNKNOWN;
 }
 
 uint16_t bmsCrcModbus(const uint8_t* d, size_t n) {
@@ -183,6 +184,11 @@ bool bm2Decode(const uint8_t p[16], BmsSample& s) {
     if (raw == 0 || raw > 2000) return false;             // 0 ... 20 V plausible
     s.voltage = raw / 100.0f;
     s.soc = p[3] > 100 ? 100 : p[3];
+    s.bat_state = s.voltage >= BM2_V_CHARGING ? BAT_STATE_CHARGING
+                : s.voltage >= BM2_V_FLOATING ? BAT_STATE_FLOATING
+                : s.voltage <= BM2_V_CRITICAL ? BAT_STATE_CRITICAL
+                : s.voltage <= BM2_V_LOW      ? BAT_STATE_LOW
+                :                               BAT_STATE_NORMAL;
     bmsFinish(s);
     return true;
 }
@@ -211,6 +217,17 @@ void bmsFinish(BmsSample& s) {
     // Runtime from remaining capacity while discharging
     if (!isnan(s.current) && s.current < -0.01f && !isnan(s.charge_ah) && s.charge_ah > 0) {
         s.runtime_s = s.charge_ah / -s.current * 3600.0f;
+    }
+}
+
+const char* batStateName(int8_t st) {
+    switch (st) {
+        case BAT_STATE_CRITICAL: return "Kritisch";
+        case BAT_STATE_LOW:      return "Schwach";
+        case BAT_STATE_NORMAL:   return "Normal";
+        case BAT_STATE_CHARGING: return "Lädt";
+        case BAT_STATE_FLOATING: return "Erhaltungsladung";
+        default:                 return nullptr;
     }
 }
 

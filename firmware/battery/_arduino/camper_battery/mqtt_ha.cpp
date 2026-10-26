@@ -21,10 +21,14 @@
 //   <prefix>/<id>/cycles            charge cycles (if reported)
 //   <prefix>/<id>/delta             highest minus lowest cell in V (BMS with cell voltages only)
 //   <prefix>/<id>/cell_<n>          cell voltage in V, n = 1 ...
+//   <prefix>/<id>/state             battery state text (BM2 only): Kritisch, Schwach, Normal, Lädt, Erhaltungsladung
 //   <prefix>/<id>/charging          ON / OFF
 //   <prefix>/<id>/problem           ON / OFF (BMS reports an error or protection)
 //   <prefix>/batteries              all batteries as one JSON list for displays:
 //                                   [{"id":"house","name":"Bordbatterie","soc":87,"v":13.31,"a":-2.4,"w":-32,"ok":true}, ...]
+//                                   ("st" = state text for monitors that report one, e.g. the BM2)
+//
+// Monitors without a current sensor (BM2) get no current, power, capacity, energy and runtime entities.
 //
 // Home Assistant: one device per battery (linked to the "Camper Battery" device),
 // entity unique_ids use the BLE address, so renaming a battery keeps its history.
@@ -69,6 +73,16 @@ static const Field FIELDS[] = {
 static const Field F_TEMP   = {"temperature", "Temperatur", "°C", "temperature", "mdi:thermometer", 1, false};
 static const Field F_CYCLES = {"cycles", "Zyklen", "", nullptr, "mdi:battery-sync", 0, true};
 static const Field F_DELTA  = {"delta", "Zelldifferenz", "V", "voltage", "mdi:battery-heart-variant", 3, false};
+
+// Fields that need a current measurement
+static bool needsCurrent(const Field& f) {
+    return strcmp(f.sub, "soc") != 0 && strcmp(f.sub, "voltage") != 0;
+}
+
+// The BM2 only measures the voltage
+static bool hasCurrent(int i) {
+    return config.bms[i].type != BMS_BM2;
+}
 
 static String topic(const char* sub) {
     return String(config.mqtt_prefix) + "/" + sub;
@@ -169,7 +183,7 @@ static void removeDiscovery(const char* component, const char* id, const char* s
 
 static void processRemovals() {
     static const char* const subs[] = {"soc", "voltage", "current", "power", "charge", "energy", "runtime",
-                                       "temperature", "cycles", "delta", "available", "charging", "problem"};
+                                       "temperature", "cycles", "delta", "state", "available", "charging", "problem"};
     for (uint8_t i = 0; i < removalCount; i++) {
         const Removal& r = removals[i];
         char id[13];
@@ -213,15 +227,21 @@ static void publishBattery(int i, const BmsLive& l) {
     pubFloat(i, "charge", s.charge_ah, 1);
     pubFloat(i, "energy", s.energy_wh, 0);
     // "None" = unknown in HA (not discharging); an empty payload would keep the old value
-    if (isnan(s.runtime_s)) mqtt.publish(batTopic(i, "runtime").c_str(), "None", true);
-    else pubFloat(i, "runtime", s.runtime_s / 60.0f, 0);
+    if (hasCurrent(i)) {
+        if (isnan(s.runtime_s)) mqtt.publish(batTopic(i, "runtime").c_str(), "None", true);
+        else pubFloat(i, "runtime", s.runtime_s / 60.0f, 0);
+    }
+    const char* st = batStateName(s.bat_state);
+    if (st) mqtt.publish(batTopic(i, "state").c_str(), st, true);
     pubFloat(i, "temperature", s.temperature, 1);
     if (s.cycles >= 0) mqtt.publish(batTopic(i, "cycles").c_str(), String(s.cycles).c_str(), true);
     pubFloat(i, "delta", s.delta_v, 3);
     for (uint8_t c = 0; c < s.cell_count; c++) {
         pubFloat(i, (String("cell_") + (c + 1)).c_str(), s.cell_v[c], 3);
     }
-    mqtt.publish(batTopic(i, "charging").c_str(), (!isnan(s.current) && s.current > 0.05f) ? "ON" : "OFF", true);
+    bool charging = (!isnan(s.current) && s.current > 0.05f) ||
+                    s.bat_state == BAT_STATE_CHARGING || s.bat_state == BAT_STATE_FLOATING;
+    mqtt.publish(batTopic(i, "charging").c_str(), charging ? "ON" : "OFF", true);
     mqtt.publish(batTopic(i, "problem").c_str(), s.problem ? "ON" : "OFF", true);
 
     // New sensors appeared (cell count known only after the first reading): announce them
@@ -246,6 +266,8 @@ static void publishList(const BmsLive* all) {
             if (!isnan(l.s.voltage)) o["v"] = roundf(l.s.voltage * 100) / 100;
             if (!isnan(l.s.current)) o["a"] = roundf(l.s.current * 100) / 100;
             if (!isnan(l.s.power)) o["w"] = roundf(l.s.power);
+            const char* st = batStateName(l.s.bat_state);
+            if (st) o["st"] = st;
         }
     }
     char buf[640];
@@ -322,6 +344,18 @@ static void publishField(int i, const char* id, const Field& f, const char* sub 
     publishJson(String("homeassistant/sensor/" HA_NODE_ID "/") + id + "_" + sub + "/config", doc);
 }
 
+static void publishText(int i, const char* id, const char* sub, const char* name, const char* icon) {
+    JsonDocument doc;
+    doc["name"] = name;
+    doc["unique_id"] = String(HA_NODE_ID "_") + id + "_" + sub;
+    doc["object_id"] = String("battery_") + config.bms[i].key + "_" + sub;
+    doc["state_topic"] = batTopic(i, sub);
+    doc["icon"] = icon;
+    addAvailability(doc, i);
+    addBatteryDevice(doc, i, id);
+    publishJson(String("homeassistant/sensor/" HA_NODE_ID "/") + id + "_" + sub + "/config", doc);
+}
+
 static void publishBinary(int i, const char* id, const char* sub, const char* name, const char* devClass, const char* icon) {
     JsonDocument doc;
     doc["name"] = name;
@@ -364,7 +398,12 @@ void mqttPublishDiscovery() {
         BmsLive l;
         bmsGetLive(i, l);
 
-        for (const Field& f : FIELDS) publishField(i, id, f);
+        for (const Field& f : FIELDS) {
+            if (hasCurrent(i) || !needsCurrent(f)) publishField(i, id, f);
+            else removeDiscovery("sensor", id, f.sub);   // announced by 1.2.0, the BM2 has no such value
+        }
+        if (config.bms[i].type == BMS_BM2) publishText(i, id, "state", "Zustand", "mdi:car-battery");
+        else removeDiscovery("sensor", id, "state");
         publishBinary(i, id, "charging", "Lädt", "battery_charging", "mdi:battery-charging");
         publishBinary(i, id, "problem", "Problem", "problem", "mdi:battery-alert");
 

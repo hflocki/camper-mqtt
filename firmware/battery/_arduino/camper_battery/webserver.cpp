@@ -346,6 +346,7 @@ void wsSendSensorData() {
         o["prob"] = s.problem;
         o["cfet"] = s.charge_fet;
         o["dfet"] = s.discharge_fet;
+        o["bst"] = s.bat_state;
         JsonArray cells = o["cells"].to<JsonArray>();
         for (uint8_t c = 0; c < s.cell_count; c++) cells.add(roundf(s.cell_v[c] * 1000) / 1000);
     }

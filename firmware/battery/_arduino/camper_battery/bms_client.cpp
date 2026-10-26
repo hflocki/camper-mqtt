@@ -346,7 +346,17 @@ static bool pollBm2(int i, BmsSample& s) {
         mbedtls_aes_setkey_dec(&aes, BM2_AES_KEY, 128);
         int rc = mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, 16, iv, l.buf, plain);
         mbedtls_aes_free(&aes);
-        if (rc == 0 && bm2Decode(plain, s)) return true;
+        if (rc == 0 && bm2Decode(plain, s)) {
+            // Log the raw status nibble whenever it changes, to learn its meaning
+            static uint8_t lastNibble[MAX_BMS];   // nibble + 1, 0 = nothing logged yet
+            uint8_t nib = (plain[2] & 0x0F) + 1;
+            if (nib != lastNibble[i]) {
+                lastNibble[i] = nib;
+                Serial.printf("[BM2] %s: %02X %02X %02X %02X -> %.2f V, %d %%, nibble %d\n", l.cfg.name,
+                              plain[0], plain[1], plain[2], plain[3], s.voltage, (int)s.soc, plain[2] & 0x0F);
+            }
+            return true;
+        }
     }
     return false;
 }

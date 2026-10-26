@@ -359,6 +359,9 @@ function formatRuntime(sec) {
 
 const fmt = (v, d = 1) => (v === null || v === undefined) ? '--' : v.toFixed(d).replace('.', ',');
 
+// BM2 battery state: [text, css class]
+const BAT_STATES = {0: ['⚠ Kritisch', 'dis'], 1: ['Schwach', 'dis'], 2: ['Normal', ''], 4: ['▲ Lädt', 'chg'], 8: ['▲ Erhaltungsladung', 'chg']};
+
 function socColor(soc) {
     if (soc === null || soc === undefined) return 'var(--text-muted)';
     if (soc < 20) return 'var(--danger)';
@@ -378,15 +381,15 @@ function renderLive(list) {
                 <div class="bat-head"><div class="bat-name">${esc(b.name)}</div><div class="bat-type">${TYPES[b.type] || ''}</div></div>
                 <div class="bat-main">
                     <div class="bat-soc"><span class="soc">--</span><small>%</small></div>
-                    <div class="bat-flow"><b class="pw">--</b> W<br><span class="dir">--</span></div>
+                    <div class="bat-flow"><span class="pwbox"><b class="pw">--</b> W<br></span><span class="dir">--</span></div>
                 </div>
                 <div class="bar"><div class="fill"></div></div>
                 <div class="bat-grid">
                     <div class="value-item"><div class="value-label">Spannung</div><div class="value-num v">--</div></div>
-                    <div class="value-item"><div class="value-label">Strom</div><div class="value-num a">--</div></div>
-                    <div class="value-item"><div class="value-label">Restkapazität</div><div class="value-num ah">--</div></div>
-                    <div class="value-item"><div class="value-label">Energie</div><div class="value-num wh">--</div></div>
-                    <div class="value-item"><div class="value-label">Restlaufzeit</div><div class="value-num rt">--</div></div>
+                    <div class="value-item opt-cur"><div class="value-label">Strom</div><div class="value-num a">--</div></div>
+                    <div class="value-item opt-cur"><div class="value-label">Restkapazität</div><div class="value-num ah">--</div></div>
+                    <div class="value-item opt-cur"><div class="value-label">Energie</div><div class="value-num wh">--</div></div>
+                    <div class="value-item opt-cur"><div class="value-label">Restlaufzeit</div><div class="value-num rt">--</div></div>
                     <div class="value-item opt-t"><div class="value-label">Temperatur</div><div class="value-num t">--</div></div>
                     <div class="value-item opt-cyc"><div class="value-label">Zyklen</div><div class="value-num cyc">--</div></div>
                     <div class="value-item opt-dv"><div class="value-label">Zelldifferenz</div><div class="value-num dv">--</div></div>
@@ -407,7 +410,14 @@ function renderLive(list) {
         q('.fill').style.width = (b.ok && b.soc !== null ? Math.max(0, Math.min(100, b.soc)) : 0) + '%';
         q('.pw').textContent = b.ok && b.w !== null ? Math.round(Math.abs(b.w)) : '--';
         const dir = q('.dir');
-        if (b.ok && b.a !== null) {
+        const noCur = b.type === 3;   // BM2: voltage only
+        el.querySelectorAll('.opt-cur').forEach(e => e.classList.toggle('hidden', noCur));
+        q('.pwbox').classList.toggle('hidden', noCur);
+        if (noCur) {
+            const s = b.ok ? BAT_STATES[b.bst] : null;
+            dir.textContent = s ? s[0] : '--';
+            dir.className = 'dir ' + (s ? s[1] : '');
+        } else if (b.ok && b.a !== null) {
             dir.textContent = b.a > 0.05 ? '▲ lädt' : (b.a < -0.05 ? '▼ entlädt' : 'Ruhe');
             dir.className = 'dir ' + (b.a > 0.05 ? 'chg' : (b.a < -0.05 ? 'dis' : ''));
         } else { dir.textContent = '--'; dir.className = 'dir'; }

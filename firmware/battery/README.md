@@ -157,7 +157,7 @@ In Home Assistant erscheint ein Gerät „Camper Battery“ und darunter **ein G
 
 **Ective BM X:** Das Gerät ist ein Batteriemonitor (Shunt), kein BMS: Zellspannungen, Temperatur und Zyklen gibt es dort nicht. Die Geräte-ID (`0x22`, `0x0B`, `0x08` oder `0x38`) wird beim ersten Abfragen erkannt. Die Laufzeit ist die Schätzung des Monitors selbst. Die Stromrichtung liest die Firmware aus Byte 12 der Antwort (1 = Entladen); BMS_BLE zeigt den Strom dort bisher immer negativ an. Stimmt das Vorzeichen beim Laden nicht, bitte die Rohdaten melden.
 
-**BM2:** Der Batteriewächter (Hersteller Leagend, unter vielen Namen verkauft) liefert nur **Spannung und Ladestand**, keinen Strom. Er sendet etwa jede Sekunde ein AES-verschlüsseltes Paket auf `FFF4`; den Schlüssel hat [haxrob](https://haxrob.net/bm2-reversing-the-ble-protocol-of-the-bm2-battery-monitor/) aus der App ausgelesen. Auch hier gilt: Solange die BM2-App verbunden ist, kommt der ESP nicht dran. Mit Daly, Ective und BM2 sind die 3 Verbindungen (`MAX_BMS`) belegt. Der Nachfolger BM6 nutzt einen anderen Schlüssel und wird nicht unterstützt.
+**BM2:** Der Batteriewächter (Hersteller Leagend, unter vielen Namen verkauft) liefert nur **Spannung und Ladestand**, keinen Strom – Strom, Leistung, Restkapazität, Energie und Restlaufzeit gibt es bei ihm deshalb weder im Web-UI noch in Home Assistant. Zusätzlich zeigt die Firmware einen **Zustand** (Topic `<id>/state`): ab 13,8 V „Lädt“ (Lichtmaschine/Ladegerät), ab 13,2 V „Erhaltungsladung“, bis 12,2 V „Schwach“, bis 11,9 V „Kritisch“, sonst „Normal“ (Schwellen `BM2_V_*` in `bms_proto.h`, ausgelegt auf eine 12-V-Blei-/AGM-Batterie). „Lädt“ bzw. „Erhaltungsladung“ schalten auch `charging` auf ON. Er sendet etwa jede Sekunde ein AES-verschlüsseltes Paket auf `FFF4`; den Schlüssel hat [haxrob](https://haxrob.net/bm2-reversing-the-ble-protocol-of-the-bm2-battery-monitor/) aus der App ausgelesen. Auch hier gilt: Solange die BM2-App verbunden ist, kommt der ESP nicht dran. Mit Daly, Ective und BM2 sind die 3 Verbindungen (`MAX_BMS`) belegt. Der Nachfolger BM6 nutzt einen anderen Schlüssel und wird nicht unterstützt.
 
 Weitere BMS-Typen aus aiobmsble (JBD, JK, Seplos, Topband/Ective-Akkus …) lassen sich nach demselben Muster in `bms_proto.cpp` ergänzen.
 
@@ -175,6 +175,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 |---|---|
+| 1.2.1 | BM2: Zustand (Normal/Schwach/Kritisch/Lädt/Erhaltungsladung) aus der Spannung, Werte ohne Strommessung (Strom, Leistung, Ah, Wh, Restlaufzeit) im Web-UI und in HA ausgeblendet bzw. entfernt |
 | 1.2.0 | BM2-Batteriewächter (Spannung, Ladestand); Firmware und Web-Oberfläche (`index.html.gz`) im Web-UI unter WiFi hochladbar, ohne USB |
 | 1.1.0 | Status-LED (M5Stack AtomS3 Lite automatisch, sonst `STATUS_LED_PIN`), AtomS3 als empfohlenes Board, CI-Build für ESP32-S3 |
 | 1.0.0 | Erste Version: Daly Smart BMS und Ective BM X, bis zu 3 BMS, Web-UI, MQTT mit HA-Discovery |
