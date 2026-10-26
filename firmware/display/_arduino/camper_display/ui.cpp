@@ -193,6 +193,12 @@ String dispText(const String& s) {
         if (ok) { out += (char)c; out += (char)n; i++; continue; }
       }
     }
+    // 3-byte sequences in the fonts: en dash, bullet, ellipsis and the icon range U+F000-U+FFFF
+    if (i + 2 < s.length() && ((c == 0xE2 && (uint8_t)s[i + 1] == 0x80 &&
+                                 ((uint8_t)s[i + 2] == 0x93 || (uint8_t)s[i + 2] == 0xA2 || (uint8_t)s[i + 2] == 0xA6)) ||
+                                c == 0xEF)) {
+      out += (char)c; out += s[i + 1]; out += s[i + 2]; i += 2; continue;
+    }
     // skip continuation bytes of an unsupported character
     while (i + 1 < s.length() && ((uint8_t)s[i + 1] & 0xC0) == 0x80) i++;
     out += '?';
@@ -217,9 +223,12 @@ int tabIndexOfBuiltin(int bp) {
   return -1;
 }
 
+void updateHeaderTitle();
+
 void gotoTab(int idx, bool anim = true) {
   if (!tv || idx < 0 || idx >= (int)pages.size()) return;
   lv_tabview_set_active(tv, idx, anim ? LV_ANIM_ON : LV_ANIM_OFF);
+  updateHeaderTitle();   // set_active does not send VALUE_CHANGED, only swiping does
 }
 
 void updateHeaderTitle() {
