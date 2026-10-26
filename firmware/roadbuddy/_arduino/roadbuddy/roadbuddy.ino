@@ -21,6 +21,9 @@
 #ifndef USE_TEMP
 #define USE_TEMP 1    // temperatures from camper-temp (1-4 sensors on one page, 5-8 on a second)
 #endif
+#ifndef USE_BATTERY
+#define USE_BATTERY 1 // batteries from camper-battery (up to 3 on one page)
+#endif
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -34,6 +37,9 @@ const char* TOPIC_TANK_STATUS     = "camper/tanklevel/status";
 // camper-temp firmware: all sensors as one JSON list [{"id","name","t","alarm"}, ...]
 const char* TOPIC_TEMP_SENSORS    = "camper/temp/sensors";
 const char* TOPIC_TEMP_STATUS     = "camper/temp/status";
+// camper-battery firmware: all batteries as one JSON list [{"id","name","ok","soc","v","w","rt","st"}, ...]
+const char* TOPIC_BAT_LIST        = "camper/battery/batteries";
+const char* TOPIC_BAT_STATUS      = "camper/battery/status";
 
 // ---------- Power management ----------
 const unsigned long DISPLAY_TIMEOUT_MS = 60UL * 1000UL;        // display off after this much inactivity
@@ -46,7 +52,7 @@ const uint64_t SLEEP_SAFETY_TIMER_US   = 24ULL * 3600ULL * 1000000ULL;
 // ---------- State ----------
 
 // Pages in display order; the system page is always present
-enum PageId { PAGE_LEVEL, PAGE_WATER, PAGE_GAS, PAGE_TEMP1, PAGE_TEMP2, PAGE_SYSTEM };
+enum PageId { PAGE_LEVEL, PAGE_WATER, PAGE_GAS, PAGE_TEMP1, PAGE_TEMP2, PAGE_BATTERY, PAGE_SYSTEM };
 static const PageId PAGES[] = {
 #if USE_LEVEL
   PAGE_LEVEL,
@@ -60,6 +66,9 @@ static const PageId PAGES[] = {
 #if USE_TEMP
   PAGE_TEMP1,
   PAGE_TEMP2,   // only shown when camper-temp reports more than 4 sensors
+#endif
+#if USE_BATTERY
+  PAGE_BATTERY,
 #endif
   PAGE_SYSTEM
 };
@@ -105,6 +114,23 @@ RTC_DATA_ATTR TempEntry temps[TEMP_MAX];
 RTC_DATA_ATTR int tempCount = -1;   // -1 = no list received yet
 bool tempOnline = false;
 bool tempStatusKnown = false;
+
+// Batteries (camper-battery)
+const int BAT_MAX = 3;
+struct BatEntry {
+  char name[20];
+  char state[20];  // BM2 state text, "" if the monitor measures current
+  float v;         // V, NAN = unknown
+  float w;         // W, positive = charging, NAN = not measured (BM2)
+  int32_t rt;      // remaining runtime in minutes while discharging, -1 = unknown
+  int8_t soc;      // %, -1 = unknown
+  bool ok;         // monitor reachable
+  bool problem;    // BMS reports an error
+};
+RTC_DATA_ATTR BatEntry bats[BAT_MAX];
+RTC_DATA_ATTR int batCount = -1;   // -1 = no list received yet
+bool batOnline = false;
+bool batStatusKnown = false;
 
 unsigned long lastMqttAttempt = 0;
 const unsigned long MQTT_RETRY_MS = 5000;
@@ -714,6 +740,114 @@ void drawPageTemp(int page) {
   if (offline && n > 0) canvas.fillCircle(right - 10, top + 10, 4, COL_BAD);
 }
 
+// ---------- Battery page ----------
+// The GFX fonts only have ASCII: write German umlauts as ae / oe / ue / ss
+String asciiDe(String s) {
+  s.replace("\xC3\xA4", "ae"); s.replace("\xC3\xB6", "oe"); s.replace("\xC3\xBC", "ue");
+  s.replace("\xC3\x84", "Ae"); s.replace("\xC3\x96", "Oe"); s.replace("\xC3\x9C", "Ue");
+  s.replace("\xC3\x9F", "ss");
+  return s;
+}
+
+uint16_t socColor(int soc) {
+  if (soc < 0) return COL_DIM;
+  if (soc < 20) return COL_BAD;
+  if (soc < 40) return COL_WARN;
+  return COL_OK;
+}
+
+// "3,2 Tage", "5 h 20 min", "45 min"
+String formatRuntime(int32_t min) {
+  if (min >= 48 * 60) {
+    String s = String(min / 1440.0f, 1);
+    s.replace('.', ',');
+    return s + " Tage";
+  }
+  if (min >= 60) return String(min / 60) + " h " + String(min % 60) + " min";
+  return String(min) + " min";
+}
+
+void drawBatRow(int x, int y, int w, int h, const BatEntry& b, bool offline) {
+  bool live = b.ok && !offline;
+  uint16_t socCol = live ? socColor(b.soc) : COL_DIM;
+  bool bm2 = b.state[0] != 0;
+  bool stateBad = bm2 && (strncmp(b.state, "Kritisch", 8) == 0 || strncmp(b.state, "Schwach", 7) == 0);
+  bool alert = live && (b.problem || stateBad);
+
+  canvas.fillRoundRect(x, y, w, h, 8, COL_PANEL);
+  canvas.fillRoundRect(x, y, 6, h, 3, socCol);   // colored stripe like the web page
+  if (alert) canvas.drawRoundRect(x, y, w, h, 8, COL_BAD);
+
+  bool big = h > 70;
+  int left = x + 16, right = x + w - 10;
+
+  // Top line: name left, power or state right
+  String top;
+  uint16_t topCol = COL_TEXT;
+  if (!b.ok) { top = "keine Verbindung"; topCol = COL_DIM; }
+  else if (b.problem) { top = "BMS-Fehler"; topCol = COL_BAD; }
+  else if (bm2) {
+    top = asciiDe(b.state);
+    topCol = stateBad ? COL_BAD : (strncmp(b.state, "Normal", 6) == 0 ? COL_TEXT : COL_OK);
+  } else if (!isnan(b.w)) {
+    int pw = (int)lroundf(b.w);
+    top = pw > 0 ? "+" + String(pw) + " W" : String(pw) + " W";
+    topCol = pw > 0 ? COL_OK : COL_TEXT;
+  }
+  if (!live) topCol = COL_DIM;
+  canvas.setFont(&fonts::FreeSansBold9pt7b);
+  int topW = canvas.textWidth(top);
+  canvas.setTextDatum(top_left);
+  canvas.setTextColor(alert ? COL_BAD : COL_TEXT);
+  canvas.drawString(fitText(asciiDe(b.name), right - left - topW - 12), left, y + 7);
+  canvas.setTextDatum(top_right);
+  canvas.setTextColor(topCol);
+  canvas.drawString(top, right, y + 7);
+
+  // Bottom line: state of charge (large), voltage, runtime on the right
+  int by = y + h - 5;
+  canvas.setFont(big ? &fonts::FreeSansBold18pt7b : &fonts::FreeSansBold12pt7b);
+  canvas.setTextDatum(bottom_left);
+  canvas.setTextColor(socCol);
+  String socTxt = b.soc >= 0 ? String(b.soc) + "%" : String("--");
+  canvas.drawString(socTxt, left, by);
+  int vx = left + canvas.textWidth(socTxt) + 12;
+
+  canvas.setFont(&fonts::FreeSans9pt7b);
+  canvas.setTextColor(COL_DIM);
+  if (b.ok && !isnan(b.v)) {
+    String vs = String(b.v, 2) + " V";
+    vs.replace('.', ',');
+    canvas.drawString(vs, vx, by - 2);
+  }
+  String bottom;
+  if (live && !bm2) {
+    if (b.rt >= 0) bottom = "noch " + formatRuntime(b.rt);
+    else if (!isnan(b.w) && b.w > 1) bottom = "laedt";
+    else bottom = "Ruhe";
+  }
+  canvas.setTextDatum(bottom_right);
+  canvas.drawString(bottom, right, by - 2);
+}
+
+void drawPageBattery() {
+  drawHeader();
+  bool offline = batStatusKnown && !batOnline;
+  const int top = 40, bottom = canvas.height() - 28, left = 8, right = canvas.width() - 8, gap = 6;
+  int n = batCount;
+  if (n <= 0) {
+    canvas.setFont(&fonts::FreeSans9pt7b);
+    canvas.setTextDatum(middle_center);
+    canvas.setTextColor(COL_DIM);
+    canvas.drawString(batCount < 0 ? "Noch keine Batteriedaten" : "Keine Batterien", canvas.width() / 2, (top + bottom) / 2);
+    return;
+  }
+  int slots = n < 2 ? 2 : n;   // a single battery uses half the height
+  int h = (bottom - top - gap * (slots - 1)) / slots;
+  for (int i = 0; i < n; i++) drawBatRow(left, top + i * (h + gap), right - left, h, bats[i], offline);
+  if (offline) canvas.fillCircle(right - 8, top + h - 10, 4, COL_BAD);
+}
+
 // ---------- Rendering / power ----------
 void render() {
   if (!display_on) return;
@@ -731,6 +865,9 @@ void render() {
 #if USE_TEMP
     case PAGE_TEMP1:  drawPageTemp(0);  break;
     case PAGE_TEMP2:  drawPageTemp(1);  break;
+#endif
+#if USE_BATTERY
+    case PAGE_BATTERY: drawPageBattery(); break;
 #endif
     default:          drawPageSystem(); break;
   }
@@ -804,6 +941,29 @@ void handleTempList(const String& message) {
   if (!pageVisible(page_index)) page_index = stepPage(page_index, -1);
 }
 
+// <battery prefix>/batteries: [{"id":"house","name":"Bordbatterie","ok":true,"soc":78,"v":13.31,"w":-56,"rt":2830}, ...]
+void handleBatList(const String& message) {
+  JsonDocument doc;
+  if (deserializeJson(doc, message)) return;
+  JsonArray arr = doc.as<JsonArray>();
+  if (arr.isNull()) return;
+  int n = 0;
+  for (JsonObject o : arr) {
+    if (n >= BAT_MAX) break;
+    BatEntry& e = bats[n];
+    strlcpy(e.name, o["name"] | "", sizeof(e.name));
+    strlcpy(e.state, o["st"] | "", sizeof(e.state));
+    e.ok = o["ok"] | false;
+    e.soc = o["soc"].is<float>() ? (int8_t)constrain((int)lroundf(o["soc"].as<float>()), 0, 100) : -1;
+    e.v = o["v"].is<float>() ? o["v"].as<float>() : NAN;
+    e.w = o["w"].is<float>() ? o["w"].as<float>() : NAN;
+    e.rt = o["rt"].is<int>() ? o["rt"].as<int>() : -1;
+    e.problem = o["p"] | false;
+    n++;
+  }
+  batCount = n;
+}
+
 void callback(char* topic, byte* payload, unsigned int length) {
   String message;
   message.reserve(length);
@@ -851,6 +1011,20 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 #endif
 
+#if USE_BATTERY
+  if (t == TOPIC_BAT_LIST) {
+    handleBatList(message);
+    dirty = true;
+    return;
+  }
+  if (t == TOPIC_BAT_STATUS) {
+    batOnline = (message == "online");
+    batStatusKnown = true;
+    dirty = true;
+    return;
+  }
+#endif
+
 #if USE_LEVEL
   // Level sensor: match only the exact topic suffix, ignore e.g. pitch_raw / roll_offset
   if (t.endsWith("/pitch")) {
@@ -892,6 +1066,10 @@ void mqttReconnect() {
 #if USE_TEMP
     client.subscribe(TOPIC_TEMP_SENSORS);
     client.subscribe(TOPIC_TEMP_STATUS);
+#endif
+#if USE_BATTERY
+    client.subscribe(TOPIC_BAT_LIST);
+    client.subscribe(TOPIC_BAT_STATUS);
 #endif
     dirty = true;
   }

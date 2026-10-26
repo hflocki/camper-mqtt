@@ -26,7 +26,8 @@
 //   <prefix>/<id>/problem           ON / OFF (BMS reports an error or protection)
 //   <prefix>/batteries              all batteries as one JSON list for displays:
 //                                   [{"id":"house","name":"Bordbatterie","soc":87,"v":13.31,"a":-2.4,"w":-32,"ok":true}, ...]
-//                                   ("st" = state text for monitors that report one, e.g. the BM2)
+//                                   optional: "st" = state text (BM2), "rt" = remaining runtime in min
+//                                   while discharging, "p":true = BMS reports a problem, "t" = type (1 Daly, 2 Ective, 3 BM2)
 //
 // Monitors without a current sensor (BM2) get no current, power, capacity, energy and runtime entities.
 //
@@ -261,6 +262,7 @@ static void publishList(const BmsLive* all) {
         o["id"] = (const char*)config.bms[i].key;
         o["name"] = (const char*)config.bms[i].name;
         o["ok"] = l.valid;
+        o["t"] = config.bms[i].type;
         if (l.valid) {
             if (!isnan(l.s.soc)) o["soc"] = roundf(l.s.soc);
             if (!isnan(l.s.voltage)) o["v"] = roundf(l.s.voltage * 100) / 100;
@@ -268,9 +270,11 @@ static void publishList(const BmsLive* all) {
             if (!isnan(l.s.power)) o["w"] = roundf(l.s.power);
             const char* st = batStateName(l.s.bat_state);
             if (st) o["st"] = st;
+            if (!isnan(l.s.runtime_s)) o["rt"] = (long)lroundf(l.s.runtime_s / 60.0f);
+            if (l.s.problem) o["p"] = true;
         }
     }
-    char buf[640];
+    char buf[900];
     size_t len = serializeJson(doc, buf, sizeof(buf));
     if (len == 0 || len >= sizeof(buf)) return;
     mqtt.publish(topic("batteries").c_str(), buf, true);

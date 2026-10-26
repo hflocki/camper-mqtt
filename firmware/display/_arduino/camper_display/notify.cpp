@@ -173,7 +173,8 @@ void loop() {
       // Warnings of offline devices are hidden on the display; that does not mean they are over
       bool tempOff = settings.prefixTemp.length() && !store::devOnline(DEV_TEMP);
       bool heatOff = settings.prefixHeater.length() && !store::devOnline(DEV_HEATER);
-      if (tempOff || heatOff) {
+      bool batOff  = settings.prefixBattery.length() && !store::devOnline(DEV_BATTERY);
+      if (tempOff || heatOff || batOff) {
         if (!a.sent) { active.erase(active.begin() + i); continue; }
         i++;
         continue;

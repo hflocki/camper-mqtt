@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "1.3.0"
+#define FW_VERSION              "1.4.0"
 
 // ---- Device / access point ------------------------------------------
 #ifndef DEFAULT_HOSTNAME
@@ -51,6 +51,14 @@
 #endif
 #ifndef DEFAULT_PREFIX_TEMP
 #define DEFAULT_PREFIX_TEMP     "camper/temp"
+#endif
+#ifndef DEFAULT_PREFIX_BATTERY
+#define DEFAULT_PREFIX_BATTERY  "camper/battery"
+#endif
+
+// ---- Battery warnings (camper-battery) ------------------------------------
+#ifndef BAT_WARN_SOC
+#define BAT_WARN_SOC            20      // warn below this state of charge in % (monitors with current sensor)
 #endif
 
 // ---- Factory defaults for WiFi / MQTT / web login -----------------------

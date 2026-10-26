@@ -15,6 +15,7 @@ Passt zu den anderen Projekten:
 | Truma Combi Heizung | [camper-heater](../heater) | `camper/heater` ² |
 | MaxxFan (VanTurtle) | [camper-maxxfan](../maxxfan) | `camper/maxxfan` |
 | Temperaturen (DS18B20) | [camper-temp](../temp) | `camper/temp` |
+| Batterien (Daly, Ective, BM2) | [camper-battery](../battery) | `camper/battery` |
 | Router (GPS, Mobilfunk) | Teltonika RUT956, siehe [Router-Daten](#router-daten-rut956) | frei |
 | Zigbee2MQTT & alles andere | eigene Seiten und Kacheln | frei |
 
@@ -30,7 +31,7 @@ Passt zu den anderen Projekten:
 - **Wandpanel** mit LVGL-Oberfläche, Wischen oder Pfeile zum Blättern, deutsche Umlaute und Icons
 - **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert, hell/dunkel automatisch
 - **Feste Seiten:** Übersicht · Heizung · Dachlüfter · Ausrichtung · Temperaturen (einzeln abschaltbar) und **System** (IP, QR-Code, Helligkeit)
-- **Warnungen:** Temperatur-Alarme von camper-temp und Heizungsfehler erscheinen als rote Leiste auf der Übersicht und als ⚠ in der Kopfzeile. Eine neue Warnung weckt das Display; war es dunkel, springt es auf die Übersicht. Optional zusätzlich als **Push-Nachricht** per Pushover
+- **Warnungen:** Temperatur-Alarme von camper-temp, Heizungsfehler und Batterie-Warnungen erscheinen als rote Leiste auf der Übersicht und als ⚠ in der Kopfzeile. Eine neue Warnung weckt das Display; war es dunkel, springt es auf die Übersicht. Optional zusätzlich als **Push-Nachricht** per Pushover
 - **Eigene Seiten und Kacheln** für beliebige MQTT-Topics: *Wert*, *Schalter*, *Taster*, *Regler* – erscheinen automatisch auf Display **und** Webseite
 - **Topic-Finder:** lauscht z. B. auf `zigbee2mqtt/#`, zeigt alle Geräte mit ihren JSON-Werten; ein Klick legt eine Kachel an (Temperatur, Luftfeuchte, Licht an/aus, Helligkeit …)
 - **Setup-WLAN** wie bei den anderen Projekten: ohne WLAN-Daten oder nach 1 Minute ohne Verbindung öffnet sich `Camper-Display-XXXXXX`, Captive Portal unter `http://192.168.4.1`. Das Display zeigt dazu einen QR-Code zum Verbinden.
@@ -118,7 +119,7 @@ Die Webseite liegt als lesbare Datei in `web/index.html`. Nach Änderungen daran
 1. Nach dem ersten Flashen zeigt das Display die Seite **System** mit einem QR-Code. Scannen (oder WLAN `Camper-Display-XXXXXX`, Passwort `display1234` – in `config.h` ändern) → die Einstellungsseite öffnet sich.
 2. **WLAN** eintragen (Suchen-Knopf listet Netze), **MQTT-Broker** = IP des RUT956 → *Einstellungen speichern*. Das Display startet neu und verbindet sich.
 3. Danach ist die Webseite unter `http://camper-display.local` bzw. der IP erreichbar; die System-Seite am Display zeigt die Adresse auch als QR-Code.
-4. Unter **Topics der Geräte** prüfen, ob die Basis-Topics zu deinen Geräten passen (Standard: `camper/tanklevel`, `camper/level`, `camper/heater`, `camper/maxxfan`, `camper/temp`; MaxxFan-Port 0/1). Leeres Feld = Gerät nicht vorhanden.
+4. Unter **Topics der Geräte** prüfen, ob die Basis-Topics zu deinen Geräten passen (Standard: `camper/tanklevel`, `camper/level`, `camper/heater`, `camper/maxxfan`, `camper/temp`, `camper/battery`; MaxxFan-Port 0/1). Leeres Feld = Gerät nicht vorhanden.
 5. Optional unter **System** ein Web-Passwort setzen – dann sind Einstellungen und Firmware-Update geschützt. Die Bedienseiten bleiben im eigenen WLAN offen.
 
 ## Seiten und Kacheln
@@ -195,6 +196,7 @@ Die Übersicht zeigt oben eine rote Leiste, solange etwas nicht stimmt:
 | --- | --- |
 | camper-temp | `alarm_text` ist nicht leer (Grenzwert eines Sensors länger als die eingestellte Verzögerung verletzt) |
 | camper-heater | `control_status/heater_error` = `ON`, mit Fehlercode |
+| camper-battery | Ladestand unter 20 % (`BAT_WARN_SOC` in `config.h`, mit Restlaufzeit), BM2-Zustand „Schwach“ oder „Kritisch“ (Starterbatterie), BMS meldet einen Fehler. Batterien ohne Verbindung lösen keine Warnung aus |
 
 Warnungen von Geräten, die `offline` sind, werden nicht gezeigt (alte retained Werte sollen keinen Fehlalarm auslösen). Grenzwerte und Verzögerung stellt man direkt in camper-temp ein, nicht am Display.
 

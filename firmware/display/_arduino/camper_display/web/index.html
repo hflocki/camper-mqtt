@@ -283,7 +283,7 @@ function pgSettings(){
    <div class="f2">${inp('mqttHost','Broker (IP/Name)','text','192.168.1.1')}${inp('mqttPort','Port','number')}${inp('mqttUser','Benutzer')}${inp('mqttPass','Passwort','password')}</div></details>
   <details><summary>🏷 Topics der Geräte</summary>
    <p class="mu">Basis-Topic je Gerät. Leer lassen, wenn das Gerät nicht vorhanden ist.</p>
-   ${inp('prefixTank','Tanks (Wasser/Gas)')}${inp('prefixLevel','Ausrichtung (Levelsensor)')}${inp('prefixHeater','Heizung (camper-heater)')}${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (camper-temp)')}
+   ${inp('prefixTank','Tanks (Wasser/Gas)')}${inp('prefixLevel','Ausrichtung (Levelsensor)')}${inp('prefixHeater','Heizung (camper-heater)')}${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (camper-temp)')}${inp('prefixBattery','Batterien (camper-battery)')}
    <div class="f2"><div><label>MaxxFan-Port</label><select id="fanPort"><option value="0">0 (RJ11)</option><option value="1">1 (RJ45)</option></select></div>${inp('prefixSelf','Eigenes Topic (Display)')}</div></details>
   <details><summary>🖥 Display &amp; Seiten</summary>
    <label>Helligkeit</label><input type="range" id="brightness" min="5" max="100">
@@ -311,7 +311,7 @@ function pgSettings(){
    <div class="actions"><button class="btn" id="reboot">Neustart</button><button class="btn danger" id="factory">Werkseinstellungen</button></div></details>
   <div class="actions"><button class="btn pri" id="save" style="flex:1">Einstellungen speichern</button></div>`;
 }
-const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixSelf','dimBrightness','screenTimeout','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle'];
+const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle'];
 async function loadSettings(){
   try{
     const r=await fetch('/api/settings');if(!r.ok)throw 0;ST=await r.json();

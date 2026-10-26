@@ -72,7 +72,7 @@ lv_obj_t *lvArea, *lvBubble, *lvZone, *lvPitch, *lvRoll, *lvState, *lvWedge[4];
 lv_obj_t *sIp, *sNet, *sQr, *sQrLbl, *sBri, *sInfo;
 
 // warnings (overview banner) and temperatures (camper-temp)
-lv_obj_t *ovWarn, *ovWarnLbl, *ovTempVal, *ovTempSub;
+lv_obj_t *ovWarn, *ovWarnLbl, *ovTempVal, *ovTempSub, *ovBatVal, *ovBatSub;
 lv_obj_t *tStatus;
 std::vector<lv_obj_t*> tRows, tVals;
 String tSig;          // sensor names the rows were built for
@@ -291,6 +291,43 @@ std::vector<TempItem> tempItems() {
   return out;
 }
 
+// ---- batteries (camper-battery) ---------------------------------------------
+struct BatItem { String name; String state; float soc, v, w; long rt; bool ok, problem; };
+
+// <battery prefix>/batteries: [{"name":"...","ok":true,"soc":78,"v":13.31,"w":-56,"rt":2830,"st":"Normal","p":true}, ...]
+std::vector<BatItem> batItems() {
+  std::vector<BatItem> out;
+  if (!store::has(DP_BAT_LIST)) return out;
+  JsonDocument doc;
+  if (deserializeJson(doc, store::get(DP_BAT_LIST))) return out;
+  for (JsonObject o : doc.as<JsonArray>()) {
+    BatItem b;
+    b.name = (const char*)(o["name"] | "?");
+    b.state = (const char*)(o["st"] | "");
+    b.ok = o["ok"] | false;
+    b.soc = o["soc"].is<float>() ? o["soc"].as<float>() : NAN;
+    b.v = o["v"].is<float>() ? o["v"].as<float>() : NAN;
+    b.w = o["w"].is<float>() ? o["w"].as<float>() : NAN;
+    b.rt = o["rt"].is<long>() ? o["rt"].as<long>() : -1;
+    b.problem = o["p"] | false;
+    out.push_back(b);
+  }
+  return out;
+}
+
+String commaNum(float v, int dec) {
+  String s = String(v, (unsigned)dec);
+  s.replace('.', ',');
+  return s;
+}
+
+// "3,2 Tage", "5 h 20 min", "45 min"
+String runtimeText(long min) {
+  if (min >= 48 * 60) return commaNum(min / 1440.0f, 1) + " Tage";
+  if (min >= 60) return String(min / 60) + " h " + String(min % 60) + " min";
+  return String(min) + " min";
+}
+
 // All active warnings, one per line ("" = none)
 String warnings() {
   String w;
@@ -302,6 +339,18 @@ String warnings() {
   }
   if (store::devOnline(DEV_HEATER) && store::get(DP_HEAT_ERROR) == "ON")
     add("Heizung: Fehler " + store::get(DP_HEAT_ERRCODE));
+  // Batteries: the text before ':' identifies a warning for the push messages
+  if (store::devOnline(DEV_BATTERY)) {
+    for (auto& b : batItems()) {
+      if (!b.ok) continue;
+      if (b.problem) add(b.name + " BMS-Fehler: bitte pr\xC3\xBC" "fen");
+      if (b.state == "Kritisch" || b.state == "Schwach")
+        add(b.name + " " + (b.state == "Kritisch" ? "kritisch" : "schwach") + ": " + commaNum(b.v, 2) + " V");
+      else if (b.state.isEmpty() && !isnan(b.soc) && b.soc < BAT_WARN_SOC)
+        add(b.name + " niedrig: " + String((int)lroundf(b.soc)) + " %" +
+            (b.rt >= 0 ? ", noch " + runtimeText(b.rt) : String("")));
+    }
+  }
   return w;
 }
 
@@ -336,6 +385,8 @@ lv_obj_t* infoCard(lv_obj_t* parent, const char* icon, const char* title, lv_obj
   return c;
 }
 
+void buildBatteryCard(lv_obj_t* tab);
+
 void buildOverview(lv_obj_t* tab) {
   pageContainer(tab);
   // warning banner, only visible while something is wrong
@@ -367,6 +418,21 @@ void buildOverview(lv_obj_t* tab) {
     ovTempSub = label(c, &font_de_14, C_MUTED, "");
     lv_obj_align(ovTempSub, LV_ALIGN_BOTTOM_LEFT, 0, 0);
   }
+  if (settings.prefixBattery.length()) buildBatteryCard(tab);
+}
+
+void buildBatteryCard(lv_obj_t* tab) {
+  lv_obj_t* c = card(tab, PAGE_W - 20, 96);
+  lv_obj_t* t = label(c, &font_de_18, C_MUTED, LV_SYMBOL_BATTERY_FULL "  Batterien");
+  lv_obj_align(t, LV_ALIGN_TOP_LEFT, 0, 0);
+  ovBatVal = label(c, &font_de_22, C_TEXT, "--");
+  lv_obj_set_width(ovBatVal, PAGE_W - 44);
+  lv_label_set_long_mode(ovBatVal, LV_LABEL_LONG_DOT);
+  lv_obj_align(ovBatVal, LV_ALIGN_LEFT_MID, 0, 6);
+  ovBatSub = label(c, &font_de_14, C_MUTED, "");
+  lv_obj_set_width(ovBatSub, PAGE_W - 44);
+  lv_label_set_long_mode(ovBatSub, LV_LABEL_LONG_DOT);
+  lv_obj_align(ovBatSub, LV_ALIGN_BOTTOM_LEFT, 0, 0);
 }
 
 void buildTemp(lv_obj_t* tab) {
@@ -757,6 +823,31 @@ void refreshValues() {
     }
   }
 
+  // batteries
+  if (ovBatVal) {
+    bool batOn = store::devOnline(DEV_BATTERY);
+    std::vector<BatItem> items = batItems();
+    String v, sub;
+    bool bad = false;
+    for (auto& b : items) {
+      if (v.length()) v += "   ";
+      v += b.name + " ";
+      if (!b.ok) { v += "--"; continue; }
+      if (b.state.length()) v += commaNum(b.v, 1) + " V";       // BM2: voltage is the meaningful value
+      else v += isnan(b.soc) ? String("--") : String((int)lroundf(b.soc)) + " %";
+      bad |= b.problem || b.state == "Kritisch" || b.state == "Schwach" ||
+             (b.state.isEmpty() && !isnan(b.soc) && b.soc < BAT_WARN_SOC);
+      if (!b.state.length() && !isnan(b.w) && sub.isEmpty()) {
+        if (b.w > 1)        sub = b.name + " l\xC3\xA4" "dt +" + String((int)lroundf(b.w)) + " W";
+        else if (b.rt >= 0) sub = b.name + " noch " + runtimeText(b.rt) + " (" + String((int)lroundf(-b.w)) + " W)";
+      }
+    }
+    lv_label_set_text(ovBatVal, v.length() ? dispText(v).c_str() : "--");
+    lv_obj_set_style_text_color(ovBatVal, bad ? C_WARN : (batOn ? C_TEXT : C_MUTED), 0);
+    if (!batOn) sub = "offline";
+    lv_label_set_text(ovBatSub, dispText(sub).c_str());
+  }
+
   // heater
   if (hRoom) {
     lv_label_set_text(hRoom, fmt(store::get(DP_HEAT_ROOM), 1, "\xC2\xB0""C").c_str());
@@ -901,7 +992,7 @@ void clearHandles() {
   lvArea = lvBubble = lvZone = lvPitch = lvRoll = lvState = nullptr;
   for (auto& w : lvWedge) w = nullptr;
   sIp = sNet = sQr = sQrLbl = sBri = sInfo = nullptr;
-  ovWarn = ovWarnLbl = ovTempVal = ovTempSub = nullptr;
+  ovWarn = ovWarnLbl = ovTempVal = ovTempSub = ovBatVal = ovBatSub = nullptr;
   tStatus = nullptr;
   tRows.clear();
   tVals.clear();

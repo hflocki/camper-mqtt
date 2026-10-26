@@ -109,7 +109,8 @@ void onMessage(char* topic, byte* payload, unsigned int len) {
 
 void subscribeAll() {
   const String* prefixes[] = {&settings.prefixTank, &settings.prefixLevel,
-                              &settings.prefixHeater, &settings.prefixFan, &settings.prefixTemp};
+                              &settings.prefixHeater, &settings.prefixFan, &settings.prefixTemp,
+                              &settings.prefixBattery};
   for (auto p : prefixes) {
     if (p->isEmpty()) continue;
     mqtt.subscribe((*p + "/#").c_str());

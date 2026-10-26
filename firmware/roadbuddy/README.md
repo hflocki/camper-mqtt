@@ -1,6 +1,6 @@
 # RoadBuddy – M5Stack Core2 Camper-Display
 
-Kleines Touch-Display für das Wohnmobil auf Basis des **M5Stack Core2**. Es zeigt die wichtigsten Werte aus dem Bordnetz per MQTT an: Neigung (Wasserwaage), Frischwassertank, Gasflasche und Temperaturen. Zum Akku-Sparen schaltet sich das Display automatisch aus, danach geht das Gerät in den Deep Sleep, WLAN und MQTT sind dann komplett aus.
+Kleines Touch-Display für das Wohnmobil auf Basis des **M5Stack Core2**. Es zeigt die wichtigsten Werte aus dem Bordnetz per MQTT an: Neigung (Wasserwaage), Frischwassertank, Gasflasche, Temperaturen und Batterien. Zum Akku-Sparen schaltet sich das Display automatisch aus, danach geht das Gerät in den Deep Sleep, WLAN und MQTT sind dann komplett aus.
 
 ---
 
@@ -27,9 +27,10 @@ Die Seiten werden mit den beiden äußeren Touch-Tasten (links/rechts) umgeschal
 | Wassertank | Tank mit animierter Wasseroberfläche, Füllstand in % und Liter, Sensor-Status |
 | Gas | Gasflasche mit Füllstand, in % und Restmenge, Status, Akku des Gassensors |
 | Temperaturen | Sensoren von camper-temp mit Namen und Wert. 1–2 Sensoren als große Zeilen, 3–4 als 2×2-Kacheln. Bei 5–8 Sensoren kommt automatisch eine zweite Temperaturseite dazu. Alarm (zu warm/zu kalt) = roter Rahmen. Farbe: blau unter 10 °C, grün bis 28 °C, gelb bis 45 °C, rot darüber |
+| Batterien | Bis zu 3 Batterien von camper-battery: Name, Ladestand (farbiger Streifen: rot unter 20 %, gelb unter 40 %), Spannung, Leistung (+ = lädt, z. B. Solar), Restlaufzeit beim Entladen („noch 3,2 Tage“, „5 h 20 min“). Der BM2 an der Starterbatterie zeigt statt Leistung seinen Zustand (Normal, Schwach, Kritisch, Lädt, Erhaltungsladung). Fehler oder schwache Starterbatterie = roter Rahmen |
 | System | WLAN-Status mit Signalstärke, IP, Broker, MQTT-Status, Akku, Laufzeit |
 
-Welche Seiten es gibt, steht in `config.h` (`USE_LEVEL`, `USE_WATER`, `USE_GAS`, `USE_TEMP`).
+Welche Seiten es gibt, steht in `config.h` (`USE_LEVEL`, `USE_WATER`, `USE_GAS`, `USE_TEMP`, `USE_BATTERY`).
 
 In der Kopfzeile stehen links ein WLAN-Symbol (grün = WLAN und MQTT ok, gelb = MQTT fehlt, rotes Kreuz = kein WLAN), in der Mitte die Seitenpunkte und rechts der Akku des Core2 (blau mit „+“ beim Laden).
 
@@ -67,6 +68,8 @@ Das Display ist reiner Empfänger und fragt nichts ab, die Aktualisierungsrate b
 | `camper/tanklevel/status` | `online` / `offline` (Last Will, gilt für Wasser und Gas) |
 | `camper/temp/sensors` | Alle Temperatursensoren als JSON-Liste: `[{"id":"fridge","name":"Kühlschrank","t":4.31,"alarm":0}, …]` |
 | `camper/temp/status` | `online` / `offline` von camper-temp |
+| `camper/battery/batteries` | Alle Batterien als JSON-Liste: `[{"name":"Bordbatterie","ok":true,"soc":78,"v":13.31,"w":-56,"rt":2830}, …]` (ab camper-battery 1.2.2 mit Restlaufzeit) |
+| `camper/battery/status` | `online` / `offline` von camper-battery |
 
 Weitere Topics unter diesen Präfixen (z. B. `rssi`, `voltage`, `raw_level`, Grauwasser) werden ignoriert. Die Topics für Wasser und Gas stehen als Konstanten am Anfang des Sketches, das Level-Topic in `config.h`. Die früheren getrennten Geräte (`camper/waterlevel`, `camper/gaslevel`) werden nicht mehr unterstützt.
 
@@ -75,6 +78,7 @@ Die Sensoren dazu:
 - Level: [camper-level](../level) (ESP32 + Adafruit BNO085, Fork des Levelsensors von klehnst)
 - Wasser und Gas: [camper-tanklevel](../tanklevel) (ein ESP32-C3 für Frischwasser, Grauwasser und Gas)
 - Temperaturen: [camper-temp](../temp) (bis zu 8 DS18B20 mit Alarm-Grenzwerten)
+- Batterien: [camper-battery](../battery) (Daly, Ective BM X, BM2 über Bluetooth)
 
 Mehr zeigt der RoadBuddy bewusst nicht: Heizung, Lüfter und Warnungen laufen auf dem großen Wandpanel [camper-display](../display).
 
