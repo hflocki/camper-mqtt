@@ -31,6 +31,7 @@ void load() {
   prefs.begin(NS, true);
   settings.hostname     = prefs.getString("host",   DEFAULT_HOSTNAME);
   settings.displayName  = prefs.getString("dname",  DEFAULT_DISPLAY_NAME);
+  settings.links        = prefs.getString("links",  "[]");
   settings.apPass       = prefs.getString("appass", DEFAULT_AP_PASSWORD);
   settings.webUser      = prefs.getString("wusr",   DEFAULT_WEB_USER);
   settings.webPass      = prefs.getString("wpw",    DEFAULT_WEB_PASSWORD);
@@ -98,6 +99,7 @@ void save() {
   prefs.begin(NS, false);
   prefs.putString("host",   settings.hostname);
   prefs.putString("dname",  settings.displayName);
+  prefs.putString("links",  settings.links);
   prefs.putString("appass", settings.apPass);
   prefs.putString("wusr",   settings.webUser);
   prefs.putString("wpw",    settings.webPass);

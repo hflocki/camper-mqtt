@@ -96,6 +96,11 @@ void buildCfg(JsonDocument& d) {
   d["fw"] = FW_VERSION;
   d["host"] = settings.hostname;
   d["name"] = settings.displayName;
+  {
+    JsonDocument l;
+    if (!deserializeJson(l, settings.links) && l.is<JsonArray>()) d["links"] = l.as<JsonArray>();
+    else d["links"].to<JsonArray>();
+  }
   d["ap"] = wifimgr::apActive() && !wifimgr::staConnected();
   d["setup"] = settings.wifiSsid.isEmpty() || settings.mqttHost.isEmpty();
   JsonArray b = d["builtin"].to<JsonArray>();
@@ -198,6 +203,11 @@ void getSettings(AsyncWebServerRequest* r) {
   JsonDocument d;
   d["hostname"] = settings.hostname;
   d["displayName"] = settings.displayName;
+  {
+    JsonDocument l;
+    if (!deserializeJson(l, settings.links) && l.is<JsonArray>()) d["links"] = l.as<JsonArray>();
+    else d["links"].to<JsonArray>();
+  }
   d["apPass"] = MASK;
   d["webUser"] = settings.webUser;
   d["webPass"] = settings.webPass.isEmpty() ? "" : MASK;
@@ -264,6 +274,24 @@ bool applySettings(JsonObject o, bool apply) {
 
   str("hostname", settings.hostname, true);
   str("displayName", settings.displayName, false);
+  if (o["links"].is<JsonArray>()) {
+    // keep valid entries only: name 1-24 characters, URL http(s):// up to 120 characters
+    JsonDocument out;
+    JsonArray arr = out.to<JsonArray>();
+    for (JsonObject e : o["links"].as<JsonArray>()) {
+      if ((int)arr.size() >= MAX_LINKS) break;
+      String n = e["n"] | "", u = e["u"] | "";
+      n.trim(); u.trim();
+      if (n.isEmpty() || n.length() > 24 || u.length() > 120) continue;
+      if (!u.startsWith("http://") && !u.startsWith("https://")) u = "http://" + u;
+      JsonObject x = arr.add<JsonObject>();
+      x["n"] = n;
+      x["u"] = u;
+    }
+    String json;
+    serializeJson(out, json);
+    if (apply) settings.links = json;
+  }
   if (settings.displayName.length() > 32) settings.displayName = settings.displayName.substring(0, 32);
   str("webUser", settings.webUser, false);
   str("webPass", settings.webPass, false, true);

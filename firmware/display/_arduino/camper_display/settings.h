@@ -31,7 +31,8 @@ struct Page {
 struct Settings {
   // device
   String hostname;
-  String displayName;   // shown centered in the header, e.g. what this panel is ("" = none)
+  String displayName;
+  String links;         // web page "Geräte": JSON [{"n":"Tanklevel","u":"http://..."}], max. MAX_LINKS   // shown centered in the header, e.g. what this panel is ("" = none)
   String apPass;
   String webUser, webPass;
   // wifi

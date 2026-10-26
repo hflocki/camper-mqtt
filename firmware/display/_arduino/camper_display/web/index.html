@@ -124,6 +124,7 @@ function pages(){
   const p=[];if(!cfg)return p;
   BUILTIN.forEach((b,i)=>{if(cfg.builtin[i])p.push({id:b[0],title:ptitle(i)})});
   cfg.pages.forEach((n,i)=>p.push({id:'p'+i,title:n,custom:i}));
+  p.push({id:'links',title:'🔗 Geräte'});
   p.push({id:'settings',title:'⚙ Einstellungen'});
   return p;
 }
@@ -143,6 +144,7 @@ function render(){
   else if(p.id==='level')m.innerHTML=pgLevel();
   else if(p.id==='temp')m.innerHTML=pgTemp();
   else if(p.id==='bat')m.innerHTML=pgBat();
+  else if(p.id==='links')m.innerHTML=pgLinks();
   else if(p.id==='settings'){m.innerHTML=pgSettings();loadSettings()}
   else m.innerHTML=pgCustom(p.custom);
   bind();update();
@@ -165,6 +167,12 @@ function pgOverview(){
     return '';   // status (warning box above), clock (header), none
   });
   return `<div class="warnbox" id="warn" hidden></div><div class="grid">${parts.join('')}</div>`;
+}
+// Links to the web pages of the other devices (Einstellungen -> Geräte-Links)
+function pgLinks(){
+  const l=(cfg&&cfg.links)||[];
+  if(!l.length)return `<div class="card mu">Noch keine Geräte-Links. Unter ⚙ Einstellungen → 🔗 Geräte-Links eintragen.</div>`;
+  return `<div class="grid">${l.map(x=>`<a class="card click" href="${esc(x.u)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><h3>🔗 ${esc(x.u.replace(/^https?:\/\//,'').replace(/\/$/,''))}</h3><div class="big" style="font-size:20px">${esc(x.n)}</div><div class="mu">Konfiguration öffnen ↗</div></a>`).join('')}</div>`;
 }
 function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div>`}
 // camper-battery: <prefix>/batteries = [{name,ok,soc,v,w,rt,st,p}]
@@ -371,6 +379,10 @@ function pgSettings(){
    <div class="f2">${inp('poTitle','Titel der Nachricht')}<div><label>Priorität</label><select id="poPrio"><option value="0">Normal</option><option value="1">Hoch (auch in Ruhezeiten)</option><option value="-1">Leise</option></select></div></div>
    <div class="row"><button class="btn" id="potest">Testnachricht</button><span class="mu grow" id="postat"></span></div>
    <p class="mu">Erst speichern, dann testen.</p></details>
+  <details><summary>🔗 Geräte-Links</summary>
+   <p class="mu" style="margin:4px 0 8px">Buttons auf der Seite „🔗 Geräte“, die die Web-Oberfläche des jeweiligen Geräts öffnen. Adresse z. B. <code>192.168.8.13</code> oder <code>camper-tanklevel.local</code>.</p>
+   <div id="lnk"></div>
+   <div class="row" style="gap:8px;margin-top:8px"><button class="btn" type="button" id="lnkadd">+ Link</button><button class="btn" type="button" id="lnksug">Camper-Geräte vorschlagen</button></div></details>
   <details><summary>🔧 System</summary>
    ${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
    <div class="f2">${inp('webUser','Web-Benutzer')}${inp('webPass','Web-Passwort (leer = kein Schutz)','password')}</div>
@@ -389,12 +401,15 @@ async function loadSettings(){
     BUILTIN.forEach((b,i)=>$('#bp'+i).checked=ST.builtin[i]);
     for(let i=0;i<=BUILTIN.length;i++){const e=$('#pn'+i);if(e)e.value=(ST.pageNames||[])[i]||''}
     {const l=(ST.ovTiles||OV_DEFAULT).split(',');for(let i=0;i<9;i++){const e=$('#ov'+i);if(e)e.value=l[i]||'none'}}
+    LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
     $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#poPrio').value=String(ST.poPrio||0);
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
     $('#sysinfo').textContent=`Firmware ${ST.fw} · MAC ${ST.mac} · IP ${S.ip||''}`;
     const p=await fetch('/api/pages');PG=await p.json();PG.pages=PG.pages||[];PG.tiles=PG.tiles||[];renderPages();
   }catch(e){toast('Einstellungen konnten nicht geladen werden')}
   $('#save').onclick=saveSettings;
+  $('#lnkadd').onclick=()=>{readLinks();LINKS.push({n:'',u:''});renderLinks()};
+  $('#lnksug').onclick=()=>{readLinks();SUGGEST.forEach(([n,h])=>{if(!LINKS.some(x=>x.u.includes(h)||x.n.toLowerCase()===n.toLowerCase()))LINKS.push({n,u:'http://'+h+'.local/'})});renderLinks()};
   $('#brightness').oninput=e=>send({c:'bri',v:e.target.value});
   $('#scan').onclick=scan;
   $('#reboot').onclick=()=>{if(confirm('Neu starten?'))post('/api/reboot')};
@@ -411,6 +426,18 @@ async function post(url,body){
   if(j.reboot)setTimeout(()=>location.reload(),8000);
   return r.ok;
 }
+// ---- device links editor ----
+let LINKS=[];
+const SUGGEST=[['Tanklevel','camper-tanklevel'],['Temperatur','camper-temp'],['Truma','truma-heater'],['MaxxFan','camper-maxxfan'],['Level','camper-level'],['Batterie','camper-battery']];
+function renderLinks(){
+  const b=$('#lnk');if(!b)return;
+  b.innerHTML=LINKS.map((x,i)=>`<div class="row" style="gap:6px;margin:4px 0"><input type="text" data-ln="${i}" value="${esc(x.n)}" placeholder="Name" maxlength="24" style="flex:1;min-width:0"><input type="text" data-lu="${i}" value="${esc(x.u)}" placeholder="http://192.168.8.13/" maxlength="120" style="flex:2;min-width:0"><button class="btn" type="button" data-ld="${i}" title="Entfernen">✕</button></div>`).join('')||'<p class="mu">Noch keine Links.</p>';
+  b.querySelectorAll('[data-ld]').forEach(e=>e.onclick=()=>{readLinks();LINKS.splice(+e.dataset.ld,1);renderLinks()});
+}
+function readLinks(){
+  document.querySelectorAll('[data-ln]').forEach(e=>{const i=+e.dataset.ln;if(LINKS[i])LINKS[i].n=e.value.trim()});
+  document.querySelectorAll('[data-lu]').forEach(e=>{const i=+e.dataset.lu;if(LINKS[i])LINKS[i].u=e.value.trim()});
+}
 function saveSettings(){
   const o={};FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)o[f]=e.value});
   ['mqttPort','dimBrightness','screenTimeout'].forEach(f=>o[f]=parseInt(o[f])||0);
@@ -418,6 +445,7 @@ function saveSettings(){
   o.builtin=BUILTIN.map((b,i)=>$('#bp'+i).checked);
   o.ovTiles=[0,1,2,3,4,5,6,7,8].map(i=>$('#ov'+i).value).join(',').replace(/(,none)+$/,'');
   o.pageNames=[...BUILTIN.map((b,i)=>$('#pn'+i).value.trim()),$('#pn'+BUILTIN.length).value.trim()];
+  readLinks();o.links=LINKS.filter(x=>x.n.trim()&&x.u.trim());
   o.poOn=$('#poOn').checked;o.poClear=$('#poClear').checked;o.poPrio=+$('#poPrio').value;
   post('/api/settings',o);
 }
