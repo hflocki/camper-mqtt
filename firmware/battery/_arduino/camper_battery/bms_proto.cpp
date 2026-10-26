@@ -220,6 +220,26 @@ void bmsFinish(BmsSample& s) {
     }
 }
 
+static void bm2State(BmsSample& s) {
+    s.bat_state = s.voltage >= BM2_V_CHARGING ? BAT_STATE_CHARGING
+                : s.voltage >= BM2_V_FLOATING ? BAT_STATE_FLOATING
+                : s.voltage <= BM2_V_CRITICAL ? BAT_STATE_CRITICAL
+                : s.voltage <= BM2_V_LOW      ? BAT_STATE_LOW
+                :                               BAT_STATE_NORMAL;
+}
+
+bool bm2DecodeAdv(const uint8_t p[16], BmsSample& s) {
+    bmsClear(s);
+    uint16_t raw = ((uint16_t)p[6] << 8) | p[7];
+    if (raw < 500 || raw > 2000) return false;             // 5 ... 20 V plausible
+    if (p[8] > 100) return false;
+    s.voltage = raw / 100.0f;
+    s.soc = p[8];
+    bm2State(s);
+    bmsFinish(s);
+    return true;
+}
+
 const char* batStateName(int8_t st) {
     switch (st) {
         case BAT_STATE_CRITICAL: return "Kritisch";

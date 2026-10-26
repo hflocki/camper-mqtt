@@ -115,6 +115,10 @@ extern const uint8_t BM2_AES_KEY[16];
 #define BM2_V_CRITICAL   11.9f   // at or below: critical
 #endif
 bool bm2Decode(const uint8_t plain[16], BmsSample& s);
+// Newer BM2 firmware also broadcasts its reading: manufacturer data of 16 bytes (company id
+// included), same key; decrypted bytes 6-7 = voltage in 10 mV (big endian), byte 8 = SoC.
+// Layout as in DJBenson/bm2-esphome and andystewart999/ha_bm2monitor (MIT).
+bool bm2DecodeAdv(const uint8_t plain[16], BmsSample& s);
 
 // Fills power, energy, delta, mean temperature and runtime from the raw values
 void bmsFinish(BmsSample& s);

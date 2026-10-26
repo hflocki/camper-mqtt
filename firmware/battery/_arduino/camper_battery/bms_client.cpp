@@ -36,10 +36,59 @@ struct Link {
     volatile bool done;
     volatile uint8_t head;         // Expected first byte of the response
     bool raw16;                    // BM2: take each notification as one 16-byte block
+    volatile unsigned long advAt;  // BM2: last valid broadcast (0 = none yet)
 };
 static Link links[MAX_BMS];
 static NimBLEScan* scan = nullptr;
 static unsigned long lastScan = 0;
+static unsigned long lastBm2Scan = 0;
+static unsigned long taskStart = 0;
+
+static bool bm2AesDecrypt(const uint8_t in[16], uint8_t out[16]) {
+    uint8_t iv[16] = {0};
+    mbedtls_aes_context aes;
+    mbedtls_aes_init(&aes);
+    mbedtls_aes_setkey_dec(&aes, BM2_AES_KEY, 128);
+    int rc = mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, 16, iv, in, out);
+    mbedtls_aes_free(&aes);
+    return rc == 0;
+}
+
+// BM2 broadcast seen in the scan: take it as a reading (host task, keep it short)
+static void bm2FromAdvert(int i, const NimBLEAdvertisedDevice* dev) {
+    for (uint8_t k = 0; k < dev->getManufacturerDataCount(); k++) {
+        std::string m = dev->getManufacturerData(k);   // includes the 2-byte company id
+        if (m.size() != 16) continue;                   // 23-byte iBeacon frame = old format, no voltage
+        uint8_t plain[16];
+        static BmsSample s;
+        if (!bm2AesDecrypt((const uint8_t*)m.data(), plain) || !bm2DecodeAdv(plain, s)) continue;
+        links[i].advAt = millis() ? millis() : 1;
+        portENTER_CRITICAL(&mux);
+        live[i].s = s;
+        live[i].valid = true;
+        live[i].last_ok = millis();
+        live[i].reads++;
+        live[i].rssi = dev->getRSSI();
+        strlcpy(live[i].state, "OK (Funk)", sizeof(live[i].state));
+        readSeq = readSeq + 1;
+        portEXIT_CRITICAL(&mux);
+        static unsigned long lastLog = 0;
+        if (!lastLog || millis() - lastLog > 60000) {
+            lastLog = millis() ? millis() : 1;
+            Serial.printf("[BM2] broadcast: %.2f V, %d %%\n", s.voltage, (int)s.soc);
+        }
+        return;
+    }
+}
+
+// The BM2 is read from its broadcast while that works; a connection is only the fallback
+static bool bm2Passive(int i) {
+    const Link& l = links[i];
+    if (l.cfg.type != BMS_BM2) return false;
+    unsigned long a = l.advAt;
+    if (a && millis() - a < BM2_ADV_FRESH_MS) return true;
+    return !a && millis() - taskStart < BM2_ADV_GRACE_MS;   // give the first broadcasts a chance
+}
 
 // ============================================================
 // Helpers
@@ -101,7 +150,10 @@ class ScanCallbacks : public NimBLEScanCallbacks {
         // Keep BMS and every configured address (whatever it advertises)
         bool configured = false;
         for (int i = 0; i < MAX_BMS; i++) {
-            if (links[i].cfg.used && strcmp(links[i].cfg.mac, mac) == 0) configured = true;
+            if (links[i].cfg.used && strcmp(links[i].cfg.mac, mac) == 0) {
+                configured = true;
+                if (links[i].cfg.type == BMS_BM2) bm2FromAdvert(i, dev);
+            }
         }
         if (type == BMS_NONE && !configured) return;
 
@@ -340,13 +392,8 @@ static bool pollBm2(int i, BmsSample& s) {
             vTaskDelay(pdMS_TO_TICKS(20));
         }
         if (!l.done) return false;
-        uint8_t plain[16], iv[16] = {0};
-        mbedtls_aes_context aes;
-        mbedtls_aes_init(&aes);
-        mbedtls_aes_setkey_dec(&aes, BM2_AES_KEY, 128);
-        int rc = mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, 16, iv, l.buf, plain);
-        mbedtls_aes_free(&aes);
-        if (rc == 0 && bm2Decode(plain, s)) {
+        uint8_t plain[16];
+        if (bm2AesDecrypt(l.buf, plain) && bm2Decode(plain, s)) {
             // Log the raw status nibble whenever it changes, to learn its meaning
             static uint8_t lastNibble[MAX_BMS];   // nibble + 1, 0 = nothing logged yet
             uint8_t nib = (plain[2] & 0x0F) + 1;
@@ -401,6 +448,7 @@ static void takeConfig() {
             dropLink(i, next.used ? "Warte" : "-");
             links[i].dalyProto = 0;
             links[i].ectiveId = -1;
+            links[i].advAt = 0;
             links[i].backoff = BLE_RETRY_MS;
             links[i].nextTry = 0;
             portENTER_CRITICAL(&mux);
@@ -416,6 +464,7 @@ static void takeConfig() {
 }
 
 static void bleTask(void*) {
+    taskStart = millis();
     for (;;) {
         if (reconfigure) {
             reconfigure = false;
@@ -423,10 +472,17 @@ static void bleTask(void*) {
         }
 
         bool allConnected = true;
+        bool anyBm2 = false;
         unsigned long now = millis();
         for (int i = 0; i < MAX_BMS; i++) {
             Link& l = links[i];
             if (!l.cfg.used) continue;
+            if (l.cfg.type == BMS_BM2) anyBm2 = true;
+            if (bm2Passive(i)) {
+                // Broadcast works: no connection, the slot stays free
+                if (l.client) { dropLink(i, "OK (Funk)"); setState(i, "OK (Funk)", false); }
+                continue;
+            }
             bool up = l.client && l.client->isConnected();
             if (!up) {
                 allConnected = false;
@@ -455,6 +511,9 @@ static void bleTask(void*) {
             runScan(BLE_SCAN_MS * 2);
         } else if (!allConnected && (lastScan == 0 || millis() - lastScan > BLE_SCAN_EVERY_MS)) {
             runScan(BLE_SCAN_MS);
+        } else if (anyBm2 && (lastBm2Scan == 0 || millis() - lastBm2Scan > BM2_SCAN_EVERY_MS)) {
+            lastBm2Scan = millis();
+            runScan(BLE_SCAN_MS);        // short scan to pick up the BM2 broadcast
         }
 
         // Mark stale readings
