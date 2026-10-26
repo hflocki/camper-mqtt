@@ -75,6 +75,11 @@ lv_obj_t *sIp, *sNet, *sQr, *sQrLbl, *sBri, *sInfo;
 lv_obj_t *ovWarn, *ovWarnLbl, *ovTempVal, *ovTempSub, *ovBatVal, *ovBatSub;
 lv_obj_t *tStatus;
 std::vector<lv_obj_t*> tRows, tVals;
+// battery page: one card per battery
+struct BatRowW { lv_obj_t *card, *soc, *top, *sub, *bar; };
+std::vector<BatRowW> bRows;
+lv_obj_t* bStatus = nullptr;
+String bSig;
 String tSig;          // sensor names the rows were built for
 String lastWarn;      // to wake the screen when a new warning appears
 
@@ -386,6 +391,8 @@ lv_obj_t* infoCard(lv_obj_t* parent, const char* icon, const char* title, lv_obj
 }
 
 void buildBatteryCard(lv_obj_t* tab);
+void buildBattery(lv_obj_t* tab);
+void buildBatteryRows(size_t n, lv_obj_t* tab);
 
 void buildOverview(lv_obj_t* tab) {
   pageContainer(tab);
@@ -423,6 +430,8 @@ void buildOverview(lv_obj_t* tab) {
 
 void buildBatteryCard(lv_obj_t* tab) {
   lv_obj_t* c = card(tab, PAGE_W - 20, 96);
+  lv_obj_add_flag(c, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_event_cb(c, onOverviewCard, LV_EVENT_CLICKED, (void*)(intptr_t)BP_BATTERY);
   lv_obj_t* t = label(c, &font_de_18, C_MUTED, LV_SYMBOL_BATTERY_FULL "  Batterien");
   lv_obj_align(t, LV_ALIGN_TOP_LEFT, 0, 0);
   ovBatVal = label(c, &font_de_22, C_TEXT, "--");
@@ -433,6 +442,41 @@ void buildBatteryCard(lv_obj_t* tab) {
   lv_obj_set_width(ovBatSub, PAGE_W - 44);
   lv_label_set_long_mode(ovBatSub, LV_LABEL_LONG_DOT);
   lv_obj_align(ovBatSub, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+}
+
+void buildBattery(lv_obj_t* tab) {
+  pageContainer(tab);
+  bStatus = label(tab, &font_de_18, C_MUTED, "");
+  lv_obj_set_width(bStatus, PAGE_W - 20);
+  bRows.clear();
+  bSig = "\x01";   // force a row build on the first refresh
+}
+
+// (Re)creates one card per battery when the battery list changed
+void buildBatteryRows(size_t n, lv_obj_t* tab) {
+  for (auto& r : bRows) lv_obj_delete(r.card);
+  bRows.clear();
+  for (size_t i = 0; i < n; i++) {
+    BatRowW r;
+    r.card = card(tab, PAGE_W - 20, 132);
+    lv_obj_t* name = label(r.card, &font_de_22, C_MUTED, "");
+    lv_obj_set_width(name, 240);
+    lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
+    lv_obj_align(name, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_obj_set_user_data(r.card, name);
+    r.top = label(r.card, &font_de_22, C_TEXT, "");
+    lv_obj_align(r.top, LV_ALIGN_TOP_RIGHT, 0, 0);
+    r.soc = label(r.card, &font_de_28, C_TEXT, "--");
+    lv_obj_align(r.soc, LV_ALIGN_LEFT_MID, 0, 0);
+    r.sub = label(r.card, &font_de_18, C_MUTED, "");
+    lv_obj_align(r.sub, LV_ALIGN_RIGHT_MID, 0, 2);
+    r.bar = lv_bar_create(r.card);
+    lv_obj_set_size(r.bar, PAGE_W - 48, 12);
+    lv_obj_align(r.bar, LV_ALIGN_BOTTOM_MID, 0, 0);
+    lv_bar_set_range(r.bar, 0, 100);
+    lv_obj_set_style_bg_color(r.bar, C_CARD_HI, LV_PART_MAIN);
+    bRows.push_back(r);
+  }
 }
 
 void buildTemp(lv_obj_t* tab) {
@@ -848,6 +892,71 @@ void refreshValues() {
     lv_label_set_text(ovBatSub, dispText(sub).c_str());
   }
 
+  if (bStatus) {
+    bool batOn = store::devOnline(DEV_BATTERY);
+    std::vector<BatItem> items = batItems();
+    String sig;
+    for (auto& b : items) { sig += b.name; sig += '\x01'; }
+    if (sig != bSig) {
+      bSig = sig;
+      buildBatteryRows(items.size(), lv_obj_get_parent(bStatus));
+    }
+    for (size_t i = 0; i < items.size() && i < bRows.size(); i++) {
+      const BatItem& b = items[i];
+      BatRowW& r = bRows[i];
+      bool live = b.ok && batOn;
+      bool bm2 = b.state.length() > 0;
+      bool stateBad = b.state == "Kritisch" || b.state == "Schwach";
+      bool low = !bm2 && !isnan(b.soc) && b.soc < BAT_WARN_SOC;
+      lv_color_t socCol = !live || isnan(b.soc) ? C_MUTED
+                        : (b.soc < 20 ? C_WARN : (b.soc < 40 ? C_GAS : C_OK));
+
+      lv_label_set_text((lv_obj_t*)lv_obj_get_user_data(r.card), dispText(b.name).c_str());
+      // large value: state of charge, for the BM2 the voltage (its SoC is only an estimate)
+      String big = bm2 ? (isnan(b.v) ? String("--") : commaNum(b.v, 2) + " V")
+                       : (isnan(b.soc) ? String("--") : String((int)lroundf(b.soc)) + " %");
+      lv_label_set_text(r.soc, big.c_str());
+      lv_obj_set_style_text_color(r.soc, bm2 ? (live ? (stateBad ? C_WARN : C_TEXT) : C_MUTED) : socCol, 0);
+
+      // top right: power with direction, or the BM2 state
+      String top;
+      lv_color_t topCol = C_TEXT;
+      if (!b.ok) { top = "keine Verbindung"; topCol = C_MUTED; }
+      else if (b.problem) { top = "BMS-Fehler"; topCol = C_WARN; }
+      else if (bm2) { top = b.state; topCol = stateBad ? C_WARN : (b.state == "Normal" ? C_TEXT : C_OK); }
+      else if (!isnan(b.w)) {
+        int pw = (int)lroundf(b.w);
+        top = pw > 1 ? LV_SYMBOL_UP " " + String(pw) + " W" : (pw < -1 ? LV_SYMBOL_DOWN " " + String(-pw) + " W" : String("Ruhe"));
+        topCol = pw > 1 ? C_OK : C_TEXT;
+      }
+      if (!batOn) topCol = C_MUTED;
+      lv_label_set_text(r.top, dispText(top).c_str());
+      lv_obj_set_style_text_color(r.top, topCol, 0);
+
+      // middle right: voltage / SoC and runtime
+      String sub;
+      if (b.ok) {
+        if (bm2) sub = isnan(b.soc) ? String("") : String((int)lroundf(b.soc)) + " % (gesch\xC3\xA4tzt)";
+        else {
+          if (!isnan(b.v)) sub = commaNum(b.v, 2) + " V";
+          if (b.rt >= 0) sub += "  \xE2\x80\xA2  noch " + runtimeText(b.rt);
+          else if (!isnan(b.w) && b.w > 1) sub += "  \xE2\x80\xA2  l\xC3\xA4" "dt";
+        }
+      }
+      lv_label_set_text(r.sub, dispText(sub).c_str());
+
+      lv_bar_set_value(r.bar, isnan(b.soc) ? 0 : constrain((int)lroundf(b.soc), 0, 100), LV_ANIM_OFF);
+      lv_obj_set_style_bg_color(r.bar, socCol, LV_PART_INDICATOR);
+      lv_obj_set_style_border_width(r.card, (live && (b.problem || stateBad || low)) ? 2 : 0, 0);
+      lv_obj_set_style_border_color(r.card, C_WARN, 0);
+    }
+    String st = !batOn ? String("Batterie-Gateway offline")
+              : items.empty() ? String("Keine Batterien gemeldet") : String("");
+    lv_label_set_text(bStatus, st.c_str());
+    if (st.length()) lv_obj_remove_flag(bStatus, LV_OBJ_FLAG_HIDDEN);
+    else             lv_obj_add_flag(bStatus, LV_OBJ_FLAG_HIDDEN);
+  }
+
   // heater
   if (hRoom) {
     lv_label_set_text(hRoom, fmt(store::get(DP_HEAT_ROOM), 1, "\xC2\xB0""C").c_str());
@@ -994,6 +1103,8 @@ void clearHandles() {
   sIp = sNet = sQr = sQrLbl = sBri = sInfo = nullptr;
   ovWarn = ovWarnLbl = ovTempVal = ovTempSub = ovBatVal = ovBatSub = nullptr;
   tStatus = nullptr;
+  bStatus = nullptr;
+  bRows.clear();
   tRows.clear();
   tVals.clear();
   lastQr = "";
@@ -1007,7 +1118,7 @@ void build() {
   clearHandles();
 
   pages.clear();
-  static const char* bpTitles[BP_COUNT] = {"Übersicht", "Heizung", "Dachlüfter", "Ausrichtung", "Temperaturen"};
+  static const char* bpTitles[BP_COUNT] = {"Übersicht", "Heizung", "Dachlüfter", "Ausrichtung", "Temperaturen", "Batterien"};
   for (int b = 0; b < BP_COUNT; b++) if (settings.builtin[b]) pages.push_back({bpTitles[b], b, -1});
   for (size_t p = 0; p < settings.pages.size(); p++) pages.push_back({settings.pages[p].name, -1, (int)p});
   pages.push_back({"System", PG_SYSTEM, -1});
@@ -1028,6 +1139,7 @@ void build() {
       case BP_FAN:      buildFan(tab); break;
       case BP_LEVEL:    buildLevel(tab); break;
       case BP_TEMP:     buildTemp(tab); break;
+      case BP_BATTERY:  buildBattery(tab); break;
       case PG_SYSTEM:   buildSystem(tab); break;
       default:          buildCustom(tab, p.custom); break;
     }

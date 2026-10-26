@@ -8,6 +8,7 @@
 #include <NetworkClientSecure.h>
 #include <vector>
 #include <time.h>
+#include <esp_heap_caps.h>
 
 // Root certificates that come with the ESP32 core (Mozilla bundle), used to verify api.pushover.net
 extern const uint8_t x509_crt_bundle_start[] asm("_binary_x509_crt_bundle_start");
@@ -26,7 +27,8 @@ struct Msg {
 QueueHandle_t queue = nullptr;
 volatile bool testRequested = false;
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
-char lastStatus[40] = "";
+char lastStatus[112] = "";
+char lastDetail[80] = "";   // reason of the last failed request (DNS, TLS error text, free RAM)
 
 // A warning line, identified by the text before the first ':' (e.g. "Kühlschrank zu warm"),
 // so a changing value in the rest of the line does not send a new message.
@@ -60,6 +62,18 @@ String urlEncode(const char* s) {
 }
 
 int post(const Msg& m) {
+  lastDetail[0] = 0;
+  // A failed name lookup also ends as -1 in HTTPClient, so check it separately
+  IPAddress ip;
+  if (!WiFi.hostByName(PUSHOVER_HOST, ip)) {
+    strlcpy(lastDetail, "DNS: " PUSHOVER_HOST " nicht gefunden", sizeof(lastDetail));
+    return -1;
+  }
+  // mbedTLS needs roughly 40 kB of internal RAM for the handshake
+  size_t freeInt = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+  size_t largest = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
+  Serial.printf("[push] internal RAM free %u kB, largest block %u kB\n", (unsigned)(freeInt / 1024), (unsigned)(largest / 1024));
+
   NetworkClientSecure client;
   client.setCACertBundle(x509_crt_bundle_start, x509_crt_bundle_end - x509_crt_bundle_start);
   client.setTimeout(10000);
@@ -70,6 +84,15 @@ int post(const Msg& m) {
                 "&title=" + urlEncode(m.title) + "&message=" + urlEncode(m.text) +
                 "&priority=" + String((int)m.prio);
   int code = http.POST(body);
+  if (code < 0) {
+    char err[64] = "";
+    int e = client.lastError(err, sizeof(err));
+    if (e != 0) snprintf(lastDetail, sizeof(lastDetail), "TLS %d: %s", e, err);
+    else        snprintf(lastDetail, sizeof(lastDetail), "%s", http.errorToString(code).c_str());
+    size_t n = strlen(lastDetail);
+    snprintf(lastDetail + n, sizeof(lastDetail) - n, " (RAM %u kB)", (unsigned)(freeInt / 1024));
+    Serial.printf("[push] failed: %s\n", lastDetail);
+  }
   http.end();
   return code;
 }
@@ -83,8 +106,9 @@ void senderTask(void*) {
         int code = post(m);
         Serial.printf("[push] \"%s\" -> %d\n", m.text, code);
         if (code == 200) { setStatus("OK"); break; }
-        char s[24];
-        snprintf(s, sizeof(s), "Fehler %d", code);
+        char s[100];
+        if (lastDetail[0]) snprintf(s, sizeof(s), "Fehler %d \xE2\x80\x93 %s", code, lastDetail);
+        else               snprintf(s, sizeof(s), "Fehler %d", code);
         setStatus(s);
         if (code >= 400 && code < 500) break;   // wrong token / user: retrying does not help
       } else {

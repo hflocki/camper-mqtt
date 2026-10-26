@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "1.4.0"
+#define FW_VERSION              "1.5.0"
 
 // ---- Device / access point ------------------------------------------
 #ifndef DEFAULT_HOSTNAME
@@ -106,6 +106,9 @@
 #endif
 #ifndef PUSHOVER_URL
 #define PUSHOVER_URL            "https://api.pushover.net/1/messages.json"
+#endif
+#ifndef PUSHOVER_HOST
+#define PUSHOVER_HOST           "api.pushover.net"   // must match PUSHOVER_URL
 #endif
 #ifndef PUSHOVER_STABLE_MS
 #define PUSHOVER_STABLE_MS      30000   // a warning must be active this long before it is sent

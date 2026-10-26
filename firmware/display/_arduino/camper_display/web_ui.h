@@ -89,7 +89,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let ws,cfg=null,V={},S={},page=localStorage.getItem('page')||'',finder={on:false,l:{}};
 let pendingSet=null,setTimer=null,setHold=0;
-const BUILTIN=[['overview','Übersicht'],['heater','Heizung'],['fan','Dachlüfter'],['level','Ausrichtung'],['temp','Temperaturen']];
+const BUILTIN=[['overview','Übersicht'],['heater','Heizung'],['fan','Dachlüfter'],['level','Ausrichtung'],['temp','Temperaturen'],['bat','Batterien']];
 
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2200)}
 function send(o){if(ws&&ws.readyState==1)ws.send(JSON.stringify(o));else toast('Keine Verbindung')}
@@ -133,6 +133,7 @@ function render(){
   else if(p.id==='fan')m.innerHTML=pgFan();
   else if(p.id==='level')m.innerHTML=pgLevel();
   else if(p.id==='temp')m.innerHTML=pgTemp();
+  else if(p.id==='bat')m.innerHTML=pgBat();
   else if(p.id==='settings'){m.innerHTML=pgSettings();loadSettings()}
   else m.innerHTML=pgCustom(p.custom);
   bind();update();
@@ -143,8 +144,16 @@ function info(id,icon,title,go){return `<div class="card click" data-go="${go}">
 function pgOverview(){
   return `<div class="warnbox" id="warn" hidden></div><div class="grid">${tank('w','💧','Frischwasser','var(--water)')}${tank('g','🚿','Grauwasser','var(--grey)')}${tank('gas','🔥','Gas','var(--gas)')}
   ${info('oh','♨️','Heizung','heater')}${info('ol','📐','Ausrichtung','level')}${info('of','🌀','Dachlüfter','fan')}
-  <div class="card wide click" data-go="temp"><h3>🌡️ Temperaturen</h3><div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div></div>`;
+  <div class="card wide click" data-go="temp"><h3>🌡️ Temperaturen</h3><div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>
+  <div class="card wide click" data-go="bat"><h3>🔋 Batterien</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div></div>`;
 }
+function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div>`}
+// camper-battery: <prefix>/batteries = [{name,ok,soc,v,w,rt,st,p}]
+function bats(){try{const a=JSON.parse(V.bat_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+const BAT_WARN_SOC=20;
+const cnum=(v,d)=>Number(v).toFixed(d).replace('.',',');
+function rtText(m){return m>=2880?cnum(m/1440,1)+' Tage':m>=60?Math.floor(m/60)+' h '+(m%60)+' min':m+' min'}
+function batBad(b){return b.ok&&(b.p||b.st==='Kritisch'||b.st==='Schwach'||(!b.st&&b.soc!=null&&b.soc<BAT_WARN_SOC))}
 function pgTemp(){return `<div class="warnbox" id="t_warn" hidden></div><div class="grid" id="t_list"></div><div class="mu" id="t_st" style="margin-top:12px"></div>`}
 // camper-temp: <prefix>/sensors = [{id,name,t,alarm}]
 function temps(){try{const a=JSON.parse(V.temp_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
@@ -153,6 +162,10 @@ function warnings(){
   const w=[];
   if(online('temp')&&V.temp_alarm)V.temp_alarm.split('; ').forEach(x=>w.push(x));
   if(online('heat')&&V.heat_errflag==='ON')w.push('Heizung: Fehler '+(V.heat_err||'?'));
+  if(online('bat'))bats().forEach(b=>{if(!b.ok)return;
+    if(b.p)w.push(b.name+' BMS-Fehler: bitte prüfen');
+    if(b.st==='Kritisch'||b.st==='Schwach')w.push(b.name+' '+b.st.toLowerCase()+': '+cnum(b.v,2)+' V');
+    else if(!b.st&&b.soc!=null&&b.soc<BAT_WARN_SOC)w.push(b.name+' niedrig: '+Math.round(b.soc)+' %'+(b.rt!=null?', noch '+rtText(b.rt):''));});
   return w;
 }
 function pgHeater(){
@@ -241,6 +254,26 @@ function update(){
   if($('#t_list')){
     set('t_list',tl.map(t=>`<div class="card wide${tOn?'':' offline'}"><div class="trow${t.alarm?' al':''}"><span class="n">${esc(t.name)}</span><span class="big">${tval(t)}</span></div></div>`).join(''));
     set('t_st',!tOn?'Temperatursensoren offline':tl.length?'':'Keine Sensoren gemeldet');
+  }
+  // batteries
+  const bl=bats(),bOn=online('bat');
+  if($('#ob_v')){
+    set('ob_v',bl.length?bl.map(b=>`${esc(b.name)} <span${batBad(b)?' class="err"':''}>${!b.ok?'--':b.st?cnum(b.v,1)+' V':(b.soc==null?'--':Math.round(b.soc)+' %')}</span>`).join(' &nbsp; '):'--');
+    const f=bl.find(b=>b.ok&&!b.st&&b.w!=null&&(b.w>1||b.rt!=null));
+    set('ob_s',!bOn?'offline':f?(f.w>1?esc(f.name)+' lädt +'+Math.round(f.w)+' W':esc(f.name)+' noch '+rtText(f.rt)+' ('+Math.round(-f.w)+' W)'):'');
+    $('#ob_v').closest('.card').classList.toggle('offline',!bOn);
+  }
+  if($('#b_list')){
+    set('b_list',bl.map(b=>{
+      const c=b.soc==null?'var(--mu)':b.soc<20?'var(--warn)':b.soc<40?'var(--gas)':'var(--ok)';
+      const top=!b.ok?'<span class="mu">keine Verbindung</span>':b.p?'<span class="err">BMS-Fehler</span>':b.st?`<span class="${b.st==='Kritisch'||b.st==='Schwach'?'err':b.st==='Normal'?'':'okc'}">${esc(b.st)}</span>`
+        :b.w==null?'':b.w>1?`<span class="okc">▲ ${Math.round(b.w)} W</span>`:b.w<-1?`▼ ${Math.round(-b.w)} W`:'Ruhe';
+      const big=!b.ok?'--':b.st?(b.v==null?'--':cnum(b.v,2)+' V'):(b.soc==null?'--':Math.round(b.soc)+' %');
+      const sub=!b.ok?'':b.st?(b.soc==null?'':Math.round(b.soc)+' % (geschätzt)'):[b.v!=null?cnum(b.v,2)+' V':'',b.rt!=null?'noch '+rtText(b.rt):(b.w>1?'lädt':'')].filter(x=>x).join(' · ');
+      return `<div class="card wide${bOn&&b.ok?'':' offline'}"${batBad(b)?' style="outline:2px solid var(--warn)"':''}><div class="row"><h3 class="grow" style="margin:0">${esc(b.name)}</h3><span>${top}</span></div>
+      <div class="row" style="margin-top:6px"><span class="big grow"${b.st?'':` style="color:${c}"`}>${big}</span><span class="mu">${sub}</span></div>
+      <div class="bar"><i style="width:${b.soc==null?0:Math.max(0,Math.min(100,b.soc))}%;background:${c}"></i></div></div>`}).join(''));
+    set('b_st',!bOn?'Batterie-Gateway offline':bl.length?'':'Keine Batterien gemeldet');
   }
   // heater
   if($('#h_room')){
