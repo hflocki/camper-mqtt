@@ -85,7 +85,9 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let ws,cfg=null,V={},S={},page=localStorage.getItem('page')||'',finder={on:false,l:{}};
 let pendingSet=null,setTimer=null,setHold=0;
-const BUILTIN=[['overview','Übersicht'],['heater','Heizung'],['fan','Dachlüfter'],['level','Ausrichtung'],['temp','Temperaturen'],['bat','Batterien']];
+const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie']];
+// page title: name from the display settings, otherwise the default above
+const ptitle=i=>(cfg&&cfg.pageNames&&cfg.pageNames[i])||BUILTIN[i][1];
 
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2200)}
 function send(o){if(ws&&ws.readyState==1)ws.send(JSON.stringify(o));else toast('Keine Verbindung')}
@@ -110,7 +112,7 @@ function connect(){
 // ---------- pages ----------
 function pages(){
   const p=[];if(!cfg)return p;
-  BUILTIN.forEach((b,i)=>{if(cfg.builtin[i])p.push({id:b[0],title:b[1]})});
+  BUILTIN.forEach((b,i)=>{if(cfg.builtin[i])p.push({id:b[0],title:ptitle(i)})});
   cfg.pages.forEach((n,i)=>p.push({id:'p'+i,title:n,custom:i}));
   p.push({id:'settings',title:'⚙ Einstellungen'});
   return p;
@@ -140,9 +142,9 @@ function tank(id,icon,title,col){return `<div class="card"><h3>${icon} ${title}<
 function info(id,icon,title,go){return `<div class="card click" data-go="${go}"><h3>${icon} ${title}</h3><div class="big" id="${id}_v">--</div><div class="mu" id="${id}_s"></div></div>`}
 function pgOverview(){
   return `<div class="warnbox" id="warn" hidden></div><div class="grid">${tank('w','💧','Frischwasser','var(--water)')}${tank('g','🚿','Grauwasser','var(--grey)')}${tank('gas','🔥','Gas','var(--gas)')}
-  ${info('oh','♨️','Heizung','heater')}${info('ol','📐','Ausrichtung','level')}${info('of','🌀','Dachlüfter','fan')}
-  <div class="card wide click" data-go="temp"><h3>🌡️ Temperaturen</h3><div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>
-  <div class="card wide click" data-go="bat"><h3>🔋 Batterien</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div></div>`;
+  ${info('oh','♨️',esc(ptitle(1)),'heater')}${info('ol','📐',esc(ptitle(3)),'level')}${info('of','🌀',esc(ptitle(2)),'fan')}
+  <div class="card wide click" data-go="temp"><h3>🌡️ ${esc(ptitle(4))}</h3><div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>
+  <div class="card wide click" data-go="bat"><h3>🔋 ${esc(ptitle(5))}</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div></div>`;
 }
 function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div>`}
 // camper-battery: <prefix>/batteries = [{name,ok,soc,v,w,rt,st,p}]
@@ -323,7 +325,9 @@ function pgSettings(){
   <details><summary>🖥 Display &amp; Seiten</summary>
    <label>Helligkeit</label><input type="range" id="brightness" min="5" max="100">
    <div class="f2">${inp('dimBrightness','Helligkeit gedimmt (%, 0 = aus)','number')}${inp('screenTimeout','Dimmen nach (s, 0 = nie)','number')}</div>
-   <label>Feste Seiten</label>${BUILTIN.map((b,i)=>`<label class="chk"><input type="checkbox" id="bp${i}"> ${b[1]}</label>`).join('')}</details>
+   ${inp('displayName','Anzeigename (oben in der Mitte, z. B. Wohnraum)')}
+   <label>Feste Seiten (Haken = anzeigen, Feld = Name)</label>${BUILTIN.map((b,i)=>`<div class="row" style="gap:8px;margin:4px 0"><input type="checkbox" id="bp${i}" style="width:auto"><input id="pn${i}" placeholder="${b[1]}" maxlength="24" style="flex:1;min-width:0"></div>`).join('')}
+   <div class="row" style="gap:8px;margin:4px 0"><span style="width:20px"></span><input id="pn${BUILTIN.length}" placeholder="System" maxlength="24" style="flex:1;min-width:0"></div></details>
   <details><summary>🧩 Seiten &amp; Kacheln</summary><div id="pged"></div></details>
   <details id="fd"><summary>🔎 Topic-Finder (z.B. Zigbee2MQTT)</summary>
    <p class="mu">Hört kurz auf einem Topic-Filter mit und zeigt, was ankommt. Aus jedem Wert lässt sich direkt eine Kachel machen.</p>
@@ -338,7 +342,7 @@ function pgSettings(){
    <div class="row"><button class="btn" id="potest">Testnachricht</button><span class="mu grow" id="postat"></span></div>
    <p class="mu">Erst speichern, dann testen.</p></details>
   <details><summary>🔧 System</summary>
-   ${inp('displayName','Anzeigename (oben in der Mitte, z. B. Wohnraum)')}${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
+   ${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
    <div class="f2">${inp('webUser','Web-Benutzer')}${inp('webPass','Web-Passwort (leer = kein Schutz)','password')}</div>
    <div class="f2">${inp('ntpServer','Zeitserver')}${inp('tz','Zeitzone (POSIX)')}</div>
    <label>Firmware-Update (.bin)</label><div class="row"><input type="file" id="fw" accept=".bin" class="grow"><button class="btn" id="fwup">Hochladen</button></div>
@@ -353,6 +357,7 @@ async function loadSettings(){
     FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)e.value=ST[f]??''});
     $('#staticIp').checked=ST.staticIp;$('#fanPort').value=ST.fanPort;$('#brightness').value=ST.brightness;
     BUILTIN.forEach((b,i)=>$('#bp'+i).checked=ST.builtin[i]);
+    for(let i=0;i<=BUILTIN.length;i++){const e=$('#pn'+i);if(e)e.value=(ST.pageNames||[])[i]||''}
     $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#poPrio').value=String(ST.poPrio||0);
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
     $('#sysinfo').textContent=`Firmware ${ST.fw} · MAC ${ST.mac} · IP ${S.ip||''}`;
@@ -380,6 +385,7 @@ function saveSettings(){
   ['mqttPort','dimBrightness','screenTimeout'].forEach(f=>o[f]=parseInt(o[f])||0);
   o.staticIp=$('#staticIp').checked;o.fanPort=+$('#fanPort').value;o.brightness=+$('#brightness').value;
   o.builtin=BUILTIN.map((b,i)=>$('#bp'+i).checked);
+  o.pageNames=[...BUILTIN.map((b,i)=>$('#pn'+i).value.trim()),$('#pn'+BUILTIN.length).value.trim()];
   o.poOn=$('#poOn').checked;o.poClear=$('#poClear').checked;o.poPrio=+$('#poPrio').value;
   post('/api/settings',o);
 }

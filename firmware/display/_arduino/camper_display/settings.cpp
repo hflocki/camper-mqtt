@@ -3,6 +3,13 @@
 #include <Preferences.h>
 #include <ArduinoJson.h>
 
+const char* const DEFAULT_PAGE_NAMES[BP_COUNT + 1] = {"Home", "Truma", "MaxxFan", "Level", "Temperatur", "Batterie", "System"};
+
+String pageTitle(int idx) {
+  if (idx < 0 || idx > BP_COUNT) return "";
+  return settings.pageName[idx].length() ? settings.pageName[idx] : String(DEFAULT_PAGE_NAMES[idx]);
+}
+
 Settings settings;
 
 namespace {
@@ -62,6 +69,7 @@ void load() {
   uint8_t bknown        = prefs.getUChar ("bpknown", BP_LEVEL + 1);
   for (int i = bknown; i < BP_COUNT; i++) bmask |= (1 << i);
   for (int i = 0; i < BP_COUNT; i++) settings.builtin[i] = bmask & (1 << i);
+  for (int i = 0; i <= BP_COUNT; i++) settings.pageName[i] = prefs.getString((String("pgn") + i).c_str(), "");
 
   String pagesJson;
   size_t len = prefs.getBytesLength("pages");
@@ -125,6 +133,7 @@ void save() {
   uint8_t bmask = 0;
   for (int i = 0; i < BP_COUNT; i++) if (settings.builtin[i]) bmask |= (1 << i);
   prefs.putUChar("bpages", bmask);
+  for (int i = 0; i <= BP_COUNT; i++) prefs.putString((String("pgn") + i).c_str(), settings.pageName[i]);
   prefs.putUChar("bpknown", BP_COUNT);
   prefs.end();
 }

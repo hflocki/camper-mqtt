@@ -100,6 +100,8 @@ void buildCfg(JsonDocument& d) {
   d["setup"] = settings.wifiSsid.isEmpty() || settings.mqttHost.isEmpty();
   JsonArray b = d["builtin"].to<JsonArray>();
   for (int i = 0; i < BP_COUNT; i++) b.add(settings.builtin[i]);
+  JsonArray pn = d["pageNames"].to<JsonArray>();      // titles incl. defaults, last = system page
+  for (int i = 0; i <= BP_COUNT; i++) pn.add(pageTitle(i));
   JsonArray p = d["pages"].to<JsonArray>();
   for (auto& pg : settings.pages) p.add(pg.name);
   JsonArray ta = d["tiles"].to<JsonArray>();
@@ -231,6 +233,8 @@ void getSettings(AsyncWebServerRequest* r) {
   d["screenTimeout"] = settings.screenTimeout;
   JsonArray b = d["builtin"].to<JsonArray>();
   for (int i = 0; i < BP_COUNT; i++) b.add(settings.builtin[i]);
+  JsonArray pn = d["pageNames"].to<JsonArray>();
+  for (int i = 0; i <= BP_COUNT; i++) pn.add(pageTitle(i));
   d["fw"] = FW_VERSION;
   d["mac"] = WiFi.macAddress();
   sendJson(r, d);
@@ -316,6 +320,16 @@ bool applySettings(JsonObject o, bool apply) {
   if (o["builtin"].is<JsonArray>()) {
     JsonArray b = o["builtin"];
     for (int i = 0; i < BP_COUNT && i < (int)b.size(); i++) settings.builtin[i] = b[i].as<bool>();
+  }
+  if (o["pageNames"].is<JsonArray>()) {
+    JsonArray pn = o["pageNames"];
+    for (int i = 0; i <= BP_COUNT && i < (int)pn.size(); i++) {
+      String v = pn[i] | "";
+      v.trim();
+      if (v.length() > 24) v = v.substring(0, 24);
+      if (v == DEFAULT_PAGE_NAMES[i]) v = "";        // store only real changes
+      if (apply) settings.pageName[i] = v;
+    }
   }
   if (settings.hostname.isEmpty()) settings.hostname = DEFAULT_HOSTNAME;
   return reboot;

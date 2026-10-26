@@ -54,12 +54,18 @@ struct Settings {
   uint8_t  brightness, dimBrightness;
   uint16_t screenTimeout;
   bool     builtin[BP_COUNT];
+  // Titles of the fixed pages (index BP_*) and of the system page (index BP_COUNT), "" = default
+  String   pageName[BP_COUNT + 1];
   // user pages
   std::vector<Page> pages;
   std::vector<Tile> tiles;
 };
 
 extern Settings settings;
+
+// Default titles of the fixed pages (BP_* order, last = system page)
+extern const char* const DEFAULT_PAGE_NAMES[BP_COUNT + 1];
+String pageTitle(int idx);   // configured title or default
 
 namespace cfg {
   void load();

@@ -44,6 +44,8 @@ const lv_color_t C_ACCENT  = lv_color_hex(0x5AB0F0);
 const int HDR_H = 52;
 const int PAGE_W = LCD_WIDTH;
 const int PAGE_H = LCD_HEIGHT - HDR_H;
+const int HOME_W = 48;                  // home button right of the "<" button
+const int TITLE_X = 60 + HOME_W + 10;   // page title starts here
 
 // ---- page bookkeeping ----------------------------------------------------
 enum : int { PG_SYSTEM = 100 };
@@ -231,7 +233,7 @@ void updateHeaderTitle() {
     lv_label_set_text(hdrName, name.c_str());
     if (name.length()) {
       const char* title = lv_label_get_text(hdrTitle);
-      int left  = 66 + lv_text_get_width(title, strlen(title), &font_de_22, 0) + 14;
+      int left  = TITLE_X + lv_text_get_width(title, strlen(title), &font_de_22, 0) + 14;
       int right = LCD_WIDTH - 66 - lv_text_get_width("00:00", 5, &font_de_22, 0) - 14;
       int maxW  = right - left;
       if (maxW < 20) { lv_obj_add_flag(hdrName, LV_OBJ_FLAG_HIDDEN); }
@@ -264,6 +266,7 @@ void onDhcp(lv_event_t*) {
   delay(300);
   ESP.restart();
 }
+void onHome(lv_event_t*) { int ov = tabIndexOfBuiltin(BP_OVERVIEW); gotoTab(ov >= 0 ? ov : 0); }
 void onOverviewCard(lv_event_t* e) { gotoTab(tabIndexOfBuiltin((int)(intptr_t)lv_event_get_user_data(e))); }
 
 void onSetpoint(lv_event_t* e) {
@@ -509,13 +512,13 @@ void buildOverview(lv_obj_t* tab) {
   tankCard(tab, ICON_TINT, "Frischwasser", C_WATER, ovWater);
   tankCard(tab, ICON_DRIP, "Grauwasser", C_GREY, ovGrey);
   tankCard(tab, ICON_GAS, "Gas", C_GAS, ovGas);
-  infoCard(tab, ICON_FIRE, "Heizung", ovHeatVal, ovHeatSub, BP_HEATER);
-  infoCard(tab, ICON_BALANCE, "Ausrichtung", ovLvlVal, ovLvlSub, BP_LEVEL);
-  infoCard(tab, ICON_FAN, "Dachl\xC3\xBC" "fter", ovFanVal, ovFanSub, BP_FAN);
+  infoCard(tab, ICON_FIRE, pageTitle(BP_HEATER).c_str(), ovHeatVal, ovHeatSub, BP_HEATER);
+  infoCard(tab, ICON_BALANCE, pageTitle(BP_LEVEL).c_str(), ovLvlVal, ovLvlSub, BP_LEVEL);
+  infoCard(tab, ICON_FAN, pageTitle(BP_FAN).c_str(), ovFanVal, ovFanSub, BP_FAN);
   if (settings.prefixTemp.length())
-    listCard(tab, ICON_THERMOMETER, "Temperaturen", ovTemp, BP_TEMP);
+    listCard(tab, ICON_THERMOMETER, pageTitle(BP_TEMP).c_str(), ovTemp, BP_TEMP);
   if (settings.prefixBattery.length())
-    listCard(tab, LV_SYMBOL_BATTERY_FULL, "Batterien", ovBat, BP_BATTERY);
+    listCard(tab, LV_SYMBOL_BATTERY_FULL, pageTitle(BP_BATTERY).c_str(), ovBat, BP_BATTERY);
 
   // Status tile: green "OK" or the active warnings on red
   ovWarn = tile(tab, LV_SYMBOL_WARNING, "Status", -1);
@@ -1217,10 +1220,9 @@ void build() {
   clearHandles();
 
   pages.clear();
-  static const char* bpTitles[BP_COUNT] = {"Übersicht", "Heizung", "Dachlüfter", "Ausrichtung", "Temperaturen", "Batterien"};
-  for (int b = 0; b < BP_COUNT; b++) if (settings.builtin[b]) pages.push_back({bpTitles[b], b, -1});
+  for (int b = 0; b < BP_COUNT; b++) if (settings.builtin[b]) pages.push_back({pageTitle(b), b, -1});
   for (size_t p = 0; p < settings.pages.size(); p++) pages.push_back({settings.pages[p].name, -1, (int)p});
-  pages.push_back({"System", PG_SYSTEM, -1});
+  pages.push_back({pageTitle(BP_COUNT), PG_SYSTEM, -1});
 
   tv = lv_tabview_create(scr);
   lv_tabview_set_tab_bar_size(tv, 0);
@@ -1283,10 +1285,14 @@ void begin() {
   lv_obj_set_style_radius(next, 0, 0);
   lv_obj_align(next, LV_ALIGN_RIGHT_MID, 0, 0);
 
+  // "<"  [Home]  page title
+  lv_obj_t* home = button(hdr, LV_SYMBOL_HOME, HOME_W, HDR_H - 12, onHome, nullptr, C_CARD_HI);
+  lv_obj_align(home, LV_ALIGN_LEFT_MID, 60, 0);
+
   hdrTitle = label(hdr, &font_de_22, C_TEXT, "");
-  lv_obj_align(hdrTitle, LV_ALIGN_LEFT_MID, 66, -6);
+  lv_obj_align(hdrTitle, LV_ALIGN_LEFT_MID, TITLE_X, -6);
   hdrDots = label(hdr, &font_de_14, C_MUTED, "");
-  lv_obj_align(hdrDots, LV_ALIGN_LEFT_MID, 66, 15);
+  lv_obj_align(hdrDots, LV_ALIGN_LEFT_MID, TITLE_X, 15);
   hdrName = label(hdr, &font_de_18, C_MUTED, "");
   lv_label_set_long_mode(hdrName, LV_LABEL_LONG_DOT);
   lv_obj_set_height(hdrName, lv_font_get_line_height(&font_de_18));
