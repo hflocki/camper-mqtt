@@ -13,7 +13,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.1.0"
+#define FW_VERSION            "1.2.0"
 
 #ifndef DEFAULT_AP_SSID
 #define DEFAULT_AP_SSID       "Camper-Battery"   // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
@@ -106,6 +106,9 @@
 #endif
 #ifndef BLE_RESPONSE_TIMEOUT_MS
 #define BLE_RESPONSE_TIMEOUT_MS 3000
+#endif
+#ifndef BM2_WAIT_MS
+#define BM2_WAIT_MS           4000   // BM2 notifies about once per second
 #endif
 #ifndef BLE_RETRY_MS
 #define BLE_RETRY_MS          15000  // Wait before reconnecting after a failed attempt (doubles up to 2 min)

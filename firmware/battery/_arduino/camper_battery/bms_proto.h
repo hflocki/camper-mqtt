@@ -21,6 +21,7 @@ enum BmsType : uint8_t {
     BMS_NONE   = 0,
     BMS_DALY   = 1,   // Daly smart BMS (BLE name "DL-...", service FFF0)
     BMS_ECTIVE = 2,   // Ective BM X / LiPower (Modbus RTU over BLE, advertises service AF30)
+    BMS_BM2    = 3,   // BM2 battery monitor (voltage only, AES encrypted notifications on FFF4)
 };
 
 // Daly protocol variants
@@ -80,6 +81,14 @@ extern const uint8_t ECTIVE_DEV_IDS[4];
 #define ECTIVE_REG_ADDR   0x0400
 #define ECTIVE_REG_COUNT  8
 bool ectiveDecode(const uint8_t* f, size_t n, BmsSample& s);
+
+// ---- BM2 battery monitor (e.g. starter battery) ----------------------
+// The monitor sends a 16-byte notification about once per second on characteristic FFF4,
+// AES-128 (CBC, zero IV, one block = ECB) with a key found in the vendor app.
+// Protocol documented by haxrob, https://haxrob.net/bm2-reversing-the-ble-protocol-of-the-bm2-battery-monitor/
+extern const uint8_t BM2_AES_KEY[16];
+// plain = decrypted block; byte 0 = 0xF5, then 12 bit voltage in 10 mV, byte 3 = state of charge in %
+bool bm2Decode(const uint8_t plain[16], BmsSample& s);
 
 // Fills power, energy, delta, mean temperature and runtime from the raw values
 void bmsFinish(BmsSample& s);

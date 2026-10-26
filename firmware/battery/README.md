@@ -5,7 +5,7 @@
 
 Firmware für einen ESP32-C3, der sich per Bluetooth mit bis zu **3 Batterie-BMS bzw. Batteriemonitoren** verbindet und ihre Werte per MQTT und in einer Web-Oberfläche bereitstellt – ohne ESPHome-Bluetooth-Proxy und ohne Home Assistant.
 
-- Unterstützt: **Daly Smart BMS** (BLE-Name `DL-…`, beide Protokollvarianten) und **Ective BM X** Batteriemonitor (LiPower-Protokoll, Modbus RTU über BLE)
+- Unterstützt: **Daly Smart BMS** (BLE-Name `DL-…`, beide Protokollvarianten), **Ective BM X** Batteriemonitor (LiPower-Protokoll, Modbus RTU über BLE) und der **BM2**-Batteriewächter (z. B. an der Starterbatterie, nur Spannung und Ladestand)
 - BMS werden per Bluetooth **gesucht** und in der Web-UI übernommen, keine Adressen im Code
 - Ladestand, Spannung, Strom, Leistung, Restkapazität, Energie, Restlaufzeit, bei Daly zusätzlich Zellspannungen, Zelldifferenz, Temperatur und Zyklen
 - Werte per **MQTT** mit Home-Assistant-Discovery (ein HA-Gerät pro Batterie) und als JSON-Liste für Displays
@@ -103,7 +103,14 @@ cd _arduino/camper_battery
 gzip -9 -n -c web/index.html > data/index.html.gz
 ```
 
-Spätere Firmware-Updates gehen per OTA (`camper-battery` unter Netzwerk-Ports).
+**Updates ohne USB** (nach dem ersten Flash): im Web-UI unter **WiFi → Firmware- & Web-Update**. Die Firmware erkennt die Datei am Namen:
+
+| Datei | Wirkung |
+| --- | --- |
+| `….ino.bin` (*Sketch → Kompilierte Binärdatei exportieren*) | neue Firmware, danach Neustart |
+| `data/index.html.gz` | nur die Web-Oberfläche wird ersetzt, ohne Neustart, Einstellungen bleiben |
+
+Ein komplettes LittleFS-Image nimmt das Web-UI absichtlich nicht an: Es würde auch `config.json` mit allen Einstellungen ersetzen. Firmware-Updates gehen außerdem per Arduino-OTA (`camper-battery` unter Netzwerk-Ports).
 
 ## Erstbenutzung
 
@@ -114,7 +121,7 @@ Spätere Firmware-Updates gehen per OTA (`camper-battery` unter Netzwerk-Ports).
 5. Hersteller-App schließen und Home Assistant die Verbindung wegnehmen (BMS_BLE-Eintrag deaktivieren oder löschen).
 6. Tab **Batterien** → **Suchen**. Gefundene BMS mit **+ Übernehmen** hinzufügen, Name und ID vergeben (z. B. „Bordbatterie“ / `house`), **Batterien speichern**.
 
-Der Typ wird bei der Suche erkannt: Daly am Namen `DL-…`, der Ective BM X an seinem Bluetooth-Dienst `AF30` (sein Name ist meist ein Datum wie `23-01-05-034`). Er lässt sich in der Liste auch von Hand ändern.
+Der Typ wird bei der Suche erkannt: Daly am Namen `DL-…`, der Ective BM X an seinem Bluetooth-Dienst `AF30` (sein Name ist meist ein Datum wie `23-01-05-034`), der BM2 am Namen `Battery Monitor`. Er lässt sich in der Liste auch von Hand ändern.
 
 ## MQTT / Home Assistant
 
@@ -150,6 +157,8 @@ In Home Assistant erscheint ein Gerät „Camper Battery“ und darunter **ein G
 
 **Ective BM X:** Das Gerät ist ein Batteriemonitor (Shunt), kein BMS: Zellspannungen, Temperatur und Zyklen gibt es dort nicht. Die Geräte-ID (`0x22`, `0x0B`, `0x08` oder `0x38`) wird beim ersten Abfragen erkannt. Die Laufzeit ist die Schätzung des Monitors selbst. Die Stromrichtung liest die Firmware aus Byte 12 der Antwort (1 = Entladen); BMS_BLE zeigt den Strom dort bisher immer negativ an. Stimmt das Vorzeichen beim Laden nicht, bitte die Rohdaten melden.
 
+**BM2:** Der Batteriewächter (Hersteller Leagend, unter vielen Namen verkauft) liefert nur **Spannung und Ladestand**, keinen Strom. Er sendet etwa jede Sekunde ein AES-verschlüsseltes Paket auf `FFF4`; den Schlüssel hat [haxrob](https://haxrob.net/bm2-reversing-the-ble-protocol-of-the-bm2-battery-monitor/) aus der App ausgelesen. Auch hier gilt: Solange die BM2-App verbunden ist, kommt der ESP nicht dran. Mit Daly, Ective und BM2 sind die 3 Verbindungen (`MAX_BMS`) belegt. Der Nachfolger BM6 nutzt einen anderen Schlüssel und wird nicht unterstützt.
+
 Weitere BMS-Typen aus aiobmsble (JBD, JK, Seplos, Topband/Ective-Akkus …) lassen sich nach demselben Muster in `bms_proto.cpp` ergänzen.
 
 ## Web-Login
@@ -166,6 +175,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 |---|---|
+| 1.2.0 | BM2-Batteriewächter (Spannung, Ladestand); Firmware und Web-Oberfläche (`index.html.gz`) im Web-UI unter WiFi hochladbar, ohne USB |
 | 1.1.0 | Status-LED (M5Stack AtomS3 Lite automatisch, sonst `STATUS_LED_PIN`), AtomS3 als empfohlenes Board, CI-Build für ESP32-S3 |
 | 1.0.0 | Erste Version: Daly Smart BMS und Ective BM X, bis zu 3 BMS, Web-UI, MQTT mit HA-Discovery |
 

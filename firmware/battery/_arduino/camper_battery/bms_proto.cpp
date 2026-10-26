@@ -170,6 +170,24 @@ bool ectiveDecode(const uint8_t* f, size_t n, BmsSample& s) {
 }
 
 // ============================================================
+// BM2
+// ============================================================
+
+const uint8_t BM2_AES_KEY[16] = {0x6C, 0x65, 0x61, 0x67, 0x65, 0x6E, 0x64, 0xFF,
+                                 0xFE, 0x31, 0x38, 0x38, 0x32, 0x34, 0x36, 0x36};  // "leagend" FF FE "1882466"
+
+bool bm2Decode(const uint8_t p[16], BmsSample& s) {
+    bmsClear(s);
+    if (p[0] != 0xF5) return false;
+    uint16_t raw = ((uint16_t)p[1] << 4) | (p[2] >> 4);   // 12 bit, 10 mV steps
+    if (raw == 0 || raw > 2000) return false;             // 0 ... 20 V plausible
+    s.voltage = raw / 100.0f;
+    s.soc = p[3] > 100 ? 100 : p[3];
+    bmsFinish(s);
+    return true;
+}
+
+// ============================================================
 // Derived values
 // ============================================================
 
@@ -200,6 +218,7 @@ const char* bmsTypeName(uint8_t t) {
     switch (t) {
         case BMS_DALY:   return "Daly";
         case BMS_ECTIVE: return "Ective BM X";
+        case BMS_BM2:    return "BM2";
         default:         return "-";
     }
 }

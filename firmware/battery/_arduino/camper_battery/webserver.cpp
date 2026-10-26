@@ -7,6 +7,7 @@
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
+#include <Update.h>
 
 static AsyncWebServer server(80);
 static AsyncWebSocket ws("/ws");
@@ -14,6 +15,15 @@ static unsigned long lastWsUpdate = 0;
 
 static bool fsReady = false;
 static bool restartPending = false;
+
+// ---- Upload (web UI): firmware .bin or the web page index.html.gz --------------
+// A complete LittleFS image is NOT accepted here: it would also replace /config.json.
+static bool upAuthorized = false;
+static bool upWebPage = false;
+static bool upFailed = false;
+static File upFile;
+static const char* WEB_FILE = "/index.html.gz";
+static const char* WEB_TMP = "/index.html.gz.tmp";
 static unsigned long restartAt = 0;
 static volatile bool configDirty = false;       // Save request from the async web task, handled in loop()
 static volatile bool batteriesChanged = false;  // Battery list changed: reconnect + new HA discovery
@@ -93,7 +103,7 @@ static const char* parseBatteries(JsonArrayConst arr, BmsConfig* out) {
         strlcpy(b.mac, mac, sizeof(b.mac));
 
         int type = item["type"] | 0;
-        if (type != BMS_DALY && type != BMS_ECTIVE) return "Unknown BMS type";
+        if (type != BMS_DALY && type != BMS_ECTIVE && type != BMS_BM2) return "Unknown BMS type";
         b.type = (uint8_t)type;
 
         const char* name = item["name"] | "";
@@ -190,8 +200,11 @@ void webserverInit() {
         } else if (fsReady && LittleFS.exists("/index.html")) {
             request->send(LittleFS, "/index.html", "text/html");   // Uncompressed (older filesystem image)
         } else {
-            request->send(200, "text/html",
-                "<h1>Camper Battery</h1><p>Please upload the LittleFS image (data/index.html.gz).</p>");
+                    request->send(200, "text/html",
+                "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'>"
+                "<h2>Camper Battery</h2><p>Die Web-Oberfl&auml;che fehlt. Hier <code>data/index.html.gz</code> "
+                "oder eine Firmware (.bin) hochladen:</p><form method=POST action=/api/update enctype=multipart/form-data>"
+                "<input type=file name=f accept='.bin,.gz'> <button>Hochladen</button></form>");
         }
     });
 
@@ -206,6 +219,54 @@ void webserverInit() {
                   handleApiSaveConfig(request, data, len, index, total);
               });
     server.on("/api/restart", HTTP_POST, handleApiRestart);
+
+    // Firmware (.bin) or web page (.gz) upload; the file name decides
+    server.on("/api/update", HTTP_POST,
+        [](AsyncWebServerRequest* request) {
+            if (!auth(request)) return;
+            if (upWebPage) {
+                bool ok = upAuthorized && !upFailed;
+                request->send(ok ? 200 : 500, "text/plain", ok ? "OK web" : "Upload failed");
+                return;
+            }
+            bool ok = upAuthorized && !Update.hasError();
+            request->send(ok ? 200 : 500, "text/plain", ok ? "OK" : "Update failed");
+            if (ok) { restartPending = true; restartAt = millis() + 1000; }
+        },
+        [](AsyncWebServerRequest* request, const String& filename, size_t index, uint8_t* data, size_t len, bool final) {
+            if (index == 0) {
+                upAuthorized = authOk(request);
+                if (!upAuthorized) return;
+                String n = filename;
+                n.toLowerCase();
+                upWebPage = n.endsWith(".gz");
+                upFailed = false;
+                Serial.printf("[OTA] Web upload (%s): %s\n", upWebPage ? "web page" : "firmware", filename.c_str());
+                if (upWebPage) {
+                    upFile = fsReady ? LittleFS.open(WEB_TMP, "w") : File();
+                    if (!upFile) upFailed = true;
+                } else if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
+                    Update.printError(Serial);
+                }
+            }
+            if (!upAuthorized) return;
+            if (upWebPage) {
+                if (upFailed) return;
+                if (len && upFile.write(data, len) != len) upFailed = true;
+                if (final) {
+                    upFile.close();
+                    if (!upFailed) { LittleFS.remove(WEB_FILE); upFailed = !LittleFS.rename(WEB_TMP, WEB_FILE); }
+                    else LittleFS.remove(WEB_TMP);
+                    Serial.printf("[OTA] Web page %s\n", upFailed ? "FAILED" : "replaced");
+                }
+                return;
+            }
+            if (len && Update.write(data, len) != len) Update.printError(Serial);
+            if (final) {
+                if (Update.end(true)) Serial.printf("[OTA] Firmware ok, %u bytes\n", (unsigned)(index + len));
+                else Update.printError(Serial);
+            }
+        });
 
     // Search for BMS (the scan itself runs in the BLE task)
     server.on("/api/scan", HTTP_POST, [](AsyncWebServerRequest* request) {

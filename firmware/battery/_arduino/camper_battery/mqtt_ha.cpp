@@ -294,7 +294,7 @@ static void addBatteryDevice(JsonDocument& doc, int i, const char* id) {
     device["identifiers"][0] = String(HA_NODE_ID "_") + id;
     device["name"] = (const char*)config.bms[i].name;
     device["model"] = bmsTypeName(config.bms[i].type);
-    device["manufacturer"] = config.bms[i].type == BMS_DALY ? "Daly" : "Ective";
+    device["manufacturer"] = config.bms[i].type == BMS_DALY ? "Daly" : config.bms[i].type == BMS_ECTIVE ? "Ective" : "Leagend";
     device["via_device"] = HA_NODE_ID;
 }
 

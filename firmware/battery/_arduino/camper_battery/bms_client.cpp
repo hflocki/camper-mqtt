@@ -5,6 +5,7 @@
 // Notifications arrive in the NimBLE host task and are only collected into a buffer there.
 #include "bms_client.h"
 #include <NimBLEDevice.h>
+#include "mbedtls/aes.h"
 
 static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;   // Guards live[], found[], flags
 
@@ -34,6 +35,7 @@ struct Link {
     volatile size_t len;
     volatile bool done;
     volatile uint8_t head;         // Expected first byte of the response
+    bool raw16;                    // BM2: take each notification as one 16-byte block
 };
 static Link links[MAX_BMS];
 static NimBLEScan* scan = nullptr;
@@ -75,6 +77,7 @@ static void countError(int i) {
 static uint8_t detectType(const NimBLEAdvertisedDevice* dev) {
     if (dev->isAdvertisingService(NimBLEUUID((uint16_t)0xAF30))) return BMS_ECTIVE;
     std::string name = dev->haveName() ? dev->getName() : std::string();
+    if (name == "Battery Monitor" || name.rfind("BM2", 0) == 0) return BMS_BM2;
     if (name.rfind("DL-", 0) == 0) return BMS_DALY;
     if (dev->isAdvertisingService(NimBLEUUID((uint16_t)0xFFF0)) && dev->getManufacturerDataCount() > 0) {
         std::string m = dev->getManufacturerData(0);
@@ -165,6 +168,13 @@ static void dropLink(int i, const char* why) {
 static void onNotify(int i, const uint8_t* data, size_t n) {
     Link& l = links[i];
     if (l.done || n == 0) return;
+    if (l.raw16) {                 // BM2: one encrypted block per notification
+        if (n < 16) return;
+        memcpy(l.buf, data, 16);
+        l.len = 16;
+        l.done = true;
+        return;
+    }
     size_t len = l.len;
     // A frame starts with the expected head byte; responses longer than the MTU come in pieces
     if (len == 0 && data[0] != l.head) return;
@@ -233,7 +243,14 @@ static bool connectLink(int i) {
     }
 
     bool chars = false;
-    if (l.cfg.type == BMS_DALY) {
+    l.raw16 = (l.cfg.type == BMS_BM2);
+    if (l.cfg.type == BMS_BM2) {
+        // Notify only, nothing to write
+        NimBLERemoteService* svc = l.client->getService(NimBLEUUID((uint16_t)0xFFF0));
+        l.rx = svc ? svc->getCharacteristic(NimBLEUUID((uint16_t)0xFFF4)) : nullptr;
+        l.tx = nullptr;
+        chars = l.rx && l.rx->canNotify();
+    } else if (l.cfg.type == BMS_DALY) {
         chars = findChars(l, 0xFFF0, 0xFFF1, 0xFFF2);
     } else if (l.cfg.type == BMS_ECTIVE) {
         chars = findChars(l, 0xFFE0, 0xFFE1, 0xFFE1) || findChars(l, 0xAF30, 0xFFE1, 0xFFE1);
@@ -243,7 +260,7 @@ static bool connectLink(int i) {
         dropLink(i, "Dienst nicht gefunden");
         return false;
     }
-    l.txResponse = !l.tx->canWriteNoResponse();
+    l.txResponse = l.tx && !l.tx->canWriteNoResponse();
     if (!l.rx->subscribe(true, [i](NimBLERemoteCharacteristic*, uint8_t* d, size_t n, bool) { onNotify(i, d, n); })) {
         dropLink(i, "Notify fehlgeschlagen");
         return false;
@@ -311,10 +328,35 @@ static bool pollEctive(int i, BmsSample& s) {
     return false;
 }
 
+// BM2: wait for the next notification (sent about once per second) and decrypt it
+static bool pollBm2(int i, BmsSample& s) {
+    Link& l = links[i];
+    unsigned long t0 = millis();
+    while (millis() - t0 < BM2_WAIT_MS) {
+        l.len = 0;
+        l.done = false;
+        while (!l.done && millis() - t0 < BM2_WAIT_MS) {
+            if (!l.client->isConnected()) return false;
+            vTaskDelay(pdMS_TO_TICKS(20));
+        }
+        if (!l.done) return false;
+        uint8_t plain[16], iv[16] = {0};
+        mbedtls_aes_context aes;
+        mbedtls_aes_init(&aes);
+        mbedtls_aes_setkey_dec(&aes, BM2_AES_KEY, 128);
+        int rc = mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, 16, iv, l.buf, plain);
+        mbedtls_aes_free(&aes);
+        if (rc == 0 && bm2Decode(plain, s)) return true;
+    }
+    return false;
+}
+
 static void pollLink(int i) {
     Link& l = links[i];
     static BmsSample s;
-    bool ok = (l.cfg.type == BMS_DALY) ? pollDaly(i, s) : pollEctive(i, s);
+    bool ok = (l.cfg.type == BMS_DALY)   ? pollDaly(i, s)
+            : (l.cfg.type == BMS_ECTIVE) ? pollEctive(i, s)
+            :                              pollBm2(i, s);
     int rssi = l.client ? l.client->getRssi() : 0;
 
     portENTER_CRITICAL(&mux);
