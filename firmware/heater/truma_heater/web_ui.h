@@ -97,6 +97,7 @@ input[type=file]{font-size:.8rem;color:var(--mute);width:100%}
 </div>
 
 <div class="page on" id="tab-heat">
+  <div id="mism" class="card warn hide"><div class="ct bad">Heizungsmodell prüfen</div><div id="mism-text" class="sub"></div><div class="hint">Einstellbar unter System → Heizung.</div></div>
   <div id="nolink" class="card warn hide"><div class="ct bad">Keine Verbindung zum CP Plus</div><div id="nolink-text" class="sub"></div></div>
   <div class="card">
     <div class="ct heat">Raum</div>
@@ -108,14 +109,20 @@ input[type=file]{font-size:.8rem;color:var(--mute);width:100%}
       <span class="lbl">Heizen</span><label class="toggle heat"><input type="checkbox" id="room-on"><span></span></label>
       <div class="stepper"><button class="btn" id="minus">−</button><b id="setp">--</b><button class="btn" id="plus">+</button></div>
     </div>
-    <div class="row"><span class="lbl">Lüfter</span><div class="seg" id="seg-fan"><button data-v="eco">Eco</button><button data-v="high">High</button><button data-v="boost" class="hide" id="fan-boost">Boost</button></div></div>
+    <div class="row"><span class="lbl">Lüfter</span><div class="seg" id="seg-fan"></div></div>
   </div>
-  <div class="card">
+  <div class="card" id="c-water">
     <div class="ct water">Warmwasser</div>
     <div class="temp"><span id="water">--</span><small> °C</small></div>
     <div class="row"><div class="seg water" id="seg-water"><button data-v="off">Aus</button><button data-v="eco">Eco 40°</button><button data-v="high">Hot 60°</button><button data-v="boost" class="hide" id="water-boost">Boost</button></div></div>
   </div>
-  <div class="card">
+  <div class="card hide" id="c-energy">
+    <div class="ct heat">Energie</div>
+    <div class="row" style="margin-top:0"><div class="seg" id="seg-energy"><button data-v="gas" id="en-fuel">Gas</button><button data-v="mix_900">Mix 900</button><button data-v="mix_1800">Mix 1800</button></div></div>
+    <div class="row"><div class="seg" id="seg-energy2"><button data-v="electricity_900">Elektro 900 W</button><button data-v="electricity_1800">Elektro 1800 W</button></div></div>
+    <div class="hint">Mix und Elektro brauchen 230 V am Heizstab (Landstrom).</div>
+  </div>
+  <div class="card" id="c-decoke">
     <div class="ct">Freibrennen</div>
     <div class="sub" id="decoke-text">Maximale Temperatur mit Lüfter High, danach werden die vorherigen Einstellungen wiederhergestellt.</div>
     <div class="row"><button class="btn primary" id="decoke">Starten</button><span class="sub">Dauer</span><select class="inl" id="decoke-min"></select></div>
@@ -142,9 +149,9 @@ input[type=file]{font-size:.8rem;color:var(--mute);width:100%}
       <div class="fg"><label>Start</label><input type="time" id="t-start"></div>
       <div class="fg"><label>Ende</label><input type="time" id="t-stop"></div>
       <div class="fg"><label>Temperatur °C</label><input type="number" id="t-temp" min="5" max="30" step="1"></div>
-      <div class="fg"><label>Lüfter</label><select id="t-fan"><option value="eco">Eco</option><option value="high">High</option><option value="boost" id="t-boost">Boost</option></select></div>
+      <div class="fg"><label>Lüfter</label><select id="t-fan"></select></div>
     </div>
-    <div class="fg"><label>Warmwasser</label><select id="t-water"><option value="">unverändert</option><option value="off">Aus</option><option value="eco">Eco 40°</option><option value="high">Hot 60°</option></select></div>
+    <div class="fg" id="t-water-fg"><label>Warmwasser</label><select id="t-water"><option value="">unverändert</option><option value="off">Aus</option><option value="eco">Eco 40°</option><option value="high">Hot 60°</option></select></div>
     <div class="btns"><button class="btn save" id="t-set">⏱️ Timer setzen</button><button class="btn danger" id="t-off">Timer aus</button></div>
   </div>
 </div>
@@ -213,6 +220,13 @@ input[type=file]{font-size:.8rem;color:var(--mute);width:100%}
 
 <div class="page" id="tab-sys">
   <div class="card">
+    <div class="ct heat">Heizung</div>
+    <div class="fg"><label>Modell</label><select id="model"></select>
+      <div class="hint">Bestimmt, was Weboberfläche und Home Assistant anzeigen (Boost, Warmwasser, Energie, Freibrennen). Wirkt sofort, ohne Neustart.</div></div>
+    <div class="info"><span>Vom CP Plus erkannt</span><span id="s-det">--</span></div>
+    <div class="hint" id="s-mism"></div>
+  </div>
+  <div class="card">
     <div class="ct">LIN-Bus</div>
     <div class="info"><span>LIN-Verkehr</span><span id="s-traffic">--</span></div>
     <div class="info"><span>CP Plus angemeldet</span><span id="s-cp">--</span></div>
@@ -263,6 +277,16 @@ function ask(el,txt,fn){if(el.dataset.arm){delete el.dataset.arm;clearTimeout(el
   el.dataset.orig=el.textContent;el.dataset.arm='1';el.textContent=txt;
   el._t=setTimeout(()=>{if(el.dataset.arm){delete el.dataset.arm;el.textContent=el.dataset.orig}},4000)}
 async function cmd(a,v){const b=new URLSearchParams({a,v:v??''});try{const r=await fetch('/api/cmd',{method:'POST',body:b});if(!r.ok)throw 0;setTimeout(load,400)}catch(e){toast('Befehl fehlgeschlagen')}}
+const FAN_LBL={eco:'Eco',high:'High',boost:'Boost',night:'Nacht',auto:'Auto'};let fanKey='';
+// Rebuild fan buttons and timer fan options when the model changes.
+function buildFans(fans){const k=fans.join();if(k===fanKey)return;fanKey=k;
+  $('seg-fan').innerHTML=fans.map(f=>'<button data-v="'+f+'">'+FAN_LBL[f]+'</button>').join('');
+  document.querySelectorAll('#seg-fan button').forEach(b=>b.onclick=()=>cmd('fan',b.dataset.v));
+  $('t-fan').innerHTML=fans.map(f=>'<option value="'+f+'">'+FAN_LBL[f]+'</option>').join('')}
+let modelList='';
+function buildModels(m){const k=m.list.map(o=>o.k).join();if(k!==modelList){modelList=k;
+  $('model').innerHTML=m.list.map(o=>'<option value="'+o.k+'">'+o.n+'</option>').join('')}
+  if(document.activeElement!==$('model'))$('model').value=m.key}
 function seg(id,val){document.querySelectorAll('#'+id+' button').forEach(b=>b.classList.toggle('on',b.dataset.v===val))}
 function setTxt(id,t){$(id).textContent=t}
 function dot(id,s){$(id).className='dot'+(s===true?' on':s===false?' bad':'')}
@@ -280,8 +304,14 @@ function render(){
   setTxt('status',h.valid?(h.action==='heating'?'heizt':h.vent>0?'Lüften Stufe '+h.vent:h.action==='fan'?'Lüfter läuft':(h.on?'Temperatur erreicht':'aus')):'--');
   if(document.activeElement!==$('room-on'))$('room-on').checked=!!h.on;
   if(localSetp===null)setTxt('setp',(+h.setpoint).toFixed(0)+' °C');
-  seg('seg-fan',h.fan);seg('seg-water',h.water_mode||'');
-  $('fan-boost').classList.toggle('hide',!h.boost);$('water-boost').classList.toggle('hide',!h.water_boost);$('t-boost').classList.toggle('hide',!h.boost);
+  const m=s.model;buildFans(m.fans);buildModels(m);
+  seg('seg-fan',h.fan);seg('seg-water',h.water_mode||'');seg('seg-energy',h.energy||'');seg('seg-energy2',h.energy||'');
+  $('water-boost').classList.toggle('hide',!m.water_boost);
+  $('c-water').classList.toggle('hide',!m.water);$('t-water-fg').classList.toggle('hide',!m.water);
+  $('c-energy').classList.toggle('hide',!m.electric);setTxt('en-fuel',m.diesel?'Diesel':'Gas');
+  $('c-decoke').classList.toggle('hide',!m.diesel);
+  $('mism').classList.toggle('hide',!m.mismatch);setTxt('mism-text',m.mismatch||'');
+  setTxt('s-det',m.detected||'noch nicht');setTxt('s-mism',m.mismatch||'');
   const d=s.decoke;if(!$('decoke').dataset.arm)$('decoke').textContent=d.active?'Beenden':'Starten';
   setTxt('decoke-text',d.active?('Läuft noch '+Math.ceil(d.remaining/60)+' min.'):'Maximale Temperatur mit Lüfter High, danach werden die vorherigen Einstellungen wiederhergestellt.');
   if(document.activeElement!==$('decoke-min'))$('decoke-min').value=d.minutes;
@@ -291,7 +321,7 @@ function render(){
   const tc=s.timer_cfg;
   setTxt('timer-text',tc?(tc.active?'Aktiv '+tc.start+'–'+tc.stop+', '+tc.temp+' °C, Lüfter '+tc.fan:'Aus (gespeichert '+tc.start+'–'+tc.stop+')'):'Noch kein Timer-Status vom CP Plus.');
   if(tc&&!timerEdit){$('t-start').value=tc.start;$('t-stop').value=tc.stop;$('t-temp').value=tc.temp>=5?tc.temp:Math.round(+h.setpoint);
-    $('t-fan').value=(tc.fan==='off'?h.fan:tc.fan)||'eco'}
+    $('t-fan').value=(tc.fan==='off'?h.fan:tc.fan)||m.fans[0]}
   setTxt('s-traffic',l.traffic?'ja':'nein');setTxt('s-cp',l.cpplus?'ja':'nein');
   setTxt('s-cpv',l.cpplus_version||'--');setTxt('s-hv',l.heater_version||'--');
   setTxt('s-frames',l.frames+' / '+l.crc_errors);setTxt('s-ack',l.ack_errors);setTxt('s-heap',Math.round(y.heap/1024)+' kB');
@@ -323,7 +353,8 @@ document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>save(b.dataset
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id==='tab-'+t.dataset.tab));if(t.dataset.tab==='sys')loadLog();logLive()});
 $('room-on').onchange=e=>cmd('room_on',e.target.checked?'1':'0');
-document.querySelectorAll('#seg-fan button').forEach(b=>b.onclick=()=>cmd('fan',b.dataset.v));
+document.querySelectorAll('#seg-energy button,#seg-energy2 button').forEach(b=>b.onclick=()=>cmd('energy',b.dataset.v));
+$('model').onchange=e=>{cmd('model',e.target.value);fanKey='';toast('Modell übernommen')};
 document.querySelectorAll('#seg-water button').forEach(b=>b.onclick=()=>cmd('water',b.dataset.v));
 function step(d){const base=localSetp??Math.round(+st.heater.setpoint);localSetp=Math.min(30,Math.max(5,base+d));setTxt('setp',localSetp+' °C');
   clearTimeout(setpTimer);setpTimer=setTimeout(()=>{cmd('setpoint',localSetp);setTimeout(()=>localSetp=null,1500)},900)}

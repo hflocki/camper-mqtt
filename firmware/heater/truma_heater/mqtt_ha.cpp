@@ -8,6 +8,7 @@
 
 #include "config.h"
 #include "heater_control.h"
+#include "heater_model.h"
 #include "logger.h"
 #include "settings.h"
 #include "wifi_manager.h"
@@ -69,6 +70,7 @@ static void publish_state() {
   pub("decoke_remaining", String((heater::decoke_remaining_s() + 59) / 60));
   pub("room_setpoint", fmt1(heater::room_setpoint()));
   pub("fan_mode", heater::fan_mode());
+  pub("heater_model", heater::model().key);
   if (s.cpplus_version[0]) pub("cpplus_version", s.cpplus_version);
   if (s.heater_version[0]) pub("heater_version", s.heater_version);
 
@@ -84,13 +86,13 @@ static void publish_state() {
     pub("heating_mode", heating_mode_to_str(h.heating_mode));
     pub("energy_mix", energy_mix_to_str(h.energy_mix_a));
     pub("el_power_level", String((uint16_t) h.el_power_level_a));
-#if HEATER_HAS_ELECTRIC
-    if (h.energy_mix_a == EnergyMix::MIX || h.energy_mix_a == EnergyMix::ELECTRICITY) {
-      pub("energy_select", String(energy_mix_to_str(h.energy_mix_a)) + "_" + String((uint16_t) h.el_power_level_a));
-    } else {
-      pub("energy_select", "gas");
+    if (heater::model().electric) {
+      if (h.energy_mix_a == EnergyMix::MIX || h.energy_mix_a == EnergyMix::ELECTRICITY) {
+        pub("energy_select", String(energy_mix_to_str(h.energy_mix_a)) + "_" + String((uint16_t) h.el_power_level_a));
+      } else {
+        pub("energy_select", "gas");
+      }
     }
-#endif
     pub("operating_status", String((uint8_t) h.operating_status));
     pub("operating_status_text", operating_status_to_str(h.operating_status));
     pub("error_code", String(heater::error_code()));
@@ -180,6 +182,11 @@ static void disc_publish(const char *component, const char *object, JsonDocument
   pub_raw(t, payload, true);
 }
 
+// Removes an entity the active heater model does not offer (empty retained config).
+static void disc_remove(const char *component, const char *object) {
+  pub_raw(g_settings.ha_prefix + "/" + component + "/" + g_node_id + "/" + object + "/config", "", true);
+}
+
 static void disc_sensor(const char *object, const char *name, const char *key, const char *device_class,
                         const char *unit, bool diagnostic, Avail avail, const char *icon = nullptr) {
   JsonDocument doc;
@@ -223,6 +230,7 @@ static void disc_button(const char *object, const char *name, const char *key, c
 static void publish_discovery() {
   if (!g_settings.ha_discovery) return;
   LOGI(TAG, "Publishing Home Assistant discovery");
+  const heater::ModelInfo &mi = heater::model();
 
   {  // Room thermostat
     JsonDocument doc;
@@ -237,11 +245,9 @@ static void publish_discovery() {
     doc["current_temperature_topic"] = topic("control_status", "current_temp_room");
     doc["action_topic"] = topic("control_status", "hvac_action");
     JsonArray fans = doc["fan_modes"].to<JsonArray>();
-    fans.add("eco");
-    fans.add("high");
-#if HEATER_SUPPORTS_BOOST
-    fans.add("boost");
-#endif
+    const char *modes_list[4];
+    int n = heater::fan_modes(modes_list, 4);
+    for (int i = 0; i < n; i++) fans.add(modes_list[i]);
     doc["fan_mode_command_topic"] = topic("set", "fan_mode");
     doc["fan_mode_state_topic"] = topic("control_status", "fan_mode");
     doc["min_temp"] = 5;
@@ -253,7 +259,10 @@ static void publish_discovery() {
     disc_publish("climate", "room", doc);
   }
 
-  {  // Hot water
+  if (!mi.water) {
+    disc_remove("select", "water");
+    disc_remove("sensor", "current_temp_water");
+  } else {  // Hot water
     JsonDocument doc;
     disc_common(doc, "water", "Hot water", AVAIL_HEATER);
     doc["command_topic"] = topic("set", "water_mode");
@@ -262,15 +271,14 @@ static void publish_discovery() {
     opts.add("off");
     opts.add("eco");
     opts.add("high");
-#if WATER_SUPPORTS_BOOST
-    opts.add("boost");
-#endif
+    if (mi.water_boost) opts.add("boost");
     doc["icon"] = "mdi:water-boiler";
     disc_publish("select", "water", doc);
   }
 
-#if HEATER_HAS_ELECTRIC
-  {  // Energy source
+  if (!mi.electric) {
+    disc_remove("select", "energy");
+  } else {  // Energy source
     JsonDocument doc;
     disc_common(doc, "energy", "Energy source", AVAIL_HEATER);
     doc["command_topic"] = topic("set", "energy_select");
@@ -280,8 +288,24 @@ static void publish_discovery() {
     doc["icon"] = "mdi:lightning-bolt";
     disc_publish("select", "energy", doc);
   }
-#endif
 
+  {  // Heater model (config): controls offered in HA and the web UI follow it
+    JsonDocument doc;
+    disc_common(doc, "heater_model", "Heater model", AVAIL_DEVICE);
+    doc["command_topic"] = topic("set", "heater_model");
+    doc["state_topic"] = topic("control_status", "heater_model");
+    JsonArray opts = doc["options"].to<JsonArray>();
+    for (size_t i = 0; i < heater::MODEL_COUNT; i++) opts.add(heater::MODELS[i].key);
+    doc["entity_category"] = "config";
+    doc["icon"] = "mdi:radiator";
+    disc_publish("select", "heater_model", doc);
+  }
+
+  if (!mi.diesel) {
+    disc_remove("switch", "decoke");
+    disc_remove("number", "decoke_minutes");
+    disc_remove("sensor", "decoke_remaining");
+  } else {
   {  // Decoking switch
     JsonDocument doc;
     disc_common(doc, "decoke", "Decoking", AVAIL_HEATER);
@@ -305,10 +329,14 @@ static void publish_discovery() {
     doc["icon"] = "mdi:timer-cog-outline";
     disc_publish("number", "decoke_minutes", doc);
   }
+  disc_sensor("decoke_remaining", "Decoking remaining", "decoke_remaining", nullptr, nullptr, false, AVAIL_HEATER,
+              "mdi:timer-sand");
+  }
 
   disc_sensor("current_temp_room", "Room temperature", "current_temp_room", "temperature", "°C", false, AVAIL_HEATER);
-  disc_sensor("current_temp_water", "Water temperature", "current_temp_water", "temperature", "°C", false,
-              AVAIL_HEATER);
+  if (mi.water)
+    disc_sensor("current_temp_water", "Water temperature", "current_temp_water", "temperature", "°C", false,
+                AVAIL_HEATER);
   disc_sensor("operating_status", "Operating status", "operating_status", nullptr, nullptr, true, AVAIL_HEATER,
               "mdi:state-machine");
   disc_sensor("error_code", "Error code", "error_code", nullptr, nullptr, true, AVAIL_HEATER, "mdi:alert-decagram");
@@ -339,8 +367,6 @@ static void publish_discovery() {
   disc_sensor("timer_temp_room", "Timer temperature", "timer_temp_room", "temperature", "°C", false, AVAIL_HEATER);
   disc_sensor("timer_heating_mode", "Timer fan mode", "timer_heating_mode", nullptr, nullptr, false, AVAIL_HEATER,
               "mdi:fan-clock");
-  disc_sensor("decoke_remaining", "Decoking remaining", "decoke_remaining", nullptr, nullptr, false, AVAIL_HEATER,
-              "mdi:timer-sand");
   disc_sensor("clock", "CP Plus clock", "clock", nullptr, nullptr, true, AVAIL_HEATER, "mdi:clock-outline");
   disc_sensor("rssi", "WiFi signal", "rssi", "signal_strength", "dBm", true, AVAIL_DEVICE);
   if (g_settings.mqtt_log_level <= (uint8_t) LogLevel::DEBUG) {
@@ -426,6 +452,8 @@ static void on_message(char *t, byte *payload, unsigned int length) {
     heater::set_timer_active(value.equalsIgnoreCase("ON") || value == "1");
   } else if (key == "sniffer") {
     heater::set_sniffer(value.equalsIgnoreCase("ON") || value == "1");
+  } else if (key == "heater_model") {
+    heater::set_model(value);
   } else if (key == "reboot") {
     g_reboot_at = millis() + 1000;
   } else {
@@ -510,5 +538,10 @@ void loop() {
 bool connected() { return g_client.connected(); }
 
 void request_publish() { g_force = true; }
+
+void request_discovery() {
+  g_discovery_pending = true;
+  g_force = true;
+}
 
 }  // namespace mqtt

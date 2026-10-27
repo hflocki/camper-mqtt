@@ -36,9 +36,10 @@ struct Settings {
   String web_pass;
 
   // Heater
+  String heater_model;           // key from heater_model.h, e.g. "combi_d"
   uint16_t decoke_minutes = 30;
   float room_setpoint = 20.0f;   // last used room temperature, used when switching on
-  String fan_mode;               // last used fan mode when switching on ("eco"/"high")
+  String fan_mode;               // last used fan mode when switching on (eco/high/boost, VarioHeat night/auto/boost)
 
   uint8_t log_level = 2;       // 0=error .. 3=debug
   uint8_t mqtt_log_level = 1;  // lines up to this level go to <base>/log, 4 = off

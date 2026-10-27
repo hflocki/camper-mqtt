@@ -21,5 +21,6 @@
 
 // ---- Device ----------------------------------------------------------
 // #define BOARD_ESP32C3_SUPERMINI                // board selection, see config.h
+// #define DEFAULT_HEATER_MODEL "combi_d"        // combi, combi_e, combi_d, combi_d_e, vario (first boot only)
 // #define DEFAULT_MQTT_BASE    "camper/heater"
 // #define DEFAULT_NTP_SERVER   "192.168.1.1"

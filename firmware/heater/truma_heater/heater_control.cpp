@@ -1,7 +1,9 @@
 #include "heater_control.h"
 
 #include "config.h"
+#include "heater_model.h"
 #include "logger.h"
+#include "mqtt_ha.h"
 #include "settings.h"
 
 using namespace truma;
@@ -20,32 +22,94 @@ static uint32_t g_decoke_start_ms = 0;
 static float g_decoke_prev_temp = 0;
 static HeatingMode g_decoke_prev_mode = HeatingMode::MODE_OFF;
 
-#if HEATER_SUPPORTS_BOOST
-static const HeatingMode DECOKE_MODE = HeatingMode::MODE_BOOST;
-#else
+// Decoking is only offered for diesel heaters, which have no fan BOOST.
 static const HeatingMode DECOKE_MODE = HeatingMode::MODE_HIGH;
-#endif
+
+static bool parse_fan_mode(const String &s, HeatingMode &out);
+
+// ---- model --------------------------------------------------------------------------------------
+
+const ModelInfo &model() {
+  int i = model_index(g_settings.heater_model);
+  return MODELS[i < 0 ? 2 : i];
+}
+
+bool set_model(const String &key) {
+  int i = model_index(key);
+  if (i < 0) {
+    LOGW(TAG, "Unknown heater model '%s'", key.c_str());
+    return false;
+  }
+  if (g_settings.heater_model == MODELS[i].key) return true;
+  g_settings.heater_model = MODELS[i].key;
+  // The remembered fan mode must exist on the new model.
+  HeatingMode m;
+  if (!parse_fan_mode(g_settings.fan_mode, m) || m == HeatingMode::MODE_OFF)
+    g_settings.fan_mode = MODELS[i].vario ? "auto" : "eco";
+  settings_save_heater();
+  LOGI(TAG, "Heater model: %s", MODELS[i].name);
+  if (!MODELS[i].diesel) decoke_stop(false);
+  mqtt::request_discovery();
+  return true;
+}
+
+const char *detected_name(Device d) {
+  switch (d) {
+    case Device::HEATER_COMBI4: return "Combi 4";
+    case Device::HEATER_COMBI6D: return "Combi 6 / D 6";
+    case Device::HEATER_VARIO: return "VarioHeat";
+    default: return nullptr;
+  }
+}
+
+const char *model_mismatch(Device d) {
+  // Only the VarioHeat family is told apart reliably; gas/diesel and E variants are not reported.
+  if (d == Device::HEATER_VARIO && !model().vario) return "Die CP Plus meldet eine VarioHeat, eingestellt ist eine Combi.";
+  if ((d == Device::HEATER_COMBI4 || d == Device::HEATER_COMBI6D) && model().vario)
+    return "Die CP Plus meldet eine Combi, eingestellt ist eine VarioHeat.";
+  return nullptr;
+}
 
 // ---- helpers ------------------------------------------------------------------------------------
 
+// Fan modes of the active model: Combi eco/high(/boost), VarioHeat night/auto/boost.
 static bool parse_fan_mode(const String &s, HeatingMode &out) {
   String m = s;
   m.trim();
   m.toLowerCase();
+  const ModelInfo &mi = model();
   if (m == "off") out = HeatingMode::MODE_OFF;
-  else if (m == "eco") out = HeatingMode::MODE_ECO;
-  else if (m == "high") out = HeatingMode::MODE_HIGH;
-#if HEATER_SUPPORTS_BOOST
-  else if (m == "boost") out = HeatingMode::MODE_BOOST;
-#endif
+  else if (!mi.vario && m == "eco") out = HeatingMode::MODE_ECO;
+  else if (!mi.vario && m == "high") out = HeatingMode::MODE_HIGH;
+  else if (mi.vario && m == "night") out = HeatingMode::MODE_NIGHT;
+  else if (mi.vario && m == "auto") out = HeatingMode::MODE_AUTO;
+  else if (mi.fan_boost && m == "boost") out = HeatingMode::MODE_BOOST;
   else return false;
   return true;
 }
 
 static HeatingMode remembered_fan_mode() {
   HeatingMode m;
-  if (!parse_fan_mode(g_settings.fan_mode, m) || m == HeatingMode::MODE_OFF) m = HeatingMode::MODE_ECO;
+  if (!parse_fan_mode(g_settings.fan_mode, m) || m == HeatingMode::MODE_OFF)
+    m = model().vario ? HeatingMode::MODE_AUTO : HeatingMode::MODE_ECO;
   return m;
+}
+
+int fan_modes(const char *out[], int max) {
+  const ModelInfo &mi = model();
+  int n = 0;
+  auto add = [&](const char *m) {
+    if (n < max) out[n++] = m;
+  };
+  if (mi.vario) {
+    add("night");
+    add("auto");
+  } else {
+    add("eco");
+    add("high");
+  }
+  if (mi.fan_boost) add("boost");
+  return n;
 }
 
 static bool send(const Command &cmd) {
@@ -174,9 +238,11 @@ bool set_fan_mode(const String &mode, bool power_on) {
 }
 
 bool set_water_temp(float celsius) {
-#if !WATER_SUPPORTS_BOOST
-  if (celsius >= 80) celsius = 60;
-#endif
+  if (!model().water) {
+    LOGW(TAG, "This heater has no hot water");
+    return false;
+  }
+  if (!model().water_boost && celsius >= 80) celsius = 60;
   Command c;
   c.type = CommandType::SET_WATER;
   c.value = celsius;
@@ -206,6 +272,10 @@ bool set_energy_mix(const String &mix, uint16_t power_level) {
   else if (m == "mix") c.mix = EnergyMix::MIX;
   else if (m == "electricity" || m == "electric") c.mix = EnergyMix::ELECTRICITY;
   else return false;
+  if (c.mix != EnergyMix::GAS && !model().electric) {
+    LOGW(TAG, "This heater has no electric heating element");
+    return false;
+  }
   return send(c);
 }
 
@@ -237,9 +307,7 @@ static bool parse_water(const String &s, float &out) {
   else if (w == "high") out = 60;
   else if (w == "boost") out = 200;
   else out = w.toFloat();
-#if !WATER_SUPPORTS_BOOST
-  if (out >= 80) out = 60;
-#endif
+  if (!model().water_boost && out >= 80) out = 60;
   return true;
 }
 
@@ -331,6 +399,10 @@ bool set_timer(const String &spec) {
 // ---- decoking -----------------------------------------------------------------------------------
 
 bool decoke_start() {
+  if (!model().diesel) {
+    LOGW(TAG, "Decoking is only available on diesel heaters");
+    return false;
+  }
   if (!g_state.heater_valid) {
     LOGW(TAG, "Decoking not possible: no heater status");
     return false;
@@ -428,8 +500,7 @@ void loop() {
   // Follow changes made on the CP Plus so "heat" restores what was used last (RAM only).
   if (target >= 5 && !g_state.update_pending) {
     g_settings.room_setpoint = target;
-    if (h.heating_mode == HeatingMode::MODE_ECO || h.heating_mode == HeatingMode::MODE_HIGH ||
-        h.heating_mode == HeatingMode::MODE_BOOST) {
+    if (h.heating_mode != HeatingMode::MODE_OFF) {
       const char *m = heating_mode_to_str(h.heating_mode);
       if (g_settings.fan_mode != m) g_settings.fan_mode = m;
     }

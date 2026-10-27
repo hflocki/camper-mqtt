@@ -17,8 +17,8 @@ SHIM = r'''<script>
 const t0=Date.now();
 const S={system:{fw:"0.9.0-mock",ip:"192.168.1.50",rssi:-61,ap:false,wifi:true,mqtt:true,uptime:0,heap:182000,wifi_state:"Verbunden",ssid:"MeinWLAN",wifi_drops:0,wifi_reason:"-",reset_reason:"Einschalten"},
  lin:{traffic:true,cpplus:true,init:true,fault:false,frames:0,crc_errors:0,sniffer:false,ack_errors:0,pending:false,cpplus_version:"23.70.0",heater_version:"06.00.00"},
- heater:{valid:true,room:17.4,water:14,target_room:21,water_mode:"off",heating_mode:"eco",energy_mix:"gas",status:7,status_text:"on",error:0,on:true,action:"heating",vent:0,setpoint:21,fan:"eco",boost:false,water_boost:false},
- decoke:{active:false,remaining:0,minutes:30},
+ heater:{valid:true,room:17.4,water:14,target_room:21,water_mode:"off",heating_mode:"eco",energy_mix:"gas",energy:"gas",status:7,status_text:"on",error:0,on:true,action:"heating",vent:0,setpoint:21,fan:"eco"},
+ decoke:{active:false,remaining:0,minutes:30},model:null,
  timer:"off",timer_cfg:{active:false,start:"22:00",stop:"06:30",temp:20,fan:"eco",water:"off"},cpplus_clock:"12:00"};
 const CFG={ssid:"MeinWLAN",hostname:"truma-heater",static_ip:"",gateway:"",subnet:"",dns:"",mqtt_host:"192.168.1.10",mqtt_port:1883,mqtt_user:"",mqtt_base:"camper/truma",ha_discovery:true,ha_prefix:"homeassistant",ntp_server:"pool.ntp.org",tz:"CET-1CEST,M3.5.0,M10.5.0/3",web_user:"",log_level:2,mqtt_log_level:1,ap_ssid:"truma-heater-A1B2",ap_always:false,wifi_tx_power:34};
 let logs=[],logN=0;function log(l,m){const d=new Date();logs.push(d.toTimeString().slice(0,8)+' ['+l+'] '+m)}
@@ -31,7 +31,18 @@ function tick(){const h=S.heater,up=(Date.now()-t0)/1000;S.system.uptime=Math.fl
  if(S.decoke.active){S.decoke.remaining=Math.max(0,S.decoke.remaining-2);if(!S.decoke.remaining){S.decoke.active=false;h.target_room=S._prev||21}}
  if(S.lin.sniffer&&Math.random()<0.5)log('W','SNIFF PID 16: 00 0F '+(0x60+Math.floor(Math.random()*8)).toString(16).toUpperCase()+' 0B 87 0C 77 85')}
 setInterval(tick,2000);tick();
+// Same table as heater_model.h
+const MODELS={combi:["Truma Combi 4/6 (Gas)",1,0,1,1,0,0],combi_e:["Truma Combi 4/6 E (Gas + 230 V)",1,0,1,1,1,0],
+ combi_d:["Truma Combi D 4/6 (Diesel)",0,0,1,0,0,1],combi_d_e:["Truma Combi D 6 E (Diesel + 230 V)",0,0,1,0,1,1],vario:["Truma VarioHeat",1,1,0,0,0,0]};
+function setModel(k){const m=MODELS[k];S.model={key:k,water:!!m[3],water_boost:!!m[4],electric:!!m[5],diesel:!!m[6],
+ fans:(m[2]?['night','auto']:['eco','high']).concat(m[1]?['boost']:[]),detected:'Combi 6 / D 6',
+ list:Object.keys(MODELS).map(x=>({k:x,n:MODELS[x][0]}))};
+ if(m[2])S.model.mismatch='Die CP Plus meldet eine Combi, eingestellt ist eine VarioHeat.';
+ if(!S.model.fans.includes(S.heater.fan)){S.heater.fan=S.model.fans[0];S.heater.heating_mode=S.heater.fan}}
+setModel('combi_d');
 function cmd(a,v){const h=S.heater;log('I','Command '+a+' = '+v);
+ if(a==='model'){setModel(v);return}
+ if(a==='energy'){h.energy=v;h.energy_mix=v.split('_')[0];return}
  if(a==='room_on'){h.on=v==='1';h.target_room=h.on?h.setpoint:0;h.vent=0}
  else if(a==='setpoint'){h.setpoint=+v;if(h.on)h.target_room=+v}
  else if(a==='fan'){h.fan=v;h.heating_mode=v}

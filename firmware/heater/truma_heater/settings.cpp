@@ -3,6 +3,7 @@
 #include <Preferences.h>
 
 #include "config.h"
+#include "heater_model.h"
 
 Settings g_settings;
 
@@ -40,6 +41,7 @@ void settings_load() {
   g_settings.decoke_minutes = p.getUShort("decmin", DECOKE_DEFAULT_MINUTES);
   g_settings.room_setpoint = p.getFloat("setp", 20.0f);
   g_settings.fan_mode = p.getString("fan", "eco");
+  g_settings.heater_model = p.getString("model", DEFAULT_HEATER_MODEL);
   g_settings.log_level = p.getUChar("loglvl", 2);
   g_settings.mqtt_log_level = p.getUChar("mloglvl", 1);
   p.end();
@@ -50,8 +52,10 @@ void settings_load() {
   if (g_settings.mqtt_base.endsWith("/")) g_settings.mqtt_base.remove(g_settings.mqtt_base.length() - 1);
   if (g_settings.ha_prefix.isEmpty()) g_settings.ha_prefix = DEFAULT_HA_PREFIX;
   if (g_settings.room_setpoint < 5 || g_settings.room_setpoint > 30) g_settings.room_setpoint = 20.0f;
-  if (g_settings.fan_mode != "eco" && g_settings.fan_mode != "high" && g_settings.fan_mode != "boost")
-    g_settings.fan_mode = "eco";
+  if (heater::model_index(g_settings.heater_model) < 0) g_settings.heater_model = DEFAULT_HEATER_MODEL;
+  if (heater::model_index(g_settings.heater_model) < 0) g_settings.heater_model = "combi_d";
+  const String &fm = g_settings.fan_mode;
+  if (fm != "eco" && fm != "high" && fm != "boost" && fm != "night" && fm != "auto") g_settings.fan_mode = "eco";
   if (g_settings.decoke_minutes < 1 || g_settings.decoke_minutes > 240) g_settings.decoke_minutes = DECOKE_DEFAULT_MINUTES;
 }
 
@@ -92,5 +96,6 @@ void settings_save_heater() {
   p.putUShort("decmin", g_settings.decoke_minutes);
   p.putFloat("setp", g_settings.room_setpoint);
   p.putString("fan", g_settings.fan_mode);
+  p.putString("model", g_settings.heater_model);
   p.end();
 }

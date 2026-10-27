@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include "heater_control.h"
+#include "heater_model.h"
 #include "logger.h"
 #include "mqtt_ha.h"
 #include "settings.h"
@@ -86,6 +87,10 @@ static void render_state() {
     h["water_mode"] = water_mode_to_str(s.heater.target_temp_water);
     h["heating_mode"] = heating_mode_to_str(s.heater.heating_mode);
     h["energy_mix"] = energy_mix_to_str(s.heater.energy_mix_a);
+    const EnergyMix mx = s.heater.energy_mix_a;
+    h["energy"] = (mx == EnergyMix::MIX || mx == EnergyMix::ELECTRICITY)
+                      ? String(energy_mix_to_str(mx)) + "_" + String((uint16_t) s.heater.el_power_level_a)
+                      : String("gas");
     h["status"] = (uint8_t) s.heater.operating_status;
     h["status_text"] = operating_status_to_str(s.heater.operating_status);
     h["error"] = heater::error_code();
@@ -95,8 +100,29 @@ static void render_state() {
   if (s.vent_valid) h["vent"] = vent_level_from_raw(s.vent_raw);
   h["setpoint"] = heater::room_setpoint();
   h["fan"] = heater::fan_mode();
-  h["boost"] = (bool) HEATER_SUPPORTS_BOOST;
-  h["water_boost"] = (bool) WATER_SUPPORTS_BOOST;
+
+  // Active heater model: the page only shows what this model offers.
+  const heater::ModelInfo &mi = heater::model();
+  JsonObject m = doc["model"].to<JsonObject>();
+  m["key"] = mi.key;
+  m["water"] = mi.water;
+  m["water_boost"] = mi.water_boost;
+  m["electric"] = mi.electric;
+  m["diesel"] = mi.diesel;
+  JsonArray fans = m["fans"].to<JsonArray>();
+  const char *fl[4];
+  int n = heater::fan_modes(fl, 4);
+  for (int i = 0; i < n; i++) fans.add(fl[i]);
+  JsonArray list = m["list"].to<JsonArray>();
+  for (size_t i = 0; i < heater::MODEL_COUNT; i++) {
+    JsonObject o = list.add<JsonObject>();
+    o["k"] = heater::MODELS[i].key;
+    o["n"] = heater::MODELS[i].name;
+  }
+  const char *det = heater::detected_name(s.heater_device);
+  if (det) m["detected"] = det;
+  const char *mm = heater::model_mismatch(s.heater_device);
+  if (mm) m["mismatch"] = mm;
 
   JsonObject dc = doc["decoke"].to<JsonObject>();
   dc["active"] = heater::decoke_active();
@@ -140,6 +166,10 @@ static void handle_command(const WebCommand &c) {
   else if (a == "setpoint") heater::set_setpoint(v.toFloat());
   else if (a == "fan") heater::set_fan_mode(v, false);
   else if (a == "water") heater::set_water_mode(v);
+  else if (a == "energy") {
+    int sep = v.indexOf('_');
+    heater::set_energy_mix(sep > 0 ? v.substring(0, sep) : v, sep > 0 ? v.substring(sep + 1).toInt() : 0);
+  } else if (a == "model") heater::set_model(v);
   else if (a == "decoke") v == "1" ? (void) heater::decoke_start() : heater::decoke_stop(true);
   else if (a == "decoke_minutes") heater::set_decoke_minutes(v.toInt());
   else if (a == "sync_clock") heater::sync_clock();

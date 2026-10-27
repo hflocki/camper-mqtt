@@ -14,5 +14,7 @@ void loop();
 bool connected();
 // Force a full state publish (e.g. after settings change).
 void request_publish();
+// Send the Home Assistant discovery again (e.g. after the heater model changed).
+void request_discovery();
 
 }  // namespace mqtt

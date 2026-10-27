@@ -25,7 +25,7 @@
 #endif
 
 #define FW_NAME "camper-heater"
-#define FW_VERSION "1.1.0"
+#define FW_VERSION "1.2.0"
 
 // ---------------------------------------------------------------------------------------------
 // Board profiles
@@ -151,18 +151,25 @@
 // ---------------------------------------------------------------------------------------------
 // Heater features
 // ---------------------------------------------------------------------------------------------
-// Diesel Combi heaters do not support fan mode BOOST and have no electric heating element.
-#ifndef HEATER_SUPPORTS_BOOST
-#define HEATER_SUPPORTS_BOOST false
+// Heater model, factory default only: the model is selected in the web UI (System tab) and stored on
+// the device. One of: "combi" (gas), "combi_e" (gas + 230 V), "combi_d" (diesel), "combi_d_e"
+// (diesel + 230 V), "vario" (VarioHeat). See heater_model.h for what each model offers.
+#ifndef DEFAULT_HEATER_MODEL
+// Older config_local.h files used feature flags; map them so such builds keep their behaviour.
+#if defined(HEATER_SUPPORTS_BOOST) && HEATER_SUPPORTS_BOOST
+#if defined(HEATER_HAS_ELECTRIC) && HEATER_HAS_ELECTRIC
+#define DEFAULT_HEATER_MODEL "combi_e"
+#else
+#define DEFAULT_HEATER_MODEL "combi"
 #endif
-#ifndef HEATER_HAS_ELECTRIC
-#define HEATER_HAS_ELECTRIC false
+#elif defined(HEATER_HAS_ELECTRIC) && HEATER_HAS_ELECTRIC
+#define DEFAULT_HEATER_MODEL "combi_d_e"
+#else
+#define DEFAULT_HEATER_MODEL "combi_d"
 #endif
-#ifndef WATER_SUPPORTS_BOOST
-#define WATER_SUPPORTS_BOOST false
 #endif
 
-// Decoking ("Freibrennen"): target temperature used while active (fan HIGH, or BOOST if supported)
+// Decoking ("Freibrennen", diesel only): target temperature used while active (fan HIGH)
 #define DECOKE_TARGET_TEMP 30
 #define DECOKE_DEFAULT_MINUTES 30
 

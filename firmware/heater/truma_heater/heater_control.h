@@ -42,6 +42,8 @@ bool room_on();
 const char *hvac_action();  // off / idle / heating
 float room_setpoint();      // remembered or current target
 const char *fan_mode();     // current fan mode, or the remembered one while off
+// Fan modes of the selected model (eco/high[/boost] or night/auto/boost). Returns the count.
+int fan_modes(const char *out[], int max);
 int error_code();
 
 // LIN sniffer (diagnostics): logs every changed frame of all other PIDs as warning "SNIFF ..."

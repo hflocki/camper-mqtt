@@ -59,7 +59,8 @@ Spätere Updates gehen ohne USB: In der Arduino IDE *Sketch → Kompilierte Bin�
 3. ESP am LIN-Bus anschließen (RJ12-Verteiler zwischen CP Plus und Heizung, siehe [HARDWARE.md](HARDWARE.md)).
 4. **Am CP Plus anmelden** (einmalig): Einstellungen → **RESET** → **PR SET** bestätigen. Das Display zeigt „INIT…“ und startet neu. Unter **INDEX** steht danach ein dritter Eintrag **T23.70.0**.
    - War vorher eine echte iNet Box angemeldet: zuerst ohne iNet Box einmal INIT ausführen, dann mit diesem Gerät.
-5. In der Weboberfläche muss **„CP Plus verbunden“** grün sein. Nach ca. 30 s kommt der erste Heizungsstatus; die Uhrzeit wird dann automatisch per NTP ans CP Plus übertragen (und einmal täglich).
+5. Im Reiter **System** unter **Heizung** das Modell wählen (siehe [Heizungsmodell](#heizungsmodell)).
+6. In der Weboberfläche muss **„CP Plus verbunden“** grün sein. Nach ca. 30 s kommt der erste Heizungsstatus; die Uhrzeit wird dann automatisch per NTP ans CP Plus übertragen (und einmal täglich).
 
 ## Weboberfläche
 
@@ -105,6 +106,8 @@ Basis-Topic standardmäßig `camper/heater` (in den Einstellungen änderbar; bis
 | `timer_times`, `timer_temp_room`, `timer_heating_mode`, `timer_water_mode` | hh:mm-hh:mm, °C, eco/high, off/eco/high | Gespeicherte Timer-Einstellungen (auch bei Timer aus) |
 | `hvac_mode`, `hvac_action`, `room_setpoint`, `fan_mode` | | für den HA-Thermostat; `hvac_action` = `fan`, wenn die Heizung ohne Raum- und Wasserheizung läuft (Lüften am CP Plus oder Nachlauf) |
 | `decoke`, `decoke_remaining`, `decoke_minutes` | ON/OFF, min, min | Freibrennen |
+| `heater_model` | combi / combi_e / combi_d / combi_d_e / vario | gewähltes Heizungsmodell |
+| `energy_select` | gas / mix_900 / mix_1800 / electricity_900 / electricity_1800 | Energie als ein Wert (nur E-Modelle) |
 | `cpplus_version`, `heater_version`, `release`, `rssi`, `lin_traffic` | | Diagnose |
 
 Verfügbarkeit: `camper/heater/status` = `online` / `offline` (Last Will).
@@ -119,8 +122,10 @@ Verfügbarkeit: `camper/heater/status` = `online` / `offline` (Last Will).
 | `water_mode` | off / eco / high | Warmwasser |
 | `hvac_mode` | heat / off | Raumheizung an/aus mit letzter Temperatur + Lüfterstufe |
 | `room_setpoint` | 5–30 | Solltemperatur; bei ausgeschalteter Heizung nur gemerkt |
-| `fan_mode` | eco / high | Lüfterstufe; bei ausgeschalteter Heizung nur gemerkt |
-| `energy_mix` / `el_power_level` | gas / mix / electricity, 0 / 900 / 1800 | nur bei Geräten mit E-Heizstab |
+| `fan_mode` | eco / high (Gas-Combi auch boost, VarioHeat night / auto / boost) | Lüfterstufe; bei ausgeschalteter Heizung nur gemerkt |
+| `energy_mix` / `el_power_level` | gas / mix / electricity, 0 / 900 / 1800 | nur bei E-Modellen |
+| `energy_select` | gas / mix_900 / … / electricity_1800 | Energie und Leistung in einem Befehl (nur E-Modelle) |
+| `heater_model` | combi / combi_e / combi_d / combi_d_e / vario | Heizungsmodell umstellen (sofort wirksam) |
 | `decoke` | ON / OFF | Freibrennen starten / beenden |
 | `decoke_minutes` | 5–120 | Dauer des Freibrennens |
 | `sync_clock` | 1 | Uhrzeit sofort ans CP Plus senden |
@@ -140,7 +145,7 @@ mosquitto_sub -h <broker> -t 'camper/heater/control_status/#' -v
 
 ### Home Assistant
 
-Mit aktivierter Auto-Discovery erscheint ein Gerät **„Truma Heater“** mit Thermostat (Aus/Heizen, Solltemperatur, Lüfter eco/high), Warmwasser-Auswahl, Timer (Textfeld `22:00-06:30,20,eco` plus Ein/Aus-Schalter), Freibrennen-Schalter, Sensoren und Diagnose. Die Heizungs-Entitäten sind nur verfügbar, wenn der ESP online ist **und** das CP Plus ihn abfragt.
+Mit aktivierter Auto-Discovery erscheint ein Gerät **„Truma Heater“** mit Thermostat (Aus/Heizen, Solltemperatur, Lüfterstufen je nach Modell), Warmwasser-Auswahl, Energie-Auswahl (E-Modelle), Modellauswahl, Timer (Textfeld `22:00-06:30,20,eco` plus Ein/Aus-Schalter), Freibrennen-Schalter, Sensoren und Diagnose. Die Heizungs-Entitäten sind nur verfügbar, wenn der ESP online ist **und** das CP Plus ihn abfragt.
 
 ## Timer
 
@@ -150,13 +155,28 @@ Der Timer des CP Plus lässt sich per MQTT (`set/timer`), in Home Assistant und 
 
 Setzt 30 °C mit Lüfter **high** (Boost gibt es beim Diesel nicht) für die eingestellte Dauer und stellt danach die vorherigen Einstellungen wieder her. Wird während des Freibrennens am CP Plus oder per MQTT etwas geändert, endet es ohne Wiederherstellung.
 
+## Heizungsmodell
+
+Nicht jede Truma kann alles. Das gewählte Modell bestimmt, was Weboberfläche und Home Assistant anbieten:
+
+| Modell (`key`) | Lüfter | Warmwasser | Energie | Freibrennen |
+|---|---|---|---|---|
+| Combi 4/6, Gas (`combi`) | Eco / High / Boost | Aus / Eco / Hot / Boost | – | – |
+| Combi 4/6 E, Gas + 230 V (`combi_e`) | Eco / High / Boost | Aus / Eco / Hot / Boost | Gas / Mix 900·1800 / Elektro 900·1800 | – |
+| Combi D 4/6, Diesel (`combi_d`, Standard) | Eco / High | Aus / Eco / Hot | – | ja |
+| Combi D 6 E, Diesel + 230 V (`combi_d_e`) | Eco / High | Aus / Eco / Hot | Diesel / Mix / Elektro | ja |
+| VarioHeat (`vario`) | Nacht / Auto / Boost | keins | – | – |
+
+- **Einstellen:** Weboberfläche → **System** → **Heizung**, in Home Assistant die Auswahl „Heater model“ (Konfiguration) oder per MQTT `set/heater_model`. Die Änderung wirkt sofort, ohne Neustart: Knöpfe, Timer-Auswahl und die Home-Assistant-Entitäten passen sich an, nicht mehr passende Entitäten werden in HA entfernt.
+- **Vorgabe ab Werk:** `DEFAULT_HEATER_MODEL` in `config.h` oder besser in `config_local.h`, z. B. `#define DEFAULT_HEATER_MODEL "combi_e"`. Gilt, solange im Gerät noch kein Modell gespeichert ist (erster Start, „Erase All Flash“).
+- **Plausibilität:** Das CP Plus meldet beim Anmelden die Heizungsfamilie (Combi 4, Combi 6 / D 6, VarioHeat). Passt die Auswahl offensichtlich nicht (VarioHeat ↔ Combi), erscheint ein Hinweis auf der Startseite. Gas oder Diesel und die E-Variante meldet das CP Plus nicht, die muss man selbst wählen.
+- Die früheren Schalter `HEATER_SUPPORTS_BOOST`, `WATER_SUPPORTS_BOOST` und `HEATER_HAS_ELECTRIC` gibt es nicht mehr. Stehen sie noch in einer alten `config_local.h`, wird daraus das passende Standardmodell.
+
 ## Geräteoptionen
 
 In `config.h`:
 
-- `HEATER_SUPPORTS_BOOST` – Lüfter-Boost (Gas-Combi), Standard `false`
-- `WATER_SUPPORTS_BOOST` – Warmwasser-Boost, Standard `false`
-- `HEATER_HAS_ELECTRIC` – E-Heizstab (Combi E), blendet die Energiequellen-Auswahl in HA ein
+- `DEFAULT_HEATER_MODEL` – Heizungsmodell ab Werk (siehe oben), Standard `combi_d`
 - `LIN_OBSERVER_MODE` – nur mithören, nie antworten (Fehlersuche)
 
 **Eigene Werte ohne `config.h` zu ändern:** `truma_heater/config_local.h.example` nach `truma_heater/config_local.h` kopieren und dort z. B. ein eigenes AP-Passwort (`DEFAULT_AP_PASSWORD`) oder die Board-Auswahl eintragen. Die Datei wird automatisch eingebunden, von Git ignoriert und von Patches nie angefasst. Auch WLAN, Broker und Web-Login ab Werk lassen sich dort eintragen; sie gelten, solange im Gerät noch nichts gespeichert ist (erster Start, Werkseinstellungen, „Erase All Flash“).
@@ -197,7 +217,8 @@ truma_heater/
 ├── config.h             Board-Auswahl, Pins, Geräteoptionen
 ├── truma_protocol.h     Truma-Frames, Enums, Hilfsfunktionen
 ├── inetbox.h / .cpp     LIN-Slave + iNet-Box-Protokoll (eigener FreeRTOS-Task)
-├── heater_control.*     Sollwert-/Lüfter-Speicher, Freibrennen, Befehlslogik
+├── heater_control.*     Sollwert-/Lüfter-Speicher, Freibrennen, Befehlslogik, Modellauswahl
+├── heater_model.h       Tabelle der Heizungsmodelle (was welches Modell kann)
 ├── mqtt_ha.*            MQTT-Topics + Home-Assistant-Discovery
 ├── webserver.*          Weboberfläche, REST-API, OTA
 ├── web_ui.h             HTML der Weboberfläche
