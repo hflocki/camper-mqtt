@@ -107,7 +107,7 @@ Gleicher Aufbau und gleiche Optik wie bei camper-tanklevel, camper-temp und camp
 - **MQTT:** Broker, Topic-Prefix, Home-Assistant-Discovery, Web-Login
 - **WiFi:** Verbindungsstatus, WLAN, feste IP, Access Point, Firmware-Update, Neustart, Werkseinstellungen
 
-`docs/mockup.html` zeigt die Oberfläche mit Beispieldaten im Browser (ohne ESP). Nach Änderungen an `web/index.html` mit `python3 tools/make_mockup.py` neu erzeugen (nur Python-Standardbibliothek).
+Zum Ausprobieren ohne Gerät: [`docs/mockups/maxxfan.html`](../../docs/mockups/maxxfan.html) im Repo-Hauptordner (siehe [Mockups](../../README.md#mockups)).
 
 ## Erstbenutzung
 

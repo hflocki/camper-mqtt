@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Camper Mockups</title>
+<style>
+:root{--bg:#f4f5f7;--panel:#fff;--ink:#1c2430;--mute:#5d6b7c;--line:#dde2e8;--acc:#e8692e;--frame:#1c2430}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1419;--panel:#1a2332;--ink:#e8f0f8;--mute:#8899aa;--line:#2a3a4a;--acc:#ff7a3d;--frame:#000}}
+:root[data-theme="dark"]{--bg:#0f1419;--panel:#1a2332;--ink:#e8f0f8;--mute:#8899aa;--line:#2a3a4a;--acc:#ff7a3d;--frame:#000}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px;display:grid;grid-template-columns:1fr;gap:24px}
+h1{font-size:1.4rem;margin-bottom:4px}
+.lead{color:var(--mute);margin-bottom:16px;max-width:60ch}
+.list{display:flex;flex-direction:column;gap:8px}
+.dev{display:block;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:inherit;text-decoration:none}
+.dev b{display:block;font-size:1rem}
+.dev span{color:var(--mute);font-size:.85rem}
+.dev:hover{border-color:var(--acc)}
+.dev.on{border-color:var(--acc);box-shadow:inset 3px 0 0 var(--acc)}
+.view{display:none}
+.phone{width:390px;height:780px;border:10px solid var(--frame);border-radius:36px;overflow:hidden;background:#000;margin:0 auto}
+.phone iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+.hint{color:var(--mute);font-size:.8rem;margin-top:12px;text-align:center}
+.open{display:inline-block;margin-top:6px;color:var(--acc);font-size:.85rem}
+@media (min-width:860px){.wrap{grid-template-columns:minmax(0,1fr) 410px;align-items:start}.view{display:block;position:sticky;top:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h1>Camper-Geräte – Web-Oberflächen</h1>
+    <p class="lead">Die echten Seiten aus der Firmware mit simulierten Daten. Alles lässt sich anklicken: Knöpfe, Einstellungen, Speichern, Upload. Es wird nichts an ein Gerät gesendet.</p>
+    <div class="list">
+<a class="dev" href="display.html" data-id="display"><b>Camper Display</b><span>Wandpanel: Übersicht, Truma, MaxxFan, Level, Temperatur, Batterie, eigene Kacheln, Einstellungen</span></a>
+<a class="dev" href="heater.html" data-id="heater"><b>Truma Heizung</b><span>iNet-Box-Emulation am CP Plus: Heizung, Warmwasser, Timer, Modellauswahl, LIN-Log</span></a>
+<a class="dev" href="tanklevel.html" data-id="tanklevel"><b>Tanks</b><span>Frischwasser, Grauwasser und Gasflasche (BLE) mit Kalibrierung</span></a>
+<a class="dev" href="temp.html" data-id="temp"><b>Temperatur</b><span>DS18B20-Sensoren mit Min/Max und Alarmgrenzen</span></a>
+<a class="dev" href="level.html" data-id="level"><b>Level</b><span>Wasserwaage mit Keilhöhen und Tara</span></a>
+<a class="dev" href="maxxfan.html" data-id="maxxfan"><b>MaxxFan</b><span>Dachlüfter: Öffnen, Schließen, Stufe, Auto-Hold</span></a>
+<a class="dev" href="battery.html" data-id="battery"><b>Batterie</b><span>BLE-Gateway für Daly, Ective und BM2</span></a>
+<a class="dev" href="template.html" data-id="template"><b>Vorlage</b><span>Muster für ein neues Gerät (firmware/_template)</span></a>
+    </div>
+  </div>
+  <div class="view">
+    <div class="phone"><iframe id="view" title="Vorschau" src="display.html"></iframe></div>
+    <div class="hint">Vorschau in Handygröße · <a class="open" id="open" href="display.html" target="_blank" rel="noopener">im eigenen Fenster öffnen ↗</a></div>
+  </div>
+</div>
+<script>
+// Wide screens: show the page in the phone frame. Narrow screens: open it directly.
+const wide = () => matchMedia('(min-width:860px)').matches;
+const links = document.querySelectorAll('.dev');
+function show(a) {
+  links.forEach(x => x.classList.toggle('on', x === a));
+  document.getElementById('view').src = a.getAttribute('href');
+  document.getElementById('open').href = a.getAttribute('href');
+}
+links.forEach(a => a.addEventListener('click', e => { if (wide()) { e.preventDefault(); show(a); } }));
+show(links[0]);
+</script>
+</body>
+</html>

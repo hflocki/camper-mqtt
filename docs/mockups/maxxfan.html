@@ -1,5 +1,141 @@
 <!doctype html>
 <html lang="de"><head>
+<script>
+// camper-maxxfan: VanTurtle board, buttons of the MaxxFan remote via port expander
+const M = {
+  id: 'maxxfan',
+  config: {hostname: 'camper-maxxfan', ssid: 'Camper-WLAN', static_ip: false, ip: '', gw: '', sn: '255.255.255.0', dns: '',
+           mhost: '192.168.1.1', mport: 1883, muser: '', prefix: 'camper/maxxfan', disc: true, wuser: '',
+           p0: false, p1: true, pulse: 150, syncport: 1, apssid: 'Camper-MaxxFan-A1B2C3'},
+  ports: [{label: 'RJ11', hold: false, led: false}, {label: 'RJ45', hold: false, led: true}],
+  sync: false,
+  route(path, method, b) {
+    const pt = M.ports[+b.port || 0];
+    if (path === '/api/state') {
+      const on = v => v === true || v === '1' || v === 1;
+      return {fw: '1.5.0', expander: true, sync: M.sync, syncPort: +M.cfg.syncport,
+              ports: M.ports.map((p, i) => Object.assign({enabled: on(M.cfg['p' + i])}, p)),
+              sta: true, ap: false, ip: '192.168.1.50', rssi: -58, mqtt: true, uptime: M.up()};
+    }
+    if (path === '/api/press' && b.btn === 'auto') pt.hold = !pt.hold;
+    if (path === '/api/led') pt.led = b.on === '1';
+    if (path === '/api/close' || path === '/api/speed') {
+      M.sync = true;
+      setTimeout(() => { M.sync = false; }, 3000);
+    }
+    if (path === '/api/state' || path === '/api/press' || path === '/api/led' || path === '/api/close' || path === '/api/speed') return {ok: true};
+  }
+};
+
+// Mockup runtime: replaces the device API (fetch, WebSocket, upload) with a simulation.
+// The device script before this one defines M = {config, state(), route(), wsCmd(), wsOpen()}.
+(function () {
+  const KEY = 'mock:' + (M.id || location.pathname);
+  // Settings survive the "restart" reload of the page (per browser tab only).
+  let saved = {};
+  try { saved = JSON.parse(sessionStorage.getItem(KEY) || '{}'); } catch (e) {}
+  M.cfg = Object.assign({}, M.config, saved);
+  M.save = function (patch) {
+    Object.assign(M.cfg, patch);
+    Object.assign(saved, patch);
+    try { sessionStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+  };
+  M.t0 = Date.now();
+  M.up = () => (M.uptime0 || 93780) + Math.floor((Date.now() - M.t0) / 1000);
+
+  const json = (o, status) => Promise.resolve(new Response(typeof o === 'string' ? o : JSON.stringify(o),
+    { status: status || 200, headers: { 'Content-Type': typeof o === 'string' ? 'text/plain' : 'application/json' } }));
+  function bodyOf(opt) {
+    const b = opt && opt.body;
+    if (!b) return {};
+    if (typeof b === 'string') {
+      try { return JSON.parse(b); } catch (e) { return Object.fromEntries(new URLSearchParams(b)); }
+    }
+    if (b instanceof URLSearchParams || b instanceof FormData) return Object.fromEntries(b);
+    return {};
+  }
+  window.fetch = function (url, opt) {
+    opt = opt || {};
+    const u = new URL(url, location.href);
+    const method = (opt.method || 'GET').toUpperCase();
+    const body = bodyOf(opt);
+    const r = M.route ? M.route(u.pathname, method, body, u.searchParams) : undefined;
+    if (r !== undefined) return json(r);
+    if (u.pathname === '/api/config' && method === 'GET') return json(M.cfg);
+    if (u.pathname === '/api/config' && method === 'POST') {
+      const p = Object.assign({}, body);
+      for (const k of Object.keys(p)) if (/pass|token/i.test(k)) delete p[k];  // never echo secrets
+      M.save(p);
+      return json({ ok: true });
+    }
+    return json({ ok: true });
+  };
+
+  // WebSocket: pushes M.state() every M.wsInterval ms, M.wsCmd() gets what the page sends
+  class FakeWS {
+    constructor() {
+      this.readyState = 0;
+      setTimeout(() => {
+        this.readyState = 1;
+        if (this.onopen) this.onopen({});
+        if (M.wsOpen) M.wsOpen((o) => this._emit(o));
+        this._tick();
+      }, 120);
+      this._timer = setInterval(() => this._tick(), M.wsInterval || 1000);
+    }
+    _emit(o) { if (this.onmessage) this.onmessage({ data: JSON.stringify(o) }); }
+    _tick() { if (M.state) this._emit(M.state()); }
+    send(d) {
+      let o = d;
+      try { o = JSON.parse(d); } catch (e) {}
+      const reply = M.wsCmd ? M.wsCmd(o) : null;
+      if (reply) this._emit(reply);
+      setTimeout(() => this._tick(), 150);
+    }
+    close() { clearInterval(this._timer); this.readyState = 3; }
+    addEventListener(ev, fn) { this['on' + ev] = fn; }
+  }
+  FakeWS.CONNECTING = 0; FakeWS.OPEN = 1; FakeWS.CLOSING = 2; FakeWS.CLOSED = 3;
+  window.WebSocket = FakeWS;
+
+  // File upload: simulated progress, answers like the firmware ("OK" or "OK web" for a .gz page)
+  class FakeXHR {
+    constructor() { this.upload = {}; this.status = 0; this.responseText = ''; }
+    open(m, u) { this._u = u; }
+    setRequestHeader() {}
+    send(fd) {
+      let name = '';
+      try { for (const v of fd.values()) if (v && v.name) name = v.name; } catch (e) {}
+      let p = 0;
+      const iv = setInterval(() => {
+        p += 25;
+        if (this.upload.onprogress) this.upload.onprogress({ lengthComputable: true, loaded: p, total: 100 });
+        if (p >= 100) {
+          clearInterval(iv);
+          this.status = 200;
+          this.responseText = /\.gz$/i.test(name) ? 'OK web' : 'OK';
+          if (this.onload) this.onload();
+        }
+      }, 250);
+    }
+  }
+  window.XMLHttpRequest = FakeXHR;
+
+  // Dialogs are blocked in some embedded viewers; the mockup always answers "yes"
+  window.confirm = () => true;
+  window.alert = (m) => console.log('[alert]', m);
+
+  // Banner
+  document.addEventListener('DOMContentLoaded', () => {
+    const b = document.createElement('div');
+    b.textContent = 'Mockup mit Beispieldaten – keine Verbindung zu einem Gerät';
+    b.style.cssText = 'position:sticky;top:0;z-index:9999;background:#d4a017;color:#000;text-align:center;font:600 12px system-ui;padding:4px';
+    document.body.prepend(b);
+  });
+})();
+
+</script>
+
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Camper MaxxFan</title>
 <style>
@@ -59,23 +195,7 @@ progress{width:100%;margin-bottom:8px;accent-color:var(--acc)}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}.toast.err{border-color:var(--danger);color:var(--danger)}
 @media (max-width:374px){.header{padding:14px 12px}.header h1{font-size:1rem}.dots{gap:4px;font-size:.6rem}}
 @media (min-width:600px){body{display:flex;justify-content:center}.app{width:100%;max-width:520px}}
-</style></head><body>
-<script>
-// Mock API for preview - simulates the ESP with sample data
-(()=>{const S={fw:"1.2.0",expander:true,sync:false,syncPort:1,ports:[{label:"RJ11",enabled:false,hold:false,led:false},{label:"RJ45",enabled:true,hold:false,led:true}],sta:true,ap:false,ip:"192.168.1.50",rssi:-58,mqtt:true,uptime:15840};
-const C={hostname:"camper-maxxfan",ssid:"MyWiFi",static_ip:false,ip:"",gw:"",sn:"255.255.255.0",dns:"",mhost:"192.168.1.10",mport:1883,muser:"",prefix:"camper/maxxfan",disc:true,wuser:"",p0:false,p1:true,pulse:150,syncport:1,apssid:"Camper-MaxxFan-A1B2C3"};
-const J=o=>Promise.resolve(new Response(JSON.stringify(o),{headers:{"Content-Type":"application/json"}}));
-window.fetch=(url,opt={})=>{const p=Object.fromEntries(opt.body instanceof URLSearchParams?opt.body:[]);
- if(url==="/api/state"){S.uptime+=2;return J(S)}
- if(url==="/api/config"&&opt.method!=="POST")return J(C);
- if(url==="/api/press"&&p.btn==="auto"){const pt=S.ports[p.port];pt.hold=!pt.hold}
- if(url==="/api/led")S.ports[p.port].led=p.on==="1";
- if(url==="/api/sync"){S.sync=true;S.ports[1].hold=true;setTimeout(()=>{S.sync=false;S.ports[1].hold=false},3000)}
- if(url==="/api/config"&&opt.method==="POST"){S.ports[0].enabled=p.p0==="1";S.ports[1].enabled=p.p1==="1";C.p0=S.ports[0].enabled;C.p1=S.ports[1].enabled}
- return J({ok:true})};})();
-</script>
-<div style="background:#d4a017;color:#000;text-align:center;font:13px system-ui;padding:4px">Mockup mit Beispieldaten – keine Verbindung zum ESP</div>
-<div class="app">
+</style></head><body><div class="app">
 <div class="header"><h1>🌀 Camper MaxxFan</h1>
   <div class="dots"><span><span class="dot" id="d-exp"></span>Board</span><span><span class="dot" id="d-wifi"></span>WiFi</span><span><span class="dot" id="d-mqtt"></span>MQTT</span></div></div>
 <div class="tabs">
@@ -175,7 +295,7 @@ function buildPorts(s){
     <div class="g2" style="margin-bottom:8px"><button class="btn btn-p btn-big" type="button" onclick="post('/api/press',{port:${i},btn:'on_off'})">⏻ Ein / Öffnen</button>
     <button class="btn btn-s btn-big" type="button" onclick="post('/api/close',{port:${i}}).then(()=>toast('Haube wird geschlossen'))">⏬ Schließen</button></div>
     <div class="g2">${BTN.map(b=>`<button class="btn btn-s" type="button" onclick="post('/api/press',{port:${i},btn:'${b[0]}'})">${b[1]}</button>`).join("")}</div>
-    <div class="speed"><span>Stufe setzen</span><select class="in" id="s${i}">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option>${n}</option>`).join("")}</select>
+    <div class="speed"><span>Stufe setzen</span><select class="in" id="s${i}"><option value="0">0 (zu)</option>${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option>${n}</option>`).join("")}</select>
     <button class="btn btn-s btn-sm" type="button" onclick="post('/api/speed',{port:${i},level:$('#s${i}').value}).then(()=>toast('Stufe wird gesetzt'))">Setzen</button></div>
     </div>`).join("")
     || '<div class="card"><div class="empty">Kein Port aktiv – im Tab MaxxFan einschalten.</div></div>';

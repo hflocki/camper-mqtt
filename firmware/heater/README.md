@@ -76,7 +76,7 @@ Aufbau und Optik wie bei [camper-tanklevel](../tanklevel): Heizung, Timer, MQTT,
 
 Jeder Reiter speichert nur seine eigenen Felder, danach startet das Gerät neu. Leere Passwortfelder behalten den gespeicherten Wert.
 
-Zum Ausprobieren ohne Gerät: [`docs/mockup/truma-heater-mockup.html`](docs/mockup/truma-heater-mockup.html) herunterladen und im Browser öffnen. Das ist die echte Oberfläche aus der Firmware mit simulierten Daten; Knöpfe, Timer, Freibrennen und Sniffer reagieren. Nach Änderungen an `web_ui.h` neu erzeugen mit `python3 docs/gen_mockup.py` (nur Standardbibliothek).
+Zum Ausprobieren ohne Gerät: [`docs/mockup/truma-heater-mockup.html`](docs/mockup/truma-heater-mockup.html) herunterladen und im Browser öffnen. Das ist die echte Oberfläche aus der Firmware mit simulierten Daten; Knöpfe, Timer, Freibrennen und Sniffer reagieren. Nach Änderungen an `web_ui.h` neu erzeugen mit `python3 docs/gen_mockup.py` (nur Standardbibliothek). Dieselbe Seite steht zusammen mit allen anderen Geräten unter [`docs/mockups/`](../../docs/mockups/index.html).
 
 ## MQTT
 

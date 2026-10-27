@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<script>
+// camper-temp: DS18B20 sensors on a 1-wire bus
+const M = {
+  id: 'temp',
+  config: {
+    version: '1.2.0', chip: 'ESP8266', pin: 4, reset_reason: 'Einschalten', wifi_ssid: 'Camper-WLAN',
+    ap_ssid: 'Camper-Temp-A1B2C3', wifi_tx_power: 70, ap_always: false, mqtt_server: '192.168.1.1', mqtt_port: 1883,
+    mqtt_user: '', mqtt_prefix: 'camper/temp', web_user: '', interval: 10, resolution: 12, max_sensors: 8,
+    sensors: [
+      {addr: '28FF4A1B6C1603A1', name: 'Kühlschrank', key: 'temp1', offset: 0, lo: null, hi: 8, delay: 15},
+      {addr: '28FF7C2D5A1604B2', name: 'Gefrierfach', key: 'temp2', offset: -0.3, lo: null, hi: -10, delay: 15},
+      {addr: '28FF11E09B1605C3', name: 'Innenraum', key: 'temp3', offset: 0, lo: 3, hi: null, delay: 30}]
+  },
+  bus: {'28FF4A1B6C1603A1': 5.2, '28FF7C2D5A1604B2': -17.8, '28FF11E09B1605C3': 19.4, '28FF9D3344160AD4': 22.1},
+  mm: {},
+  route(path) {
+    if (path === '/api/minmax/reset') { M.mm = {}; return {ok: true}; }
+    if (path === '/api/scan') return {ok: true};
+  },
+  state() {
+    const t = (Date.now() - M.t0) / 1000;
+    const bus = Object.entries(M.bus).map(([addr, base], i) => ({addr, temp: +(base + Math.sin(t / 40 + i) * 0.6).toFixed(2)}));
+    const raw = Object.fromEntries(bus.map(b => [b.addr, b.temp]));
+    const alarms = [];
+    const sensors = (M.cfg.sensors || []).map(s => {
+      const present = s.addr in raw;
+      const temp = present ? +(raw[s.addr] + (s.offset || 0)).toFixed(1) : null;
+      const mm = M.mm[s.addr] = M.mm[s.addr] || {min: temp, max: temp};
+      if (temp !== null) { mm.min = Math.min(mm.min ?? temp, temp); mm.max = Math.max(mm.max ?? temp, temp); }
+      let alarm = 0;
+      if (temp !== null && s.hi !== null && s.hi !== undefined && temp > s.hi) alarm = 2;
+      if (temp !== null && s.lo !== null && s.lo !== undefined && temp < s.lo) alarm = 1;
+      if (alarm) alarms.push(s.name + (alarm === 2 ? ' zu warm: ' : ' zu kalt: ') + temp.toFixed(1).replace('.', ',') + ' °C');
+      return {addr: s.addr, name: s.name, key: s.key, temp, min: mm.min, max: mm.max, ok: present, present, alarm, age: present ? Math.floor(t % 10) : -1};
+    });
+    return {sensors, bus, alarm_text: alarms.join('; '), wifi: 'Verbunden', mqtt: true, rssi: -63,
+            uptime: M.up(), heap: 23400, wifi_drops: 1, wifi_reason: 'Beacon timeout'};
+  }
+};
+
+// Mockup runtime: replaces the device API (fetch, WebSocket, upload) with a simulation.
+// The device script before this one defines M = {config, state(), route(), wsCmd(), wsOpen()}.
+(function () {
+  const KEY = 'mock:' + (M.id || location.pathname);
+  // Settings survive the "restart" reload of the page (per browser tab only).
+  let saved = {};
+  try { saved = JSON.parse(sessionStorage.getItem(KEY) || '{}'); } catch (e) {}
+  M.cfg = Object.assign({}, M.config, saved);
+  M.save = function (patch) {
+    Object.assign(M.cfg, patch);
+    Object.assign(saved, patch);
+    try { sessionStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+  };
+  M.t0 = Date.now();
+  M.up = () => (M.uptime0 || 93780) + Math.floor((Date.now() - M.t0) / 1000);
+
+  const json = (o, status) => Promise.resolve(new Response(typeof o === 'string' ? o : JSON.stringify(o),
+    { status: status || 200, headers: { 'Content-Type': typeof o === 'string' ? 'text/plain' : 'application/json' } }));
+  function bodyOf(opt) {
+    const b = opt && opt.body;
+    if (!b) return {};
+    if (typeof b === 'string') {
+      try { return JSON.parse(b); } catch (e) { return Object.fromEntries(new URLSearchParams(b)); }
+    }
+    if (b instanceof URLSearchParams || b instanceof FormData) return Object.fromEntries(b);
+    return {};
+  }
+  window.fetch = function (url, opt) {
+    opt = opt || {};
+    const u = new URL(url, location.href);
+    const method = (opt.method || 'GET').toUpperCase();
+    const body = bodyOf(opt);
+    const r = M.route ? M.route(u.pathname, method, body, u.searchParams) : undefined;
+    if (r !== undefined) return json(r);
+    if (u.pathname === '/api/config' && method === 'GET') return json(M.cfg);
+    if (u.pathname === '/api/config' && method === 'POST') {
+      const p = Object.assign({}, body);
+      for (const k of Object.keys(p)) if (/pass|token/i.test(k)) delete p[k];  // never echo secrets
+      M.save(p);
+      return json({ ok: true });
+    }
+    return json({ ok: true });
+  };
+
+  // WebSocket: pushes M.state() every M.wsInterval ms, M.wsCmd() gets what the page sends
+  class FakeWS {
+    constructor() {
+      this.readyState = 0;
+      setTimeout(() => {
+        this.readyState = 1;
+        if (this.onopen) this.onopen({});
+        if (M.wsOpen) M.wsOpen((o) => this._emit(o));
+        this._tick();
+      }, 120);
+      this._timer = setInterval(() => this._tick(), M.wsInterval || 1000);
+    }
+    _emit(o) { if (this.onmessage) this.onmessage({ data: JSON.stringify(o) }); }
+    _tick() { if (M.state) this._emit(M.state()); }
+    send(d) {
+      let o = d;
+      try { o = JSON.parse(d); } catch (e) {}
+      const reply = M.wsCmd ? M.wsCmd(o) : null;
+      if (reply) this._emit(reply);
+      setTimeout(() => this._tick(), 150);
+    }
+    close() { clearInterval(this._timer); this.readyState = 3; }
+    addEventListener(ev, fn) { this['on' + ev] = fn; }
+  }
+  FakeWS.CONNECTING = 0; FakeWS.OPEN = 1; FakeWS.CLOSING = 2; FakeWS.CLOSED = 3;
+  window.WebSocket = FakeWS;
+
+  // File upload: simulated progress, answers like the firmware ("OK" or "OK web" for a .gz page)
+  class FakeXHR {
+    constructor() { this.upload = {}; this.status = 0; this.responseText = ''; }
+    open(m, u) { this._u = u; }
+    setRequestHeader() {}
+    send(fd) {
+      let name = '';
+      try { for (const v of fd.values()) if (v && v.name) name = v.name; } catch (e) {}
+      let p = 0;
+      const iv = setInterval(() => {
+        p += 25;
+        if (this.upload.onprogress) this.upload.onprogress({ lengthComputable: true, loaded: p, total: 100 });
+        if (p >= 100) {
+          clearInterval(iv);
+          this.status = 200;
+          this.responseText = /\.gz$/i.test(name) ? 'OK web' : 'OK';
+          if (this.onload) this.onload();
+        }
+      }, 250);
+    }
+  }
+  window.XMLHttpRequest = FakeXHR;
+
+  // Dialogs are blocked in some embedded viewers; the mockup always answers "yes"
+  window.confirm = () => true;
+  window.alert = (m) => console.log('[alert]', m);
+
+  // Banner
+  document.addEventListener('DOMContentLoaded', () => {
+    const b = document.createElement('div');
+    b.textContent = 'Mockup mit Beispieldaten – keine Verbindung zu einem Gerät';
+    b.style.cssText = 'position:sticky;top:0;z-index:9999;background:#d4a017;color:#000;text-align:center;font:600 12px system-ui;padding:4px';
+    document.body.prepend(b);
+  });
+})();
+
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Camper Temp</title>
+<style>
+:root {
+    --bg-primary: #0f1419;
+    --bg-secondary: #1a2332;
+    --bg-card: #1e2d3d;
+    --bg-input: #0d1b2a;
+    --accent: #4fc3f7;
+    --accent-glow: rgba(79,195,247,0.3);
+    --cold: #4fc3f7;
+    --mild: #00d4aa;
+    --warm: #ff9f43;
+    --hot: #ff4757;
+    --warning: #ffb800;
+    --danger: #ff4757;
+    --success: #00d4aa;
+    --text-primary: #e8f0f8;
+    --text-secondary: #8899aa;
+    --text-muted: #556677;
+    --border: #2a3a4a;
+    --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-primary); color: var(--text-primary);
+    min-height: 100vh; overflow-x: hidden;
+}
+.header {
+    background: var(--bg-secondary); padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+}
+.header h1 { font-size: 1.15rem; font-weight: 600; color: var(--accent); }
+.status-dots { display: flex; gap: 6px; align-items: center; font-size: 0.65rem; color: var(--text-muted); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); display: inline-block; margin-right: 4px; }
+.status-dot.active { background: var(--success); box-shadow: 0 0 8px rgba(0,212,170,0.3); }
+.status-dot.warning { background: var(--warning); }
+.tabs { display: flex; background: var(--bg-secondary); border-bottom: 1px solid var(--border); overflow-x: auto; }
+/* Icon above the label: all tabs fit even on small phones (320 px) */
+.tab {
+    flex: 1; min-width: 0; padding: 8px 1px 7px; text-align: center; font-size: 0.68rem; font-weight: 500; line-height: 1.2;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap;
+}
+.tab .ico { font-size: 1.05rem; line-height: 1; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(79,195,247,0.05); }
+.tab-content { display: none; padding: 16px; }
+.tab-content.active { display: block; }
+.card { background: var(--bg-card); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border: 1px solid var(--border); }
+.card-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 12px; }
+.card-title.accent { color: var(--accent); }
+
+/* Live: one tile per sensor */
+.temps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.temps.cols-1 { grid-template-columns: 1fr; }
+.temp-tile {
+    position: relative; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 14px 12px 20px; overflow: hidden; min-width: 0;
+}
+.temp-tile::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--tile-color, var(--text-muted));
+}
+.temp-name { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.temp-value { font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; margin: 6px 0 4px; color: var(--tile-color, var(--text-primary)); line-height: 1.1; }
+.temp-value small { font-size: 1rem; font-weight: 500; color: var(--text-secondary); margin-left: 2px; }
+.temp-minmax { display: flex; gap: 12px; font-size: 0.75rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.temp-minmax b { color: var(--text-primary); font-weight: 600; }
+.temp-state { font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; }
+.temp-tile.error .temp-value { color: var(--text-muted); }
+.temp-tile.error .temp-state { color: var(--danger); }
+.temp-tile.alarm { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger) inset; }
+.temp-tile.alarm .temp-state { color: var(--danger); font-weight: 600; }
+.alarm-banner { border-color: var(--danger); background: rgba(255,71,87,0.12); color: var(--danger);
+    font-size: 0.85rem; font-weight: 600; line-height: 1.4; }
+.sensor-alarm { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+/* Values */
+.values-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.value-item { background: var(--bg-input); border-radius: 8px; padding: 12px; text-align: center; }
+.value-label { font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px; }
+.value-num { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Forms */
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; }
+.form-group input, .form-group select {
+    width: 100%; padding: 10px 12px; background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-primary); font-size: 0.9rem; outline: none;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+.form-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; width: 100%; }
+.btn-primary { background: var(--accent); color: var(--bg-primary); }
+.btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-danger { background: rgba(255,71,87,0.15); color: var(--danger); border: 1px solid var(--danger); }
+.btn-small { width: auto; padding: 6px 10px; font-size: 0.75rem; }
+.btn-row { display: flex; gap: 8px; margin-top: 12px; }
+
+.info-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+.info-row:last-child { border-bottom: none; }
+.info-label { color: var(--text-secondary); }
+
+/* Sensor editor */
+.sensor-edit { background: var(--bg-input); border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
+.sensor-edit.missing { border-color: rgba(255,71,87,0.5); }
+.sensor-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.sensor-addr { font-family: ui-monospace, Menlo, monospace; font-size: 0.72rem; color: var(--text-secondary); word-break: break-all; }
+.sensor-live { font-size: 0.9rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sensor-edit .form-group { margin-bottom: 8px; }
+.sensor-edit .form-group input { background: var(--bg-card); padding: 8px 10px; font-size: 0.85rem; }
+.sensor-grid { display: grid; grid-template-columns: 1fr 1fr 80px; gap: 8px; }
+.sensor-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.badge { display: inline-block; font-size: 0.6rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 6px;
+    background: rgba(79,195,247,0.15); color: var(--accent); vertical-align: middle; }
+.badge.err { background: rgba(255,71,87,0.15); color: var(--danger); }
+.badge.new { background: rgba(255,184,0,0.15); color: var(--warning); }
+
+/* Bus list */
+.dev-list { display: flex; flex-direction: column; gap: 6px; }
+.dev { display: flex; align-items: center; gap: 10px; background: var(--bg-input); border-radius: 8px; padding: 8px 10px; }
+.dev-main { flex: 1; min-width: 0; }
+.dev-addr { font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; word-break: break-all; }
+.dev-name { font-size: 0.7rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dev-temp { font-size: 0.85rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.empty { font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 12px 0; }
+
+.enable-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.toggle { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle span { position: absolute; inset: 0; background: var(--border); border-radius: 13px; cursor: pointer; transition: 0.2s; }
+.toggle span::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: var(--text-primary); border-radius: 50%; transition: 0.2s; }
+.toggle input:checked + span { background: var(--accent); }
+.toggle input:checked + span::before { transform: translateX(20px); }
+
+code { font-family: ui-monospace, Menlo, monospace; }
+.hidden { display: none !important; }
+
+.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--bg-card); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 20px; font-size: 0.85rem; color: var(--accent); opacity: 0; transition: all 0.3s; z-index: 999; }
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast.err { border-color: var(--danger); color: var(--danger); }
+
+/* Small phones: keep the title on one line, one tile per row */
+@media (max-width: 374px) {
+    .header { padding: 14px 12px; gap: 8px; }
+    .header h1 { font-size: 1rem; white-space: nowrap; }
+    .status-dots { gap: 4px; font-size: 0.6rem; }
+    .temps { grid-template-columns: 1fr; }
+    .sensor-grid { grid-template-columns: 1fr 1fr; }
+    .sensor-grid .form-group:last-child { grid-column: span 2; }
+}
+@media (min-width: 600px) { body { display: flex; justify-content: center; } .app-wrap { width: 100%; max-width: 520px; } }
+</style>
+</head>
+<body>
+<div class="app-wrap">
+    <div class="header">
+        <h1>🚐 Camper Temp</h1>
+        <div class="status-dots">
+            <span><span class="status-dot" id="dot-bus"></span>1-Wire</span>
+            <span><span class="status-dot" id="dot-wifi"></span>WiFi</span>
+            <span><span class="status-dot" id="dot-mqtt"></span>MQTT</span>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="live"><span class="ico">📊</span><span>Live</span></div>
+        <div class="tab" data-tab="sensors"><span class="ico">🌡️</span><span>Sensoren</span></div>
+        <div class="tab" data-tab="mqtt"><span class="ico">⚙️</span><span>MQTT</span></div>
+        <div class="tab" data-tab="wifi"><span class="ico">📶</span><span>WiFi</span></div>
+    </div>
+
+    <!-- LIVE TAB -->
+    <div class="tab-content active" id="tab-live">
+        <div class="card alarm-banner hidden" id="alarm-banner"></div>
+        <div class="temps" id="live-temps"></div>
+
+        <div class="card hidden" id="live-none">
+            <div class="empty" id="live-none-text">Noch kein Sensor eingerichtet. Im Tab Sensoren übernehmen.</div>
+        </div>
+
+        <div class="btn-row" id="live-actions">
+            <button class="btn btn-secondary" onclick="resetMinMax()">↺ Min/Max zurücksetzen</button>
+        </div>
+    </div>
+
+    <!-- SENSORS TAB -->
+    <div class="tab-content" id="tab-sensors">
+        <div class="card">
+            <div class="card-title accent">Sensoren</div>
+            <div id="sensor-list"></div>
+            <div class="empty hidden" id="sensor-none">Noch keine Sensoren. Unten aus der Liste der gefundenen Geräte übernehmen.</div>
+            <div class="form-hint">Die ID ist das MQTT-Topic: <code id="topic-example">camper/temp/&lt;id&gt;</code>. Erlaubt sind a-z, 0-9, _ und -. Der Offset wird zum Messwert addiert.<br>
+                Alarm: Wert liegt länger als die Verzögerung unter bzw. über der Grenze. Er geht weg, sobald der Wert 0,5 °C zurück im Bereich ist. Leeres Feld = kein Alarm. Topic <code>&lt;prefix&gt;/&lt;id&gt;/alarm</code>, Text für Displays unter <code>&lt;prefix&gt;/alarm_text</code>, alle Werte als JSON unter <code>&lt;prefix&gt;/sensors</code>.</div>
+            <div class="btn-row"><button class="btn btn-primary" onclick="saveSensors()">💾 Sensoren speichern</button></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title accent">Gefunden am 1-Wire-Bus</div>
+            <div class="dev-list" id="bus-list"></div>
+            <div class="form-hint">Rohwerte ohne Offset. Welcher Sensor welcher ist: einen in der Hand anwärmen und zusehen, welcher Wert steigt.</div>
+            <div class="btn-row"><button class="btn btn-secondary" onclick="scanBus()">🔍 Bus neu scannen</button></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title accent">Messung</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Intervall (Sekunden)</label>
+                    <input type="number" id="cfg-interval" min="5" max="600" step="1">
+                </div>
+                <div class="form-group">
+                    <label>Auflösung</label>
+                    <select id="cfg-resolution">
+                        <option value="9">9 bit (0,5 °C)</option>
+                        <option value="10">10 bit (0,25 °C)</option>
+                        <option value="11">11 bit (0,125 °C)</option>
+                        <option value="12">12 bit (0,0625 °C)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-hint">Nach jeder Messung werden die Werte per MQTT gesendet, spätestens aber jede Minute.</div>
+            <div class="btn-row"><button class="btn btn-primary" onclick="saveMeasure()">💾 Messung speichern</button></div>
+        </div>
+    </div>
+
+    <!-- MQTT TAB -->
+    <div class="tab-content" id="tab-mqtt">
+        <div class="card">
+            <div class="card-title">MQTT Settings (Home Assistant)</div>
+            <div class="form-row">
+                <div class="form-group"><label>Server</label><input type="text" id="cfg-mqtt-server"></div>
+                <div class="form-group"><label>Port</label><input type="number" id="cfg-mqtt-port" value="1883"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Benutzer</label><input type="text" id="cfg-mqtt-user"></div>
+                <div class="form-group"><label>Passwort</label><input type="password" id="cfg-mqtt-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            </div>
+            <div class="form-group">
+                <label>Topic-Prefix</label><input type="text" id="cfg-mqtt-prefix" value="camper/temp">
+                <div class="form-hint">Werte unter <code>&lt;prefix&gt;/&lt;id&gt;</code>, Status unter <code>&lt;prefix&gt;/status</code></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">Web-Oberfläche Login</div>
+            <div class="form-row">
+                <div class="form-group"><label>Benutzer</label><input type="text" id="cfg-web-user" autocomplete="off" autocapitalize="none"></div>
+                <div class="form-group"><label>Passwort</label><input type="password" id="cfg-web-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            </div>
+            <div class="form-hint">Leerer Benutzer = kein Login. Login vergessen: über USB den Befehl <code>noauth</code> im seriellen Monitor senden.</div>
+        </div>
+        <div class="btn-row"><button class="btn btn-primary" onclick="saveSetup()">💾 Speichern</button></div>
+    </div>
+
+    <!-- WIFI TAB -->
+    <div class="tab-content" id="tab-wifi">
+        <div class="card">
+            <div class="card-title">Verbindungsstatus</div>
+            <div class="info-row"><span class="info-label">Status</span><span id="wifi-state">--</span></div>
+            <div class="info-row"><span class="info-label">RSSI</span><span id="wifi-rssi">--</span></div>
+            <div class="info-row"><span class="info-label">Firmware</span><span id="fw-version">--</span></div>
+            <div class="info-row"><span class="info-label">Laufzeit</span><span id="uptime">--</span></div>
+            <div class="info-row"><span class="info-label">Freier Speicher</span><span id="heap">--</span></div>
+            <div class="info-row"><span class="info-label">Letzter Neustart</span><span id="reset-reason">--</span></div>
+            <div class="info-row"><span class="info-label">WLAN-Abbrüche</span><span id="wifi-drops">--</span></div>
+            <div class="info-row"><span class="info-label">Letzter Abbruchgrund</span><span id="wifi-reason" style="text-align:right;word-break:break-all">--</span></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">WLAN-Verbindung</div>
+            <div class="form-group"><label>SSID</label><input type="text" id="cfg-wifi-ssid"></div>
+            <div class="form-group"><label>Passwort</label><input type="password" id="cfg-wifi-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            <div class="form-group">
+                <label>Sendeleistung</label>
+                <select id="cfg-tx-power">
+                    <option value="34">8,5 dBm</option><option value="44">11 dBm</option><option value="52">13 dBm</option>
+                    <option value="60">15 dBm</option><option value="70">17,5 dBm (Standard)</option><option value="78">19,5 dBm (Maximum)</option>
+                </select>
+                <div class="form-hint">Bricht die Verbindung oft ab, zuerst eine niedrigere Stufe probieren.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Access Point</div>
+            <div class="form-group"><label>Name (SSID)</label><input type="text" id="cfg-ap-ssid"></div>
+            <div class="form-group"><label>Passwort (min. 8 Zeichen)</label><input type="password" id="cfg-ap-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
+            <div class="enable-row">
+                <div>
+                    <div style="font-size:0.85rem">Access Point immer an</div>
+                    <div class="form-hint" style="margin-top:2px">Aus = AP nur als Notfall, wenn das WLAN 60 s nicht erreichbar ist. Das Gerät ist dann über seine IP im WLAN oder <code>camper-temp.local</code> erreichbar.</div>
+                </div>
+                <label class="toggle"><input type="checkbox" id="cfg-ap-always"><span></span></label>
+            </div>
+        </div>
+
+        <div class="btn-row"><button class="btn btn-primary" onclick="saveWifi()">💾 Speichern & Verbinden</button></div>
+        <div class="card" style="margin-top:12px">
+            <div class="card-title">Firmware- &amp; Web-Update</div>
+            <div class="form-hint" style="margin:0 0 8px">Firmware: Arduino IDE → Sketch → Kompilierte Binärdatei exportieren, die .bin hier hochladen (danach Neustart).<br>
+                Web-Oberfläche: <code>data/index.html.gz</code> hochladen, ohne Neustart. Die Einstellungen bleiben erhalten.</div>
+            <div class="form-group"><input type="file" id="cfg-upload" accept=".bin,.gz"></div>
+            <progress id="up-progress" value="0" max="100" class="hidden" style="width:100%"></progress>
+            <div class="btn-row"><button class="btn btn-secondary" onclick="uploadFile()">⬆ Hochladen</button></div>
+        </div>
+
+        <div class="btn-row"><button class="btn btn-danger" onclick="restartDevice()">🔄 Neustart</button></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+</div>
+
+<script>
+let ws = null;
+let maxSensors = 8;
+let sensors = [];        // Editable sensor list: {addr, name, key, offset}
+let liveByAddr = {};     // Latest live values per address (configured sensors)
+let busRaw = {};         // Latest raw value per address (everything on the bus)
+let busKnown = false;    // At least one live update received
+let lastBusSig = '';
+let lastLiveSig = '';
+let prefix = 'camper/temp';
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        $('tab-' + tab.dataset.tab).classList.add('active');
+    });
+});
+
+function connectWS() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(proto + '//' + location.host + '/ws');
+    ws.onmessage = (evt) => {
+        try { updateLiveData(JSON.parse(evt.data)); } catch (e) {}
+    };
+    ws.onclose = () => { setTimeout(connectWS, 3000); };
+}
+
+function formatUptime(s) {
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    return (d ? d + ' d ' : '') + (d || h ? h + ' h ' : '') + m + ' min';
+}
+
+function formatAge(s) {
+    if (s < 0) return 'noch kein Wert';
+    if (s < 60) return 'vor ' + s + ' s';
+    if (s < 3600) return 'vor ' + Math.floor(s / 60) + ' min';
+    return 'vor ' + Math.floor(s / 3600) + ' h ' + Math.floor((s % 3600) / 60) + ' min';
+}
+
+const fmt = (v, d = 1) => (v === null || v === undefined) ? '--' : v.toFixed(d).replace('.', ',');
+
+// Tile color by temperature: fridge range cold, room range mild, above warm / hot
+function tempColor(t) {
+    if (t === null || t === undefined) return 'var(--text-muted)';
+    if (t < 10) return 'var(--cold)';
+    if (t < 28) return 'var(--mild)';
+    if (t < 45) return 'var(--warm)';
+    return 'var(--hot)';
+}
+
+function renderLive(list) {
+    const box = $('live-temps');
+    const sig = list.map(s => s.addr + s.name).join('|');
+    if (sig !== lastLiveSig) {
+        lastLiveSig = sig;
+        box.innerHTML = list.map(s => `
+            <div class="temp-tile" id="tile-${s.addr}">
+                <div class="temp-name">${esc(s.name)}</div>
+                <div class="temp-value"><span class="tv">--</span><small>°C</small></div>
+                <div class="temp-minmax"><span>min <b class="tmin">--</b></span><span>max <b class="tmax">--</b></span></div>
+                <div class="temp-state">--</div>
+            </div>`).join('');
+        box.classList.toggle('cols-1', list.length === 1);
+    }
+    for (const s of list) {
+        const tile = $('tile-' + s.addr);
+        if (!tile) continue;
+        tile.classList.toggle('error', !s.ok);
+        tile.classList.toggle('alarm', !!s.alarm);
+        tile.style.setProperty('--tile-color', tempColor(s.ok ? s.temp : null));
+        tile.querySelector('.tv').textContent = s.ok ? fmt(s.temp) : '--';
+        tile.querySelector('.tmin').textContent = fmt(s.min);
+        tile.querySelector('.tmax').textContent = fmt(s.max);
+        let state;
+        if (!s.present) state = 'Nicht am Bus gefunden';
+        else if (!s.ok) state = 'Keine gültige Messung' + (s.age >= 0 ? ' · letzter Wert ' + formatAge(s.age) : '');
+        else state = formatAge(s.age);
+        if (s.alarm === 2) state = '⚠ Zu warm · ' + state;
+        else if (s.alarm === 1) state = '⚠ Zu kalt · ' + state;
+        tile.querySelector('.temp-state').textContent = state;
+    }
+}
+
+function updateLiveData(d) {
+    const list = d.sensors || [];
+    liveByAddr = {};
+    for (const s of list) liveByAddr[s.addr] = s;
+    busRaw = {};
+    for (const b of (d.bus || [])) busRaw[b.addr] = b.temp;
+    const firstData = !busKnown;
+    busKnown = true;
+    if (firstData) renderSensors();   // "nicht gefunden" badges need the bus list
+
+    renderLive(list);
+    $('alarm-banner').textContent = d.alarm_text ? '⚠ ' + d.alarm_text : '';
+    $('alarm-banner').classList.toggle('hidden', !d.alarm_text);
+    $('live-none').classList.toggle('hidden', list.length > 0);
+    $('live-actions').classList.toggle('hidden', list.length === 0);
+    const n = (d.bus || []).length;
+    $('live-none-text').textContent = n
+        ? 'Noch kein Sensor eingerichtet. ' + n + ' am Bus gefunden, im Tab Sensoren übernehmen.'
+        : 'Kein Sensor am Bus gefunden. Verkabelung und 4,7 kΩ Pull-up prüfen.';
+
+    // Sensors tab
+    renderBus(d.bus || []);
+    for (const s of sensors) {
+        const el = $('raw-' + s.addr);
+        if (!el) continue;
+        const raw = busRaw[s.addr];
+        el.textContent = (raw === undefined || raw === null) ? '--' : fmt(raw, 2) + ' °C';
+    }
+
+    // Connection
+    const allOk = list.length > 0 && list.every(s => s.ok);
+    const someOk = list.some(s => s.ok);
+    $('dot-bus').className = 'status-dot ' + (allOk ? 'active' : (someOk || n ? 'warning' : ''));
+    $('dot-wifi').className = 'status-dot ' + (d.wifi === 'Verbunden' ? 'active' : '');
+    $('dot-mqtt').className = 'status-dot ' + (d.mqtt ? 'active' : '');
+    $('wifi-state').textContent = d.wifi;
+    $('wifi-rssi').textContent = d.rssi ? d.rssi + ' dBm' : '--';
+    if (d.uptime !== undefined) $('uptime').textContent = formatUptime(d.uptime);
+    if (d.heap !== undefined) $('heap').textContent = Math.round(d.heap / 1024) + ' kB';
+    if (d.wifi_drops !== undefined) $('wifi-drops').textContent = d.wifi_drops;
+    if (d.wifi_reason !== undefined) $('wifi-reason').textContent = d.wifi_reason;
+}
+
+// ---------- Sensor list (editable) ----------
+function renderSensors() {
+    $('sensor-none').classList.toggle('hidden', sensors.length > 0);
+    $('sensor-list').innerHTML = sensors.map((s, i) => {
+        const missing = busKnown && !(s.addr in busRaw);
+        return `
+        <div class="sensor-edit${missing ? ' missing' : ''}">
+            <div class="sensor-head">
+                <div class="sensor-addr">${s.addr}${missing ? '<span class="badge err">nicht gefunden</span>' : ''}${s.isNew ? '<span class="badge new">neu</span>' : ''}</div>
+                <div class="sensor-live" id="raw-${s.addr}">--</div>
+            </div>
+            <div class="sensor-grid">
+                <div class="form-group"><label>Name</label><input type="text" maxlength="31" value="${esc(s.name)}" oninput="sensors[${i}].name=this.value"></div>
+                <div class="form-group"><label>ID (Topic)</label><input type="text" maxlength="23" value="${esc(s.key)}" autocapitalize="none" spellcheck="false" oninput="sensors[${i}].key=this.value.toLowerCase()"></div>
+                <div class="form-group"><label>Offset °C</label><input type="number" step="0.1" min="-10" max="10" value="${s.offset}" oninput="sensors[${i}].offset=parseFloat(this.value)||0"></div>
+            </div>
+            <div class="sensor-alarm">
+                <div class="form-group"><label>Alarm unter °C</label><input type="number" step="0.5" value="${s.lo ?? ''}" placeholder="aus" oninput="sensors[${i}].lo=numOrNull(this.value)"></div>
+                <div class="form-group"><label>Alarm über °C</label><input type="number" step="0.5" value="${s.hi ?? ''}" placeholder="aus" oninput="sensors[${i}].hi=numOrNull(this.value)"></div>
+                <div class="form-group"><label>Verzögerung min</label><input type="number" step="1" min="0" max="240" value="${s.delay}" oninput="sensors[${i}].delay=parseInt(this.value)||0"></div>
+            </div>
+            <div class="sensor-foot">
+                <div class="form-hint" style="margin:0"><code>${esc(prefix)}/${esc(s.key)}</code></div>
+                <button class="btn btn-danger btn-small" onclick="removeSensor(${i})">Entfernen</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+const numOrNull = (v) => (v === '' || isNaN(parseFloat(v))) ? null : parseFloat(v);
+
+function removeSensor(i) {
+    sensors.splice(i, 1);
+    renderSensors();
+    lastBusSig = '';    // "Übernehmen" button may come back
+    showToast('Entfernt – zum Übernehmen speichern');
+}
+
+function nextKey() {
+    for (let n = 1; ; n++) {
+        const k = 'temp' + n;
+        if (!sensors.some(s => s.key === k)) return k;
+    }
+}
+
+function addSensor(addr) {
+    if (sensors.length >= maxSensors) { showToast('Maximal ' + maxSensors + ' Sensoren', true); return; }
+    if (sensors.some(s => s.addr === addr)) return;
+    const key = nextKey();
+    sensors.push({addr, name: 'Sensor ' + key.slice(4), key, offset: 0, lo: null, hi: null, delay: 15, isNew: true});
+    renderSensors();
+    lastBusSig = '';
+    showToast('Hinzugefügt – Name vergeben und speichern');
+}
+
+function renderBus(bus) {
+    const sig = bus.map(b => b.addr + (sensors.some(s => s.addr === b.addr) ? '1' : '0')).join('|') + '#';
+    if (sig !== lastBusSig) {
+        lastBusSig = sig;
+        if (bus.length === 0) {
+            $('bus-list').innerHTML = '<div class="empty">Kein Sensor gefunden. Verkabelung und 4,7 kΩ Pull-up prüfen.</div>';
+        } else {
+            $('bus-list').innerHTML = bus.map(b => {
+                const s = sensors.find(x => x.addr === b.addr);
+                return `
+                <div class="dev">
+                    <div class="dev-main">
+                        <div class="dev-addr">${b.addr}</div>
+                        <div class="dev-name">${s ? esc(s.name) : 'Noch nicht eingerichtet'}</div>
+                    </div>
+                    <div class="dev-temp" id="bus-${b.addr}">--</div>
+                    ${s ? '<span class="badge">aktiv</span>' : `<button class="btn btn-primary btn-small" onclick="addSensor('${b.addr}')">+ Übernehmen</button>`}
+                </div>`;
+            }).join('');
+        }
+    }
+    for (const b of bus) {
+        const el = $('bus-' + b.addr);
+        if (el) el.textContent = b.temp === null ? '--' : fmt(b.temp, 2) + ' °C';
+    }
+}
+
+// POST a (partial) config object; throws with the device's error message if rejected
+async function postConfig(obj) {
+    const resp = await fetch('/api/config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(obj)
+    });
+    if (!resp.ok) {
+        let msg = 'HTTP ' + resp.status;
+        try { msg = (await resp.json()).error || msg; } catch (e) {}
+        throw new Error(msg);
+    }
+}
+
+async function loadSetup() {
+    try {
+        const resp = await fetch('/api/config');
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const cfg = await resp.json();
+
+        // Passwords are never sent by the device; the fields stay empty on purpose
+        $('cfg-mqtt-server').value = cfg.mqtt_server || '';
+        $('cfg-mqtt-port').value = cfg.mqtt_port || 1883;
+        $('cfg-mqtt-user').value = cfg.mqtt_user || '';
+        prefix = cfg.mqtt_prefix || 'camper/temp';
+        $('cfg-mqtt-prefix').value = prefix;
+        $('topic-example').textContent = prefix + '/<id>';
+        $('cfg-wifi-ssid').value = cfg.wifi_ssid || '';
+        $('cfg-ap-ssid').value = cfg.ap_ssid || '';
+        $('fw-version').textContent = (cfg.version || '--') + (cfg.chip ? ' · ' + cfg.chip + ', GPIO' + cfg.pin : '');
+        $('reset-reason').textContent = cfg.reset_reason || '--';
+        $('cfg-tx-power').value = String(cfg.wifi_tx_power || 70);
+        $('cfg-ap-always').checked = cfg.ap_always !== false;
+
+        $('cfg-interval').value = cfg.interval || 10;
+        $('cfg-resolution').value = String(cfg.resolution || 12);
+        maxSensors = cfg.max_sensors || 8;
+        sensors = (cfg.sensors || []).map(s => ({addr: s.addr, name: s.name, key: s.key, offset: s.offset || 0,
+            lo: s.lo ?? null, hi: s.hi ?? null, delay: s.delay ?? 15}));
+        $('cfg-web-user').value = cfg.web_user || '';
+        renderSensors();
+        lastBusSig = '';
+    } catch (e) {
+        showToast('Fehler beim Laden der Einstellungen', true);
+    }
+}
+
+async function saveSensors() {
+    const keyRe = /^[a-z0-9_-]+$/;
+    for (const s of sensors) {
+        s.name = (s.name || '').trim();
+        s.key = (s.key || '').trim();
+        if (!s.name) { showToast('Jeder Sensor braucht einen Namen', true); return; }
+        if (!keyRe.test(s.key) || ['status', 'rssi', 'cmd', 'alarm', 'alarm_text', 'sensors'].includes(s.key)) { showToast('Ungültige ID: ' + s.key, true); return; }
+        if (sensors.filter(x => x.key === s.key).length > 1) { showToast('ID doppelt: ' + s.key, true); return; }
+        if (Math.abs(s.offset) > 10) { showToast('Offset max. ±10 °C', true); return; }
+        if (s.lo !== null && s.hi !== null && s.lo >= s.hi) { showToast(s.name + ': untere Grenze muss unter der oberen liegen', true); return; }
+        if (!(s.delay >= 0 && s.delay <= 240)) { showToast('Verzögerung 0-240 min', true); return; }
+    }
+    try {
+        await postConfig({sensors: sensors.map(s => ({addr: s.addr, name: s.name, key: s.key, offset: s.offset,
+            lo: s.lo, hi: s.hi, delay: s.delay}))});
+        sensors.forEach(s => delete s.isNew);
+        renderSensors();
+        lastBusSig = '';
+        showToast('Sensoren gespeichert');
+    } catch (e) {
+        showToast('Fehler: ' + e.message, true);
+    }
+}
+
+async function saveMeasure() {
+    const interval = parseInt($('cfg-interval').value);
+    if (!(interval >= 5 && interval <= 600)) { showToast('Intervall 5-600 s', true); return; }
+    try {
+        await postConfig({interval, resolution: parseInt($('cfg-resolution').value)});
+        showToast('Gespeichert');
+    } catch (e) {
+        showToast('Fehler: ' + e.message, true);
+    }
+}
+
+async function scanBus() {
+    try {
+        await fetch('/api/scan', {method: 'POST'});
+        lastBusSig = '';
+        showToast('Bus wird gescannt...');
+    } catch (e) {
+        showToast('Fehler beim Scan', true);
+    }
+}
+
+async function resetMinMax() {
+    try {
+        await fetch('/api/minmax/reset', {method: 'POST'});
+        showToast('Min/Max zurückgesetzt');
+    } catch (e) {
+        showToast('Fehler', true);
+    }
+}
+
+async function saveSetup() {
+    const cfg = {
+        mqtt_server: $('cfg-mqtt-server').value.trim(),
+        mqtt_port: parseInt($('cfg-mqtt-port').value) || 1883,
+        mqtt_user: $('cfg-mqtt-user').value.trim(),
+        mqtt_prefix: $('cfg-mqtt-prefix').value.trim().replace(/\/+$/, '')
+    };
+    const pass = $('cfg-mqtt-pass').value;
+    if (pass) cfg.mqtt_pass = pass;
+    cfg.web_user = $('cfg-web-user').value.trim();
+    const webPass = $('cfg-web-pass').value;
+    if (webPass) cfg.web_pass = webPass;
+    try {
+        await postConfig(cfg);
+        showToast('Gespeichert – Neustart...');
+        setTimeout(restartDevice, 800);
+    } catch (e) {
+        showToast('Fehler: ' + e.message, true);
+    }
+}
+
+async function saveWifi() {
+    const cfg = {
+        wifi_ssid: $('cfg-wifi-ssid').value.trim(),
+        ap_ssid: $('cfg-ap-ssid').value.trim(),
+        wifi_tx_power: parseInt($('cfg-tx-power').value),
+        ap_always: $('cfg-ap-always').checked
+    };
+    const pass = $('cfg-wifi-pass').value;
+    if (pass) cfg.wifi_pass = pass;
+    const apPass = $('cfg-ap-pass').value;
+    if (apPass) {
+        if (apPass.length < 8) { showToast('AP-Passwort: mindestens 8 Zeichen', true); return; }
+        cfg.ap_pass = apPass;
+    }
+    try {
+        await postConfig(cfg);
+        showToast('Gespeichert – Neustart...');
+        setTimeout(restartDevice, 800);
+    } catch (e) {
+        showToast('Fehler: ' + e.message, true);
+    }
+}
+
+async function restartDevice() {
+    try { await fetch('/api/restart', {method: 'POST'}); } catch (e) {}
+    showToast('Neustart... Seite lädt in 10 s neu');
+    setTimeout(() => location.reload(), 10000);
+}
+
+function uploadFile() {
+    const file = $('cfg-upload').files[0];
+    if (!file) { showToast('Erst eine Datei wählen', true); return; }
+    const fd = new FormData();
+    fd.append('f', file);
+    const x = new XMLHttpRequest();
+    $('up-progress').classList.remove('hidden');
+    x.upload.onprogress = e => { if (e.lengthComputable) $('up-progress').value = e.loaded / e.total * 100; };
+    x.onload = () => {
+        if (x.status === 200 && x.responseText === 'OK web') { showToast('Web-Oberfläche ersetzt – lädt neu...'); setTimeout(() => location.reload(), 1500); }
+        else if (x.status === 200) { showToast('Update ok – Neustart...'); setTimeout(() => location.reload(), 12000); }
+        else showToast('Fehler: ' + x.responseText, true);
+    };
+    x.onerror = () => showToast('Upload fehlgeschlagen', true);
+    x.open('POST', '/api/update');
+    x.send(fd);
+}
+
+function showToast(msg, isErr) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.toggle('err', !!isErr);
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+loadSetup();
+connectWS();
+</script>
+</body>
+</html>
