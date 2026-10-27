@@ -1,5 +1,5 @@
 > [!WARNING]
-> **IN ENTWICKLUNG – kein fertiges Projekt.** Am echten LIN-Bus noch nicht getestet. Nutzung auf eigenes Risiko.
+> **IN ENTWICKLUNG – kein fertiges Projekt.** Am echten LIN-Bus (Truma) noch nicht getestet. Nutzung auf eigenes Risiko.
 
 
 # Camper Display – Guition 4" Wandpanel + Webseite per MQTT
