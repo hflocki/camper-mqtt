@@ -14,9 +14,11 @@ config_local.h
 
 plan/
 
-# Downloads (firmware, PCB files) that end up in the repo root by accident
+# Downloads (firmware, PCB files, screenshots) that end up in the repo root by accident
 /*.bin
 /*.zip
 /*.xlsx
 /*.csv
 /*.pdf
+/*.png
+/*.jpg
