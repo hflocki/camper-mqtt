@@ -1,0 +1,8 @@
+build/
+freerouting.jar
+logs/
+.venv/
+__pycache__/
+*.dsn
+*.ses
+*-drc.txt

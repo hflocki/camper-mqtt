@@ -1,0 +1,83 @@
+# Part list and connectivity of the camper LIN board (single source for PCB, BOM and schematic).
+# ref: (lib, footprint, value, MPN, manufacturer, description, {pad: net})
+import os
+L = os.environ.get('KICAD_FOOTPRINTS', '/usr/share/kicad/footprints').rstrip('/') + '/'
+PARTS = {
+ # --- 12 V input -------------------------------------------------------------------------------------------
+ 'J1': ('TerminalBlock_Phoenix', 'TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal', '12V IN', '1715734', 'Phoenix Contact',
+        'Schraubklemme 2-pol. 5,08 mm (1 = +12 V, 2 = Masse)', {'1': 'VIN_RAW', '2': 'GND'}),
+ 'F1': ('Fuse', 'Fuseholder_Blade_Mini_Keystone_3568', 'Mini-Flachsicherung 1 A', '3568', 'Keystone',
+        'Sicherungshalter Mini-Flachsicherung (ATM), Sicherung 1 A lose dazu', {'1': 'VIN_RAW', '2': 'VIN_F'}),
+ 'D1': ('Diode_SMD', 'D_SMA', 'B1100', 'B1100-13-F', 'Diodes Inc.', 'Schottky 100 V 1 A, Verpolschutz', {'1': 'VBAT', '2': 'VIN_F'}),
+ 'D2': ('Diode_SMD', 'D_SMB', 'SMBJ22A', 'SMBJ22A', 'Littelfuse', 'TVS 22 V, Schutz gegen Spannungsspitzen', {'1': 'VBAT', '2': 'GND'}),
+ 'C1': ('Capacitor_SMD', 'C_1210_3225Metric', '10uF 50V', 'GRM32ER71H106KA12L', 'Murata', 'Keramik X7R', {'1': 'VBAT', '2': 'GND'}),
+ 'C2': ('Capacitor_SMD', 'C_0603_1608Metric', '100nF 50V', 'GRM188R71H104KA93D', 'Murata', 'Keramik X7R', {'1': 'VBAT', '2': 'GND'}),
+ 'PS1': ('Converter_DCDC', 'Converter_DCDC_RECOM_R-78HB-0.5_THT', 'R-78HB5.0-0.5', 'R-78HB5.0-0.5', 'RECOM',
+         'Schaltregler-Modul 9-72 V -> 5 V 0,5 A', {'1': 'VBAT', '2': 'GND', '3': '+5V_DC'}),
+ 'C3': ('Capacitor_SMD', 'C_0805_2012Metric', '22uF 10V', 'GRM21BR61A226ME44L', 'Murata', 'Keramik X5R', {'1': '+5V_DC', '2': 'GND'}),
+ # --- 5 V from the converter or from USB, then 3.3 V -----------------------------------------------------------
+ 'D3': ('Diode_SMD', 'D_SOD-123', 'B5819W', 'B5819W', 'Diodes Inc.', 'Schottky 40 V 1 A (Wandler -> 5 V)', {'1': '+5V', '2': '+5V_DC'}),
+ 'D4': ('Diode_SMD', 'D_SOD-123', 'B5819W', 'B5819W', 'Diodes Inc.', 'Schottky 40 V 1 A (USB -> 5 V)', {'1': '+5V', '2': 'VBUS'}),
+ 'C4': ('Capacitor_SMD', 'C_0805_2012Metric', '10uF 10V', 'GRM21BR61A106KE19L', 'Murata', 'Keramik X5R', {'1': '+5V', '2': 'GND'}),
+ 'U3': ('Package_TO_SOT_SMD', 'SOT-23-5', 'AP2112K-3.3', 'AP2112K-3.3TRG1', 'Diodes Inc.', 'LDO 3,3 V 600 mA',
+        {'1': '+5V', '2': 'GND', '3': '+5V', '5': '+3V3'}),
+ 'C5': ('Capacitor_SMD', 'C_0805_2012Metric', '22uF 10V', 'GRM21BR61A226ME44L', 'Murata', 'Keramik X5R', {'1': '+3V3', '2': 'GND'}),
+ 'C6': ('Capacitor_SMD', 'C_0603_1608Metric', '100nF 50V', 'GRM188R71H104KA93D', 'Murata', 'Keramik X7R', {'1': '+3V3', '2': 'GND'}),
+ # --- ESP32-C3 -----------------------------------------------------------------------------------------------
+ 'U1': ('RF_Module', 'ESP32-C3-WROOM-02', 'ESP32-C3-WROOM-02-N4', 'ESP32-C3-WROOM-02-N4', 'Espressif', 'WLAN-Modul ESP32-C3, 4 MB Flash',
+        {'1': '+3V3', '2': 'EN', '3': 'LIN_TX', '4': 'LIN_SLP', '5': 'LED_LIN', '6': 'LED_MQTT', '7': 'IO8', '8': 'IO9', '9': 'GND',
+         '13': 'USB_DN', '14': 'USB_DP', '15': 'LIN_RX', '16': 'IO2', '19': 'GND', '': 'GND'}),
+ 'C7': ('Capacitor_SMD', 'C_0805_2012Metric', '22uF 10V', 'GRM21BR61A226ME44L', 'Murata', 'Keramik X5R', {'1': '+3V3', '2': 'GND'}),
+ 'C8': ('Capacitor_SMD', 'C_0603_1608Metric', '100nF 50V', 'GRM188R71H104KA93D', 'Murata', 'Keramik X7R', {'1': '+3V3', '2': 'GND'}),
+ 'R1': ('Resistor_SMD', 'R_0603_1608Metric', '10k', 'RC0603FR-0710KL', 'Yageo', 'EN Pull-up', {'1': '+3V3', '2': 'EN'}),
+ 'C9': ('Capacitor_SMD', 'C_0603_1608Metric', '1uF', 'GRM188R71C105KA12D', 'Murata', 'EN Verzögerung', {'1': 'EN', '2': 'GND'}),
+ 'R2': ('Resistor_SMD', 'R_0603_1608Metric', '10k', 'RC0603FR-0710KL', 'Yageo', 'GPIO9 (Boot) Pull-up', {'1': '+3V3', '2': 'IO9'}),
+ 'R3': ('Resistor_SMD', 'R_0603_1608Metric', '10k', 'RC0603FR-0710KL', 'Yageo', 'GPIO8 Pull-up', {'1': '+3V3', '2': 'IO8'}),
+ 'R4': ('Resistor_SMD', 'R_0603_1608Metric', '10k', 'RC0603FR-0710KL', 'Yageo', 'GPIO2 Pull-up', {'1': '+3V3', '2': 'IO2'}),
+ 'SW1': ('Button_Switch_SMD', 'SW_SPST_PTS810', 'RESET', 'PTS810 SJM 250 SMTR LFS', 'C&K', 'Taster Neustart', {'1': 'EN', '2': 'GND'}),
+ 'SW2': ('Button_Switch_SMD', 'SW_SPST_PTS810', 'BOOT', 'PTS810 SJM 250 SMTR LFS', 'C&K', 'Taster Boot (Flash-Modus)', {'1': 'IO9', '2': 'GND'}),
+ # --- USB-C (flashing, log, power while on the desk) --------------------------------------------------------
+ 'J4': ('Connector_USB', 'USB_C_Receptacle_HRO_TYPE-C-31-M-12', 'USB-C', 'TYPE-C-31-M-12', 'Korean Hroparts', 'USB-C Buchse 16-pol.',
+        {'A1': 'GND', 'B12': 'GND', 'A12': 'GND', 'B1': 'GND', 'A4': 'VBUS', 'A9': 'VBUS', 'B4': 'VBUS', 'B9': 'VBUS',
+         'A5': 'CC1', 'B5': 'CC2', 'A6': 'USB_DP', 'B6': 'USB_DP', 'A7': 'USB_DN', 'B7': 'USB_DN', 'S1': 'GND'}),
+ 'R9': ('Resistor_SMD', 'R_0603_1608Metric', '5.1k', 'RC0603FR-075K1L', 'Yageo', 'USB CC1', {'1': 'CC1', '2': 'GND'}),
+ 'R10': ('Resistor_SMD', 'R_0603_1608Metric', '5.1k', 'RC0603FR-075K1L', 'Yageo', 'USB CC2', {'1': 'CC2', '2': 'GND'}),
+ 'U4': ('Package_TO_SOT_SMD', 'SOT-23-6', 'USBLC6-2SC6', 'USBLC6-2SC6', 'STMicroelectronics', 'ESD-Schutz USB',
+        {'1': 'USB_DN', '6': 'USB_DN', '3': 'USB_DP', '4': 'USB_DP', '2': 'GND', '5': 'VBUS'}),
+ # --- LIN transceiver (slave, no master pull-up) ------------------------------------------------------------
+ 'U2': ('Package_SO', 'SOIC-8_3.9x4.9mm_P1.27mm', 'TJA1021T/20', 'TJA1021T/20/C,118', 'NXP', 'LIN-Transceiver',
+        {'1': 'LIN_RX', '2': 'LIN_SLP', '3': 'LIN_WAKE', '4': 'LIN_TX', '5': 'GND', '6': 'LIN', '7': 'VBAT'}),
+ 'C10': ('Capacitor_SMD', 'C_0603_1608Metric', '100nF 50V', 'GRM188R71H104KA93D', 'Murata', 'Abblockung VBAT', {'1': 'VBAT', '2': 'GND'}),
+ 'C11': ('Capacitor_SMD', 'C_0603_1608Metric', '220pF 50V', 'GRM1885C1H221JA01D', 'Murata', 'LIN-Kondensator (Slave)', {'1': 'LIN', '2': 'GND'}),
+ 'R5': ('Resistor_SMD', 'R_0603_1608Metric', '4.7k', 'RC0603FR-074K7L', 'Yageo', 'RXD Pull-up', {'1': '+3V3', '2': 'LIN_RX'}),
+ 'R6': ('Resistor_SMD', 'R_0603_1608Metric', '10k', 'RC0603FR-0710KL', 'Yageo', 'TXD Pull-up (rezessiv beim Start)', {'1': '+3V3', '2': 'LIN_TX'}),
+ 'R7': ('Resistor_SMD', 'R_0603_1608Metric', '10k', 'RC0603FR-0710KL', 'Yageo', 'SLP Pull-up (Normalbetrieb)', {'1': '+3V3', '2': 'LIN_SLP'}),
+ 'R8': ('Resistor_SMD', 'R_0603_1608Metric', '10k', 'RC0603FR-0710KL', 'Yageo', 'WAKE an VBAT (nicht genutzt)', {'1': 'VBAT', '2': 'LIN_WAKE'}),
+ # --- RJ12: two jacks wired 1:1, works like a Y splitter -------------------------------------------------------
+ 'J2': ('Connector_RJ', 'RJ12_Amphenol_54601-x06_Horizontal', 'RJ12 (CP Plus)', '54601-906WPLF', 'Amphenol', 'RJ12 6P6C Buchse',
+        {'1': 'RJ1', '2': 'RJ2', '3': 'LIN', '4': 'RJ4', '5': 'RJ5', '6': 'RJ6'}),
+ 'J3': ('Connector_RJ', 'RJ12_Amphenol_54601-x06_Horizontal', 'RJ12 (Heizung)', '54601-906WPLF', 'Amphenol', 'RJ12 6P6C Buchse',
+        {'1': 'RJ1', '2': 'RJ2', '3': 'LIN', '4': 'RJ4', '5': 'RJ5', '6': 'RJ6'}),
+ 'JP1': ('Jumper', 'SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm', 'RJ12 Pin 5 an GND', '', '', 'Lötbrücke, offen ausgeliefert',
+         {'1': 'RJ5', '2': 'GND'}),
+ # --- LEDs ---------------------------------------------------------------------------------------------------
+ 'LED1': ('LED_SMD', 'LED_0603_1608Metric', 'grün (Power)', '150060VS75000', 'Würth', 'LED grün', {'1': 'GND', '2': 'LED1_A'}),
+ 'R11': ('Resistor_SMD', 'R_0603_1608Metric', '1k', 'RC0603FR-071KL', 'Yageo', 'LED-Vorwiderstand', {'1': '+3V3', '2': 'LED1_A'}),
+ 'LED2': ('LED_SMD', 'LED_0603_1608Metric', 'blau (LIN)', '150060BS75000', 'Würth', 'LED blau', {'1': 'GND', '2': 'LED2_A'}),
+ 'R12': ('Resistor_SMD', 'R_0603_1608Metric', '1k', 'RC0603FR-071KL', 'Yageo', 'LED-Vorwiderstand', {'1': 'LED_LIN', '2': 'LED2_A'}),
+ 'LED3': ('LED_SMD', 'LED_0603_1608Metric', 'gelb (MQTT)', '150060YS75000', 'Würth', 'LED gelb', {'1': 'GND', '2': 'LED3_A'}),
+ 'R13': ('Resistor_SMD', 'R_0603_1608Metric', '1k', 'RC0603FR-071KL', 'Yageo', 'LED-Vorwiderstand', {'1': 'LED_MQTT', '2': 'LED3_A'}),
+ # --- test points and mounting holes -------------------------------------------------------------------------
+ 'TP1': ('TestPoint', 'TestPoint_Pad_D1.5mm', 'VBAT', '', '', 'Messpunkt', {'1': 'VBAT'}),
+ 'TP2': ('TestPoint', 'TestPoint_Pad_D1.5mm', '5V', '', '', 'Messpunkt', {'1': '+5V'}),
+ 'TP3': ('TestPoint', 'TestPoint_Pad_D1.5mm', '3V3', '', '', 'Messpunkt', {'1': '+3V3'}),
+ 'TP4': ('TestPoint', 'TestPoint_Pad_D1.5mm', 'GND', '', '', 'Messpunkt', {'1': 'GND'}),
+ 'TP5': ('TestPoint', 'TestPoint_Pad_D1.5mm', 'LIN', '', '', 'Messpunkt', {'1': 'LIN'}),
+ 'FID1': ('Fiducial', 'Fiducial_1mm_Mask2mm', 'Fiducial', '', '', 'Passermarke Bestückung', {}),
+ 'FID2': ('Fiducial', 'Fiducial_1mm_Mask2mm', 'Fiducial', '', '', 'Passermarke Bestückung', {}),
+ 'H1': ('MountingHole', 'MountingHole_3.2mm_M3', 'M3', '', '', 'Befestigungsloch', {}),
+ 'H2': ('MountingHole', 'MountingHole_3.2mm_M3', 'M3', '', '', 'Befestigungsloch', {}),
+ 'H3': ('MountingHole', 'MountingHole_3.2mm_M3', 'M3', '', '', 'Befestigungsloch', {}),
+ 'H4': ('MountingHole', 'MountingHole_3.2mm_M3', 'M3', '', '', 'Befestigungsloch', {}),
+}
+POWER_NETS = {'VIN_RAW': 1.0, 'VIN_F': 1.0, 'VBAT': 0.8, '+5V_DC': 0.6, '+5V': 0.6, 'VBUS': 0.6, '+3V3': 0.5, 'GND': 0.6}

@@ -1,0 +1,4 @@
+# Python helpers for the PCB scripts. pcbnew comes with KiCad 7, so create the venv with
+#   python3 -m venv --system-site-packages .venv && source .venv/bin/activate && pip install -r requirements.txt
+schemdraw==0.23
+openpyxl==3.1.5

@@ -25,6 +25,7 @@ In `truma_heater/config.h` ganz oben genau ein Board aktivieren:
 | Profil | Board | LIN TX / RX | Arduino-Board |
 |---|---|---|---|
 | `BOARD_ESP32C3_SUPERMINI` (Standard) | ESP32-C3 Super Mini + LIN-Modul (Lochraster-Aufbau, siehe HARDWARE.md) | 4 / 3 | ESP32C3 Dev Module |
+| `BOARD_CAMPER_LIN_C3` | eigene Platine aus [`pcb/`](pcb/README.md) (ESP32-C3-WROOM-02, TJA1021, Sicherung, Wandler), bei PCBWay bestellbar | 4 / 3 | ESP32C3 Dev Module |
 | `BOARD_SMARTAVAN` | smartavan heater controller | 16 / 17 | ESP32 Dev Module |
 | `BOARD_ESP32_GENERIC` | ESP32 DevKit + LIN-Modul (Verdrahtung wie inetbox2mqtt, LEDs 4/15) | 17 / 16 | ESP32 Dev Module |
 | `BOARD_ESP32S3_GENERIC` | ESP32-S3 + LIN-Modul | 17 / 18 | ESP32S3 Dev Module |
