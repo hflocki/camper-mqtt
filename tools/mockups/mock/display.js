@@ -11,10 +11,11 @@ const M = {
     ntpServer: 'pool.ntp.org', tz: 'CET-1CEST,M3.5.0,M10.5.0/3',
     poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
     brightness: 80, dimBrightness: 10, screenTimeout: 120,
-    builtin: [true, true, true, true, true, true],
-    pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'System'],
-    ovTiles: 'water,gas,heater,level,fan,temp,bat1,bat2,status',
-    fw: '1.9.0', mac: '24:0A:C4:00:00:01',
+    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 30,
+    builtin: [true, true, true, true, true, true, true],
+    pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'System'],
+    ovTiles: 'water,gas,heater,level,fan,weather,temp,bat1,status',
+    fw: '2.0.0', mac: '24:0A:C4:00:00:01',
     // In the mockup the device links open the other mockups
     links: [{n: 'Truma', u: 'heater.html'}, {n: 'MaxxFan', u: 'maxxfan.html'}, {n: 'Tanks', u: 'tanklevel.html'},
             {n: 'Level', u: 'level.html'}, {n: 'Temperatur', u: 'temp.html'}, {n: 'Batterie', u: 'battery.html'}]
@@ -33,7 +34,16 @@ const M = {
             tiles: M.pages.tiles.map(t => Object.assign({n: t.name, p: t.page, y: t.type, u: t.unit || ''},
               t.type === 1 ? {son: t.stateOn || 'ON'} : {}, t.type === 3 ? {min: t.min, max: t.max, step: t.step} : {}))};
   },
-  wsOpen(emit) { emit(M.cfgMsg()); },
+  wxMsg() {
+    const c = M.cfg, now = Math.floor(Date.now() / 1000);
+    if (!c.wxOn) return {t: 'wx', w: {on: false, status: 'Wetter aus', name: c.wxName, warn: ''}};
+    const g = 41, warn = c.wxGust > 0 && g >= c.wxGust ? 'Wind: Böen bis ' + g + ' km/h' : '';
+    return {t: 'wx', w: {on: true, status: 'Stand ' + new Date().toTimeString().slice(0, 5), name: c.wxName, warn,
+      t: 13.2, f: 11.4, h: 71, w: 24, g, dir: 'W', c: 2, day: true, txt: 'Teils bewölkt', rn: 0.2, pn: 35, at: now,
+      d: [{c: 2, hi: 14, lo: 7, r: 0.8, p: 40, g: 45}, {c: 63, hi: 12, lo: 6, r: 6.4, p: 90, g: 52},
+          {c: 3, hi: 11, lo: 5, r: 1.2, p: 45, g: 38}, {c: 0, hi: 15, lo: 4, r: 0, p: 5, g: 20}]}};
+  },
+  wsOpen(emit) { emit(M.cfgMsg()); emit(M.wxMsg()); M.emit = emit; },
   state() {
     const t = (Date.now() - M.t0) / 1000, H = M.H;
     if (H.hvac === 'heat' && H.room < H.set) H.room = Math.min(H.set, H.room + 0.05);
@@ -94,6 +104,7 @@ const M = {
       const b = Object.assign({}, body);
       for (const k of Object.keys(b)) if (/pass|token|user/i.test(k) && k !== 'webUser' && k !== 'mqttUser') delete b[k];
       M.save(b);
+      if (M.emit) setTimeout(() => M.emit(M.wxMsg()), 300);
       return {ok: true, msg: 'Gespeichert'}; }
     if (path === '/api/pages' && method === 'GET') return M.pages;
     if (path === '/api/pages') { M.pages = body; return {ok: true, msg: 'Seiten gespeichert'}; }

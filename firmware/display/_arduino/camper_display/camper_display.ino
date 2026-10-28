@@ -20,6 +20,7 @@
 #include "ui.h"
 #include "web.h"
 #include "notify.h"
+#include "weather.h"
 #include <ArduinoOTA.h>
 
 void setup() {
@@ -37,6 +38,7 @@ void setup() {
   mqttc::begin();
   web::begin();
   notify::begin();
+  wx::begin();
 }
 
 static bool otaStarted = false;

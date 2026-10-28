@@ -5,6 +5,7 @@
 #include "mqtt_client.h"
 #include "wifi_manager.h"
 #include "display_hw.h"
+#include "weather.h"
 #include <lvgl.h>
 #include <vector>
 #include <time.h>
@@ -23,7 +24,11 @@ LV_FONT_DECLARE(font_de_56);
 #define ICON_TINT         "\xEF\x81\x83"
 #define ICON_FAN          "\xEF\x9C\xAE"
 #define ICON_DRIP         "\xEF\x95\xB6"
-#define ICON_THERMOMETER  "\xEF\x92\x91"
+#define ICON_THERMOMETER  "\xEF\x8B\x89"   // thermometer-half
+#define ICON_CLOUD_SUN    "\xEF\x9B\x84"
+#define ICON_MARKER       "\xEF\x8F\x85"
+#define ICON_UMBRELLA     "\xEF\x83\xA9"
+#define ICON_WIND         "\xEF\x9C\xAE"
 
 namespace {
 
@@ -40,12 +45,15 @@ const lv_color_t C_HEAT    = lv_color_hex(0xF06A3B);
 const lv_color_t C_OK      = lv_color_hex(0x4CC27A);
 const lv_color_t C_WARN    = lv_color_hex(0xE5484D);
 const lv_color_t C_ACCENT  = lv_color_hex(0x5AB0F0);
+const lv_color_t C_BANNER  = lv_color_hex(0xF2C94C);   // warning banner (yellow) ...
+const lv_color_t C_ONBANNER = lv_color_hex(0x1A1F24);  // ... and its text
+const lv_color_t C_NAV     = lv_color_hex(0x161D24);
 
-const int HDR_H = 52;
+const int HDR_H = 40;                   // header: page title left, date + clock right
+const int NAV_H = 56;                   // icon bar at the bottom, one button per page
 const int PAGE_W = LCD_WIDTH;
-const int PAGE_H = LCD_HEIGHT - HDR_H;
-const int HOME_W = 48;                  // home button right of the "<" button
-const int TITLE_X = 60 + HOME_W + 10;   // page title starts here
+const int PAGE_H = LCD_HEIGHT - HDR_H - NAV_H;
+const int TITLE_X = 14;
 
 // ---- page bookkeeping ----------------------------------------------------
 enum : int { PG_SYSTEM = 100 };
@@ -58,7 +66,11 @@ lv_obj_t* hdrTitle = nullptr;
 lv_obj_t* hdrClock = nullptr;
 lv_obj_t* hdrName = nullptr;    // optional display name between page title and clock
 lv_obj_t* hdrStatus = nullptr;
-lv_obj_t* hdrDots = nullptr;
+lv_obj_t* hdrDate = nullptr;
+lv_obj_t* hdr = nullptr;
+lv_obj_t* hdrWarn = nullptr;            // scrolling warning text, replaces the title while warnings are active
+lv_obj_t* nav = nullptr;
+std::vector<lv_obj_t*> navBtns;
 
 bool rebuildPending = false;
 uint32_t lastHeader = 0;
@@ -73,6 +85,17 @@ lv_obj_t *hRoom, *hWater, *hSet, *hPower, *hPowerLbl, *hFanBm, *hWaterBm, *hStat
 lv_obj_t *fStatus, *fSpeed, *fSpeedLbl;
 lv_obj_t *lvArea, *lvBubble, *lvZone, *lvPitch, *lvRoll, *lvState, *lvWedge[4];
 lv_obj_t *sIp, *sNet, *sQr, *sQrLbl, *sBri, *sInfo;
+std::vector<lv_obj_t*> sVals;           // system page: value column, order of SYS_ROWS
+
+// weather page
+lv_obj_t *wIcon, *wTemp, *wText, *wFeels, *wPlace, *wStatus;
+struct SmallW { lv_obj_t *val = nullptr, *sub = nullptr; };
+SmallW wWind, wHum, wNext, wToday;
+struct DayW { lv_obj_t *day = nullptr, *icon = nullptr, *temp = nullptr, *rain = nullptr; };
+DayW wDays[3];
+time_t wShown = -1;                     // data time shown on the weather page / tile
+String wShownStatus;
+lv_obj_t *ovWxIcon = nullptr, *ovWxVal = nullptr, *ovWxSub = nullptr;
 
 // warnings (overview banner) and temperatures (camper-temp)
 lv_obj_t *ovWarn, *ovWarnLbl;
@@ -239,39 +262,33 @@ void updateHeaderTitle() {
   if (!tv) return;
   uint32_t i = lv_tabview_get_tab_active(tv);
   if (i < pages.size()) lv_label_set_text(hdrTitle, dispText(pages[i].title).c_str());
-  // Display name: centered on the screen if there is room, otherwise in the gap
-  // between the page title and the clock ("00:00" is the widest clock text)
+  // display name in muted text right of the page title, if there is room before the date
   if (hdrName) {
     String name = dispText(settings.displayName);
     lv_label_set_text(hdrName, name.c_str());
-    if (name.length()) {
-      const char* title = lv_label_get_text(hdrTitle);
-      int left  = TITLE_X + lv_text_get_width(title, strlen(title), &font_de_22, 0) + 14;
-      int right = LCD_WIDTH - 66 - lv_text_get_width("00:00", 5, &font_de_22, 0) - 14;
-      int maxW  = right - left;
-      if (maxW < 20) { lv_obj_add_flag(hdrName, LV_OBJ_FLAG_HIDDEN); }
-      else {
-        lv_obj_remove_flag(hdrName, LV_OBJ_FLAG_HIDDEN);
-        int w = lv_text_get_width(name.c_str(), name.length(), &font_de_18, 0);
-        if (w > maxW) w = maxW;
-        lv_obj_set_width(hdrName, w);
-        int x = LCD_WIDTH / 2 - w / 2;                 // centered on the screen ...
-        if (x < left) x = left;                        // ... unless it would touch the title
-        if (x + w > right) x = right - w;
-        lv_obj_set_pos(hdrName, x, (HDR_H - lv_font_get_line_height(&font_de_18)) / 2 - 6);
-      }
+    const char* title = lv_label_get_text(hdrTitle);
+    int left = TITLE_X + lv_text_get_width(title, strlen(title), &font_de_22, 0) + 12;
+    int right = LCD_WIDTH - 196;
+    if (name.isEmpty() || right - left < 30) lv_obj_add_flag(hdrName, LV_OBJ_FLAG_HIDDEN);
+    else {
+      lv_obj_remove_flag(hdrName, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_set_width(hdrName, right - left);
+      lv_obj_align(hdrName, LV_ALIGN_LEFT_MID, left, 2);
     }
   }
-  // page dots
-  String dots;
-  for (size_t p = 0; p < pages.size(); p++) dots += (p == i) ? "\xE2\x80\xA2" : "\xC2\xB7";
-  lv_label_set_text(hdrDots, dots.c_str());
+  // icon bar: highlight the active page
+  for (size_t p = 0; p < navBtns.size(); p++) {
+    bool on = p == i;
+    lv_obj_set_style_bg_color(navBtns[p], on ? C_CARD_HI : C_NAV, 0);
+    lv_obj_set_style_text_color(lv_obj_get_child(navBtns[p], 0), on ? C_ACCENT : C_MUTED, 0);
+    lv_obj_set_style_border_width(navBtns[p], on ? 3 : 0, 0);
+  }
+  if (nav && i < navBtns.size()) lv_obj_scroll_to_view(navBtns[i], LV_ANIM_OFF);
 }
 
 // ---- events -----------------------------------------------------------------
 void onTabChanged(lv_event_t*) { updateHeaderTitle(); }
-void onPrev(lv_event_t*) { int i = lv_tabview_get_tab_active(tv); gotoTab(i > 0 ? i - 1 : pages.size() - 1); }
-void onNext(lv_event_t*) { int i = lv_tabview_get_tab_active(tv); gotoTab((i + 1) % pages.size()); }
+void onNav(lv_event_t* e) { gotoTab((int)(intptr_t)lv_event_get_user_data(e)); }
 void onDhcp(lv_event_t*) {
   Serial.println("[wifi] static IP switched off on the panel, restarting with DHCP");
   settings.staticIp = false;
@@ -437,20 +454,24 @@ String warnings() {
             (b.rt >= 0 ? ", noch " + runtimeText(b.rt) : String("")));
     }
   }
+  // weather: gusts above the limit, thunderstorm
+  String ww = wx::warning();
+  if (ww.length()) add(ww);
   return w;
 }
 
 // ---- page builders ---------------------------------------------------------------
 // Overview: 3 x 3 tiles that fit on the screen without scrolling
-// (480 px - 2 x 10 padding - 2 x 8 gap) / 3 = 148 px wide, (428 - 20 - 16) / 3 = 130 px high
+// (480 px - 2 x 10 padding - 2 x 8 gap) / 3 = 148 px wide, (384 - 20 - 16) / 3 = 116 px high
 const int TILE_GAP = 8;
+const int TILE_PAD = 8;
 const int TILE_W = (PAGE_W - 20 - 2 * TILE_GAP) / 3;
 const int TILE_H = (PAGE_H - 20 - 2 * TILE_GAP) / 3;
-const int TILE_IN = TILE_W - 20;   // usable width inside a tile (padding 10)
+const int TILE_IN = TILE_W - 2 * TILE_PAD;   // usable width inside a tile
 
 lv_obj_t* tile(lv_obj_t* parent, const char* icon, const char* title, int bp) {
   lv_obj_t* c = card(parent, TILE_W, TILE_H);
-  lv_obj_set_style_pad_all(c, 10, 0);
+  lv_obj_set_style_pad_all(c, TILE_PAD, 0);
   lv_obj_set_style_radius(c, 14, 0);
   if (bp >= 0) {
     lv_obj_add_flag(c, LV_OBJ_FLAG_CLICKABLE);
@@ -468,7 +489,7 @@ lv_obj_t* tankCard(lv_obj_t* parent, const char* icon, const char* title, lv_col
   w.pct = label(c, &font_de_28, C_TEXT, "--");
   lv_obj_align(w.pct, LV_ALIGN_LEFT_MID, 0, -4);
   w.sub = label(c, &font_de_14, C_MUTED, "");
-  lv_obj_align(w.sub, LV_ALIGN_BOTTOM_RIGHT, 0, -18);
+  lv_obj_align(w.sub, LV_ALIGN_BOTTOM_RIGHT, 0, -16);
   w.bar = lv_bar_create(c);
   lv_obj_set_size(w.bar, TILE_IN, 10);
   lv_obj_align(w.bar, LV_ALIGN_BOTTOM_MID, 0, 0);
@@ -497,7 +518,7 @@ void listCard(lv_obj_t* parent, const char* icon, const char* title, ListW& w, i
     w.line[i] = label(c, &font_de_18, C_TEXT, i == 0 ? "--" : "");
     lv_obj_set_size(w.line[i], TILE_IN, lh);   // fixed height: cut with dots instead of wrapping
     lv_label_set_long_mode(w.line[i], LV_LABEL_LONG_DOT);
-    lv_obj_align(w.line[i], LV_ALIGN_TOP_LEFT, 0, 22 + i * lh);
+    lv_obj_align(w.line[i], LV_ALIGN_TOP_LEFT, 0, 18 + i * lh);
   }
   w.sub = label(c, &font_de_14, C_MUTED, "");
   lv_obj_set_size(w.sub, TILE_IN, lv_font_get_line_height(&font_de_14));
@@ -545,13 +566,23 @@ void buildOverview(lv_obj_t* tab) {
       ovWarnLbl = label(ovWarn, &font_de_14, C_TEXT, "");
       lv_obj_set_width(ovWarnLbl, TILE_IN);
       lv_label_set_long_mode(ovWarnLbl, LV_LABEL_LONG_WRAP);
-      lv_obj_align(ovWarnLbl, LV_ALIGN_TOP_LEFT, 0, 22);
+      lv_obj_align(ovWarnLbl, LV_ALIGN_TOP_LEFT, 0, 20);
     } else if (t == "bat1" || t == "bat2" || t == "bat3") {
       OneW w;
       w.idx = t[3] - '1';
       lv_obj_t* c = infoCard(tab, LV_SYMBOL_BATTERY_FULL, "Batterie", w.val, w.sub, BP_BATTERY);
       w.title = lv_obj_get_child(c, 0);
       ovOneBat.push_back(w);
+    } else if (t == "weather") {
+      lv_obj_t* c = tile(tab, ICON_CLOUD_SUN, pageTitle(BP_WEATHER).c_str(), BP_WEATHER);
+      ovWxIcon = label(c, &font_de_28, C_GAS, "");
+      lv_obj_align(ovWxIcon, LV_ALIGN_LEFT_MID, 0, 0);
+      ovWxVal = label(c, &font_de_28, C_TEXT, "--");
+      lv_obj_align(ovWxVal, LV_ALIGN_LEFT_MID, 44, 0);
+      ovWxSub = label(c, &font_de_14, C_MUTED, "");
+      lv_obj_set_size(ovWxSub, TILE_IN, lv_font_get_line_height(&font_de_14));
+      lv_label_set_long_mode(ovWxSub, LV_LABEL_LONG_DOT);
+      lv_obj_align(ovWxSub, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     } else if (t == "clock") {
       lv_obj_t* c = infoCard(tab, LV_SYMBOL_BELL, "Uhr", ovClock.val, ovClock.sub, -1);
       ovClock.title = lv_obj_get_child(c, 0);
@@ -846,41 +877,58 @@ void buildCustom(lv_obj_t* tab, int pageIdx) {
   }
 }
 
+const char* const SYS_ROWS[] = {"Netzwerk", "IP-Adresse", "Signal", "MQTT", "Hostname", "Firmware", "Laufzeit", "Speicher"};
+const int SYS_N = sizeof(SYS_ROWS) / sizeof(SYS_ROWS[0]);
+
 void buildSystem(lv_obj_t* tab) {
   pageContainer(tab);
-  lv_obj_t* qc = card(tab, 224, 250);
+  // label / value list like a settings screen
+  const int rowH = 24;
+  lv_obj_t* ic = card(tab, PAGE_W - 20, SYS_N * rowH + 20);
+  lv_obj_set_style_pad_ver(ic, 10, 0);
+  sVals.clear();
+  for (int i = 0; i < SYS_N; i++) {
+    lv_obj_t* k = label(ic, &font_de_18, C_MUTED, SYS_ROWS[i]);
+    lv_obj_align(k, LV_ALIGN_TOP_LEFT, 0, i * rowH);
+    lv_obj_t* v = label(ic, &font_de_18, C_TEXT, "--");
+    lv_obj_set_width(v, PAGE_W - 20 - 24 - 140);
+    lv_label_set_long_mode(v, LV_LABEL_LONG_DOT);
+    lv_obj_align(v, LV_ALIGN_TOP_LEFT, 140, i * rowH);
+    sVals.push_back(v);
+  }
+  sIp = sVals[1];
+
+  // QR code to open the web page (or join the setup access point)
+  lv_obj_t* qc = card(tab, 150, 150);
+  lv_obj_set_style_pad_all(qc, 8, 0);
   sQr = lv_qrcode_create(qc);
-  lv_qrcode_set_size(sQr, 180);
+  lv_qrcode_set_size(sQr, 104);
   lv_qrcode_set_dark_color(sQr, lv_color_black());
   lv_qrcode_set_light_color(sQr, lv_color_white());
   lv_obj_set_style_border_color(sQr, lv_color_white(), 0);
-  lv_obj_set_style_border_width(sQr, 6, 0);
+  lv_obj_set_style_border_width(sQr, 4, 0);
   lv_obj_align(sQr, LV_ALIGN_TOP_MID, 0, 0);
   sQrLbl = label(qc, &font_de_14, C_MUTED, "");
   lv_obj_set_style_text_align(sQrLbl, LV_TEXT_ALIGN_CENTER, 0);
-  lv_obj_set_width(sQrLbl, 200);
+  lv_obj_set_width(sQrLbl, 134);
   lv_obj_align(sQrLbl, LV_ALIGN_BOTTOM_MID, 0, 0);
 
-  lv_obj_t* ic = card(tab, 224, 250);
-  sIp = label(ic, &font_de_22, C_TEXT, "");
-  lv_obj_align(sIp, LV_ALIGN_TOP_LEFT, 0, 0);
-  sNet = label(ic, &font_de_14, C_MUTED, "");
-  lv_obj_set_width(sNet, 200);
-  lv_label_set_long_mode(sNet, LV_LABEL_LONG_WRAP);
-  lv_obj_align(sNet, LV_ALIGN_TOP_LEFT, 0, 36);
-
-  lv_obj_t* bc = card(tab, PAGE_W - 20, 96);
+  lv_obj_t* bc = card(tab, PAGE_W - 20 - 160, 150);
   lv_obj_t* bl = label(bc, &font_de_18, C_MUTED, LV_SYMBOL_IMAGE "  Helligkeit");
   lv_obj_align(bl, LV_ALIGN_TOP_LEFT, 0, 0);
   sBri = lv_slider_create(bc);
   lv_slider_set_range(sBri, 5, 100);
   lv_slider_set_value(sBri, settings.brightness, LV_ANIM_OFF);
-  lv_obj_set_size(sBri, PAGE_W - 80, 18);
-  lv_obj_align(sBri, LV_ALIGN_BOTTOM_MID, 0, -8);
+  lv_obj_set_size(sBri, PAGE_W - 20 - 160 - 48, 18);
+  lv_obj_align(sBri, LV_ALIGN_LEFT_MID, 8, 0);
   lv_obj_set_style_bg_color(sBri, C_ACCENT, LV_PART_INDICATOR);
   lv_obj_set_style_bg_color(sBri, C_ACCENT, LV_PART_KNOB);
   lv_obj_add_event_cb(sBri, onBrightness, LV_EVENT_VALUE_CHANGED, nullptr);
   lv_obj_add_event_cb(sBri, onBrightnessDone, LV_EVENT_RELEASED, nullptr);
+  sNet = label(bc, &font_de_14, C_MUTED, "");
+  lv_obj_set_width(sNet, PAGE_W - 20 - 160 - 24);
+  lv_label_set_long_mode(sNet, LV_LABEL_LONG_WRAP);
+  lv_obj_align(sNet, LV_ALIGN_BOTTOM_LEFT, 0, 0);
 
   // Rescue: switch a static IP back to DHCP (long press, then restart)
   if (settings.staticIp) {
@@ -888,9 +936,64 @@ void buildSystem(lv_obj_t* tab) {
                          C_CARD_HI, &font_de_18);
     lv_obj_add_event_cb(b, onDhcp, LV_EVENT_LONG_PRESSED, nullptr);
   }
+  sInfo = nullptr;
+}
 
-  sInfo = label(tab, &font_de_14, C_MUTED, "");
-  lv_obj_set_width(sInfo, PAGE_W - 20);
+// ---- weather page --------------------------------------------------------------
+SmallW smallCard(lv_obj_t* parent, const char* icon, const char* title) {
+  SmallW w;
+  lv_obj_t* c = card(parent, (PAGE_W - 30) / 2, 62);
+  lv_obj_set_style_pad_all(c, 8, 0);
+  lv_obj_t* t = label(c, &font_de_14, C_MUTED, (String(icon) + "  " + title).c_str());
+  lv_obj_align(t, LV_ALIGN_TOP_LEFT, 0, 0);
+  w.val = label(c, &font_de_22, C_TEXT, "--");
+  lv_obj_align(w.val, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+  w.sub = label(c, &font_de_14, C_MUTED, "");
+  lv_obj_align(w.sub, LV_ALIGN_BOTTOM_RIGHT, 0, -2);
+  return w;
+}
+
+void buildWeather(lv_obj_t* tab) {
+  pageContainer(tab);
+  lv_obj_set_style_pad_gap(tab, 10, 0);
+  // current conditions
+  lv_obj_t* hero = card(tab, PAGE_W - 20, 112);
+  wIcon = label(hero, &font_de_56, C_GAS, "");
+  lv_obj_align(wIcon, LV_ALIGN_LEFT_MID, 4, 0);
+  wTemp = label(hero, &font_de_56, C_TEXT, "--");
+  lv_obj_align(wTemp, LV_ALIGN_LEFT_MID, 92, 0);
+  wText = label(hero, &font_de_22, C_TEXT, "");
+  lv_obj_set_width(wText, 196);
+  lv_label_set_long_mode(wText, LV_LABEL_LONG_DOT);
+  lv_obj_align(wText, LV_ALIGN_TOP_RIGHT, 0, 4);
+  wFeels = label(hero, &font_de_14, C_MUTED, "");
+  lv_obj_set_width(wFeels, 196);
+  lv_obj_align(wFeels, LV_ALIGN_RIGHT_MID, 0, 6);
+  wPlace = label(hero, &font_de_14, C_MUTED, "");
+  lv_obj_set_width(wPlace, 196);
+  lv_label_set_long_mode(wPlace, LV_LABEL_LONG_DOT);
+  lv_obj_align(wPlace, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+
+  wWind = smallCard(tab, ICON_WIND, "Wind");
+  wHum = smallCard(tab, ICON_TINT, "Luftfeuchte");
+  wNext = smallCard(tab, ICON_UMBRELLA, "Nächste Stunde");
+  wToday = smallCard(tab, ICON_UMBRELLA, "Regen heute");
+
+  for (int i = 0; i < 3; i++) {
+    lv_obj_t* c = card(tab, (PAGE_W - 40) / 3, 78);
+    lv_obj_set_style_pad_all(c, 8, 0);
+    wDays[i].day = label(c, &font_de_14, C_MUTED, "");
+    lv_obj_align(wDays[i].day, LV_ALIGN_TOP_LEFT, 0, 0);
+    wDays[i].icon = label(c, &font_de_28, C_GAS, "");
+    lv_obj_align(wDays[i].icon, LV_ALIGN_LEFT_MID, 0, 8);
+    wDays[i].temp = label(c, &font_de_18, C_TEXT, "");
+    lv_obj_align(wDays[i].temp, LV_ALIGN_RIGHT_MID, 0, 2);
+    wDays[i].rain = label(c, &font_de_14, C_MUTED, "");
+    lv_obj_align(wDays[i].rain, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+  }
+  wStatus = label(tab, &font_de_14, C_MUTED, "");
+  lv_obj_set_width(wStatus, PAGE_W - 20);
+  wShown = -1;
 }
 
 // ---- value refresh -------------------------------------------------------------
@@ -1241,50 +1344,151 @@ void refreshValues() {
   }
 }
 
+String num1(float v) { return isnan(v) ? String("--") : commaNum(v, 1); }
+String num0(float v) { return isnan(v) ? String("--") : String((int)lroundf(v)); }
+
+void refreshWeather() {
+  if (!wIcon && !ovWxVal) return;
+  wx::Data d = wx::get();
+  String st = wx::status();
+  if (d.at == wShown && st == wShownStatus) return;
+  wShown = d.at;
+  wShownStatus = st;
+  bool ok = d.valid && wx::enabled();
+  if (ovWxVal) {
+    lv_label_set_text(ovWxIcon, ok ? wx::icon(d.code, d.day) : "");
+    lv_label_set_text(ovWxVal, ok ? (num0(d.temp) + "\xC2\xB0").c_str() : "--");
+    String sub = !wx::enabled() ? String("aus") : ok ? dispText(wx::text(d.code)) : dispText(st);
+    if (ok && !isnan(d.gust)) sub = num0(d.gust) + " km/h B\xC3\xB6" "en";
+    if (ok && d.code >= 51) sub = dispText(wx::text(d.code));
+    lv_label_set_text(ovWxSub, sub.c_str());
+  }
+  if (!wIcon) return;
+  lv_label_set_text(wIcon, ok ? wx::icon(d.code, d.day) : "");
+  lv_obj_set_style_text_color(wIcon, !ok ? C_MUTED : (d.code <= 2 && d.day) ? C_GAS : C_ACCENT, 0);
+  lv_label_set_text(wTemp, ok ? (num0(d.temp) + "\xC2\xB0").c_str() : "--");
+  lv_label_set_text(wText, ok ? dispText(wx::text(d.code)).c_str() : (wx::enabled() ? "Keine Daten" : "Wetter aus"));
+  String feels = ok ? "Gef\xC3\xBChlt " + num0(d.feels) + "\xC2\xB0  \xE2\x80\xA2  " + num0(d.tMax[0]) + "\xC2\xB0 / " + num0(d.tMin[0]) + "\xC2\xB0"
+                    : String(wx::enabled() ? "" : "Im Browser unter Einstellungen einrichten");
+  lv_label_set_text(wFeels, feels.c_str());
+  String place = settings.wxName.length() ? settings.wxName
+               : (ok ? String(d.lat, 2) + ", " + String(d.lon, 2) : String(""));
+  if (settings.wxTopic.length() && ok) place += " (GPS)";
+  lv_label_set_text(wPlace, place.length() ? dispText(String(ICON_MARKER " ") + place).c_str() : "");
+
+  lv_label_set_text(wWind.val, ok ? (num0(d.wind) + " km/h " + wx::dirText(d.dir)).c_str() : "--");
+  lv_label_set_text(wWind.sub, ok ? ("B\xC3\xB6" "en " + num0(d.gust)).c_str() : "");
+  bool gusty = ok && settings.wxGust > 0 && !isnan(d.gust) && d.gust >= settings.wxGust;
+  lv_obj_set_style_text_color(wWind.sub, gusty ? C_WARN : C_MUTED, 0);
+  lv_label_set_text(wHum.val, ok ? (num0(d.hum) + " %").c_str() : "--");
+  lv_label_set_text(wHum.sub, "");
+  lv_label_set_text(wNext.val, ok ? (num1(d.rainNext) + " mm").c_str() : "--");
+  lv_label_set_text(wNext.sub, ok ? (num0(d.popNext) + " %").c_str() : "");
+  lv_label_set_text(wToday.val, ok ? (num1(d.rainSum[0]) + " mm").c_str() : "--");
+  lv_label_set_text(wToday.sub, ok ? (num0(d.popMax[0]) + " %").c_str() : "");
+
+  static const char* const days[] = {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"};
+  struct tm tm;
+  time_t base = ok ? d.at : time(nullptr);
+  for (int i = 0; i < 3; i++) {
+    time_t t = base + (time_t)(i + 1) * 86400;
+    localtime_r(&t, &tm);
+    int k = i + 1;
+    lv_label_set_text(wDays[i].day, i == 0 ? "Morgen" : days[tm.tm_wday]);
+    lv_label_set_text(wDays[i].icon, ok ? wx::icon(d.dCode[k], true) : "");
+    lv_obj_set_style_text_color(wDays[i].icon, ok && d.dCode[k] <= 2 ? C_GAS : C_ACCENT, 0);
+    lv_label_set_text(wDays[i].temp, ok ? (num0(d.tMax[k]) + "\xC2\xB0 / " + num0(d.tMin[k]) + "\xC2\xB0").c_str() : "--");
+    lv_label_set_text(wDays[i].rain, ok ? (num1(d.rainSum[k]) + " mm  " + num0(d.popMax[k]) + " %").c_str() : "");
+  }
+  lv_label_set_text(wStatus, dispText(st + "  \xE2\x80\xA2  Daten: Open-Meteo").c_str());
+}
+
+String uptimeText(uint32_t sec) {
+  uint32_t d = sec / 86400, h = sec % 86400 / 3600, m = sec % 3600 / 60;
+  if (d) return String(d) + " d " + String(h) + " h";
+  if (h) return String(h) + " h " + String(m) + " min";
+  return String(m) + " min";
+}
+
+const char* signalText(int rssi) {
+  if (rssi >= -55) return "sehr gut";
+  if (rssi >= -67) return "gut";
+  if (rssi >= -75) return "mittel";
+  return "schwach";
+}
+
 void refreshHeader() {
+  static const char* const days[] = {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"};
   if (wifimgr::timeValid()) {
     time_t now = time(nullptr);
     struct tm tm;
     localtime_r(&now, &tm);
     lv_label_set_text_fmt(hdrClock, "%02d:%02d", tm.tm_hour, tm.tm_min);
+    lv_label_set_text_fmt(hdrDate, "%s %02d.%02d.", days[tm.tm_wday], tm.tm_mday, tm.tm_mon + 1);
   } else {
     lv_label_set_text(hdrClock, "");
+    lv_label_set_text(hdrDate, "");
   }
+  // connection state as one icon left of the date (only when something is wrong)
   String s;
   if (wifimgr::apActive() && !wifimgr::staConnected()) s = LV_SYMBOL_WIFI " AP";
   else if (!wifimgr::staConnected()) s = LV_SYMBOL_WIFI " " LV_SYMBOL_CLOSE;
   else if (!mqttc::connected()) s = "MQTT " LV_SYMBOL_CLOSE;
-  else s = LV_SYMBOL_WIFI;
-  bool warn = lastWarn.length() > 0;
-  if (warn) s = LV_SYMBOL_WARNING " " + s;
   lv_label_set_text(hdrStatus, s.c_str());
-  lv_obj_set_style_text_color(hdrStatus, (wifimgr::staConnected() && mqttc::connected() && !warn) ? C_MUTED : C_WARN, 0);
+
+  // warnings: the header turns into a yellow banner with the scrolling warning text
+  bool warn = lastWarn.length() > 0;
+  lv_obj_set_style_bg_color(hdr, warn ? C_BANNER : C_BG, 0);
+  lv_obj_set_style_text_color(hdrClock, warn ? C_ONBANNER : C_TEXT, 0);
+  lv_obj_set_style_text_color(hdrDate, warn ? C_ONBANNER : C_MUTED, 0);
+  lv_obj_set_style_text_color(hdrStatus, warn ? C_ONBANNER : C_WARN, 0);
+  if (warn) {
+    String t = lastWarn;
+    t.replace("\n", "   \xE2\x80\xA2   ");
+    t = String(LV_SYMBOL_WARNING "  ") + dispText(t);
+    if (t != String(lv_label_get_text(hdrWarn))) lv_label_set_text(hdrWarn, t.c_str());
+    lv_obj_remove_flag(hdrWarn, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(hdrTitle, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(hdrName, LV_OBJ_FLAG_HIDDEN);
+  } else if (!lv_obj_has_flag(hdrWarn, LV_OBJ_FLAG_HIDDEN)) {
+    lv_obj_add_flag(hdrWarn, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(hdrTitle, LV_OBJ_FLAG_HIDDEN);
+    updateHeaderTitle();
+  }
+
+  refreshWeather();
 
   // system page
   if (sIp) {
     String url, qr, info;
-    if (wifimgr::staConnected()) {
+    bool sta = wifimgr::staConnected();
+    if (sta) {
       url = "http://" + wifimgr::ipString() + "/";
       qr = url;
-      info = "Browser: " + url + "\n" + settings.hostname + ".local";
+      info = url;
     } else {
       // QR joins the setup access point
       qr = "WIFI:T:WPA;S:" + wifimgr::apSsid() + ";P:" + settings.apPass + ";;";
-      info = "WLAN " + wifimgr::apSsid() + "\nPasswort " + settings.apPass + "\ndann http://192.168.4.1";
+      info = "WLAN " + wifimgr::apSsid() + "  Passwort " + settings.apPass + ", dann http://192.168.4.1";
     }
     if (qr != lastQr) {
       lv_qrcode_update(sQr, qr.c_str(), qr.length());
       lastQr = qr;
     }
-    lv_label_set_text(sQrLbl, wifimgr::staConnected() ? "Webseite öffnen" : "Setup-WLAN");
-    lv_label_set_text(sIp, wifimgr::ipString().c_str());
+    lv_label_set_text(sQrLbl, sta ? "Webseite \xC3\xB6" "ffnen" : "Setup-WLAN");
     if (wifimgr::dhcpFallback()) info += "\nFeste IP ging nicht \xE2\x80\x93 DHCP bis zum Neustart";
-    String net = info + "\n\nWLAN: " + (wifimgr::staConnected() ? settings.wifiSsid + " (" + String(wifimgr::rssi()) + " dBm)" : String("nicht verbunden")) +
-                 "\nMQTT: " + (settings.mqttHost.isEmpty() ? String("nicht eingerichtet") : settings.mqttHost + (mqttc::connected() ? " ok" : " getrennt"));
-    lv_label_set_text(sNet, net.c_str());
-    lv_label_set_text_fmt(sInfo, "%s %s  \xE2\x80\xA2  Touch %s  \xE2\x80\xA2  Heap %u kB  PSRAM %u kB",
-                          FW_NAME, FW_VERSION, disp::touchOk() ? "ok" : "fehlt",
-                          (unsigned)(ESP.getFreeHeap() / 1024), (unsigned)(ESP.getFreePsram() / 1024));
+    lv_label_set_text(sNet, dispText(info).c_str());
+    String vals[SYS_N];
+    vals[0] = sta ? settings.wifiSsid : (wifimgr::apActive() ? "Setup-WLAN " + wifimgr::apSsid() : String("nicht verbunden"));
+    vals[1] = wifimgr::ipString();
+    vals[2] = sta ? String(wifimgr::rssi()) + " dBm (" + signalText(wifimgr::rssi()) + ")" : String("--");
+    vals[3] = settings.mqttHost.isEmpty() ? String("nicht eingerichtet") : settings.mqttHost + (mqttc::connected() ? " \xE2\x80\xA2 verbunden" : " \xE2\x80\xA2 getrennt");
+    vals[4] = settings.hostname + ".local";
+    vals[5] = String(FW_NAME " " FW_VERSION) + (disp::touchOk() ? "" : " \xE2\x80\xA2 Touch fehlt");
+    vals[6] = uptimeText(millis() / 1000);
+    vals[7] = String((unsigned)(ESP.getFreeHeap() / 1024)) + " kB  \xE2\x80\xA2  PSRAM " + String((unsigned)(ESP.getFreePsram() / 1024)) + " kB";
+    for (int i = 0; i < SYS_N && i < (int)sVals.size(); i++) lv_label_set_text(sVals[i], dispText(vals[i]).c_str());
+    lv_obj_set_style_text_color(sVals[3], mqttc::connected() ? C_TEXT : C_WARN, 0);
   }
 }
 
@@ -1296,6 +1500,12 @@ void clearHandles() {
   lvArea = lvBubble = lvZone = lvPitch = lvRoll = lvState = nullptr;
   for (auto& w : lvWedge) w = nullptr;
   sIp = sNet = sQr = sQrLbl = sBri = sInfo = nullptr;
+  sVals.clear();
+  wIcon = wTemp = wText = wFeels = wPlace = wStatus = nullptr;
+  wWind = wHum = wNext = wToday = SmallW();
+  for (auto& d : wDays) d = DayW();
+  ovWxIcon = ovWxVal = ovWxSub = nullptr;
+  wShown = -1;
   ovWarn = ovWarnLbl = nullptr;
   ovTemp = ovBat = ListW();
   ovOneBat.clear();
@@ -1308,6 +1518,55 @@ void clearHandles() {
   tVals.clear();
   lastQr = "";
   tileW.assign(settings.tiles.size(), TileW());
+}
+
+// Icon of a page in the bottom bar
+const char* pageIcon(const PageInfo& p) {
+  switch (p.builtin) {
+    case BP_OVERVIEW: return LV_SYMBOL_HOME;
+    case BP_HEATER:   return ICON_FIRE;
+    case BP_FAN:      return ICON_FAN;
+    case BP_LEVEL:    return ICON_BALANCE;
+    case BP_TEMP:     return ICON_THERMOMETER;
+    case BP_BATTERY:  return LV_SYMBOL_BATTERY_3;
+    case BP_WEATHER:  return ICON_CLOUD_SUN;
+    case PG_SYSTEM:   return LV_SYMBOL_SETTINGS;
+    default:          return LV_SYMBOL_LIST;
+  }
+}
+
+// Bottom bar: one icon button per page. Up to 8 share the width, more scroll sideways.
+void buildNav() {
+  if (nav) lv_obj_delete(nav);
+  navBtns.clear();
+  nav = lv_obj_create(scr);
+  lv_obj_set_size(nav, LCD_WIDTH, NAV_H);
+  lv_obj_align(nav, LV_ALIGN_BOTTOM_MID, 0, 0);
+  lv_obj_set_style_bg_color(nav, C_NAV, 0);
+  lv_obj_set_style_border_width(nav, 0, 0);
+  lv_obj_set_style_radius(nav, 0, 0);
+  lv_obj_set_style_pad_all(nav, 0, 0);
+  lv_obj_set_style_pad_gap(nav, 0, 0);
+  lv_obj_set_flex_flow(nav, LV_FLEX_FLOW_ROW);
+  lv_obj_set_scroll_dir(nav, LV_DIR_HOR);
+  lv_obj_set_scrollbar_mode(nav, LV_SCROLLBAR_MODE_OFF);
+  int n = pages.size();
+  int w = n <= 8 ? LCD_WIDTH / n : 60;
+  for (int i = 0; i < n; i++) {
+    lv_obj_t* b = lv_button_create(nav);
+    lv_obj_set_size(b, (i == n - 1 && n <= 8) ? LCD_WIDTH - w * (n - 1) : w, NAV_H);
+    lv_obj_set_style_radius(b, 0, 0);
+    lv_obj_set_style_shadow_width(b, 0, 0);
+    lv_obj_set_style_bg_color(b, C_NAV, 0);
+    lv_obj_set_style_bg_color(b, C_CARD_HI, LV_STATE_PRESSED);
+    lv_obj_set_style_border_side(b, LV_BORDER_SIDE_TOP, 0);
+    lv_obj_set_style_border_color(b, C_ACCENT, 0);
+    lv_obj_set_style_border_width(b, 0, 0);
+    lv_obj_t* l = label(b, &font_de_28, C_MUTED, pageIcon(pages[i]));
+    lv_obj_center(l);
+    lv_obj_add_event_cb(b, onNav, LV_EVENT_CLICKED, (void*)(intptr_t)i);
+    navBtns.push_back(b);
+  }
 }
 
 void build() {
@@ -1324,7 +1583,7 @@ void build() {
   tv = lv_tabview_create(scr);
   lv_tabview_set_tab_bar_size(tv, 0);
   lv_obj_set_size(tv, PAGE_W, PAGE_H);
-  lv_obj_align(tv, LV_ALIGN_BOTTOM_MID, 0, 0);
+  lv_obj_align(tv, LV_ALIGN_TOP_MID, 0, HDR_H);
   lv_obj_set_style_bg_color(tv, C_BG, 0);
   lv_obj_t* content = lv_tabview_get_content(tv);
   lv_obj_set_style_bg_color(content, C_BG, 0);
@@ -1338,11 +1597,13 @@ void build() {
       case BP_LEVEL:    buildLevel(tab); break;
       case BP_TEMP:     buildTemp(tab); break;
       case BP_BATTERY:  buildBattery(tab); break;
+      case BP_WEATHER:  buildWeather(tab); break;
       case PG_SYSTEM:   buildSystem(tab); break;
       default:          buildCustom(tab, p.custom); break;
     }
   }
   lv_obj_add_event_cb(tv, onTabChanged, LV_EVENT_VALUE_CHANGED, nullptr);
+  buildNav();
 
   // without network setup, start on the system page so the QR code is visible
   if (settings.wifiSsid.isEmpty()) keep = pages.size() - 1;
@@ -1365,38 +1626,34 @@ void begin() {
   lv_obj_set_style_text_font(scr, &font_de_18, 0);
   lv_obj_set_style_text_color(scr, C_TEXT, 0);
 
-  // header: < title > , dots, clock, status
-  lv_obj_t* hdr = lv_obj_create(scr);
+  // header: page title (or the warning banner) left, status + date + clock right. Tap = overview.
+  hdr = lv_obj_create(scr);
   lv_obj_set_size(hdr, LCD_WIDTH, HDR_H);
   lv_obj_align(hdr, LV_ALIGN_TOP_MID, 0, 0);
-  lv_obj_set_style_bg_color(hdr, C_CARD, 0);
+  lv_obj_set_style_bg_color(hdr, C_BG, 0);
   lv_obj_set_style_border_width(hdr, 0, 0);
   lv_obj_set_style_radius(hdr, 0, 0);
   lv_obj_set_style_pad_all(hdr, 0, 0);
   lv_obj_remove_flag(hdr, LV_OBJ_FLAG_SCROLLABLE);
-
-  lv_obj_t* prev = button(hdr, LV_SYMBOL_LEFT, 56, HDR_H, onPrev, nullptr, C_CARD);
-  lv_obj_set_style_radius(prev, 0, 0);
-  lv_obj_align(prev, LV_ALIGN_LEFT_MID, 0, 0);
-  lv_obj_t* next = button(hdr, LV_SYMBOL_RIGHT, 56, HDR_H, onNext, nullptr, C_CARD);
-  lv_obj_set_style_radius(next, 0, 0);
-  lv_obj_align(next, LV_ALIGN_RIGHT_MID, 0, 0);
-
-  // "<"  [Home]  page title
-  lv_obj_t* home = button(hdr, LV_SYMBOL_HOME, HOME_W, HDR_H - 12, onHome, nullptr, C_CARD_HI);
-  lv_obj_align(home, LV_ALIGN_LEFT_MID, 60, 0);
+  lv_obj_add_flag(hdr, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_event_cb(hdr, onHome, LV_EVENT_CLICKED, nullptr);
 
   hdrTitle = label(hdr, &font_de_22, C_TEXT, "");
-  lv_obj_align(hdrTitle, LV_ALIGN_LEFT_MID, TITLE_X, -6);
-  hdrDots = label(hdr, &font_de_14, C_MUTED, "");
-  lv_obj_align(hdrDots, LV_ALIGN_LEFT_MID, TITLE_X, 15);
+  lv_obj_align(hdrTitle, LV_ALIGN_LEFT_MID, TITLE_X, 0);
   hdrName = label(hdr, &font_de_18, C_MUTED, "");
   lv_label_set_long_mode(hdrName, LV_LABEL_LONG_DOT);
   lv_obj_set_height(hdrName, lv_font_get_line_height(&font_de_18));
   hdrClock = label(hdr, &font_de_22, C_TEXT, "");
-  lv_obj_align(hdrClock, LV_ALIGN_RIGHT_MID, -66, -6);
-  hdrStatus = label(hdr, &font_de_14, C_MUTED, "");
-  lv_obj_align(hdrStatus, LV_ALIGN_RIGHT_MID, -66, 15);
+  lv_obj_align(hdrClock, LV_ALIGN_RIGHT_MID, -14, 0);
+  hdrDate = label(hdr, &font_de_18, C_MUTED, "");
+  lv_obj_align(hdrDate, LV_ALIGN_RIGHT_MID, -84, 1);
+  hdrStatus = label(hdr, &font_de_14, C_WARN, "");
+  lv_obj_align(hdrStatus, LV_ALIGN_RIGHT_MID, -184, 1);
+  hdrWarn = label(hdr, &font_de_18, C_ONBANNER, "");
+  lv_obj_set_width(hdrWarn, LCD_WIDTH - 200 - TITLE_X);
+  lv_label_set_long_mode(hdrWarn, LV_LABEL_LONG_SCROLL_CIRCULAR);
+  lv_obj_align(hdrWarn, LV_ALIGN_LEFT_MID, TITLE_X, 1);
+  lv_obj_add_flag(hdrWarn, LV_OBJ_FLAG_HIDDEN);
 
   build();
 }

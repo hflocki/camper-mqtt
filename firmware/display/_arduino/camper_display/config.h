@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "1.9.0"
+#define FW_VERSION              "2.0.0"
 
 // ---- Device / access point ------------------------------------------
 #ifndef STATIC_IP_FALLBACK_MS
@@ -71,6 +71,24 @@
 // ---- Battery warnings (camper-battery) ------------------------------------
 #ifndef BAT_WARN_SOC
 #define BAT_WARN_SOC            20      // warn below this state of charge in % (monitors with current sensor)
+#endif
+
+// ---- Weather (Open-Meteo, no API key) ----------------------------------------
+// Factory defaults, changeable on the web page (Einstellungen -> Wetter). A position switches the weather on.
+#ifndef DEFAULT_WX_LAT
+#define DEFAULT_WX_LAT          ""      // e.g. "52.52"
+#endif
+#ifndef DEFAULT_WX_LON
+#define DEFAULT_WX_LON          ""      // e.g. "13.40"
+#endif
+#ifndef DEFAULT_WX_NAME
+#define DEFAULT_WX_NAME         ""
+#endif
+#ifndef DEFAULT_WX_TOPIC
+#define DEFAULT_WX_TOPIC        ""      // MQTT topic with the GPS position, e.g. from the router
+#endif
+#ifndef DEFAULT_WX_GUST
+#define DEFAULT_WX_GUST         60      // warn from these gusts (km/h), 0 = off
 #endif
 
 // ---- Factory defaults for WiFi / MQTT / web login -----------------------

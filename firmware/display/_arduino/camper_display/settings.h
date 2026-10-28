@@ -4,7 +4,7 @@
 
 // Built-in pages. Their order here is the order on the display and web page.
 // New pages are appended: the index is also the bit in the stored page mask.
-enum BuiltinPage : uint8_t { BP_OVERVIEW, BP_HEATER, BP_FAN, BP_LEVEL, BP_TEMP, BP_BATTERY, BP_COUNT };
+enum BuiltinPage : uint8_t { BP_OVERVIEW, BP_HEATER, BP_FAN, BP_LEVEL, BP_TEMP, BP_BATTERY, BP_WEATHER, BP_COUNT };
 
 // User tile types
 enum TileType : uint8_t { TILE_VALUE = 0, TILE_SWITCH = 1, TILE_BUTTON = 2, TILE_SLIDER = 3 };
@@ -51,6 +51,13 @@ struct Settings {
   bool   poClear = true;        // also send a message when a warning is gone
   int8_t poPrio = 0;            // Pushover priority: 0 normal, 1 high (bypasses quiet hours)
   String poToken, poUser, poTitle;
+  // weather (Open-Meteo)
+  bool     wxOn = false;
+  String   wxLat, wxLon;        // fixed position, decimal degrees
+  String   wxName;              // shown on the weather page, e.g. the place
+  String   wxTopic;             // MQTT topic with the position (GPS); empty = fixed position
+  uint8_t  wxGust = 60;         // warn from these gusts in km/h, 0 = off
+  uint8_t  wxEvery = 30;        // update interval in minutes
   // display
   uint8_t  brightness, dimBrightness;
   uint16_t screenTimeout;

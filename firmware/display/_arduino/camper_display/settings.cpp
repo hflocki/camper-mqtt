@@ -3,7 +3,7 @@
 #include <Preferences.h>
 #include <ArduinoJson.h>
 
-const char* const DEFAULT_PAGE_NAMES[BP_COUNT + 1] = {"Home", "Truma", "MaxxFan", "Level", "Temperatur", "Batterie", "System"};
+const char* const DEFAULT_PAGE_NAMES[BP_COUNT + 1] = {"Home", "Truma", "MaxxFan", "Level", "Temperatur", "Batterie", "Wetter", "System"};
 
 String pageTitle(int idx) {
   if (idx < 0 || idx > BP_COUNT) return "";
@@ -71,6 +71,18 @@ void load() {
   for (int i = bknown; i < BP_COUNT; i++) bmask |= (1 << i);
   for (int i = 0; i < BP_COUNT; i++) settings.builtin[i] = bmask & (1 << i);
   for (int i = 0; i <= BP_COUNT; i++) settings.pageName[i] = prefs.getString((String("pgn") + i).c_str(), "");
+  // The system page title is stored after the fixed pages: move it when pages were added
+  if (bknown < BP_COUNT) {
+    settings.pageName[BP_COUNT] = prefs.getString((String("pgn") + bknown).c_str(), "");
+    for (int i = bknown; i < BP_COUNT; i++) settings.pageName[i] = "";
+  }
+  settings.wxOn         = prefs.getBool  ("wxon",   DEFAULT_WX_LAT[0] != 0);
+  settings.wxLat        = prefs.getString("wxlat",  DEFAULT_WX_LAT);
+  settings.wxLon        = prefs.getString("wxlon",  DEFAULT_WX_LON);
+  settings.wxName       = prefs.getString("wxname", DEFAULT_WX_NAME);
+  settings.wxTopic      = prefs.getString("wxtop",  DEFAULT_WX_TOPIC);
+  settings.wxGust       = prefs.getUChar ("wxgust", DEFAULT_WX_GUST);
+  settings.wxEvery      = prefs.getUChar ("wxevery", 30);
   settings.ovTiles      = prefs.getString("ovt",    DEFAULT_OV_TILES);
 
   String pagesJson;
@@ -87,6 +99,7 @@ void load() {
   if (settings.fanPort > 1) settings.fanPort = 1;
   if (settings.poPrio < -1 || settings.poPrio > 1) settings.poPrio = 0;
   if (settings.poTitle.isEmpty()) settings.poTitle = DEFAULT_PUSHOVER_TITLE;
+  if (settings.wxEvery < 10 || settings.wxEvery > 180) settings.wxEvery = 30;
 
   String err;
   if (pagesJson.isEmpty() || !pagesFromJson(pagesJson, err)) {
@@ -138,6 +151,13 @@ void save() {
   prefs.putUChar("bpages", bmask);
   for (int i = 0; i <= BP_COUNT; i++) prefs.putString((String("pgn") + i).c_str(), settings.pageName[i]);
   prefs.putString("ovt",    settings.ovTiles);
+  prefs.putBool  ("wxon",   settings.wxOn);
+  prefs.putString("wxlat",  settings.wxLat);
+  prefs.putString("wxlon",  settings.wxLon);
+  prefs.putString("wxname", settings.wxName);
+  prefs.putString("wxtop",  settings.wxTopic);
+  prefs.putUChar ("wxgust", settings.wxGust);
+  prefs.putUChar ("wxevery", settings.wxEvery);
   prefs.putUChar("bpknown", BP_COUNT);
   prefs.end();
 }

@@ -83,9 +83,9 @@ code{font-size:12px;color:var(--mu)}
 'use strict';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let ws,cfg=null,V={},S={},page=localStorage.getItem('page')||'',finder={on:false,l:{}};
+let ws,cfg=null,V={},S={},WX={},page=localStorage.getItem('page')||'',finder={on:false,l:{}};
 let pendingSet=null,setTimer=null,setHold=0;
-const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie']];
+const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie'],['weather','Wetter']];
 // page title: name from the display settings, otherwise the default above
 const ptitle=i=>(cfg&&cfg.pageNames&&cfg.pageNames[i])||BUILTIN[i][1];
 // overview tiles (same list as on the panel)
@@ -94,7 +94,7 @@ const ovList=()=>((cfg&&cfg.ovTiles)||OV_DEFAULT).split(',').map(x=>x.trim()).fi
 function ovChoices(){
   const c=[['water','Frischwasser'],['grey','Grauwasser'],['gas','Gas'],['heater',ptitle(1)],['level',ptitle(3)],['fan',ptitle(2)],
     ['temp',ptitle(4)],['bat',ptitle(5)+' (alle)'],['bat1','Batterie 1 (einzeln)'],['bat2','Batterie 2 (einzeln)'],['bat3','Batterie 3 (einzeln)'],
-    ['status','Status / Warnungen'],['clock','Uhr / Datum'],['none','(leer)']];
+    ['status','Status / Warnungen'],['weather',ptitle(6)],['clock','Uhr / Datum'],['none','(leer)']];
   ((cfg&&cfg.tiles)||[]).forEach((t,i)=>c.push(['t'+i,'Kachel: '+t.n]));
   return c;
 }
@@ -116,6 +116,7 @@ function connect(){
     else if(m.t==='v'){Object.assign(V,m.d||{});if(m.s)Object.assign(S,m.s);update()}
     else if(m.t==='f'){if(!m.add)finder.l={};if('on' in m)finder.on=!!m.on;else finder.on=true;finder.filter=m.filter;(m.l||[]).forEach(x=>finder.l[x[0]]=x[1]);renderFinder()}
     else if(m.t==='err')toast(m.msg);
+    else if(m.t==='wx'){WX=m.w||{};update()}
   };
 }
 
@@ -144,6 +145,7 @@ function render(){
   else if(p.id==='level')m.innerHTML=pgLevel();
   else if(p.id==='temp')m.innerHTML=pgTemp();
   else if(p.id==='bat')m.innerHTML=pgBat();
+  else if(p.id==='weather')m.innerHTML=pgWeather();
   else if(p.id==='links')m.innerHTML=pgLinks();
   else if(p.id==='settings'){m.innerHTML=pgSettings();loadSettings()}
   else m.innerHTML=pgCustom(p.custom);
@@ -158,6 +160,7 @@ function pgOverview(){
     if(t==='grey')return tank('g','🚿','Grauwasser','var(--grey)');
     if(t==='gas')return tank('gas','🔥','Gas','var(--gas)');
     if(t==='heater')return info('oh','♨️',esc(ptitle(1)),'heater');
+    if(t==='weather')return info('owx','🌦',esc(ptitle(6)),'weather');
     if(t==='level')return info('ol','📐',esc(ptitle(3)),'level');
     if(t==='fan')return info('of','🌀',esc(ptitle(2)),'fan');
     if(t==='temp')return `<div class="card wide click" data-go="temp"><h3>🌡️ ${esc(ptitle(4))}</h3><div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>`;
@@ -174,6 +177,33 @@ function pgLinks(){
   if(!l.length)return `<div class="card mu">Noch keine Geräte-Links. Unter ⚙ Einstellungen → 🔗 Geräte-Links eintragen.</div>`;
   return `<div class="grid">${l.map(x=>`<a class="card click" href="${esc(x.u)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><h3>🔗 ${esc(x.u.replace(/^https?:\/\//,'').replace(/\/$/,''))}</h3><div class="big" style="font-size:20px">${esc(x.n)}</div><div class="mu">Konfiguration öffnen ↗</div></a>`).join('')}</div>`;
 }
+// ---------- weather (Open-Meteo via the display) ----------
+const WXI=(c,day)=>c===0?(day?'☀️':'🌙'):c<=2?(day?'⛅':'☁️'):c===3?'☁️':c<=48?'🌫':c<=67?'🌧':c<=77?'❄️':c<=82?'🌦':c<=86?'🌨':'⛈';
+const WDAYS=['So','Mo','Di','Mi','Do','Fr','Sa'];
+const n0=v=>v==null||isNaN(v)?'--':Math.round(v);
+const n1=v=>v==null||isNaN(v)?'--':cnum(v,1);
+function pgWeather(){
+  const sm=(id,t)=>`<div class="card"><h3>${t}</h3><div class="row"><span class="big grow" style="white-space:nowrap" id="${id}_v">--</span><span class="mu" style="white-space:nowrap" id="${id}_s"></span></div></div>`;
+  return `<div class="grid"><div class="card wide"><div class="row"><span style="font-size:56px;line-height:1" id="x_i"></span><span class="huge grow" id="x_t" style="margin-left:12px">--</span>
+   <div style="text-align:right"><div class="big" id="x_txt" style="font-size:22px"></div><div class="mu" id="x_f"></div><div class="mu" id="x_p"></div></div></div></div>
+   ${sm('x_w','💨 Wind')}${sm('x_h','💧 Luftfeuchte')}${sm('x_n','☂️ Nächste Stunde')}${sm('x_r','☂️ Regen heute')}
+   ${[1,2,3].map(i=>`<div class="card"><h3 id="x_d${i}">--</h3><div class="row"><span style="font-size:30px" id="x_di${i}"></span><span class="big grow" style="text-align:right;font-size:20px" id="x_dt${i}"></span></div><div class="mu" style="text-align:right" id="x_dr${i}"></div></div>`).join('')}
+   </div><div class="mu" id="x_st" style="margin-top:12px"></div>`;
+}
+function updWeather(){
+  const ok=WX.on&&WX.t!=null;
+  if($('#owx_v')){set('owx_v',ok?WXI(WX.c,WX.day)+' '+n0(WX.t)+'°':'--');set('owx_s',!WX.on?'aus':ok?esc(WX.txt||''):esc(WX.status||''))}
+  if(!$('#x_t'))return;
+  set('x_i',ok?WXI(WX.c,WX.day):'');set('x_t',ok?n0(WX.t)+'°':'--');set('x_txt',ok?esc(WX.txt):(WX.on?'Keine Daten':'Wetter aus'));
+  set('x_f',ok&&WX.d?`Gefühlt ${n0(WX.f)}° · ${n0(WX.d[0].hi)}° / ${n0(WX.d[0].lo)}°`:(WX.on?'':'Unter ⚙ Einstellungen → 🌦 Wetter einrichten'));
+  set('x_p',WX.name?'📍 '+esc(WX.name):'');
+  set('x_w_v',ok?n0(WX.w)+' km/h':'--');set('x_w_s',ok?(WX.dir?esc(WX.dir)+' · ':'')+'Böen '+n0(WX.g):'');
+  set('x_h_v',ok?n0(WX.h)+' %':'--');set('x_n_v',ok?n1(WX.rn)+' mm':'--');set('x_n_s',ok?n0(WX.pn)+' %':'');
+  set('x_r_v',ok&&WX.d?n1(WX.d[0].r)+' mm':'--');set('x_r_s',ok&&WX.d?n0(WX.d[0].p)+' %':'');
+  for(let i=1;i<=3;i++){const d=ok&&WX.d?WX.d[i]:null;const t=new Date(((WX.at||Date.now()/1000)+i*86400)*1000);
+    set('x_d'+i,i===1?'Morgen':WDAYS[t.getDay()]);set('x_di'+i,d?WXI(d.c,true):'');set('x_dt'+i,d?n0(d.hi)+'° / '+n0(d.lo)+'°':'--');set('x_dr'+i,d?n1(d.r)+' mm · '+n0(d.p)+' %':'')}
+  set('x_st',esc(WX.status||'')+' · Daten: Open-Meteo');
+}
 function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div>`}
 // camper-battery: <prefix>/batteries = [{name,ok,soc,v,w,rt,st,p}]
 function bats(){try{const a=JSON.parse(V.bat_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
@@ -189,6 +219,7 @@ function warnings(){
   const w=[];
   if(online('temp')&&V.temp_alarm)V.temp_alarm.split('; ').forEach(x=>w.push(x));
   if(online('heat')&&V.heat_errflag==='ON')w.push('Heizung: Fehler '+(V.heat_err||'?'));
+  if(WX.warn)WX.warn.split('\n').forEach(x=>w.push(x));
   if(online('bat'))bats().forEach(b=>{if(!b.ok)return;
     if(b.p)w.push(b.name+' BMS-Fehler: bitte prüfen');
     if(b.st==='Kritisch'||b.st==='Schwach')w.push(b.name+' '+b.st.toLowerCase()+': '+cnum(b.v,2)+' V');
@@ -259,6 +290,7 @@ function setTank(p,pk,lk,dev){
   e.closest('.card').classList.toggle('offline',!online(dev));
 }
 function update(){
+  updWeather();
   if(S.awake!==undefined)$('#wake').hidden=!!S.awake;
   if(S.ip!==undefined){$('#dot').classList.toggle('ok',ws&&ws.readyState==1&&S.mqtt);$('#dot').title=S.mqtt?'MQTT verbunden':'MQTT getrennt'}
   const d=new Date();$('#clock').textContent=d.toTimeString().slice(0,5);
@@ -371,8 +403,18 @@ function pgSettings(){
    <p class="mu">Hört kurz auf einem Topic-Filter mit und zeigt, was ankommt. Aus jedem Wert lässt sich direkt eine Kachel machen.</p>
    <div class="row"><input type="text" id="ffilter" class="grow" value="zigbee2mqtt/#" style="flex:1"><button class="btn pri" id="fstart">Start</button></div>
    <div id="flist" style="margin:10px 0 14px"></div></details>
+  <details><summary>🌦 Wetter</summary>
+   <p class="mu">Wetter von <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> (kostenlos, ohne Anmeldung). Das Display braucht dafür Internet über den Router. Warnungen (Böen, Gewitter) erscheinen oben im Display und gehen auch per Pushover raus.</p>
+   <label class="chk"><input type="checkbox" id="wxOn"> Wetter abrufen</label>
+   <label>Ort suchen</label><div class="row"><input type="text" id="wxq" class="grow" placeholder="z. B. Leipzig" style="flex:1"><button class="btn sm" type="button" id="wxsearch">Suchen</button></div>
+   <div id="wxres"></div>
+   <div class="f2">${inp('wxLat','Breitengrad','text','52.52')}${inp('wxLon','Längengrad','text','13.40')}</div>
+   ${inp('wxName','Ortsname (Anzeige)')}
+   ${inp('wxTopic','GPS per MQTT (optional, z. B. Topic des Routers)','text','router/gps')}
+   <p class="mu" style="margin-top:-4px">Mit Topic folgt das Wetter dem Fahrzeug. Inhalt: JSON mit <code>lat</code>/<code>lon</code> (auch <code>latitude</code>/<code>longitude</code>) oder <code>52.52,13.40</code>. Ohne Position gilt der feste Ort oben.</p>
+   <div class="f2">${inp('wxGust','Warnung ab Böen (km/h, 0 = aus)','number')}<div><label>Aktualisieren</label><select id="wxEvery"><option value="15">alle 15 min</option><option value="30">alle 30 min</option><option value="60">stündlich</option><option value="120">alle 2 h</option></select></div></div></details>
   <details><summary>📲 Pushover</summary>
-   <p class="mu">Schickt die Warnungen der Übersicht (Temperatur-Alarme, Heizungsfehler) als Push-Nachricht aufs Handy. Token einer eigenen Pushover-Anwendung und User-Key von <a href="https://pushover.net" target="_blank" rel="noopener">pushover.net</a>. Eine Warnung wird gesendet, wenn sie 30 s besteht.</p>
+   <p class="mu">Schickt die Warnungen der Übersicht (Temperatur-Alarme, Heizungsfehler, Batterie, Wetter) als Push-Nachricht aufs Handy. Token einer eigenen Pushover-Anwendung und User-Key von <a href="https://pushover.net" target="_blank" rel="noopener">pushover.net</a>. Eine Warnung wird gesendet, wenn sie 30 s besteht.</p>
    <label class="chk"><input type="checkbox" id="poOn"> Warnungen senden</label>
    <label class="chk"><input type="checkbox" id="poClear"> Nachricht, wenn eine Warnung vorbei ist</label>
    <div class="f2">${inp('poToken','API-Token (Anwendung)','password')}${inp('poUser','User-Key','password')}</div>
@@ -392,7 +434,7 @@ function pgSettings(){
    <div class="actions"><button class="btn" id="reboot">Neustart</button><button class="btn danger" id="factory">Werkseinstellungen</button></div></details>
   <div class="actions"><button class="btn pri" id="save" style="flex:1">Einstellungen speichern</button></div>`;
 }
-const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle'];
+const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','wxGust'];
 async function loadSettings(){
   try{
     const r=await fetch('/api/settings');if(!r.ok)throw 0;ST=await r.json();
@@ -402,6 +444,7 @@ async function loadSettings(){
     for(let i=0;i<=BUILTIN.length;i++){const e=$('#pn'+i);if(e)e.value=(ST.pageNames||[])[i]||''}
     {const l=(ST.ovTiles||OV_DEFAULT).split(',');for(let i=0;i<9;i++){const e=$('#ov'+i);if(e)e.value=l[i]||'none'}}
     LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
+    $('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||30);
     $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#poPrio').value=String(ST.poPrio||0);
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
     $('#sysinfo').textContent=`Firmware ${ST.fw} · MAC ${ST.mac} · IP ${S.ip||''}`;
@@ -412,6 +455,7 @@ async function loadSettings(){
   $('#lnksug').onclick=()=>{readLinks();SUGGEST.forEach(([n,h])=>{if(!LINKS.some(x=>x.u.includes(h)||x.n.toLowerCase()===n.toLowerCase()))LINKS.push({n,u:'http://'+h+'.local/'})});renderLinks()};
   $('#brightness').oninput=e=>send({c:'bri',v:e.target.value});
   $('#scan').onclick=scan;
+  $('#wxsearch').onclick=wxSearch;$('#wxq').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();wxSearch()}};
   $('#reboot').onclick=()=>{if(confirm('Neu starten?'))post('/api/reboot')};
   $('#factory').onclick=()=>{if(confirm('Alle Einstellungen löschen?'))post('/api/factory')};
   $('#fwup').onclick=upload;
@@ -440,7 +484,8 @@ function readLinks(){
 }
 function saveSettings(){
   const o={};FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)o[f]=e.value});
-  ['mqttPort','dimBrightness','screenTimeout'].forEach(f=>o[f]=parseInt(o[f])||0);
+  ['mqttPort','dimBrightness','screenTimeout','wxGust'].forEach(f=>o[f]=parseInt(o[f])||0);
+  o.wxOn=$('#wxOn').checked;o.wxEvery=+$('#wxEvery').value;
   o.staticIp=$('#staticIp').checked;o.fanPort=+$('#fanPort').value;o.brightness=+$('#brightness').value;
   o.builtin=BUILTIN.map((b,i)=>$('#bp'+i).checked);
   o.ovTiles=[0,1,2,3,4,5,6,7,8].map(i=>$('#ov'+i).value).join(',').replace(/(,none)+$/,'');
@@ -448,6 +493,20 @@ function saveSettings(){
   readLinks();o.links=LINKS.filter(x=>x.n.trim()&&x.u.trim());
   o.poOn=$('#poOn').checked;o.poClear=$('#poClear').checked;o.poPrio=+$('#poPrio').value;
   post('/api/settings',o);
+}
+// Place search in the browser (Open-Meteo geocoding), fills position and name
+async function wxSearch(){
+  const q=$('#wxq').value.trim();if(!q)return;
+  $('#wxres').innerHTML='<p class="mu">Suche ...</p>';
+  try{
+    const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?count=6&language=de&name='+encodeURIComponent(q));
+    const j=await r.json();const l=j.results||[];
+    if(!l.length){$('#wxres').innerHTML='<p class="mu">Nichts gefunden.</p>';return}
+    $('#wxres').innerHTML=l.map((p,i)=>`<span class="chip" data-wx="${i}">${esc(p.name)}${p.admin1?', '+esc(p.admin1):''}${p.country_code?' ('+esc(p.country_code)+')':''}</span>`).join('');
+    document.querySelectorAll('[data-wx]').forEach(c=>c.onclick=()=>{const p=l[+c.dataset.wx];
+      $('#wxLat').value=p.latitude.toFixed(4);$('#wxLon').value=p.longitude.toFixed(4);$('#wxName').value=p.name;$('#wxOn').checked=true;
+      $('#wxres').innerHTML='<p class="mu">Übernommen – bitte speichern.</p>'});
+  }catch(e){$('#wxres').innerHTML='<p class="mu">Suche geht nur mit Internet am Handy/PC. Breiten- und Längengrad sonst von Hand eintragen.</p>'}
 }
 async function scan(){
   $('#nets').innerHTML='<p class="mu">Suche ...</p>';

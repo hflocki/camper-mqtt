@@ -23,21 +23,29 @@ Passt zu den anderen Projekten:
 ² Bis camper-heater 1.0 war der Standard `service/truma`. Ältere Geräte behalten ihre Einstellung; dann hier oder im Heizungs-Web-UI angleichen.
 
 <p>
+<img src="docs/display-seiten.png" width="820">
+</p>
+<p>
+<img src="docs/display-warnung.png" width="410">
+</p>
+<p>
 <img src="docs/web-overview.png" width="200"> <img src="docs/web-heizung.png" width="200"> <img src="docs/web-eigene-seite.png" width="200">
 </p>
 
 ## Funktionen
 
-- **Wandpanel** mit LVGL-Oberfläche, Wischen oder Pfeile zum Blättern, deutsche Umlaute und Icons
+- **Wandpanel** mit LVGL-Oberfläche: Icon-Leiste unten zum Wechseln der Seiten (oder wischen), deutsche Umlaute und Icons
 - **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert, hell/dunkel automatisch
 - **Display aufwecken:** Ist der Bildschirm gedimmt oder aus, zeigt die Webseite oben den Knopf **💡 Display an**.
 - **Feste IP abgesichert:** Eine feste IP, die nicht funktionieren kann (Gateway außerhalb des Netzes, falsches Subnetz), wird beim Speichern abgelehnt. Verbindet sich das Display mit fester IP zwar mit dem WLAN, erreicht aber 3 Minuten lang den MQTT-Broker nicht, schaltet es bis zum nächsten Neustart auf DHCP (Hinweis auf der Systemseite). Auf der Systemseite gibt es außerdem den Knopf *Feste IP aus (DHCP)* – lange drücken, das Display startet mit DHCP neu
 - **Geräte-Links (nur Webseite):** Unter *Einstellungen → 🔗 Geräte-Links* Name und Adresse der anderen Geräte eintragen (oder „Camper-Geräte vorschlagen“ für die `.local`-Namen). Die Seite **🔗 Geräte** zeigt sie als Buttons, die die jeweilige Konfigurationsseite in einem neuen Tab öffnen
 - **Anzeigename:** Unter *Einstellungen → Display & Seiten* lässt sich ein Name eintragen (z. B. „Wohnraum“), der oben in der Mitte neben dem Seitentitel steht – am Display und auf der Webseite. Leer = kein Name
 - **Übersicht ohne Scrollen:** 3 × 3 Kacheln, Standard: Frischwasser, Grauwasser, Gas, Truma, Level, MaxxFan, Temperatur (bis 3 Sensoren), Batterie (bis 3) und Status (grün „OK“ oder die Warnungen auf Rot). Antippen öffnet die jeweilige Seite. **Welche Kachel wo steht, ist frei wählbar** (*Einstellungen → Display & Seiten → Kacheln der Übersicht*): zusätzlich einzelne Batterien (Batterie 1–3 groß), Uhr/Datum, eigene MQTT-Kacheln aus *Seiten & Kacheln* oder leer. Die Webseite übernimmt dieselbe Reihenfolge
-- **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie (einzeln abschaltbar) und **System** (IP, QR-Code, Helligkeit). Die Namen lassen sich unter *Einstellungen → Display & Seiten* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
-- **Kopfzeile:** `<` · **Home-Knopf** (springt immer zur Übersicht) · Seitenname · Anzeigename · Uhr · `>`
-- **Warnungen:** Temperatur-Alarme von camper-temp, Heizungsfehler und Batterie-Warnungen erscheinen in der roten Status-Kachel der Übersicht und als ⚠ in der Kopfzeile. Eine neue Warnung weckt das Display; war es dunkel, springt es auf die Übersicht. Optional zusätzlich als **Push-Nachricht** per Pushover
+- **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie · **Wetter** (einzeln abschaltbar) und **System** (Netzwerk, IP, Signal, MQTT, Firmware, Laufzeit, Speicher als Liste, dazu QR-Code und Helligkeit). Die Namen lassen sich unter *Einstellungen → Display & Seiten* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
+- **Kopfzeile:** Seitenname · Anzeigename · Datum · Uhr. Antippen springt zur Übersicht. Bei Verbindungsproblemen steht dort „WLAN“ bzw. „MQTT“
+- **Icon-Leiste unten:** ein Knopf je Seite (Home, Flamme, Lüfter, Waage, Thermometer, Batterie, Wetter, Zahnrad; eigene Seiten mit Listen-Icon). Die aktive Seite ist hervorgehoben. Mehr als 8 Seiten lassen sich in der Leiste seitlich schieben
+- **Wetter** von [Open-Meteo](https://open-meteo.com) (kostenlos, ohne Konto): aktuelles Wetter, nächste Stunde, heute und 3 Tage Vorschau. Fester Ort oder GPS per MQTT (z. B. vom Router), siehe [Wetter](#wetter)
+- **Warnungen:** Temperatur-Alarme von camper-temp, Heizungsfehler, Batterie- und Wetter-Warnungen erscheinen in der roten Status-Kachel der Übersicht und als **gelbes Band mit Lauftext** in der Kopfzeile. Eine neue Warnung weckt das Display; war es dunkel, springt es auf die Übersicht. Optional zusätzlich als **Push-Nachricht** per Pushover
 - **Eigene Seiten und Kacheln** für beliebige MQTT-Topics: *Wert*, *Schalter*, *Taster*, *Regler* – erscheinen automatisch auf Display **und** Webseite
 - **Topic-Finder:** lauscht z. B. auf `zigbee2mqtt/#`, zeigt alle Geräte mit ihren JSON-Werten; ein Klick legt eine Kachel an (Temperatur, Luftfeuchte, Licht an/aus, Helligkeit …)
 - **Setup-WLAN** wie bei den anderen Projekten: ohne WLAN-Daten oder nach 1 Minute ohne Verbindung öffnet sich `Camper-Display-XXXXXX`, Captive Portal unter `http://192.168.4.1`. Das Display zeigt dazu einen QR-Code zum Verbinden.
@@ -52,6 +60,7 @@ Passt zu den anderen Projekten:
 _arduino/camper_display/   Sketch für die Arduino IDE
 _arduino/lv_conf.h         LVGL-Konfiguration (muss in den libraries-Ordner, siehe unten)
 tools/embed_web.py         packt web/index.html in web_ui.h
+tools/make_fonts.py        erzeugt die Schriften font_de_*.c neu
 docs/                      Screenshots
 ```
 
@@ -66,7 +75,8 @@ docs/                      Screenshots
 | `wifi_manager.*` | WLAN, feste IP, Setup-AP, mDNS, NTP |
 | `settings.*` | Einstellungen, Seiten und Kacheln im NVS |
 | `notify.*` | Push-Nachrichten per Pushover (eigener Task, HTTPS mit Zertifikatsprüfung) |
-| `font_de_*.c` | Montserrat mit Umlauten + Font-Awesome-Icons (mit `lv_font_conv` erzeugt) |
+| `weather.*` | Wetter von Open-Meteo (eigener Task), GPS-Position per MQTT, Wetter-Warnungen |
+| `font_de_*.c` | Montserrat mit Umlauten + Font-Awesome-Icons, erzeugt mit `tools/make_fonts.py` |
 
 ## Hardware
 
@@ -116,9 +126,11 @@ docs/                      Screenshots
 ~/Documents/Arduino/libraries/lvgl/
 ```
 
-Dann `_arduino/camper_display/camper_display.ino` öffnen, kompilieren, hochladen. Die Firmware belegt ca. 1,6 MB von 3 MB.
+Dann `_arduino/camper_display/camper_display.ino` öffnen, kompilieren, hochladen. Die Firmware belegt ca. 1,9 MB von 3 MB.
 
 Die Webseite liegt als lesbare Datei in `web/index.html`. Nach Änderungen daran `python3 tools/embed_web.py` ausführen (nur Python-Standardbibliothek, keine venv nötig) – das schreibt `web_ui.h` neu.
+
+**Schriften:** Wer weitere Zeichen oder Icons braucht, trägt sie in `tools/make_fonts.py` ein und führt `python3 tools/make_fonts.py` aus. Das Skript braucht Node.js (`npx` lädt `lv_font_conv` 1.5.3) und die Schriftdateien aus `lvgl/scripts/built_in_font` der LVGL-Bibliothek; sonst nur die Python-Standardbibliothek.
 
 ## Einrichtung
 
@@ -203,6 +215,7 @@ Die Status-Kachel der Übersicht wird rot und zeigt die Warnungen, solange etwas
 | --- | --- |
 | camper-temp | `alarm_text` ist nicht leer (Grenzwert eines Sensors länger als die eingestellte Verzögerung verletzt) |
 | camper-heater | `control_status/heater_error` = `ON`, mit Fehlercode |
+| Wetter | Böen ab dem eingestellten Wert (Standard 60 km/h) oder Gewitter, siehe [Wetter](#wetter) |
 | camper-battery | Ladestand unter 20 % (`BAT_WARN_SOC` in `config.h`, mit Restlaufzeit), BM2-Zustand „Schwach“ oder „Kritisch“ (Starterbatterie), BMS meldet einen Fehler. Batterien ohne Verbindung lösen keine Warnung aus |
 
 Warnungen von Geräten, die `offline` sind, werden nicht gezeigt (alte retained Werte sollen keinen Fehlalarm auslösen). Grenzwerte und Verzögerung stellt man direkt in camper-temp ein, nicht am Display.
@@ -224,6 +237,26 @@ Das Display kann jede Warnung zusätzlich aufs Handy schicken, auch wenn niemand
 
 Eine Warnung wird pro Ereignis nur einmal gesendet. Ändert sich nur der Wert („9,2 °C“ → „9,8 °C“), kommt keine neue Nachricht. Geht ein Gerät offline, gilt seine Warnung nicht als erledigt. Ohne WLAN oder bei einem Serverfehler versucht das Display es bis zu 5-mal im Minutenabstand. Token und User-Key lassen sich auch in `config_local.h` vorbelegen (`DEFAULT_PUSHOVER_TOKEN`, `DEFAULT_PUSHOVER_USER`).
 
+## Wetter
+
+Unter *Einstellungen → 🌦 Wetter*:
+
+| Einstellung | Wirkung |
+| --- | --- |
+| Wetter abrufen | schaltet die Abfrage ein. Das Display braucht dafür Internet über den Router |
+| Ort suchen | Ortsname eingeben, *Suchen*, Treffer antippen. Das füllt Breiten-, Längengrad und Ortsnamen aus (die Suche läuft im Browser über Open-Meteo) |
+| Breitengrad / Längengrad | fester Standort, z. B. `47.66` / `9.175`. Komma statt Punkt geht auch |
+| Ortsname | steht auf der Wetterseite, nur zur Anzeige |
+| GPS per MQTT | optional ein Topic mit der aktuellen Position, z. B. vom Router. Dann folgt das Wetter dem Fahrzeug; ohne Position gilt der feste Ort |
+| Warnung ab Böen | km/h, 0 = keine Wind-Warnung |
+| Aktualisieren | alle 15/30/60/120 Minuten. Fährt das Fahrzeug mehr als 5 km weiter, wird sofort neu abgefragt |
+
+Das GPS-Topic darf JSON mit `lat`/`lon` (auch `latitude`/`longitude`, `lng`, Groß- und Kleinschreibung egal, Zahl oder Text) oder einfach `52.52,13.40` enthalten.
+
+Die Wetterseite zeigt das aktuelle Wetter mit gefühlter Temperatur, Höchst- und Tiefstwert, Wind mit Richtung und Böen, Luftfeuchte, Regen in der nächsten Stunde und heute sowie die nächsten 3 Tage. Für die Übersicht gibt es die Kachel **Wetter**. Bei Böen über dem Grenzwert und bei Gewitter erscheint eine Warnung (Kopfzeile, Status-Kachel, Pushover). Daten älter als 3 Stunden lösen keine Warnung aus.
+
+Vorbelegen in `config_local.h`: `DEFAULT_WX_LAT`, `DEFAULT_WX_LON`, `DEFAULT_WX_NAME`, `DEFAULT_WX_TOPIC`, `DEFAULT_WX_GUST`.
+
 ## Router-Daten (RUT956)
 
 Der RUT956 kann GPS und Mobilfunkwerte selbst per MQTT senden, ganz ohne zusätzliche Firmware. Im Router unter **Services → Data to Server**:
@@ -231,6 +264,8 @@ Der RUT956 kann GPS und Mobilfunkwerte selbst per MQTT senden, ganz ohne zusätz
 1. Neue Instanz, **Server type: MQTT**, Server `127.0.0.1` (der Broker läuft auf dem Router), Port `1883`, ggf. Benutzer/Passwort.
 2. Topic z. B. `camper/router/gps`, Format **Json**, Timer **Period** 60 s.
 3. Datensammlung **Type: GPS** (Breite, Länge, Geschwindigkeit, Satelliten …). Eine zweite Instanz mit **Type: GSM** und Topic `camper/router/mobile` liefert Signal (RSSI, RSRP, SINR), Netzbetreiber und Modemtemperatur.
+
+Das GPS-Topic kann man auch direkt unter *Einstellungen → 🌦 Wetter → GPS per MQTT* eintragen, dann folgt das Wetter dem Fahrzeug.
 
 Am Display dann im **Topic-Finder** `camper/router/#` starten und die gewünschten Werte per Klick als Kacheln anlegen. Die genauen JSON-Schlüssel hängen von der Router-Firmware ab; der Finder zeigt sie an.
 

@@ -34,3 +34,9 @@
 // #define LCD_ROTATION         0                 // 0..3, wall mount orientation
 // #define LCD_INIT_TYPE        9                 // 1 for older panel batches
 // #define DEFAULT_BRIGHTNESS   80
+
+// ---- Weather ---------------------------------------------------------
+// #define DEFAULT_WX_LAT       "52.52"           // fixed position switches the weather on
+// #define DEFAULT_WX_LON       "13.40"
+// #define DEFAULT_WX_NAME      "Stellplatz"
+// #define DEFAULT_WX_TOPIC     "router/gps"      // MQTT topic with the GPS position instead
