@@ -33,6 +33,8 @@ Dazu, nicht in diesem Repo:
 
 - **Router-Daten (GPS, Mobilfunk):** Der RUT956 sendet sie selbst per MQTT, siehe [Router-Daten im Display-README](firmware/display/README.md#router-daten-rut956).
 
+Hinweise für KI-Assistenten und Mitwirkende (Arbeitsweise, Bauen, Patches): [`AGENTS.md`](AGENTS.md).
+
 Jeder Ordner ist für sich vollständig: eigene README mit Hardware, Board-Einstellungen, Bibliotheken und Topics, Arduino-Sketch unter `_arduino/` (bzw. `truma_heater/`), teils zusätzlich PlatformIO unter `_platformio/`.
 
 ## Mockups
