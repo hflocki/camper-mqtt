@@ -83,6 +83,8 @@ void load() {
   settings.wxTopic      = prefs.getString("wxtop",  DEFAULT_WX_TOPIC);
   settings.wxGust       = prefs.getUChar ("wxgust", DEFAULT_WX_GUST);
   settings.wxEvery      = prefs.getUChar ("wxevery", 30);
+  settings.ovTempSel    = prefs.getString("ovtsel", "");
+  settings.ovBatSel     = prefs.getString("ovbsel", "");
   settings.ovTiles      = prefs.getString("ovt",    DEFAULT_OV_TILES);
 
   String pagesJson;
@@ -158,6 +160,8 @@ void save() {
   prefs.putString("wxtop",  settings.wxTopic);
   prefs.putUChar ("wxgust", settings.wxGust);
   prefs.putUChar ("wxevery", settings.wxEvery);
+  prefs.putString("ovtsel", settings.ovTempSel);
+  prefs.putString("ovbsel", settings.ovBatSel);
   prefs.putUChar("bpknown", BP_COUNT);
   prefs.end();
 }

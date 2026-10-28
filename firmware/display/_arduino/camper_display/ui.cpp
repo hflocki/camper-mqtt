@@ -6,6 +6,7 @@
 #include "wifi_manager.h"
 #include "display_hw.h"
 #include "weather.h"
+#include "icons.h"
 #include <lvgl.h>
 #include <vector>
 #include <time.h>
@@ -397,6 +398,10 @@ std::vector<TempItem> tempItems() {
 // ---- batteries (camper-battery) ---------------------------------------------
 struct BatItem { String name; String state; float soc, v, w; long rt; bool ok, problem; };
 
+// icon of the overview slot, or picked from the name (living area, solar, starter ...)
+const char* batIcon(const String& name) { return icons::forName(name, false); }
+const char* tempIcon(const String& name) { return icons::forName(name, true); }
+
 // <battery prefix>/batteries: [{"name":"...","ok":true,"soc":78,"v":13.31,"w":-56,"rt":2830,"st":"Normal","p":true}, ...]
 std::vector<BatItem> batItems() {
   std::vector<BatItem> out;
@@ -653,8 +658,8 @@ void buildTempRows(const std::vector<TempItem>& items, lv_obj_t* tab) {
   tVals.clear();
   for (auto& it : items) {
     lv_obj_t* c = card(tab, PAGE_W - 20, 70);
-    lv_obj_t* n = label(c, &font_de_22, C_MUTED, dispText(it.name).c_str());
-    lv_obj_set_width(n, 260);
+    lv_obj_t* n = label(c, &font_de_22, C_MUTED, dispText(String(tempIcon(it.name)) + "  " + it.name).c_str());
+    lv_obj_set_width(n, 280);
     lv_label_set_long_mode(n, LV_LABEL_LONG_DOT);
     lv_obj_align(n, LV_ALIGN_LEFT_MID, 0, 0);
     lv_obj_t* v = label(c, &font_de_28, C_TEXT, "--");
@@ -1058,7 +1063,7 @@ void refreshValues() {
         continue;
       }
       const BatItem& b = items[w.idx];
-      lv_label_set_text(w.title, dispText(String(LV_SYMBOL_BATTERY_FULL "  ") + b.name).c_str());
+      lv_label_set_text(w.title, dispText(String(batIcon(b.name)) + "  " + b.name).c_str());
       bool bm2 = b.state.length() > 0;
       String v = !b.ok ? String("--") : bm2 ? commaNum(b.v, 1) + " V"
                : isnan(b.soc) ? String("--") : String((int)lroundf(b.soc)) + " %";
@@ -1131,13 +1136,22 @@ void refreshValues() {
       // value first, so it stays visible when a long name is cut off
       std::vector<String> lines;
       std::vector<lv_color_t> cols;
-      for (size_t i = 0; i < items.size() && i < 3; i++) {
-        lines.push_back(items[i].val + "  " + items[i].name);
-        cols.push_back(!tempOn ? C_MUTED : (items[i].alarm ? C_WARN : C_TEXT));
+      // chosen sensors with their icons, otherwise the first 3
+      std::vector<icons::Slot> sel = icons::slots(true);
+      size_t shown = 0;
+      if (sel.empty())
+        for (size_t i = 0; i < items.size() && i < 3; i++) sel.push_back({items[i].name, ""});
+      for (auto& sl : sel) {
+        const char* ic = sl.key.length() ? icons::glyph(sl.key) : icons::glyph(icons::autoKey(sl.name, true));
+        const TempItem* it = nullptr;
+        for (auto& x : items) if (x.name == sl.name) { it = &x; break; }
+        lines.push_back(String(ic) + "  " + (it ? it->val : String("--")));
+        cols.push_back(!tempOn || !it ? C_MUTED : (it->alarm ? C_WARN : C_TEXT));
+        if (it) shown++;
       }
       String sub = !tempOn ? String("offline")
                  : anyAlarm ? String("Alarm")
-                 : items.size() > 3 ? "+" + String(items.size() - 3) + " weitere"
+                 : items.size() > shown ? "+" + String(items.size() - shown) + " weitere"
                  : String("");
       setList(ovTemp, lines, cols, sub);
     }
@@ -1170,13 +1184,25 @@ void refreshValues() {
     std::vector<String> lines;
     std::vector<lv_color_t> cols;
     String sub;
-    for (size_t i = 0; i < items.size() && i < 3; i++) {
-      const BatItem& b = items[i];
+    // chosen batteries with their icons, otherwise the first 3
+    std::vector<icons::Slot> sel = icons::slots(false);
+    if (sel.empty())
+      for (size_t i = 0; i < items.size() && i < 3; i++) sel.push_back({items[i].name, ""});
+    for (auto& sl : sel) {
+      const char* ic = sl.key.length() ? icons::glyph(sl.key) : icons::glyph(icons::autoKey(sl.name, false));
+      const BatItem* bp = nullptr;
+      for (auto& x : items) if (x.name == sl.name) { bp = &x; break; }
+      if (!bp) {
+        lines.push_back(String(ic) + "  --");
+        cols.push_back(C_MUTED);
+        continue;
+      }
+      const BatItem& b = *bp;
       // value first: SoC, for the BM2 the voltage
       String val = !b.ok ? String("--")
                  : b.state.length() ? commaNum(b.v, 1) + " V"
                  : isnan(b.soc) ? String("--") : String((int)lroundf(b.soc)) + " %";
-      lines.push_back(val + "  " + b.name);
+      lines.push_back(String(ic) + "  " + val);
       bool bad = b.ok && (b.problem || b.state == "Kritisch" || b.state == "Schwach" ||
                           (b.state.isEmpty() && !isnan(b.soc) && b.soc < BAT_WARN_SOC));
       cols.push_back(!batOn || !b.ok ? C_MUTED : (bad ? C_WARN : C_TEXT));
@@ -1208,7 +1234,7 @@ void refreshValues() {
       lv_color_t socCol = !live || isnan(b.soc) ? C_MUTED
                         : (b.soc < 20 ? C_WARN : (b.soc < 40 ? C_GAS : C_OK));
 
-      lv_label_set_text((lv_obj_t*)lv_obj_get_user_data(r.card), dispText(b.name).c_str());
+      lv_label_set_text((lv_obj_t*)lv_obj_get_user_data(r.card), dispText(String(batIcon(b.name)) + "  " + b.name).c_str());
       // large value: state of charge, for the BM2 the voltage (its SoC is only an estimate)
       String big = bm2 ? (isnan(b.v) ? String("--") : commaNum(b.v, 2) + " V")
                        : (isnan(b.soc) ? String("--") : String((int)lroundf(b.soc)) + " %");

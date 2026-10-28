@@ -11,7 +11,7 @@ const M = {
     ntpServer: 'pool.ntp.org', tz: 'CET-1CEST,M3.5.0,M10.5.0/3',
     poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
     brightness: 80, dimBrightness: 10, screenTimeout: 120,
-    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 30,
+    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 30, ovTempSel: '', ovBatSel: '',
     builtin: [true, true, true, true, true, true, true],
     pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'System'],
     ovTiles: 'water,gas,heater,level,fan,weather,temp,bat1,status',
@@ -30,7 +30,7 @@ const M = {
   cfgMsg() {
     const c = M.cfg;
     return {t: 'cfg', fw: c.fw, host: c.hostname, name: c.displayName, links: c.links, ap: false, setup: false,
-            builtin: c.builtin, ovTiles: c.ovTiles, pageNames: c.pageNames, pages: M.pages.pages.map(p => p.name),
+            builtin: c.builtin, ovTiles: c.ovTiles, ovTempSel: c.ovTempSel, ovBatSel: c.ovBatSel, pageNames: c.pageNames, pages: M.pages.pages.map(p => p.name),
             tiles: M.pages.tiles.map(t => Object.assign({n: t.name, p: t.page, y: t.type, u: t.unit || ''},
               t.type === 1 ? {son: t.stateOn || 'ON'} : {}, t.type === 3 ? {min: t.min, max: t.max, step: t.step} : {}))};
   },
@@ -104,7 +104,7 @@ const M = {
       const b = Object.assign({}, body);
       for (const k of Object.keys(b)) if (/pass|token|user/i.test(k) && k !== 'webUser' && k !== 'mqttUser') delete b[k];
       M.save(b);
-      if (M.emit) setTimeout(() => M.emit(M.wxMsg()), 300);
+      if (M.emit) setTimeout(() => { M.emit(M.cfgMsg()); M.emit(M.wxMsg()); }, 300);
       return {ok: true, msg: 'Gespeichert'}; }
     if (path === '/api/pages' && method === 'GET') return M.pages;
     if (path === '/api/pages') { M.pages = body; return {ok: true, msg: 'Seiten gespeichert'}; }

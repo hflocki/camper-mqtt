@@ -206,6 +206,19 @@ function updWeather(){
 }
 function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div>`}
 // camper-battery: <prefix>/batteries = [{name,ok,soc,v,w,rt,st,p}]
+// icons of batteries and temperature sensors; keys as in icons.cpp
+const ICONS=[['bat','🔋','Batterie'],['carbat','🚙','Starterbatterie'],['home','🏠','Wohnraum / Aufbau'],['sun','☀️','Sonne'],['solar','🔆','Solarpanel'],['car','🚗','Fahrzeug'],['plug','🔌','Landstrom'],['bolt','⚡','Strom'],['therm','🌡️','Thermometer'],['fridge','🧊','Kühlschrank'],['snow','❄️','Gefrierfach'],['couch','🛋️','Innenraum'],['tree','🌳','Außen'],['bed','🛏️','Schlafen'],['water','💧','Wasser'],['fire','🔥','Heizung'],['shower','🚿','Bad'],['box','📦','Stauraum']];
+// overview slots: up to 3 'name=icon' lines (cfg.ovTempSel / cfg.ovBatSel), icon '' = automatic
+function slotsOf(raw){return (raw||'').split('\n').map(l=>{const i=l.lastIndexOf('=');return i<0?{n:l,k:''}:{n:l.slice(0,i),k:l.slice(i+1)}}).filter(x=>x.n).slice(0,3)}
+function autoIco(n,temp){n=(n||'').toLowerCase();const h=(...k)=>k.some(x=>n.includes(x));
+  if(temp)return h('gefrier','tiefk','frost','freez')?'snow':h('kühl','kuehl','fridge')?'fridge':h('außen','aussen','draußen','outdoor','outside')?'tree':h('bad','dusch','wc')?'shower':h('schlaf','bett','alkoven')?'bed':h('wasser','boiler','tank')?'water':h('heiz','truma')?'fire':h('garage','stau','keller')?'box':h('innen','wohn','raum','inside')?'couch':h('motor','fahrer','cockpit')?'car':'therm';
+  return h('solar','pv')?'sun':h('start','motor','fahrzeug','kfz','auto','lkw')?'car':h('land','230')?'plug':h('aufbau','wohn','bord','versorg','house','service')?'home':'bat'}
+function icoKey(n,temp){const sl=slotsOf(cfg&&(temp?cfg.ovTempSel:cfg.ovBatSel)).find(x=>x.n===n);return sl&&ICONS.some(x=>x[0]===sl.k)?sl.k:autoIco(n,temp)}
+const icoE=k=>(ICONS.find(x=>x[0]===k)||ICONS[0])[1];
+// entries of an overview tile: chosen slots or the first 3
+function ovSlots(list,temp){const sl=slotsOf(cfg&&(temp?cfg.ovTempSel:cfg.ovBatSel));return (sl.length?sl:list.slice(0,3).map(x=>({n:x.name,k:''}))).map(x=>({n:x.n,e:icoE(ICONS.some(i=>i[0]===x.k)?x.k:autoIco(x.n,temp)),it:list.find(y=>y.name===x.n)}))}
+function ico(n,temp){return icoE(icoKey(n,temp))}
+const batIco=n=>ico(n,false);
 function bats(){try{const a=JSON.parse(V.bat_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
 const BAT_WARN_SOC=20;
 const cnum=(v,d)=>Number(v).toFixed(d).replace('.',',');
@@ -307,18 +320,18 @@ function update(){
   ['warn','t_warn'].forEach(id=>{const e=document.getElementById(id);if(e){e.hidden=!warn.length;e.textContent='⚠ '+warn.join('\n')}});
   const tl=temps(),tOn=online('temp'),tAl=tl.some(t=>t.alarm);
   if($('#ot_v')){
-    set('ot_v',tl.length?tl.slice(0,3).map(t=>`${esc(t.name)} <span${t.alarm?' class="err"':''}>${tval(t)}</span>`).join(' &nbsp; '):'--');
+    {const sl=ovSlots(tl,true);set('ot_v',sl.length?sl.map(x=>`<span title="${esc(x.n)}">${x.e}</span> <span${x.it&&x.it.alarm?' class="err"':x.it?'':' class="mu"'}>${x.it?tval(x.it):'--'}</span>`).join(' &nbsp; '):'--')}
     set('ot_s',!tOn?'offline':tAl?'<span class="err">Alarm</span>':tl.length>3?tl.length+' Sensoren':'');
     $('#ot_v').closest('.card').classList.toggle('offline',!tOn);
   }
   if($('#t_list')){
-    set('t_list',tl.map(t=>`<div class="card wide${tOn?'':' offline'}"><div class="trow${t.alarm?' al':''}"><span class="n">${esc(t.name)}</span><span class="big">${tval(t)}</span></div></div>`).join(''));
+    set('t_list',tl.map(t=>`<div class="card wide${tOn?'':' offline'}"><div class="trow${t.alarm?' al':''}"><span class="n">${ico(t.name,true)} ${esc(t.name)}</span><span class="big">${tval(t)}</span></div></div>`).join(''));
     set('t_st',!tOn?'Temperatursensoren offline':tl.length?'':'Keine Sensoren gemeldet');
   }
   // batteries
   const bl=bats(),bOn=online('bat');
   if($('#ob_v')){
-    set('ob_v',bl.length?bl.map(b=>`${esc(b.name)} <span${batBad(b)?' class="err"':''}>${!b.ok?'--':b.st?cnum(b.v,1)+' V':(b.soc==null?'--':Math.round(b.soc)+' %')}</span>`).join(' &nbsp; '):'--');
+    {const sl=ovSlots(bl,false);set('ob_v',sl.length?sl.map(x=>{const b=x.it;return `<span title="${esc(x.n)}">${x.e}</span> <span${b&&batBad(b)?' class="err"':b?'':' class="mu"'}>${!b||!b.ok?'--':b.st?cnum(b.v,1)+' V':(b.soc==null?'--':Math.round(b.soc)+' %')}</span>`}).join(' &nbsp; '):'--')}
     const f=bl.find(b=>b.ok&&!b.st&&b.w!=null&&(b.w>1||b.rt!=null));
     set('ob_s',!bOn?'offline':f?(f.w>1?esc(f.name)+' lädt +'+Math.round(f.w)+' W':esc(f.name)+' noch '+rtText(f.rt)+' ('+Math.round(-f.w)+' W)'):'');
     $('#ob_v').closest('.card').classList.toggle('offline',!bOn);
@@ -330,7 +343,7 @@ function update(){
         :b.w==null?'':b.w>1?`<span class="okc">▲ ${Math.round(b.w)} W</span>`:b.w<-1?`▼ ${Math.round(-b.w)} W`:'Ruhe';
       const big=!b.ok?'--':b.st?(b.v==null?'--':cnum(b.v,2)+' V'):(b.soc==null?'--':Math.round(b.soc)+' %');
       const sub=!b.ok?'':b.st?(b.soc==null?'':Math.round(b.soc)+' % (geschätzt)'):[b.v!=null?cnum(b.v,2)+' V':'',b.rt!=null?'noch '+rtText(b.rt):(b.w>1?'lädt':'')].filter(x=>x).join(' · ');
-      return `<div class="card wide${bOn&&b.ok?'':' offline'}"${batBad(b)?' style="outline:2px solid var(--warn)"':''}><div class="row"><h3 class="grow" style="margin:0">${esc(b.name)}</h3><span>${top}</span></div>
+      return `<div class="card wide${bOn&&b.ok?'':' offline'}"${batBad(b)?' style="outline:2px solid var(--warn)"':''}><div class="row"><h3 class="grow" style="margin:0">${batIco(b.name)} ${esc(b.name)}</h3><span>${top}</span></div>
       <div class="row" style="margin-top:6px"><span class="big grow"${b.st?'':` style="color:${c}"`}>${big}</span><span class="mu">${sub}</span></div>
       <div class="bar"><i style="width:${b.soc==null?0:Math.max(0,Math.min(100,b.soc))}%;background:${c}"></i></div></div>`}).join(''));
     set('b_st',!bOn?'Batterie-Gateway offline':bl.length?'':'Keine Batterien gemeldet');
@@ -338,7 +351,7 @@ function update(){
   [1,2,3].forEach(n=>{
     if(!$('#ob'+n+'_v'))return;const b=bl[n-1];
     if(!b){set('ob'+n+'_v','--');set('ob'+n+'_s',bOn?'keine Batterie':'offline');return}
-    set('ob'+n+'_t','🔋 '+esc(b.name));
+    set('ob'+n+'_t',batIco(b.name)+' '+esc(b.name));
     set('ob'+n+'_v',!b.ok?'--':`<span${batBad(b)?' class="err"':''}>${b.st?cnum(b.v,1)+' V':(b.soc==null?'--':Math.round(b.soc)+' %')}</span>`);
     set('ob'+n+'_s',!bOn?'offline':!b.ok?'keine Verbindung':b.st?esc(b.st):b.w>1?'▲ '+Math.round(b.w)+' W':b.rt!=null?'noch '+rtText(b.rt):(b.w!=null?Math.round(b.w)+' W':''));
     $('#ob'+n+'_v').closest('.card').classList.toggle('offline',!bOn||!b.ok);
@@ -390,14 +403,16 @@ function pgSettings(){
    <p class="mu">Basis-Topic je Gerät. Leer lassen, wenn das Gerät nicht vorhanden ist.</p>
    ${inp('prefixTank','Tanks (Wasser/Gas)')}${inp('prefixLevel','Ausrichtung (Levelsensor)')}${inp('prefixHeater','Heizung (camper-heater)')}${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (camper-temp)')}${inp('prefixBattery','Batterien (camper-battery)')}
    <div class="f2"><div><label>MaxxFan-Port</label><select id="fanPort"><option value="0">0 (RJ11)</option><option value="1">1 (RJ45)</option></select></div>${inp('prefixSelf','Eigenes Topic (Display)')}</div></details>
-  <details><summary>🖥 Display &amp; Seiten</summary>
+  <details id="dsd" ontoggle="if(this.open)renderSlots()"><summary>🖥 Display &amp; Seiten</summary>
    <label>Helligkeit</label><input type="range" id="brightness" min="5" max="100">
    <div class="f2">${inp('dimBrightness','Helligkeit gedimmt (%, 0 = aus)','number')}${inp('screenTimeout','Dimmen nach (s, 0 = nie)','number')}</div>
    ${inp('displayName','Anzeigename (oben in der Mitte, z. B. Wohnraum)')}
    <label>Feste Seiten (Haken = anzeigen, Feld = Name)</label>${BUILTIN.map((b,i)=>`<div class="row" style="gap:8px;margin:4px 0"><input type="checkbox" id="bp${i}" style="width:auto"><input id="pn${i}" placeholder="${b[1]}" maxlength="24" style="flex:1;min-width:0"></div>`).join('')}
    <div class="row" style="gap:8px;margin:4px 0"><span style="width:20px"></span><input id="pn${BUILTIN.length}" placeholder="System" maxlength="24" style="flex:1;min-width:0"></div>
    <label>Kacheln der Übersicht (3 × 3, von links oben nach rechts unten)</label>
-   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[0,1,2,3,4,5,6,7,8].map(i=>`<select id="ov${i}" style="padding:8px 4px;font-size:13px">${ovChoices().map(c=>`<option value="${c[0]}">${esc(c[1])}</option>`).join('')}</select>`).join('')}</div></details>
+   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[0,1,2,3,4,5,6,7,8].map(i=>`<select id="ov${i}" style="padding:8px 4px;font-size:13px">${ovChoices().map(c=>`<option value="${c[0]}">${esc(c[1])}</option>`).join('')}</select>`).join('')}</div>
+   <label>Temperatur-Kachel: Sensoren und Symbole (leer = die ersten 3, Symbol automatisch nach Namen)</label><div id="slt"></div>
+   <label>Batterie-Kachel: Batterien und Symbole</label><div id="slb"></div></details>
   <details><summary>🧩 Seiten &amp; Kacheln</summary><div id="pged"></div></details>
   <details id="fd"><summary>🔎 Topic-Finder (z.B. Zigbee2MQTT)</summary>
    <p class="mu">Hört kurz auf einem Topic-Filter mit und zeigt, was ankommt. Aus jedem Wert lässt sich direkt eine Kachel machen.</p>
@@ -445,6 +460,7 @@ async function loadSettings(){
     {const l=(ST.ovTiles||OV_DEFAULT).split(',');for(let i=0;i<9;i++){const e=$('#ov'+i);if(e)e.value=l[i]||'none'}}
     LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
     $('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||30);
+    $('#slt').innerHTML=$('#slb').innerHTML='';renderSlots();
     $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#poPrio').value=String(ST.poPrio||0);
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
     $('#sysinfo').textContent=`Firmware ${ST.fw} · MAC ${ST.mac} · IP ${S.ip||''}`;
@@ -482,10 +498,23 @@ function readLinks(){
   document.querySelectorAll('[data-ln]').forEach(e=>{const i=+e.dataset.ln;if(LINKS[i])LINKS[i].n=e.value.trim()});
   document.querySelectorAll('[data-lu]').forEach(e=>{const i=+e.dataset.lu;if(LINKS[i])LINKS[i].u=e.value.trim()});
 }
+// three rows per tile: sensor/battery + icon; names from the live data and the saved choice
+function renderSlots(){
+  [['slt',true],['slb',false]].forEach(([id,temp])=>{
+    const box=$('#'+id);if(!box)return;
+    let cur=slotsOf(ST&&(temp?ST.ovTempSel:ST.ovBatSel));
+    if(box.querySelector('[data-sn]'))cur=[0,1,2].map(i=>({n:box.querySelector(`[data-sn="${i}"]`).value,k:box.querySelector(`[data-sk="${i}"]`).value}));
+    const names=[...new Set([...(temp?temps():bats()).map(x=>x.name),...cur.map(x=>x.n)].filter(x=>x))];
+    box.innerHTML=[0,1,2].map(i=>{const c=cur[i]||{n:'',k:''};
+      return `<div class="row" style="gap:8px;margin:4px 0;flex-wrap:nowrap"><select data-sn="${i}" style="flex:1;min-width:0"><option value="">– leer –</option>${names.map(n=>`<option value="${esc(n)}"${n===c.n?' selected':''}>${esc(n)}</option>`).join('')}</select><select data-sk="${i}" style="flex:1;min-width:0"><option value="">Symbol automatisch</option>${ICONS.map(x=>`<option value="${x[0]}"${x[0]===c.k?' selected':''}>${x[1]} ${x[2]}</option>`).join('')}</select></div>`}).join('');
+  });
+}
+function readSlots(id){const b=$('#'+id);if(!b)return'';const l=[];for(let i=0;i<3;i++){const n=b.querySelector(`[data-sn="${i}"]`).value;if(n)l.push(n+'='+b.querySelector(`[data-sk="${i}"]`).value)}return l.join('\n')}
 function saveSettings(){
   const o={};FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)o[f]=e.value});
   ['mqttPort','dimBrightness','screenTimeout','wxGust'].forEach(f=>o[f]=parseInt(o[f])||0);
   o.wxOn=$('#wxOn').checked;o.wxEvery=+$('#wxEvery').value;
+  o.ovTempSel=readSlots('slt');o.ovBatSel=readSlots('slb');
   o.staticIp=$('#staticIp').checked;o.fanPort=+$('#fanPort').value;o.brightness=+$('#brightness').value;
   o.builtin=BUILTIN.map((b,i)=>$('#bp'+i).checked);
   o.ovTiles=[0,1,2,3,4,5,6,7,8].map(i=>$('#ov'+i).value).join(',').replace(/(,none)+$/,'');

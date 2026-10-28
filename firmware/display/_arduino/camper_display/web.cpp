@@ -1,5 +1,6 @@
 #include "web.h"
 #include "weather.h"
+#include "icons.h"
 #include "config.h"
 #include "settings.h"
 #include "datastore.h"
@@ -107,6 +108,8 @@ void buildCfg(JsonDocument& d) {
   JsonArray b = d["builtin"].to<JsonArray>();
   for (int i = 0; i < BP_COUNT; i++) b.add(settings.builtin[i]);
   d["ovTiles"] = settings.ovTiles.length() ? settings.ovTiles : String(DEFAULT_OV_TILES);
+  d["ovTempSel"] = settings.ovTempSel;
+  d["ovBatSel"] = settings.ovBatSel;
   JsonArray pn = d["pageNames"].to<JsonArray>();      // titles incl. defaults, last = system page
   for (int i = 0; i <= BP_COUNT; i++) pn.add(pageTitle(i));
   JsonArray p = d["pages"].to<JsonArray>();
@@ -263,6 +266,8 @@ void getSettings(AsyncWebServerRequest* r) {
   JsonArray pn = d["pageNames"].to<JsonArray>();
   for (int i = 0; i <= BP_COUNT; i++) pn.add(pageTitle(i));
   d["ovTiles"] = settings.ovTiles.length() ? settings.ovTiles : String(DEFAULT_OV_TILES);
+  d["ovTempSel"] = settings.ovTempSel;
+  d["ovBatSel"] = settings.ovBatSel;
   d["fw"] = FW_VERSION;
   d["mac"] = WiFi.macAddress();
   sendJson(r, d);
@@ -367,6 +372,8 @@ bool applySettings(JsonObject o, bool apply) {
   settings.wxTopic.trim();
   if (o["wxGust"].is<int>()) settings.wxGust = constrain(o["wxGust"].as<int>(), 0, 200);
   if (o["wxEvery"].is<int>()) settings.wxEvery = constrain(o["wxEvery"].as<int>(), 10, 180);
+  if (o["ovTempSel"].is<const char*>() && apply) settings.ovTempSel = icons::clean(o["ovTempSel"].as<const char*>());
+  if (o["ovBatSel"].is<const char*>() && apply) settings.ovBatSel = icons::clean(o["ovBatSel"].as<const char*>());
   settings.prefixSelf = cleanPrefix(settings.prefixSelf);
   if (settings.prefixSelf.isEmpty()) settings.prefixSelf = DEFAULT_PREFIX_SELF;
   settings.prefixTank = cleanPrefix(settings.prefixTank);

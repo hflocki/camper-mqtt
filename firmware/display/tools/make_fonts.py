@@ -21,8 +21,10 @@ LV_SYMBOLS = [61441, 61448, 61451, 61452, 61453, 61457, 61459, 61461, 61465, 614
               61507, 61512, 61515, 61516, 61517, 61521, 61522, 61523, 61524, 61543, 61544, 61550, 61552, 61553, 61556,
               61559, 61560, 61561, 61563, 61587, 61589, 61636, 61637, 61639, 61641, 61664, 61671, 61674, 61683, 61724,
               61732, 61787, 61931, 62016, 62017, 62018, 62019, 62020, 62087, 62099, 62212, 62189, 62810, 63426, 63650]
-# icons of the UI (fire, gas, balance, tint, wind, drip, thermometer, ...)
-UI_ICONS = [61549, 62153, 62767, 62172, 62030, 63347, 61548, 63337, 63278, 62838, 62461, 62609, 61760, 61531, 61618]
+# icons of the UI (fire, gas, balance, tint, wind, drip, thermometer, ..., car for the starter battery)
+UI_ICONS = [61549, 62153, 62767, 62172, 62030, 63347, 61548, 63337, 63278, 62838, 62461, 62609, 61760, 61531, 61618, 0xF1B9,
+            # icons to choose for batteries and temperature sensors (icons.cpp)
+            0xF5DF, 0xF5BA, 0xF1E6, 0xF76B, 0xF2DC, 0xF4B8, 0xF1BB, 0xF236, 0xF06D, 0xF2CC, 0xF466]
 # weather: sun, moon, cloud, cloud-sun, cloud-moon, cloud-rain, showers, sun-rain, snowflake, bolt, smog,
 # wind, umbrella, thermometer-half, map-marker, location-arrow, tint
 WEATHER = [0xF185, 0xF186, 0xF0C2, 0xF6C4, 0xF6C3, 0xF73D, 0xF740, 0xF743, 0xF2DC, 0xF0E7, 0xF75F,

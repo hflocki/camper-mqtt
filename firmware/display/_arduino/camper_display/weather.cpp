@@ -3,7 +3,7 @@
 #include "wifi_manager.h"
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
-#include <WiFiClient.h>
+#include <NetworkClientSecure.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include <freertos/task.h>
@@ -26,7 +26,11 @@ float gpsLat = NAN, gpsLon = NAN;       // from the MQTT position topic
 volatile bool wakeUp = false;
 const uint32_t RETRY_MS = 2UL * 60 * 1000;
 
-const char* const API = "http://api.open-meteo.com/v1/forecast";
+const char* const API = "https://api.open-meteo.com/v1/forecast";
+
+// Root certificates of the ESP32 core (Mozilla bundle), also used by notify.cpp
+extern const uint8_t x509_crt_bundle_start[] asm("_binary_x509_crt_bundle_start");
+extern const uint8_t x509_crt_bundle_end[]   asm("_binary_x509_crt_bundle_end");
 
 bool position(float& lat, float& lon) {
   if (settings.wxTopic.length() && !isnan(gpsLat)) { lat = gpsLat; lon = gpsLon; return true; }
@@ -39,6 +43,7 @@ bool position(float& lat, float& lon) {
 }
 
 void setStatus(const String& s) {
+  if (s != lastStatus) Serial.println("[wx] " + s);
   take();
   lastStatus = s;
   give();
@@ -56,13 +61,15 @@ bool fetch(float lat, float lon) {
            "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,"
            "precipitation_probability_max,wind_gusts_10m_max&forecast_days=%d&timezone=auto&timeformat=unixtime",
            API, lat, lon, DAYS);
-  WiFiClient client;
+  NetworkClientSecure client;
+  client.setCACertBundle(x509_crt_bundle_start, x509_crt_bundle_end - x509_crt_bundle_start);
   HTTPClient http;
-  http.setTimeout(8000);
+  http.setTimeout(10000);
+  http.useHTTP10(true);   // no chunked transfer encoding, so the JSON can be parsed straight from the stream
   if (!http.begin(client, url)) { setStatus("Wetter: keine Verbindung"); return false; }
   int code = http.GET();
   if (code != 200) {
-    setStatus("Wetter: Fehler " + String(code));
+    setStatus("Wetter: Fehler " + String(code) + (code < 0 ? " (" + http.errorToString(code) + ")" : String("")));
     http.end();
     return false;
   }

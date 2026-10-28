@@ -58,6 +58,8 @@ struct Settings {
   String   wxTopic;             // MQTT topic with the position (GPS); empty = fixed position
   uint8_t  wxGust = 60;         // warn from these gusts in km/h, 0 = off
   uint8_t  wxEvery = 30;        // update interval in minutes
+  // overview tiles temperature / battery: up to 3 "name=icon" lines (see icons.cpp), "" = first 3
+  String   ovTempSel, ovBatSel;
   // display
   uint8_t  brightness, dimBrightness;
   uint16_t screenTimeout;

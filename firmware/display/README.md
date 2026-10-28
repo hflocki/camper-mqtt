@@ -40,12 +40,13 @@ Passt zu den anderen Projekten:
 - **Feste IP abgesichert:** Eine feste IP, die nicht funktionieren kann (Gateway außerhalb des Netzes, falsches Subnetz), wird beim Speichern abgelehnt. Verbindet sich das Display mit fester IP zwar mit dem WLAN, erreicht aber 3 Minuten lang den MQTT-Broker nicht, schaltet es bis zum nächsten Neustart auf DHCP (Hinweis auf der Systemseite). Auf der Systemseite gibt es außerdem den Knopf *Feste IP aus (DHCP)* – lange drücken, das Display startet mit DHCP neu
 - **Geräte-Links (nur Webseite):** Unter *Einstellungen → 🔗 Geräte-Links* Name und Adresse der anderen Geräte eintragen (oder „Camper-Geräte vorschlagen“ für die `.local`-Namen). Die Seite **🔗 Geräte** zeigt sie als Buttons, die die jeweilige Konfigurationsseite in einem neuen Tab öffnen
 - **Anzeigename:** Unter *Einstellungen → Display & Seiten* lässt sich ein Name eintragen (z. B. „Wohnraum“), der oben in der Mitte neben dem Seitentitel steht – am Display und auf der Webseite. Leer = kein Name
-- **Übersicht ohne Scrollen:** 3 × 3 Kacheln, Standard: Frischwasser, Grauwasser, Gas, Truma, Level, MaxxFan, Temperatur (bis 3 Sensoren), Batterie (bis 3) und Status (grün „OK“ oder die Warnungen auf Rot). Antippen öffnet die jeweilige Seite. **Welche Kachel wo steht, ist frei wählbar** (*Einstellungen → Display & Seiten → Kacheln der Übersicht*): zusätzlich einzelne Batterien (Batterie 1–3 groß), Uhr/Datum, eigene MQTT-Kacheln aus *Seiten & Kacheln* oder leer. Die Webseite übernimmt dieselbe Reihenfolge
+- **Übersicht ohne Scrollen:** 3 × 3 Kacheln, Standard: Frischwasser, Grauwasser, Gas, Truma, Level, MaxxFan, Temperatur (bis 3 Sensoren), Batterie (bis 3), jeweils mit Symbol statt Name (siehe *Symbole* unten) und Status (grün „OK“ oder die Warnungen auf Rot). Antippen öffnet die jeweilige Seite. **Welche Kachel wo steht, ist frei wählbar** (*Einstellungen → Display & Seiten → Kacheln der Übersicht*): zusätzlich einzelne Batterien (Batterie 1–3 groß), Uhr/Datum, eigene MQTT-Kacheln aus *Seiten & Kacheln* oder leer. Die Webseite übernimmt dieselbe Reihenfolge
 - **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie · **Wetter** (einzeln abschaltbar) und **System** (Netzwerk, IP, Signal, MQTT, Firmware, Laufzeit, Speicher als Liste, dazu QR-Code und Helligkeit). Die Namen lassen sich unter *Einstellungen → Display & Seiten* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
 - **Kopfzeile:** Seitenname · Anzeigename · Datum · Uhr. Antippen springt zur Übersicht. Bei Verbindungsproblemen steht dort „WLAN“ bzw. „MQTT“
 - **Icon-Leiste unten:** ein Knopf je Seite (Home, Flamme, Lüfter, Waage, Thermometer, Batterie, Wetter, Zahnrad; eigene Seiten mit Listen-Icon). Die aktive Seite ist hervorgehoben. Mehr als 8 Seiten lassen sich in der Leiste seitlich schieben
 - **Wetter** von [Open-Meteo](https://open-meteo.com) (kostenlos, ohne Konto): aktuelles Wetter, nächste Stunde, heute und 3 Tage Vorschau. Fester Ort oder GPS per MQTT (z. B. vom Router), siehe [Wetter](#wetter)
 - **Warnungen:** Temperatur-Alarme von camper-temp, Heizungsfehler, Batterie- und Wetter-Warnungen erscheinen in der roten Status-Kachel der Übersicht und als **gelbes Band mit Lauftext** in der Kopfzeile. Eine neue Warnung weckt das Display; war es dunkel, springt es auf die Übersicht. Optional zusätzlich als **Push-Nachricht** per Pushover
+- **Temperatur- und Batterie-Kachel frei belegbar:** unter *Einstellungen → Display & Seiten* je Kachel bis zu 3 Sensoren bzw. Batterien aus einer Liste wählen und dahinter das Symbol (Batterie, Starterbatterie, Wohnraum, Sonne, Solarpanel, Fahrzeug, Landstrom, Strom, Thermometer, Kühlschrank, Gefrierfach, Innenraum, Außen, Schlafen, Wasser, Heizung, Bad, Stauraum). Die Kachel zeigt dann Symbol und Wert in dieser Reihenfolge. Leer = die ersten 3, „Symbol automatisch“ wählt nach dem Namen (z. B. Kühlschrank 🧊, Gefrierfach ❄️, Außen 🌳, Aufbau 🏠, Solar ☀️, Starter 🚗). Meldet ein gewählter Sensor nichts, steht dort „--“
 - **Eigene Seiten und Kacheln** für beliebige MQTT-Topics: *Wert*, *Schalter*, *Taster*, *Regler* – erscheinen automatisch auf Display **und** Webseite
 - **Topic-Finder:** lauscht z. B. auf `zigbee2mqtt/#`, zeigt alle Geräte mit ihren JSON-Werten; ein Klick legt eine Kachel an (Temperatur, Luftfeuchte, Licht an/aus, Helligkeit …)
 - **Setup-WLAN** wie bei den anderen Projekten: ohne WLAN-Daten oder nach 1 Minute ohne Verbindung öffnet sich `Camper-Display-XXXXXX`, Captive Portal unter `http://192.168.4.1`. Das Display zeigt dazu einen QR-Code zum Verbinden.
@@ -75,6 +76,7 @@ docs/                      Screenshots
 | `wifi_manager.*` | WLAN, feste IP, Setup-AP, mDNS, NTP |
 | `settings.*` | Einstellungen, Seiten und Kacheln im NVS |
 | `notify.*` | Push-Nachrichten per Pushover (eigener Task, HTTPS mit Zertifikatsprüfung) |
+| `icons.*` | Symbole und Auswahl für die Temperatur- und Batterie-Kachel |
 | `weather.*` | Wetter von Open-Meteo (eigener Task), GPS-Position per MQTT, Wetter-Warnungen |
 | `font_de_*.c` | Montserrat mit Umlauten + Font-Awesome-Icons, erzeugt mit `tools/make_fonts.py` |
 
@@ -252,6 +254,8 @@ Unter *Einstellungen → 🌦 Wetter*:
 | Aktualisieren | alle 15/30/60/120 Minuten. Fährt das Fahrzeug mehr als 5 km weiter, wird sofort neu abgefragt |
 
 Das GPS-Topic darf JSON mit `lat`/`lon` (auch `latitude`/`longitude`, `lng`, Groß- und Kleinschreibung egal, Zahl oder Text) oder einfach `52.52,13.40` enthalten.
+
+Gespeicherte Änderungen (Ort, Ein/Aus) lösen sofort eine neue Abfrage aus, nicht erst nach dem Intervall. Klappt die Abfrage nicht, steht der Grund unten auf der Wetterseite (z. B. „Wetter: Fehler -1“) und im seriellen Log mit `[wx]`. Die Abfrage läuft per HTTPS mit Zertifikatsprüfung.
 
 Die Wetterseite zeigt das aktuelle Wetter mit gefühlter Temperatur, Höchst- und Tiefstwert, Wind mit Richtung und Böen, Luftfeuchte, Regen in der nächsten Stunde und heute sowie die nächsten 3 Tage. Für die Übersicht gibt es die Kachel **Wetter**. Bei Böen über dem Grenzwert und bei Gewitter erscheint eine Warnung (Kopfzeile, Status-Kachel, Pushover). Daten älter als 3 Stunden lösen keine Warnung aus.
 
