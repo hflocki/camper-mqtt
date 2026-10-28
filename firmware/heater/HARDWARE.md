@@ -10,10 +10,6 @@
 
 Der ESP hängt **parallel** am LIN-Bus, so wie eine echte iNet Box. Er ersetzt nichts und schaltet nichts um. Es gibt keinen Umschalter und keine Unterbrechung der Verbindung CP Plus ↔ Heizung.
 
-## Fertige Platine (empfohlen)
-
-Wer nicht selbst verdrahten will: In [`pcb/`](pcb/README.md) liegt eine bestückbare Platine mit Gerber, Stückliste und Bestückungsdatei für PCBWay. Sicherung, Verpolschutz, Überspannungsschutz und ein Wandler-Modul für 9–72 V sind schon drauf, Firmware-Profil `BOARD_CAMPER_LIN_C3`.
-
 ## Variante A: smartavan heater controller
 
 Fertige Platine, nichts zu verdrahten:

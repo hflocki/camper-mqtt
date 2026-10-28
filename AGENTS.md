@@ -22,7 +22,6 @@ Monorepo für Camper-Elektronik: jedes Gerät ist ein ESP8266/ESP32 mit reiner *
 | --- | --- |
 | `firmware/<gerät>/` | ein Gerät, vollständig mit README, Arduino-Sketch unter `_arduino/<sketch>/` (Heizung: `truma_heater/`) |
 | `firmware/_template/` | Muster-Gerät; neues Gerät mit `python firmware/_template/tools/new_device.py <id> "<Name>"` |
-| `firmware/heater/pcb/` | eigene Platine (KiCad, per Skript erzeugt) mit PCBWay-Fertigungsdateien |
 | `docs/mockups/` | klickbare Mockups aller Web-Oberflächen (erzeugt, nicht von Hand ändern) |
 | `tools/mockups/` | Generator der Mockups: `python3 tools/mockups/make_mockups.py`, Beispieldaten je Gerät in `mock/<gerät>.js` |
 | `.github/workflows/build.yml` | baut bei jedem Push alle Geräte; Tag `<gerät>-v<version>` erzeugt ein Release mit `.bin` |

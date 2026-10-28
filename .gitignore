@@ -22,3 +22,6 @@ plan/
 /*.pdf
 /*.png
 /*.jpg
+
+# Own heater PCB (KiCad, Gerber, BOM) stays local, not published
+firmware/heater/pcb/

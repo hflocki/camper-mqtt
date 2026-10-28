@@ -22,7 +22,7 @@
 // #define BOARD_ESP32S3_GENERIC // ESP32-S3 DevKit + LIN module (Arduino board: "ESP32S3 Dev Module")
 // #define BOARD_ESP32C3_GENERIC // ESP32-C3 + LIN module (Arduino board: "ESP32C3 Dev Module")
 #define BOARD_ESP32C3_SUPERMINI  // ESP32-C3 Super Mini + LIN module (Arduino board: "ESP32C3 Dev Module")
-// #define BOARD_CAMPER_LIN_C3   // own PCB, see pcb/ (Arduino board: "ESP32C3 Dev Module")
+// #define BOARD_CAMPER_LIN_C3   // own LIN board with ESP32-C3-WROOM-02 + TJA1021 (Arduino board: "ESP32C3 Dev Module")
 #endif
 
 #define FW_NAME "camper-heater"
@@ -116,7 +116,7 @@
 #endif
 
 #elif defined(BOARD_CAMPER_LIN_C3)
-// Own PCB (pcb/): ESP32-C3-WROOM-02, TJA1021, RECOM 12 V -> 5 V, LDO 3.3 V. Same LIN pins as the Super Mini build.
+// Own LIN board: ESP32-C3-WROOM-02, TJA1021, RECOM 12 V -> 5 V, LDO 3.3 V. Same LIN pins as the Super Mini build.
 #define BOARD_NAME "Camper Heater LIN board (ESP32-C3-WROOM-02)"
 #ifndef LIN_UART_NUM
 #define LIN_UART_NUM UART_NUM_1
