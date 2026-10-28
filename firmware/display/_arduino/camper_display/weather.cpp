@@ -12,6 +12,13 @@ namespace wx {
 namespace {
 
 SemaphoreHandle_t lock = nullptr;
+
+// The UI and the web server read the data before begin() runs, so create the mutex on first use.
+void take() {
+  if (!lock) lock = xSemaphoreCreateMutex();
+  xSemaphoreTake(lock, portMAX_DELAY);
+}
+void give() { xSemaphoreGive(lock); }
 TaskHandle_t task = nullptr;
 Data cur;
 String lastStatus = "";
@@ -32,9 +39,9 @@ bool position(float& lat, float& lon) {
 }
 
 void setStatus(const String& s) {
-  xSemaphoreTake(lock, portMAX_DELAY);
+  take();
   lastStatus = s;
-  xSemaphoreGive(lock);
+  give();
 }
 
 float num(JsonVariantConst v) { return v.is<float>() ? v.as<float>() : NAN; }
@@ -93,9 +100,9 @@ bool fetch(float lat, float lon) {
   d.valid = !isnan(d.temp) && d.code >= 0;
   d.at = time(nullptr);
   if (!d.valid) { setStatus("Wetter: unvollständige Antwort"); return false; }
-  xSemaphoreTake(lock, portMAX_DELAY);
+  take();
   cur = d;
-  xSemaphoreGive(lock);
+  give();
   struct tm tm;
   localtime_r(&d.at, &tm);
   char b[32];
@@ -137,16 +144,17 @@ void run(void*) {
 }  // namespace
 
 void begin() {
-  lock = xSemaphoreCreateMutex();
+  if (!lock) lock = xSemaphoreCreateMutex();
+  if (task) return;
   xTaskCreatePinnedToCore(run, "wx", 12288, nullptr, 1, &task, 0);
 }
 
 void loop() {}
 
 Data get() {
-  xSemaphoreTake(lock, portMAX_DELAY);
+  take();
   Data d = cur;
-  xSemaphoreGive(lock);
+  give();
   return d;
 }
 
@@ -154,9 +162,9 @@ bool enabled() { return settings.wxOn; }
 
 String status() {
   if (!settings.wxOn) return "Wetter aus";
-  xSemaphoreTake(lock, portMAX_DELAY);
+  take();
   String s = lastStatus;
-  xSemaphoreGive(lock);
+  give();
   return s;
 }
 

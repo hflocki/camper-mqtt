@@ -34,11 +34,11 @@ void setup() {
 
   if (!disp::begin()) Serial.println("[boot] display init failed, web page still works");
   wifimgr::begin();
+  wx::begin();      // before the UI: it shows weather data and warnings
   ui::begin();
   mqttc::begin();
   web::begin();
   notify::begin();
-  wx::begin();
 }
 
 static bool otaStarted = false;
