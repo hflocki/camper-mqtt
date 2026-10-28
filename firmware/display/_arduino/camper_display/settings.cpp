@@ -83,7 +83,7 @@ void load() {
   settings.wxName       = prefs.getString("wxname", DEFAULT_WX_NAME);
   settings.wxTopic      = prefs.getString("wxtop",  DEFAULT_WX_TOPIC);
   settings.wxGust       = prefs.getUChar ("wxgust", DEFAULT_WX_GUST);
-  settings.wxEvery      = prefs.getUChar ("wxevery", 30);
+  settings.wxEvery      = prefs.getUChar ("wxevery", 60);
   settings.ovTempSel    = prefs.getString("ovtsel", "");
   settings.ovBatSel     = prefs.getString("ovbsel", "");
   settings.ovTiles      = prefs.getString("ovt",    DEFAULT_OV_TILES);
@@ -102,7 +102,7 @@ void load() {
   if (settings.fanPort > 1) settings.fanPort = 1;
   if (settings.poPrio < -1 || settings.poPrio > 1) settings.poPrio = 0;
   if (settings.poTitle.isEmpty()) settings.poTitle = DEFAULT_PUSHOVER_TITLE;
-  if (settings.wxEvery < 10 || settings.wxEvery > 180) settings.wxEvery = 30;
+  if (settings.wxEvery < 10 || settings.wxEvery > 180) settings.wxEvery = 60;
 
   String err;
   if (pagesJson.isEmpty() || !pagesFromJson(pagesJson, err)) {

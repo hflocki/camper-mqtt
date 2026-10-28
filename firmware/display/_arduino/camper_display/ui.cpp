@@ -1417,9 +1417,11 @@ void refreshWeather() {
   String feels = ok ? "Gef\xC3\xBChlt " + num0(d.feels) + "\xC2\xB0  \xE2\x80\xA2  " + num0(d.tMax[0]) + "\xC2\xB0 / " + num0(d.tMin[0]) + "\xC2\xB0"
                     : String(wx::enabled() ? "" : "Im Browser unter Einstellungen einrichten");
   lv_label_set_text(wFeels, feels.c_str());
-  String place = settings.wxName.length() ? settings.wxName
+  String gpsName = ok && d.gps ? wx::place() : String("");
+  String place = gpsName.length() ? gpsName
+               : (!d.gps && settings.wxName.length()) ? settings.wxName
                : (ok ? String(d.lat, 2) + ", " + String(d.lon, 2) : String(""));
-  if (settings.wxTopic.length() && ok) place += " (GPS)";
+  if (ok && d.gps) place += " (GPS)";
   lv_label_set_text(wPlace, place.length() ? dispText(String(ICON_MARKER " ") + place).c_str() : "");
 
   lv_label_set_text(wWind.val, ok ? (num0(d.wind) + " km/h " + wx::dirText(d.dir)).c_str() : "--");

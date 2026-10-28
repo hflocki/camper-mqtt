@@ -186,6 +186,7 @@ function pgWeather(){
   const sm=(id,t)=>`<div class="card"><h3>${t}</h3><div class="row"><span class="big grow" style="white-space:nowrap" id="${id}_v">--</span><span class="mu" style="white-space:nowrap" id="${id}_s"></span></div></div>`;
   return `<div class="grid"><div class="card wide"><div class="row"><span style="font-size:56px;line-height:1" id="x_i"></span><span class="huge grow" id="x_t" style="margin-left:12px">--</span>
    <div style="text-align:right"><div class="big" id="x_txt" style="font-size:22px"></div><div class="mu" id="x_f"></div><div class="mu" id="x_p"></div></div></div></div>
+   <div class="card"><h3>📍 Standort</h3><div class="big" id="x_l_v" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">--</div><div class="mu" id="x_l_c" style="white-space:nowrap"></div><div class="mu" id="x_l_s"></div></div>
    ${sm('x_w','💨 Wind')}${sm('x_h','💧 Luftfeuchte')}${sm('x_n','☂️ Nächste Stunde')}${sm('x_r','☂️ Regen heute')}
    ${[1,2,3].map(i=>`<div class="card"><h3 id="x_d${i}">--</h3><div class="row"><span style="font-size:30px" id="x_di${i}"></span><span class="big grow" style="text-align:right;font-size:20px" id="x_dt${i}"></span></div><div class="mu" style="text-align:right" id="x_dr${i}"></div></div>`).join('')}
    </div><div class="mu" id="x_st" style="margin-top:12px"></div>`;
@@ -196,7 +197,12 @@ function updWeather(){
   if(!$('#x_t'))return;
   set('x_i',ok?WXI(WX.c,WX.day):'');set('x_t',ok?n0(WX.t)+'°':'--');set('x_txt',ok?esc(WX.txt):(WX.on?'Keine Daten':'Wetter aus'));
   set('x_f',ok&&WX.d?`Gefühlt ${n0(WX.f)}° · ${n0(WX.d[0].hi)}° / ${n0(WX.d[0].lo)}°`:(WX.on?'':'Unter ⚙ Einstellungen → 🌦 Wetter einrichten'));
-  set('x_p',WX.name?'📍 '+esc(WX.name):'');
+  const pl=WX.gps&&WX.place?WX.place:(!WX.gps&&WX.name?WX.name:'');
+  set('x_p',pl?'📍 '+esc(pl)+(WX.gps?' (GPS)':''):'');
+  const deg=(v,p,n)=>v==null?'':Math.abs(v).toFixed(4).replace('.',',')+'° '+(v>=0?p:n);
+  set('x_l_v',ok?esc(pl||(WX.gps?'GPS-Position':'Fester Ort')):'--');
+  set('x_l_c',ok&&WX.lat!=null?`<a href="https://www.openstreetmap.org/?mlat=${WX.lat}&mlon=${WX.lon}#map=12/${WX.lat}/${WX.lon}" target="_blank" rel="noopener">${deg(WX.lat,'N','S')} · ${deg(WX.lon,'O','W')}</a>`:'');
+  set('x_l_s',ok?(WX.gps?'Quelle: GPS':'Quelle: fester Ort'):'');
   set('x_w_v',ok?n0(WX.w)+' km/h':'--');set('x_w_s',ok?(WX.dir?esc(WX.dir)+' · ':'')+'Böen '+n0(WX.g):'');
   set('x_h_v',ok?n0(WX.h)+' %':'--');set('x_n_v',ok?n1(WX.rn)+' mm':'--');set('x_n_s',ok?n0(WX.pn)+' %':'');
   set('x_r_v',ok&&WX.d?n1(WX.d[0].r)+' mm':'--');set('x_r_s',ok&&WX.d?n0(WX.d[0].p)+' %':'');
@@ -461,7 +467,7 @@ async function loadSettings(){
     for(let i=0;i<=BUILTIN.length;i++){const e=$('#pn'+i);if(e)e.value=(ST.pageNames||[])[i]||''}
     {const l=(ST.ovTiles||OV_DEFAULT).split(',');for(let i=0;i<9;i++){const e=$('#ov'+i);if(e)e.value=l[i]||'none'}}
     LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
-    $('#warnWake').checked=!!ST.warnWake;$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||30);
+    $('#warnWake').checked=!!ST.warnWake;$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||60);
     $('#slt').innerHTML=$('#slb').innerHTML='';renderSlots();
     $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#poPrio').value=String(ST.poPrio||0);
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';

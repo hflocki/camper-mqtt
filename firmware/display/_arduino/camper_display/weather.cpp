@@ -1,4 +1,5 @@
 #include "weather.h"
+#include "config.h"
 #include "settings.h"
 #include "wifi_manager.h"
 #include <ArduinoJson.h>
@@ -32,8 +33,12 @@ const char* const API = "https://api.open-meteo.com/v1/forecast";
 extern const uint8_t x509_crt_bundle_start[] asm("_binary_x509_crt_bundle_start");
 extern const uint8_t x509_crt_bundle_end[]   asm("_binary_x509_crt_bundle_end");
 
-bool position(float& lat, float& lon) {
-  if (settings.wxTopic.length() && !isnan(gpsLat)) { lat = gpsLat; lon = gpsLon; return true; }
+String gpsPlace;                        // reverse geocoded name of the GPS position
+float placeLat = NAN, placeLon = NAN;   // position gpsPlace belongs to
+
+bool position(float& lat, float& lon, bool& gps) {
+  gps = false;
+  if (settings.wxTopic.length() && !isnan(gpsLat)) { lat = gpsLat; lon = gpsLon; gps = true; return true; }
   if (settings.wxLat.length() && settings.wxLon.length()) {
     lat = settings.wxLat.toFloat();
     lon = settings.wxLon.toFloat();
@@ -51,7 +56,7 @@ void setStatus(const String& s) {
 
 float num(JsonVariantConst v) { return v.is<float>() ? v.as<float>() : NAN; }
 
-bool fetch(float lat, float lon) {
+bool fetch(float lat, float lon, bool fromGps) {
   char url[420];
   snprintf(url, sizeof(url),
            "%s?latitude=%.4f&longitude=%.4f"
@@ -104,6 +109,7 @@ bool fetch(float lat, float lon) {
   }
   d.lat = lat;
   d.lon = lon;
+  d.gps = fromGps;
   d.valid = !isnan(d.temp) && d.code >= 0;
   d.at = time(nullptr);
   if (!d.valid) { setStatus("Wetter: unvollständige Antwort"); return false; }
@@ -126,6 +132,50 @@ float distKm(float la1, float lo1, float la2, float lo2) {
   return sqrtf(x * x + y * y) * 111.2f;
 }
 
+// Place name for a GPS position from OpenStreetMap Nominatim (free, no key). Their usage policy asks for
+// an identifying User-Agent and at most one request per second; we ask only after moving more than 5 km.
+void reverseGeocode(float lat, float lon) {
+  char url[200];
+  snprintf(url, sizeof(url),
+           "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=%.5f&lon=%.5f&zoom=12&accept-language=de",
+           lat, lon);
+  NetworkClientSecure client;
+  client.setCACertBundle(x509_crt_bundle_start, x509_crt_bundle_end - x509_crt_bundle_start);
+  HTTPClient http;
+  http.setTimeout(10000);
+  http.useHTTP10(true);
+  http.setUserAgent(FW_NAME "/" FW_VERSION " (ESP32 camper display, weather place name)");
+  if (!http.begin(client, url)) return;
+  int code = http.GET();
+  if (code != 200) {
+    Serial.printf("[wx] place lookup failed: %d\n", code);
+    http.end();
+    placeLat = lat;   // do not retry at once; next try after moving on
+    placeLon = lon;
+    return;
+  }
+  JsonDocument filter;
+  filter["address"] = true;
+  filter["name"] = true;
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, http.getStream(), DeserializationOption::Filter(filter));
+  http.end();
+  if (err) return;
+  JsonObjectConst a = doc["address"];
+  const char* keys[] = {"village", "town", "city", "municipality", "hamlet", "suburb", "county"};
+  String name;
+  for (const char* k : keys) {
+    if (a[k].is<const char*>()) { name = a[k].as<const char*>(); break; }
+  }
+  if (name.isEmpty() && doc["name"].is<const char*>()) name = doc["name"].as<const char*>();
+  take();
+  gpsPlace = name;
+  placeLat = lat;
+  placeLon = lon;
+  give();
+  Serial.printf("[wx] place: %s\n", name.c_str());
+}
+
 void run(void*) {
   uint32_t next = 0;
   for (;;) {
@@ -133,7 +183,8 @@ void run(void*) {
     if (!settings.wxOn) { next = 0; continue; }
     if (!wifimgr::staConnected()) continue;
     float lat, lon;
-    if (!position(lat, lon)) {
+    bool gps;
+    if (!position(lat, lon, gps)) {
       setStatus(settings.wxTopic.length() ? "Warte auf Position (MQTT)" : "Kein Standort eingestellt");
       continue;
     }
@@ -142,7 +193,8 @@ void run(void*) {
     uint32_t now = millis();
     if (!wakeUp && !moved && next && (int32_t)(now - next) < 0) continue;
     wakeUp = false;
-    bool ok = fetch(lat, lon);
+    bool ok = fetch(lat, lon, gps);
+    if (ok && gps && (isnan(placeLat) || distKm(placeLat, placeLon, lat, lon) > 5)) reverseGeocode(lat, lon);
     uint32_t every = (uint32_t)constrain((int)settings.wxEvery, 10, 180) * 60UL * 1000UL;
     next = millis() + (ok ? every : RETRY_MS);
   }
@@ -176,6 +228,13 @@ String status() {
 }
 
 void requestUpdate() { wakeUp = true; }
+
+String place() {
+  take();
+  String s = gpsPlace;
+  give();
+  return s;
+}
 
 namespace {
 float toNum(JsonVariantConst v) {
@@ -302,6 +361,12 @@ String json() {
   doc["status"] = status();
   doc["name"] = settings.wxName;
   doc["warn"] = warning();
+  if (d.valid) {
+    doc["lat"] = d.lat;
+    doc["lon"] = d.lon;
+    doc["gps"] = d.gps;
+    doc["place"] = d.gps ? place() : String("");
+  }
   if (d.valid) {
     doc["t"] = d.temp; doc["f"] = d.feels; doc["h"] = d.hum; doc["w"] = d.wind; doc["g"] = d.gust;
     doc["dir"] = dirText(d.dir); doc["c"] = d.code; doc["day"] = d.day; doc["txt"] = text(d.code);

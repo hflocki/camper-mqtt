@@ -251,11 +251,13 @@ Unter *Einstellungen → 🌦 Wetter*:
 | Ortsname | steht auf der Wetterseite, nur zur Anzeige |
 | GPS per MQTT | optional ein Topic mit der aktuellen Position, z. B. vom Router. Dann folgt das Wetter dem Fahrzeug; ohne Position gilt der feste Ort |
 | Warnung ab Böen | km/h, 0 = keine Wind-Warnung |
-| Aktualisieren | alle 15/30/60/120 Minuten. Fährt das Fahrzeug mehr als 5 km weiter, wird sofort neu abgefragt |
+| Aktualisieren | alle 15/30/60/120 Minuten, Standard stündlich. Fährt das Fahrzeug mehr als 5 km weiter, wird sofort neu abgefragt |
 
 Das GPS-Topic darf JSON mit `lat`/`lon` (auch `latitude`/`longitude`, `lng`, Groß- und Kleinschreibung egal, Zahl oder Text) oder einfach `52.52,13.40` enthalten. Die Werte dürfen auch verschachtelt sein, wie beim RUT956 (`{"TIME":{…},"GPS":{"latitude":…,"longitude":…,"fix_status":1}}`). Meldet der Router `fix_status` 0 (kein GPS-Empfang), wird die Position ignoriert und der feste Ort bzw. die letzte Position bleibt.
 
 Gespeicherte Änderungen (Ort, Ein/Aus) lösen sofort eine neue Abfrage aus, nicht erst nach dem Intervall. Klappt die Abfrage nicht, steht der Grund unten auf der Wetterseite (z. B. „Wetter: Fehler -1“) und im seriellen Log mit `[wx]`. Die Abfrage läuft per HTTPS mit Zertifikatsprüfung.
+
+Bei GPS-Position sucht das Display den Ortsnamen über [OpenStreetMap Nominatim](https://nominatim.org) (kostenlos, ohne Konto und ohne Schlüssel) und zeigt ihn mit „(GPS)“ an. Abgefragt wird nur beim ersten Empfang und nach mehr als 5 km Fahrt, damit die Nutzungsregeln von Nominatim (höchstens eine Anfrage pro Sekunde, Anwendungsname im User-Agent) sicher eingehalten werden. Ohne GPS gilt der eingetragene Ortsname. Die Webseite zeigt zusätzlich die Kachel **📍 Standort** mit Ortsname, Koordinaten (Link zur Karte) und Quelle (GPS oder fester Ort).
 
 Die Wetterseite zeigt das aktuelle Wetter mit gefühlter Temperatur, Höchst- und Tiefstwert, Wind mit Richtung und Böen, Luftfeuchte, Regen in der nächsten Stunde und heute sowie die nächsten 3 Tage. Für die Übersicht gibt es die Kachel **Wetter**. Bei Böen über dem Grenzwert und bei Gewitter erscheint eine Warnung (Kopfzeile, Status-Kachel, Pushover). Daten älter als 3 Stunden lösen keine Warnung aus.
 

@@ -20,6 +20,7 @@ struct Data {
   int    dCode[DAYS] = {-1, -1, -1, -1};
   float  tMax[DAYS], tMin[DAYS], rainSum[DAYS], popMax[DAYS], gustMax[DAYS];
   float  lat = NAN, lon = NAN;  // position the data is for
+  bool   gps = false;           // position came from the MQTT GPS topic
 };
 
 void begin();
@@ -27,6 +28,7 @@ void loop();                    // starts fetches, reads the position topic
 Data get();                     // copy of the latest data (thread safe)
 bool enabled();
 String status();                // "Stand 07:30", "Kein Standort", error text ...
+String place();                 // place name of the GPS position (OpenStreetMap), "" = unknown
 void requestUpdate();           // fetch as soon as possible (settings changed)
 // MQTT position topic, called by the MQTT client for every message
 bool onMessage(const char* topic, const char* payload, unsigned int len);
