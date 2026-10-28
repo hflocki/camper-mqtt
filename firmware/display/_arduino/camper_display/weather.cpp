@@ -177,6 +177,38 @@ String status() {
 
 void requestUpdate() { wakeUp = true; }
 
+namespace {
+float toNum(JsonVariantConst v) {
+  if (v.is<const char*>()) return String(v.as<const char*>()).toFloat();
+  return v.is<float>() ? v.as<float>() : NAN;
+}
+
+// Looks for lat/lon in an object and, if not there, in nested objects (max. 3 levels), e.g. the
+// Teltonika "Data to Server" format {"TIME":{...},"GPS":{"latitude":..,"longitude":..,"fix_status":1}}.
+// Returns false for an object that reports no GPS fix.
+bool findPos(JsonObjectConst o, float& lat, float& lon, int depth) {
+  float la = NAN, lo = NAN;
+  bool noFix = false;
+  for (JsonPairConst kv : o) {
+    String k = kv.key().c_str();
+    k.toLowerCase();
+    if (k == "lat" || k == "latitude") la = toNum(kv.value());
+    else if (k == "lon" || k == "lng" || k == "long" || k == "longitude") lo = toNum(kv.value());
+    else if (k == "fix_status" || k == "fix") noFix = toNum(kv.value()) == 0;
+  }
+  if (!isnan(la) && !isnan(lo)) {
+    if (noFix) return false;
+    lat = la;
+    lon = lo;
+    return true;
+  }
+  if (depth >= 3) return false;
+  for (JsonPairConst kv : o)
+    if (kv.value().is<JsonObjectConst>() && findPos(kv.value().as<JsonObjectConst>(), lat, lon, depth + 1)) return true;
+  return false;
+}
+}  // namespace
+
 bool onMessage(const char* topic, const char* payload, unsigned int len) {
   if (settings.wxTopic.isEmpty() || settings.wxTopic != topic) return false;
   String p;
@@ -185,14 +217,8 @@ bool onMessage(const char* topic, const char* payload, unsigned int len) {
   float lat = NAN, lon = NAN;
   JsonDocument doc;
   if (!deserializeJson(doc, p) && doc.is<JsonObject>()) {
-    // {"lat":..,"lon":..}, {"latitude":..,"longitude":..}, {"LAT":"..","LNG":".."} ...
-    for (JsonPair kv : doc.as<JsonObject>()) {
-      String k = kv.key().c_str();
-      k.toLowerCase();
-      float v = kv.value().is<const char*>() ? String(kv.value().as<const char*>()).toFloat() : kv.value().as<float>();
-      if (k == "lat" || k == "latitude") lat = v;
-      else if (k == "lon" || k == "lng" || k == "long" || k == "longitude") lon = v;
-    }
+    // {"lat":..,"lon":..}, {"latitude":..,"longitude":..}, {"LAT":"..","LNG":".."}, nested like the RUT956 ...
+    findPos(doc.as<JsonObjectConst>(), lat, lon, 0);
   } else {
     int c = p.indexOf(',');   // "52.52,13.40"
     if (c > 0) { lat = p.substring(0, c).toFloat(); lon = p.substring(c + 1).toFloat(); }
@@ -201,7 +227,10 @@ bool onMessage(const char* topic, const char* payload, unsigned int len) {
   bool first = isnan(gpsLat);
   gpsLat = lat;
   gpsLon = lon;
-  if (first) wakeUp = true;
+  if (first) {
+    Serial.printf("[wx] position from %s: %.4f, %.4f\n", topic, lat, lon);
+    wakeUp = true;
+  }
   return true;
 }
 

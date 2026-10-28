@@ -655,7 +655,7 @@ function pgSettings(){
    <div class="f2">${inp('wxLat','Breitengrad','text','52.52')}${inp('wxLon','Längengrad','text','13.40')}</div>
    ${inp('wxName','Ortsname (Anzeige)')}
    ${inp('wxTopic','GPS per MQTT (optional, z. B. Topic des Routers)','text','router/gps')}
-   <p class="mu" style="margin-top:-4px">Mit Topic folgt das Wetter dem Fahrzeug. Inhalt: JSON mit <code>lat</code>/<code>lon</code> (auch <code>latitude</code>/<code>longitude</code>) oder <code>52.52,13.40</code>. Ohne Position gilt der feste Ort oben.</p>
+   <p class="mu" style="margin-top:-4px">Mit Topic folgt das Wetter dem Fahrzeug. Inhalt: JSON mit <code>lat</code>/<code>lon</code> (auch <code>latitude</code>/<code>longitude</code>, auch verschachtelt wie beim RUT956) oder <code>52.52,13.40</code>. Ohne Position gilt der feste Ort oben.</p>
    <div class="f2">${inp('wxGust','Warnung ab Böen (km/h, 0 = aus)','number')}<div><label>Aktualisieren</label><select id="wxEvery"><option value="15">alle 15 min</option><option value="30">alle 30 min</option><option value="60">stündlich</option><option value="120">alle 2 h</option></select></div></div></details>
   <details><summary>📲 Pushover</summary>
    <p class="mu">Schickt die Warnungen der Übersicht (Temperatur-Alarme, Heizungsfehler, Batterie, Wetter) als Push-Nachricht aufs Handy. Token einer eigenen Pushover-Anwendung und User-Key von <a href="https://pushover.net" target="_blank" rel="noopener">pushover.net</a>. Eine Warnung wird gesendet, wenn sie 30 s besteht.</p>

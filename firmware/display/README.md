@@ -253,7 +253,7 @@ Unter *Einstellungen → 🌦 Wetter*:
 | Warnung ab Böen | km/h, 0 = keine Wind-Warnung |
 | Aktualisieren | alle 15/30/60/120 Minuten. Fährt das Fahrzeug mehr als 5 km weiter, wird sofort neu abgefragt |
 
-Das GPS-Topic darf JSON mit `lat`/`lon` (auch `latitude`/`longitude`, `lng`, Groß- und Kleinschreibung egal, Zahl oder Text) oder einfach `52.52,13.40` enthalten.
+Das GPS-Topic darf JSON mit `lat`/`lon` (auch `latitude`/`longitude`, `lng`, Groß- und Kleinschreibung egal, Zahl oder Text) oder einfach `52.52,13.40` enthalten. Die Werte dürfen auch verschachtelt sein, wie beim RUT956 (`{"TIME":{…},"GPS":{"latitude":…,"longitude":…,"fix_status":1}}`). Meldet der Router `fix_status` 0 (kein GPS-Empfang), wird die Position ignoriert und der feste Ort bzw. die letzte Position bleibt.
 
 Gespeicherte Änderungen (Ort, Ein/Aus) lösen sofort eine neue Abfrage aus, nicht erst nach dem Intervall. Klappt die Abfrage nicht, steht der Grund unten auf der Wetterseite (z. B. „Wetter: Fehler -1“) und im seriellen Log mit `[wx]`. Die Abfrage läuft per HTTPS mit Zertifikatsprüfung.
 
