@@ -96,7 +96,7 @@ Der Road Buddy hat keine Web-Oberfläche; dort ist die ganze `config.h` schon di
 
 ## Warnungen
 
-`firmware/temp` meldet überschrittene Grenzwerte (z. B. „Kühlschrank über 8 °C seit 15 min“) unter `camper/temp/alarm_text`. Das Wandpanel zeigt diese und Heizungsfehler als rote Leiste, weckt dafür den Bildschirm und schaltet auf die Übersicht. In Home Assistant gibt es dieselben Alarme als Binärsensoren.
+`firmware/temp` meldet überschrittene Grenzwerte (z. B. „Kühlschrank über 8 °C seit 15 min“) unter `camper/temp/alarm_text`. Das Wandpanel zeigt diese, Heizungsfehler, Batterie- und Wetter-Warnungen in der Status-Kachel und als gelbes Band in der Kopfzeile, auf Wunsch auch per Pushover. Den Bildschirm weckt eine Warnung nur, wenn das in den Display-Einstellungen eingeschaltet ist. In Home Assistant gibt es dieselben Alarme als Binärsensoren.
 
 ## Fertige Firmware
 
