@@ -636,9 +636,12 @@ void buildBattery(lv_obj_t* tab) {
 void buildBatteryRows(size_t n, lv_obj_t* tab) {
   for (auto& r : bRows) lv_obj_delete(r.card);
   bRows.clear();
+  // up to 2 batteries get roomy cards, from 3 on they shrink so 3 fit on the page without scrolling
+  // (page height minus padding and gaps, divided by 3)
+  int h = n <= 2 ? 132 : (PAGE_H - 20 - 2 * 10) / 3;
   for (size_t i = 0; i < n; i++) {
     BatRowW r;
-    r.card = card(tab, PAGE_W - 20, 132);
+    r.card = card(tab, PAGE_W - 20, h);
     lv_obj_t* name = label(r.card, &font_de_22, C_MUTED, "");
     lv_obj_set_width(name, 240);
     lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
