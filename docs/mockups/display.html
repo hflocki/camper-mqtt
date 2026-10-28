@@ -14,7 +14,7 @@ const M = {
     prefixFan: 'camper/maxxfan', prefixTemp: 'camper/temp', prefixBattery: 'camper/battery', fanPort: 1,
     ntpServer: 'pool.ntp.org', tz: 'CET-1CEST,M3.5.0,M10.5.0/3',
     poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
-    brightness: 80, dimBrightness: 10, screenTimeout: 120,
+    brightness: 80, dimBrightness: 10, screenTimeout: 120, warnWake: false,
     wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 30, ovTempSel: '', ovBatSel: '',
     builtin: [true, true, true, true, true, true, true],
     pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'System'],
@@ -301,7 +301,7 @@ code{font-size:12px;color:var(--mu)}
 </head>
 <body>
 <header>
-  <div class="top"><span class="dot" id="dot" title="Verbindung"></span><h1 id="title">Camper</h1><span class="mu" id="dname" style="position:absolute;left:50%;transform:translateX(-50%);font-weight:600;pointer-events:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn" id="wake" hidden title="Display ist dunkel" style="padding:6px 12px;font-size:14px">💡 Display an</button><span id="clock"></span></div>
+  <div class="top"><span class="dot" id="dot" title="Verbindung"></span><h1 id="title">Camper</h1><span class="mu" id="dname" style="position:absolute;left:50%;transform:translateX(-50%);font-weight:600;pointer-events:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn" id="wake" hidden title="Display ist dunkel" style="padding:6px 12px;font-size:14px">💡 Display an</button><button class="btn" id="sleep" hidden title="Display ausschalten" style="padding:6px 10px;font-size:14px">💤</button><span id="clock"></span></div>
   <nav id="nav"></nav>
 </header>
 <main id="main"></main>
@@ -531,7 +531,7 @@ function setTank(p,pk,lk,dev){
 }
 function update(){
   updWeather();
-  if(S.awake!==undefined)$('#wake').hidden=!!S.awake;
+  if(S.awake!==undefined){$('#wake').hidden=!!S.awake;$('#sleep').hidden=!S.awake}
   if(S.ip!==undefined){$('#dot').classList.toggle('ok',ws&&ws.readyState==1&&S.mqtt);$('#dot').title=S.mqtt?'MQTT verbunden':'MQTT getrennt'}
   const d=new Date();$('#clock').textContent=d.toTimeString().slice(0,5);
   // overview
@@ -633,6 +633,8 @@ function pgSettings(){
   <details id="dsd" ontoggle="if(this.open)renderSlots()"><summary>🖥 Display &amp; Seiten</summary>
    <label>Helligkeit</label><input type="range" id="brightness" min="5" max="100">
    <div class="f2">${inp('dimBrightness','Helligkeit gedimmt (%, 0 = aus)','number')}${inp('screenTimeout','Dimmen nach (s, 0 = nie)','number')}</div>
+   <label class="chk"><input type="checkbox" id="warnWake"> Neue Warnung schaltet das Display ein</label>
+   <p class="mu" style="margin-top:-4px">Aus: Das Display geht immer nach der eingestellten Zeit aus und nur Berühren weckt es. Zum sofortigen Ausschalten: Kopfzeile am Display lange drücken, Knopf auf der Systemseite oder 💤 auf der Webseite.</p>
    ${inp('displayName','Anzeigename (oben in der Mitte, z. B. Wohnraum)')}
    <label>Feste Seiten (Haken = anzeigen, Feld = Name)</label>${BUILTIN.map((b,i)=>`<div class="row" style="gap:8px;margin:4px 0"><input type="checkbox" id="bp${i}" style="width:auto"><input id="pn${i}" placeholder="${b[1]}" maxlength="24" style="flex:1;min-width:0"></div>`).join('')}
    <div class="row" style="gap:8px;margin:4px 0"><span style="width:20px"></span><input id="pn${BUILTIN.length}" placeholder="System" maxlength="24" style="flex:1;min-width:0"></div>
@@ -686,7 +688,7 @@ async function loadSettings(){
     for(let i=0;i<=BUILTIN.length;i++){const e=$('#pn'+i);if(e)e.value=(ST.pageNames||[])[i]||''}
     {const l=(ST.ovTiles||OV_DEFAULT).split(',');for(let i=0;i<9;i++){const e=$('#ov'+i);if(e)e.value=l[i]||'none'}}
     LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
-    $('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||30);
+    $('#warnWake').checked=!!ST.warnWake;$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||30);
     $('#slt').innerHTML=$('#slb').innerHTML='';renderSlots();
     $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#poPrio').value=String(ST.poPrio||0);
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
@@ -740,7 +742,7 @@ function readSlots(id){const b=$('#'+id);if(!b)return'';const l=[];for(let i=0;i
 function saveSettings(){
   const o={};FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)o[f]=e.value});
   ['mqttPort','dimBrightness','screenTimeout','wxGust'].forEach(f=>o[f]=parseInt(o[f])||0);
-  o.wxOn=$('#wxOn').checked;o.wxEvery=+$('#wxEvery').value;
+  o.warnWake=$('#warnWake').checked;o.wxOn=$('#wxOn').checked;o.wxEvery=+$('#wxEvery').value;
   o.ovTempSel=readSlots('slt');o.ovBatSel=readSlots('slb');
   o.staticIp=$('#staticIp').checked;o.fanPort=+$('#fanPort').value;o.brightness=+$('#brightness').value;
   o.builtin=BUILTIN.map((b,i)=>$('#bp'+i).checked);
@@ -850,7 +852,8 @@ function addFromFinder(topic,key){
   PG.tiles.push(t);renderPages();toast('Kachel hinzugefügt – unter „Seiten & Kacheln“ prüfen und speichern');
 }
 
-$('#wake').onclick=()=>{send({c:'screen',v:'on'});S.awake=true;$('#wake').hidden=true};
+$('#wake').onclick=()=>{send({c:'screen',v:'on'});S.awake=true;$('#wake').hidden=true;$('#sleep').hidden=false};
+$('#sleep').onclick=()=>{send({c:'screen',v:'off'});S.awake=false;$('#sleep').hidden=true;$('#wake').hidden=false};
 setInterval(()=>{const d=new Date();$('#clock').textContent=d.toTimeString().slice(0,5)},10000);
 connect();
 </script>

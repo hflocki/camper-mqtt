@@ -63,6 +63,7 @@ struct Settings {
   // display
   uint8_t  brightness, dimBrightness;
   uint16_t screenTimeout;
+  bool     warnWake = false;   // a new warning switches the screen on
   bool     builtin[BP_COUNT];
   // Titles of the fixed pages (index BP_*) and of the system page (index BP_COUNT), "" = default
   String   pageName[BP_COUNT + 1];

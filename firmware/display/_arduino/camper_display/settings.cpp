@@ -65,6 +65,7 @@ void load() {
   settings.brightness   = prefs.getUChar ("bri",    DEFAULT_BRIGHTNESS);
   settings.dimBrightness= prefs.getUChar ("dim",    DEFAULT_DIM_BRIGHTNESS);
   settings.screenTimeout= prefs.getUShort("sto",    DEFAULT_SCREEN_TIMEOUT);
+  settings.warnWake     = prefs.getBool  ("wwake",  false);
   uint8_t bmask         = prefs.getUChar ("bpages", 0xFF);
   // Pages added in later versions start switched on (older masks do not have their bit)
   uint8_t bknown        = prefs.getUChar ("bpknown", BP_LEVEL + 1);
@@ -148,6 +149,7 @@ void save() {
   prefs.putUChar ("bri",    settings.brightness);
   prefs.putUChar ("dim",    settings.dimBrightness);
   prefs.putUShort("sto",    settings.screenTimeout);
+  prefs.putBool  ("wwake",  settings.warnWake);
   uint8_t bmask = 0;
   for (int i = 0; i < BP_COUNT; i++) if (settings.builtin[i]) bmask |= (1 << i);
   prefs.putUChar("bpages", bmask);

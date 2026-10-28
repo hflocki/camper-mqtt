@@ -10,7 +10,7 @@ const M = {
     prefixFan: 'camper/maxxfan', prefixTemp: 'camper/temp', prefixBattery: 'camper/battery', fanPort: 1,
     ntpServer: 'pool.ntp.org', tz: 'CET-1CEST,M3.5.0,M10.5.0/3',
     poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
-    brightness: 80, dimBrightness: 10, screenTimeout: 120,
+    brightness: 80, dimBrightness: 10, screenTimeout: 120, warnWake: false,
     wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 30, ovTempSel: '', ovBatSel: '',
     builtin: [true, true, true, true, true, true, true],
     pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'System'],

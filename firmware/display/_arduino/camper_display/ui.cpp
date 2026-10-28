@@ -297,7 +297,24 @@ void onDhcp(lv_event_t*) {
   delay(300);
   ESP.restart();
 }
-void onHome(lv_event_t*) { int ov = tabIndexOfBuiltin(BP_OVERVIEW); gotoTab(ov >= 0 ? ov : 0); }
+bool hdrLong = false;   // header was long pressed: screen off when the finger is lifted
+void onHome(lv_event_t*) {
+  if (hdrLong) return;
+  int ov = tabIndexOfBuiltin(BP_OVERVIEW);
+  gotoTab(ov >= 0 ? ov : 0);
+}
+void onHeaderLong(lv_event_t*) { hdrLong = true; }
+// Switch off on release, otherwise the finger still on the glass would wake it again at once
+void onHeaderReleased(lv_event_t*) {
+  if (!hdrLong) return;
+  hdrLong = false;
+  Serial.println("[disp] screen off: header long press");
+  disp::sleep();
+}
+void onScreenOff(lv_event_t*) {
+  Serial.println("[disp] screen off: button");
+  disp::sleep();
+}
 void onOverviewCard(lv_event_t* e) { gotoTab(tabIndexOfBuiltin((int)(intptr_t)lv_event_get_user_data(e))); }
 
 void onSetpoint(lv_event_t* e) {
@@ -921,6 +938,9 @@ void buildSystem(lv_obj_t* tab) {
   lv_obj_t* bc = card(tab, PAGE_W - 20 - 160, 150);
   lv_obj_t* bl = label(bc, &font_de_18, C_MUTED, LV_SYMBOL_IMAGE "  Helligkeit");
   lv_obj_align(bl, LV_ALIGN_TOP_LEFT, 0, 0);
+  // screen off right away (touch wakes it again)
+  lv_obj_t* off = button(bc, LV_SYMBOL_POWER " Aus", 96, 40, onScreenOff, nullptr, C_CARD_HI, &font_de_18);
+  lv_obj_align(off, LV_ALIGN_TOP_RIGHT, 0, -6);
   sBri = lv_slider_create(bc);
   lv_slider_set_range(sBri, 5, 100);
   lv_slider_set_value(sBri, settings.brightness, LV_ANIM_OFF);
@@ -1111,10 +1131,10 @@ void refreshValues() {
     lv_obj_set_style_text_color(ovWarnLbl, any ? C_TEXT : C_OK, 0);
     lv_label_set_text(ovWarnLbl, any ? dispText(warn).c_str() : "OK");
   }
-  // Only a NEW warning wakes the screen; a changing value in an existing one
-  // (temperature, voltage, runtime) must not keep the display on.
+  // Only a NEW warning wakes the screen, and only if enabled on the web page; a changing value
+  // in an existing one (temperature, voltage, runtime) must not keep the display on.
   String keys = warnKeys(warn);
-  if (warn.length() && newWarning(keys, "\n" + lastWarnKeys)) {
+  if (settings.warnWake && warn.length() && newWarning(keys, "\n" + lastWarnKeys)) {
     Serial.printf("[disp] wake: new warning \"%s\"\n", warn.c_str());
     // A new warning should be seen: wake the screen. If it was dark (nobody is using
     // it right now), also switch to the overview where the banner is.
@@ -1663,6 +1683,8 @@ void begin() {
   lv_obj_remove_flag(hdr, LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_add_flag(hdr, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_event_cb(hdr, onHome, LV_EVENT_CLICKED, nullptr);
+  lv_obj_add_event_cb(hdr, onHeaderLong, LV_EVENT_LONG_PRESSED, nullptr);
+  lv_obj_add_event_cb(hdr, onHeaderReleased, LV_EVENT_RELEASED, nullptr);
 
   hdrTitle = label(hdr, &font_de_22, C_TEXT, "");
   lv_obj_align(hdrTitle, LV_ALIGN_LEFT_MID, TITLE_X, 0);
