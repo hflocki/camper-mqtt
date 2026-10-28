@@ -11,11 +11,11 @@ const M = {
     ntpServer: 'pool.ntp.org', tz: 'CET-1CEST,M3.5.0,M10.5.0/3',
     poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
     brightness: 80, dimBrightness: 10, screenTimeout: 120, warnWake: false,
-    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, ovTempSel: '', ovBatSel: '',
+    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, updRepo: 'owner/camper-mqtt', ovTempSel: '', ovBatSel: '',
     builtin: [true, true, true, true, true, true, true],
     pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'System'],
     ovTiles: 'water,gas,heater,level,fan,weather,temp,bat1,status',
-    fw: '2.0.0', mac: '24:0A:C4:00:00:01',
+    fw: '2.5.0', mac: '24:0A:C4:00:00:01',
     // In the mockup the device links open the other mockups
     links: [{n: 'Truma', u: 'heater.html'}, {n: 'MaxxFan', u: 'maxxfan.html'}, {n: 'Tanks', u: 'tanklevel.html'},
             {n: 'Level', u: 'level.html'}, {n: 'Temperatur', u: 'temp.html'}, {n: 'Batterie', u: 'battery.html'}]
@@ -110,6 +110,20 @@ const M = {
     if (path === '/api/pages') { M.pages = body; return {ok: true, msg: 'Seiten gespeichert'}; }
     if (path === '/api/scan') return {running: false, nets: [{ssid: 'Camper-WLAN', rssi: -48}, {ssid: 'Campingplatz-Gast', rssi: -77}]};
     if (path === '/api/pushover/test') { M.save({poStatus: 'OK ' + new Date().toTimeString().slice(0, 5)}); return {ok: true, msg: 'Testnachricht wird gesendet'}; }
+    if (path === '/api/history') {
+      // 24 h of sample data: fridge cycling, freezer, room with a day curve, battery discharging at night
+      const n = 288, step = 300, last = Math.floor(Date.now() / 1000);
+      const S = (name, k, f) => ({n: name, k, v: Array.from({length: n}, (_, i) => Math.round(f(i) * 10) / 10)});
+      return {step, last, n, s: [
+        S('Kühlschrank', 't', i => 5 + Math.sin(i / 6) * 0.8 + (i > 200 && i < 215 ? 3 : 0)),
+        S('Gefrierfach', 't', i => -18 + Math.sin(i / 9) * 0.6),
+        S('Innenraum', 't', i => 17 + 4 * Math.sin((i - 60) / n * 2 * Math.PI)),
+        S('Aufbau', 'b', i => i < 120 ? 95 - i * 0.25 : i < 200 ? 65 - (i - 120) * 0.1 : Math.min(100, 57 + (i - 200) * 0.6)),
+        S('Starter', 'v', i => 12.6 + (i > 210 && i < 260 ? 1.6 : 0) - i * 0.0005)]};
+    }
+    if (path === '/api/ghupdate/check') { M.gh = {state: 'available', latest: '2.6.0', cur: M.cfg.fw, pct: 0, msg: 'Version 2.6.0 verfügbar'}; return {ok: true, msg: 'Suche Update ...'}; }
+    if (path === '/api/ghupdate/install') { M.gh = {state: 'done', latest: '2.6.0', cur: M.cfg.fw, pct: 100, msg: 'Update installiert, Neustart ... (simuliert)'}; return {ok: true, msg: 'Update wird geladen ...'}; }
+    if (path === '/api/ghupdate') return M.gh || {state: 'idle', latest: '', cur: M.cfg.fw, pct: 0, msg: ''};
     if (path === '/update') return {ok: true, msg: 'Update ok – Neustart (simuliert)'};
     if (path === '/api/reboot' || path === '/api/factory') return {ok: true, msg: 'Neustart (simuliert)'};
   }

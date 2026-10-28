@@ -22,7 +22,13 @@ struct Tile {
   String  payloadOff;       // switch OFF
   String  stateOn = "ON";   // value that means "on" for switches
   float   min = 0, max = 100, step = 1;
+  // warning (value and switch tiles): value below/above a limit, or no message for warnStale minutes
+  uint8_t  warnMode = 0;    // WARN_NONE, WARN_BELOW, WARN_ABOVE
+  float    warnVal = 0;
+  uint16_t warnStale = 0;   // minutes, 0 = off
+  String   warnText;        // "" = "<name> zu niedrig" ...
 };
+enum TileWarn : uint8_t { WARN_NONE = 0, WARN_BELOW = 1, WARN_ABOVE = 2 };
 
 struct Page {
   String name;
@@ -60,6 +66,7 @@ struct Settings {
   uint8_t  wxEvery = 60;        // update interval in minutes
   // overview tiles temperature / battery: up to 3 "name=icon" lines (see icons.cpp), "" = first 3
   String   ovTempSel, ovBatSel;
+  String   updRepo;             // GitHub "owner/repo" for firmware updates
   // display
   uint8_t  brightness, dimBrightness;
   uint16_t screenTimeout;

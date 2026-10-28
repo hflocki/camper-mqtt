@@ -49,6 +49,7 @@ main{padding:14px;max-width:820px;margin:0 auto}
 input[type=range]{width:100%;accent-color:var(--ac)}
 .err{color:var(--warn)}
 .okc{color:var(--ok)}
+.hist{margin-top:12px}.hist svg{width:100%;height:auto;display:block}.hist .lg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font-size:13px;color:var(--mu)}.hist .lg i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .fanbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .fanbtns .btn{padding:18px}
 svg text{fill:var(--tx);font:13px system-ui}
@@ -147,8 +148,8 @@ function render(){
   else if(p.id==='heater')m.innerHTML=pgHeater();
   else if(p.id==='fan')m.innerHTML=pgFan();
   else if(p.id==='level')m.innerHTML=pgLevel();
-  else if(p.id==='temp')m.innerHTML=pgTemp();
-  else if(p.id==='bat')m.innerHTML=pgBat();
+  else if(p.id==='temp'){m.innerHTML=pgTemp();loadHist()}
+  else if(p.id==='bat'){m.innerHTML=pgBat();loadHist()}
   else if(p.id==='weather')m.innerHTML=pgWeather();
   else if(p.id==='links')m.innerHTML=pgLinks();
   else if(p.id==='settings'){m.innerHTML=pgSettings();loadSettings()}
@@ -214,7 +215,7 @@ function updWeather(){
     set('x_d'+i,i===1?'Morgen':WDAYS[t.getDay()]);set('x_di'+i,d?WXI(d.c,true):'');set('x_dt'+i,d?n0(d.hi)+'° / '+n0(d.lo)+'°':'--');set('x_dr'+i,d?n1(d.r)+' mm · '+n0(d.p)+' %':'')}
   set('x_st',esc(WX.status||'')+' · Daten: Open-Meteo');
 }
-function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div>`}
+function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div><div class="card wide hist" id="h_b" hidden><h3>📈 Ladestand, letzte 24 h</h3><div class="hc"></div></div><div class="card wide hist" id="h_v" hidden><h3>📈 Spannung, letzte 24 h</h3><div class="hc"></div></div>`}
 // camper-battery: <prefix>/batteries = [{name,ok,soc,v,w,rt,st,p}]
 // icons of batteries and temperature sensors; keys as in icons.cpp
 const ICONS=[['bat','🔋','Batterie'],['carbat','🚙','Starterbatterie'],['home','🏠','Wohnraum / Aufbau'],['sun','☀️','Sonne'],['solar','🔆','Solarpanel'],['car','🚗','Fahrzeug'],['plug','🔌','Landstrom'],['bolt','⚡','Strom'],['therm','🌡️','Thermometer'],['fridge','🧊','Kühlschrank'],['snow','❄️','Gefrierfach'],['couch','🛋️','Innenraum'],['tree','🌳','Außen'],['bed','🛏️','Schlafen'],['water','💧','Wasser'],['fire','🔥','Heizung'],['shower','🚿','Bad'],['box','📦','Stauraum']];
@@ -234,7 +235,41 @@ const BAT_WARN_SOC=20;
 const cnum=(v,d)=>Number(v).toFixed(d).replace('.',',');
 function rtText(m){return m>=2880?cnum(m/1440,1)+' Tage':m>=60?Math.floor(m/60)+' h '+(m%60)+' min':m+' min'}
 function batBad(b){return b.ok&&(b.p||b.st==='Kritisch'||b.st==='Schwach'||(!b.st&&b.soc!=null&&b.soc<BAT_WARN_SOC))}
-function pgTemp(){return `<div class="warnbox" id="t_warn" hidden></div><div class="grid" id="t_list"></div><div class="mu" id="t_st" style="margin-top:12px"></div>`}
+// ---- 24 h history (/api/history), drawn as SVG lines
+// no red: red means warning on this page
+const HCOL=['#5ab0f0','#f0a030','#4cc27a','#b07cf0','#3cc6c0','#f06aa8','#c8b040','#8fa0b0','#6a8cf0','#a0d060'];
+let HIST=null,histTimer=null;
+async function loadHist(){
+  clearTimeout(histTimer);histTimer=setTimeout(()=>{if(page==='temp'||page==='bat')loadHist()},60000);
+  try{const r=await fetch('/api/history');if(!r.ok)return;HIST=await r.json()}catch(e){return}
+  drawHist();
+}
+function drawHist(){
+  if(!HIST)return;
+  [['h_t','t','°C'],['h_b','b','%'],['h_v','v','V']].forEach(([id,k,unit])=>{
+    const box=$('#'+id);if(!box)return;
+    const ss=HIST.s.filter(s=>s.k===k&&s.v.some(x=>x!=null)).map((s,i)=>Object.assign({c:HCOL[i%HCOL.length]},s));
+    box.hidden=!ss.length||HIST.n<2;if(box.hidden)return;
+    const all=ss.flatMap(s=>s.v.filter(x=>x!=null));
+    let lo=Math.min(...all),hi=Math.max(...all);
+    if(k==='b'){lo=0;hi=100}else{const pad=Math.max((hi-lo)*0.1,k==='v'?0.1:0.5);lo=Math.floor((lo-pad)*2)/2;hi=Math.ceil((hi+pad)*2)/2}
+    const W=600,H=200,L=40,R=8,T=8,B=22,N=HIST.n,step=HIST.step||300;
+    const X=i=>L+(W-L-R)*(N<2?0:i/(N-1)),Y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo||1));
+    let g='';
+    for(let j=0;j<=4;j++){const v=lo+(hi-lo)*j/4,y=Y(v);g+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--hi)" stroke-width="1"/><text x="${L-6}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--mu)">${(Math.round(v*10)/10).toString().replace('.',',')}</text>`}
+    // x axis: hours back from the newest sample (clock time if known)
+    const span=(N-1)*step,last=HIST.last||0;
+    for(let h=0;h*3600<=span;h+=span>43200?6:span>10800?3:1){const i=N-1-h*3600/step;if(i<0)break;
+      const lbl=last?new Date((last-h*3600)*1000).toTimeString().slice(0,5):(h?'-'+h+' h':'jetzt');
+      g+=`<text x="${X(i)}" y="${H-6}" text-anchor="${h?"middle":"end"}" font-size="11" fill="var(--mu)">${lbl}</text>`}
+    const lines=ss.map(s=>{let d='',pen=false;s.v.forEach((v,i)=>{if(v==null){pen=false;return}d+=(pen?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1);pen=true});
+      return `<path d="${d}" fill="none" stroke="${s.c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`}).join('');
+    const lastV=s=>{for(let i=s.v.length-1;i>=0;i--)if(s.v[i]!=null)return s.v[i];return null};
+    box.querySelector('.hc').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Verlauf">${g}${lines}</svg>
+      <div class="lg">${ss.map(s=>`<span><i style="background:${s.c}"></i>${esc(s.n)} ${String(lastV(s)).replace('.',',')} ${unit}</span>`).join('')}</div>`;
+  });
+}
+function pgTemp(){return `<div class="warnbox" id="t_warn" hidden></div><div class="grid" id="t_list"></div><div class="mu" id="t_st" style="margin-top:12px"></div><div class="card wide hist" id="h_t" hidden><h3>📈 Verlauf, letzte 24 h</h3><div class="hc"></div></div>`}
 // camper-temp: <prefix>/sensors = [{id,name,t,alarm}]
 function temps(){try{const a=JSON.parse(V.temp_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
 function tval(t){return t.t===null||t.t===undefined?'--':Number(t.t).toFixed(1)+' °C'}
@@ -457,6 +492,14 @@ function pgSettings(){
    <div class="f2">${inp('webUser','Web-Benutzer')}${inp('webPass','Web-Passwort (leer = kein Schutz)','password')}</div>
    <div class="f2">${inp('ntpServer','Zeitserver')}${inp('tz','Zeitzone (POSIX)')}</div>
    <label>Firmware-Update (.bin)</label><div class="row"><input type="file" id="fw" accept=".bin" class="grow"><button class="btn" id="fwup">Hochladen</button></div>
+   <label>Oder direkt von GitHub</label>
+   <div class="row"><input type="text" id="updRepo" class="grow" placeholder="benutzer/repo" style="flex:1"><button class="btn" type="button" id="ghchk">Nach Update suchen</button></div>
+   <p class="mu" id="ghst" style="margin-top:4px">Lädt das neueste Release mit Tag <code>display-v…</code> aus dem Repo (öffentlich). Repo eintragen, speichern, dann suchen.</p>
+   <div class="row" id="ghinst" hidden><button class="btn pri" type="button" id="ghgo">Installieren</button></div>
+   <label>Einstellungen sichern / wiederherstellen</label>
+   <p class="mu" style="margin-top:0">Alle Einstellungen, Seiten und Kacheln als Datei. Passwörter und Tokens sind nicht enthalten, beim Einspielen bleiben die vorhandenen erhalten.</p>
+   <div class="row"><button class="btn" type="button" id="bkexp">⬇ Sichern</button><input type="file" id="bkfile" accept=".json,application/json" class="grow"><button class="btn" type="button" id="bkimp">⬆ Einspielen</button></div>
+   <label class="chk"><input type="checkbox" id="bknet"> Beim Einspielen auch WLAN, feste IP und Gerätename übernehmen</label>
    <p class="mu" id="sysinfo"></p>
    <div class="actions"><button class="btn" id="reboot">Neustart</button><button class="btn danger" id="factory">Werkseinstellungen</button></div></details>
   <div class="actions"><button class="btn pri" id="save" style="flex:1">Einstellungen speichern</button></div>`;
@@ -471,7 +514,7 @@ async function loadSettings(){
     for(let i=0;i<=BUILTIN.length;i++){const e=$('#pn'+i);if(e)e.value=(ST.pageNames||[])[i]||''}
     {const l=(ST.ovTiles||OV_DEFAULT).split(',');for(let i=0;i<9;i++){const e=$('#ov'+i);if(e)e.value=l[i]||'none'}}
     LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
-    $('#warnWake').checked=!!ST.warnWake;$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||60);
+    $('#warnWake').checked=!!ST.warnWake;$('#updRepo').value=ST.updRepo||'';$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||60);
     $('#slt').innerHTML=$('#slb').innerHTML='';renderSlots();
     $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#poPrio').value=String(ST.poPrio||0);
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
@@ -487,6 +530,10 @@ async function loadSettings(){
   $('#reboot').onclick=()=>{if(confirm('Neu starten?'))post('/api/reboot')};
   $('#factory').onclick=()=>{if(confirm('Alle Einstellungen löschen?'))post('/api/factory')};
   $('#fwup').onclick=upload;
+  $('#bkexp').onclick=backupExport;$('#bkimp').onclick=backupImport;
+  $('#ghchk').onclick=async()=>{if(($('#updRepo').value||'').trim()!==(ST.updRepo||'')){await post('/api/settings',{updRepo:$('#updRepo').value.trim()});ST.updRepo=$('#updRepo').value.trim();await new Promise(r=>setTimeout(r,600))}
+    await post('/api/ghupdate/check');ghPoll()};
+  $('#ghgo').onclick=async()=>{if(!confirm('Update installieren? Das Display startet danach neu.'))return;await post('/api/ghupdate/install');ghPoll()};
   $('#potest').onclick=async()=>{await post('/api/pushover/test');setTimeout(async()=>{try{const r=await fetch('/api/settings');const s=await r.json();$('#postat').textContent=s.poStatus?'Zuletzt: '+s.poStatus:''}catch(e){}},6000)};
   $('#fstart').onclick=()=>send({c:'finder',on:!finder.on,f:$('#ffilter').value});
   renderFinder();
@@ -525,7 +572,7 @@ function readSlots(id){const b=$('#'+id);if(!b)return'';const l=[];for(let i=0;i
 function saveSettings(){
   const o={};FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)o[f]=e.value});
   ['mqttPort','dimBrightness','screenTimeout','wxGust'].forEach(f=>o[f]=parseInt(o[f])||0);
-  o.warnWake=$('#warnWake').checked;o.wxOn=$('#wxOn').checked;o.wxEvery=+$('#wxEvery').value;
+  o.warnWake=$('#warnWake').checked;o.updRepo=$('#updRepo').value.trim();o.wxOn=$('#wxOn').checked;o.wxEvery=+$('#wxEvery').value;
   o.ovTempSel=readSlots('slt');o.ovBatSel=readSlots('slb');
   o.staticIp=$('#staticIp').checked;o.fanPort=+$('#fanPort').value;o.brightness=+$('#brightness').value;
   o.builtin=BUILTIN.map((b,i)=>$('#bp'+i).checked);
@@ -561,6 +608,42 @@ async function scan(){
   }
   $('#nets').innerHTML='<p class="mu">Keine Netze gefunden</p>';
 }
+// ---- backup: settings + pages as one JSON file, without secrets
+const BK_SECRET=['wifiPass','mqttPass','webPass','apPass','poToken','poUser'];
+const BK_READONLY=['fw','mac','poStatus'];
+const BK_NET=['wifiSsid','staticIp','ip','gateway','subnet','dns','hostname'];
+async function backupExport(){
+  try{
+    const s=await (await fetch('/api/settings')).json();const p=await (await fetch('/api/pages')).json();
+    BK_SECRET.concat(BK_READONLY).forEach(k=>delete s[k]);
+    const b={type:'camper-display-backup',version:1,fw:ST.fw||'',date:new Date().toISOString(),settings:s,pages:p};
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(b,null,1)],{type:'application/json'}));
+    a.download=`${(s.hostname||'camper-display')}-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();
+    toast('Sicherung gespeichert');
+  }catch(e){toast('Sichern fehlgeschlagen')}
+}
+async function backupImport(){
+  const f=$('#bkfile').files[0];if(!f)return toast('Datei wählen');
+  let b;try{b=JSON.parse(await f.text())}catch(e){return toast('Keine gültige Datei')}
+  if(!b||b.type!=='camper-display-backup'||!b.settings)return toast('Keine Sicherung des Displays');
+  if(!confirm('Einstellungen aus der Sicherung übernehmen?'))return;
+  const s=Object.assign({},b.settings);BK_SECRET.concat(BK_READONLY).forEach(k=>delete s[k]);
+  if(!$('#bknet').checked)BK_NET.forEach(k=>delete s[k]);
+  if(b.pages&&b.pages.pages){if(!await post('/api/pages',b.pages))return}
+  if(await post('/api/settings',s))setTimeout(()=>location.reload(),2500);
+}
+// ---- update from GitHub releases: poll the state while something is going on
+let ghTimer=null;
+async function ghPoll(){
+  clearTimeout(ghTimer);
+  let j;try{const r=await fetch('/api/ghupdate');if(!r.ok)return;j=await r.json()}catch(e){return}
+  const st=$('#ghst'),bi=$('#ghinst');if(!st)return;
+  const txt={checking:'Suche ...',downloading:`Lade Update ... ${j.pct||0} %`,done:j.msg,error:'⚠ '+j.msg,none:'✓ '+j.msg,available:`Neue Version ${j.latest} verfügbar (installiert: ${j.cur})`}[j.state];
+  if(txt)st.textContent=txt;
+  bi.hidden=j.state!=='available';
+  if(j.state==='checking'||j.state==='downloading')ghTimer=setTimeout(ghPoll,1000);
+  if(j.state==='done')setTimeout(()=>location.reload(),15000);
+}
 function upload(){
   const f=$('#fw').files[0];if(!f)return toast('Datei wählen');
   const fd=new FormData();fd.append('firmware',f);toast('Lade hoch ...');
@@ -586,12 +669,17 @@ function renderPages(){
     ${t.type>0?`<label>Befehls-Topic (leer = Status-Topic + /set)</label><input type="text" data-t="${i}" data-f="cmdTopic" value="${esc(t.cmdTopic)}">
     <div class="f2"><div><label>${t.type==3?'Payload (mit {v})':t.type==2?'Payload':'Payload EIN'}</label><input type="text" data-t="${i}" data-f="payloadOn" value="${esc(t.payloadOn)}"></div>
     ${t.type==1?`<div><label>Payload AUS</label><input type="text" data-t="${i}" data-f="payloadOff" value="${esc(t.payloadOff)}"></div><div><label>Wert für „an“</label><input type="text" data-t="${i}" data-f="stateOn" value="${esc(t.stateOn??'ON')}"></div>`:''}
-    ${t.type==3?`<div><label>Min</label><input type="number" data-t="${i}" data-f="min" value="${t.min??0}"></div><div><label>Max</label><input type="number" data-t="${i}" data-f="max" value="${t.max??100}"></div><div><label>Schritt</label><input type="number" data-t="${i}" data-f="step" value="${t.step??1}"></div>`:''}</div>`:''}</div>`;
+    ${t.type==3?`<div><label>Min</label><input type="number" data-t="${i}" data-f="min" value="${t.min??0}"></div><div><label>Max</label><input type="number" data-t="${i}" data-f="max" value="${t.max??100}"></div><div><label>Schritt</label><input type="number" data-t="${i}" data-f="step" value="${t.step??1}"></div>`:''}</div>`:''}
+    ${t.type<2?`<label>Warnung (Status-Kachel, Kopfzeile, Pushover)</label>
+    <div class="f2"><div><select data-t="${i}" data-f="warnMode"><option value="0">keine</option><option value="1">wenn Wert unter …</option><option value="2">wenn Wert über …</option></select></div>
+    <div><input type="number" step="any" data-t="${i}" data-f="warnVal" value="${t.warnVal??0}" placeholder="Grenzwert"></div>
+    <div><label>Warnen, wenn keine Daten seit (min, 0 = aus)</label><input type="number" data-t="${i}" data-f="warnStale" value="${t.warnStale||0}"></div>
+    <div><label>Warntext (leer = Name + „zu niedrig/hoch“)</label><input type="text" data-t="${i}" data-f="warnText" value="${esc(t.warnText||'')}" maxlength="40" placeholder="z. B. Landstrom weg"></div></div>`:''}</div>`;
   });
   if(PG.pages.length)h+=`<button class="btn sm" id="addt">+ Kachel</button>`;
   h+=`<div class="actions"><button class="btn pri" id="savep">Seiten speichern</button></div>`;
   $('#pged').innerHTML=h;
-  PG.tiles.forEach((t,i)=>{document.querySelector(`[data-t="${i}"][data-f="page"]`).value=t.page||0;document.querySelector(`[data-t="${i}"][data-f="type"]`).value=t.type||0});
+  PG.tiles.forEach((t,i)=>{document.querySelector(`[data-t="${i}"][data-f="page"]`).value=t.page||0;document.querySelector(`[data-t="${i}"][data-f="type"]`).value=t.type||0;const w=document.querySelector(`[data-t="${i}"][data-f="warnMode"]`);if(w)w.value=t.warnMode||0});
   document.querySelectorAll('[data-pn]').forEach(e=>e.oninput=()=>PG.pages[+e.dataset.pn].name=e.value);
   document.querySelectorAll('[data-pu]').forEach(e=>e.onclick=()=>movePage(+e.dataset.pu));
   document.querySelectorAll('[data-pd]').forEach(e=>e.onclick=()=>delPage(+e.dataset.pd));
@@ -599,7 +687,7 @@ function renderPages(){
   document.querySelectorAll('[data-td]').forEach(e=>e.onclick=()=>{PG.tiles.splice(+e.dataset.td,1);renderPages()});
   document.querySelectorAll('[data-t]').forEach(e=>{e.onchange=e.oninput=()=>{
     const t=PG.tiles[+e.dataset.t],f=e.dataset.f;let v=e.value;
-    if(['page','type'].includes(f))v=+v;else if(['min','max','step'].includes(f))v=parseFloat(v);
+    if(['page','type','warnMode'].includes(f))v=+v;else if(['min','max','step','warnVal'].includes(f))v=parseFloat(v);else if(f==='warnStale')v=parseInt(v)||0;
     else if(f==='decimals')v=v===''?-1:+v;
     t[f]=v;if(f==='type'&&e.type!=='text')renderPages()}});
   const ap=$('#addp');if(ap)ap.onclick=()=>{PG.pages.push({name:'Seite '+(PG.pages.length+1)});renderPages()};

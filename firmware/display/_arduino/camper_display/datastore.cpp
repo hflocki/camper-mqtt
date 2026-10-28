@@ -64,6 +64,7 @@ bool   dirty[2][DP_COUNT];
 
 std::vector<String> tileVals;
 std::vector<bool>   tileSeen;
+std::vector<uint32_t> tileAt;             // millis() of the last message
 std::vector<bool>   tileDirtyF[2];
 
 const String EMPTY;
@@ -139,6 +140,7 @@ void rebuildTopics() {
   size_t n = settings.tiles.size();
   tileVals.assign(n, String());
   tileSeen.assign(n, false);
+  tileAt.assign(n, millis());
   tileDirtyF[0].assign(n, true);
   tileDirtyF[1].assign(n, true);
 }
@@ -158,6 +160,7 @@ bool onMessage(const char* topic, const char* payload, unsigned int len) {
     bool ok = t.key.length() ? extractJson(payload, len, t.key, t.decimals, v)
                              : (v = formatRaw(payload, len, t.decimals), true);
     if (!ok) continue;   // key not in this message (z2m sends partial updates too)
+    tileAt[i] = millis();
     if (!tileSeen[i] || tileVals[i] != v) {
       tileVals[i] = v;
       tileSeen[i] = true;
@@ -186,6 +189,7 @@ bool devOnline(Dev d) {
 size_t tileCount()              { return tileVals.size(); }
 const String& tile(size_t i)    { return i < tileVals.size() ? tileVals[i] : EMPTY; }
 bool tileHas(size_t i)          { return i < tileSeen.size() && tileSeen[i]; }
+uint32_t tileAgeMs(size_t i)    { return i < tileAt.size() ? millis() - tileAt[i] : 0; }
 bool tileOn(size_t i) {
   if (i >= tileVals.size() || i >= settings.tiles.size()) return false;
   return tileVals[i].equalsIgnoreCase(settings.tiles[i].stateOn);

@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "2.4.1"
+#define FW_VERSION              "2.5.0"
 
 // ---- Device / access point ------------------------------------------
 #ifndef STATIC_IP_FALLBACK_MS
@@ -89,6 +89,19 @@
 #endif
 #ifndef DEFAULT_WX_GUST
 #define DEFAULT_WX_GUST         60      // warn from these gusts (km/h), 0 = off
+#endif
+
+// ---- Firmware update from GitHub releases (tag "display-v<version>") --
+#ifndef DEFAULT_UPDATE_REPO
+#define DEFAULT_UPDATE_REPO     ""      // "owner/repo" of the public repo with the releases
+#endif
+
+// ---- History (24 h curves on the web page) ---------------------------
+#ifndef HISTORY_STEP_S
+#define HISTORY_STEP_S          300     // one sample every 5 minutes
+#endif
+#ifndef HISTORY_POINTS
+#define HISTORY_POINTS          288     // 288 x 5 min = 24 h
 #endif
 
 // ---- Factory defaults for WiFi / MQTT / web login -----------------------

@@ -86,6 +86,7 @@ void load() {
   settings.wxEvery      = prefs.getUChar ("wxevery", 60);
   settings.ovTempSel    = prefs.getString("ovtsel", "");
   settings.ovBatSel     = prefs.getString("ovbsel", "");
+  settings.updRepo      = prefs.getString("updrepo", DEFAULT_UPDATE_REPO);
   settings.ovTiles      = prefs.getString("ovt",    DEFAULT_OV_TILES);
 
   String pagesJson;
@@ -164,6 +165,7 @@ void save() {
   prefs.putUChar ("wxevery", settings.wxEvery);
   prefs.putString("ovtsel", settings.ovTempSel);
   prefs.putString("ovbsel", settings.ovBatSel);
+  prefs.putString("updrepo", settings.updRepo);
   prefs.putUChar("bpknown", BP_COUNT);
   prefs.end();
 }
@@ -200,6 +202,9 @@ String pagesToJson() {
     if (t.payloadOff.length()) o["payloadOff"] = t.payloadOff;
     if (t.stateOn != "ON")     o["stateOn"] = t.stateOn;
     if (t.type == TILE_SLIDER) { o["min"] = t.min; o["max"] = t.max; o["step"] = t.step; }
+    if (t.warnMode) { o["warnMode"] = t.warnMode; o["warnVal"] = t.warnVal; }
+    if (t.warnStale) o["warnStale"] = t.warnStale;
+    if (t.warnText.length()) o["warnText"] = t.warnText;
   }
   String out;
   serializeJson(doc, out);
@@ -239,6 +244,14 @@ bool pagesFromJson(const String& json, String& err, bool apply) {
     t.min        = o["min"] | 0.0f;
     t.max        = o["max"] | 100.0f;
     t.step       = o["step"] | 1.0f;
+    t.warnMode   = o["warnMode"] | 0;
+    t.warnVal    = o["warnVal"] | 0.0f;
+    t.warnStale  = o["warnStale"] | 0;
+    t.warnText   = o["warnText"] | "";
+    t.warnText.trim();
+    if (t.warnMode > WARN_ABOVE) t.warnMode = WARN_NONE;
+    if (t.warnStale > 1440) t.warnStale = 1440;
+    if (t.warnText.length() > 40) t.warnText = t.warnText.substring(0, 40);
     t.topic.trim(); t.cmdTopic.trim(); t.key.trim();
     if (t.type > TILE_SLIDER) t.type = TILE_VALUE;
     if (t.decimals > 4) t.decimals = 4;

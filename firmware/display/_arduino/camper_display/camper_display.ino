@@ -20,6 +20,8 @@
 #include "ui.h"
 #include "web.h"
 #include "notify.h"
+#include "ghupdate.h"
+#include "history.h"
 #include "weather.h"
 #include <ArduinoOTA.h>
 
@@ -37,6 +39,8 @@ void setup() {
   wx::begin();      // before the UI: it shows weather data and warnings
   ui::begin();
   mqttc::begin();
+  ghupdate::begin();
+  history::begin();
   web::begin();
   notify::begin();
 }
@@ -49,6 +53,7 @@ void loop() {
   web::loop();
   ui::loop();
   notify::loop();
+  history::loop();
   disp::loop();
   if (!otaStarted && wifimgr::staConnected()) {   // network upload from the Arduino IDE
     ArduinoOTA.setHostname(settings.hostname.c_str());

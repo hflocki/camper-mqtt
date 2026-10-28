@@ -52,7 +52,10 @@ Passt zu den anderen Projekten:
 - **Setup-WLAN** wie bei den anderen Projekten: ohne WLAN-Daten oder nach 1 Minute ohne Verbindung öffnet sich `Camper-Display-XXXXXX`, Captive Portal unter `http://192.168.4.1`. Das Display zeigt dazu einen QR-Code zum Verbinden.
 - **Stromausfallsicher:** keine SD-Karte, kein Dateisystem. Webseite und Oberfläche stecken in der Firmware, Einstellungen im NVS. Strom an → nach ca. 1–2 s läuft alles wieder.
 - Bildschirm dimmt bzw. schaltet nach einstellbarer Zeit ab (Helligkeit gedimmt 0 = ganz aus), Berühren weckt (die erste Berührung löst nichts aus). Sofort ausschalten: **Kopfzeile lange drücken**, Knopf **Aus** auf der Systemseite oder **💤** oben auf der Webseite
-- Uhrzeit per NTP, Firmware-Update über die Webseite oder Arduino-IDE-Netzwerkport
+- Uhrzeit per NTP, Firmware-Update über die Webseite (Datei oder **direkt aus den GitHub-Releases**) oder Arduino-IDE-Netzwerkport
+- **Einstellungen sichern und wiederherstellen** als JSON-Datei (ohne Passwörter)
+- **Verlauf der letzten 24 h** als Kurven auf der Webseite: Temperaturen, Ladestand bzw. Spannung der Batterien
+- **Warnungen für eigene Kacheln**, z. B. Landstrom über eine Zigbee-Messzange: Wert unter/über einer Grenze oder keine Daten mehr
 - Eigene MQTT-Topics für Helligkeit, Bildschirm an/aus und Seitenwechsel (z. B. aus Home Assistant)
 
 ## Ordner
@@ -76,6 +79,8 @@ docs/                      Screenshots
 | `wifi_manager.*` | WLAN, feste IP, Setup-AP, mDNS, NTP |
 | `settings.*` | Einstellungen, Seiten und Kacheln im NVS |
 | `notify.*` | Push-Nachrichten per Pushover (eigener Task, HTTPS mit Zertifikatsprüfung) |
+| `ghupdate.*` | Firmware-Update aus den GitHub-Releases (eigener Task) |
+| `history.*` | 24-h-Verlauf der Temperaturen und Batterien im RAM |
 | `icons.*` | Symbole und Auswahl für die Temperatur- und Batterie-Kachel |
 | `weather.*` | Wetter von Open-Meteo (eigener Task), GPS-Position per MQTT, Wetter-Warnungen |
 | `font_de_*.c` | Montserrat mit Umlauten + Font-Awesome-Icons, erzeugt mit `tools/make_fonts.py` |
@@ -166,6 +171,18 @@ Unter *Einstellungen → Seiten & Kacheln* beliebig viele eigene Seiten (max. 8)
 | Dimmer | Regler 0–254 | `zigbee2mqtt/Licht Küche` | `brightness` | `{"brightness":{v}}` |
 
 Am schnellsten geht es mit dem **Topic-Finder**: Filter `zigbee2mqtt/#` starten, kurz warten (retained Werte kommen sofort, andere bei der nächsten Änderung), dann beim gewünschten Gerät auf einen Schlüssel klicken. Für `state` und `brightness` werden Schalter bzw. Regler mit den passenden Befehlen vorbelegt. Danach *Seiten speichern*. Der Finder hört höchstens 15 Minuten mit und ignoriert `zigbee2mqtt/bridge/…`.
+
+### Warnung an einer Kachel (z. B. Landstrom)
+
+Kacheln vom Typ *Wert* und *Schalter* können eine Warnung auslösen. Sie erscheint wie die anderen Warnungen in der Status-Kachel, im gelben Band und per Pushover.
+
+| Feld | Wirkung |
+| --- | --- |
+| Warnung | keine, *wenn Wert unter …* oder *wenn Wert über …* den Grenzwert |
+| Warnen, wenn keine Daten seit | Minuten ohne Nachricht auf dem Status-Topic, 0 = aus |
+| Warntext | erscheint statt „<Name> zu niedrig/hoch“, z. B. „Landstrom weg“ |
+
+**Landstrom mit einer Tuya-Zigbee-Messzange** (über Zigbee2MQTT): Kachel *Wert* mit Status-Topic `zigbee2mqtt/<Name der Zange>`, Schlüssel `voltage`, Einheit `V`. Warnung *wenn Wert unter* `180`, Warntext `Landstrom weg`. Viele dieser Zangen hängen selbst am 230-V-Netz und schweigen, wenn der Landstrom fehlt. Deshalb zusätzlich *Warnen, wenn keine Daten seit* `10` Minuten eintragen; im Topic-Finder sieht man, wie oft die Zange sendet. Wer nur die Leistung hat, nimmt den Schlüssel `power` und warnt z. B. unter `1` W.
 
 ## MQTT
 
@@ -274,6 +291,14 @@ Der RUT956 kann GPS und Mobilfunkwerte selbst per MQTT senden, ganz ohne zusätz
 Das GPS-Topic kann man auch direkt unter *Einstellungen → 🌦 Wetter → GPS per MQTT* eintragen, dann folgt das Wetter dem Fahrzeug.
 
 Am Display dann im **Topic-Finder** `camper/router/#` starten und die gewünschten Werte per Klick als Kacheln anlegen. Die genauen JSON-Schlüssel hängen von der Router-Firmware ab; der Finder zeigt sie an.
+
+## Sichern, Update, Verlauf
+
+**Einstellungen sichern:** *Einstellungen → 🔧 System → ⬇ Sichern* lädt eine JSON-Datei mit allen Einstellungen, Seiten und Kacheln herunter. Passwörter und Tokens (WLAN, MQTT, Web, Setup-WLAN, Pushover) sind nicht enthalten. *⬆ Einspielen* übernimmt die Datei; vorhandene Passwörter bleiben. WLAN, feste IP und Gerätename werden nur übernommen, wenn der Haken dafür gesetzt ist, damit ein zweites Display nicht dieselbe Adresse bekommt.
+
+**Update von GitHub:** Unter *🔧 System → Oder direkt von GitHub* das öffentliche Repo eintragen (`benutzer/repo`, eine kopierte Repo-Adresse geht auch), *Nach Update suchen*, dann *Installieren*. Das Display sucht das neueste Release mit dem Tag `display-v<version>` und einer `.bin`-Datei mit „display“ im Namen, lädt sie per HTTPS und startet neu. Ein solches Release legt die GitHub Action automatisch an, sobald der Tag gepusht wird (`git tag display-v2.5.0 && git push origin display-v2.5.0`). Vorbelegen in `config_local.h`: `DEFAULT_UPDATE_REPO`. Der Datei-Upload funktioniert weiter wie bisher.
+
+**Verlauf:** Alle 5 Minuten merkt sich das Display jeden Temperatursensor und jede Batterie (Ladestand, beim BM2 die Spannung), 24 Stunden lang. Die Seiten *Temperatur* und *Batterie* der Webseite zeigen daraus Kurven. Der Verlauf liegt nur im Arbeitsspeicher: Nach einem Neustart oder Stromausfall beginnt er neu. Schrittweite und Länge: `HISTORY_STEP_S`, `HISTORY_POINTS` in `config.h`.
 
 ## Fertige Firmware
 

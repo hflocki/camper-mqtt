@@ -40,3 +40,6 @@
 // #define DEFAULT_WX_LON       "13.40"
 // #define DEFAULT_WX_NAME      "Stellplatz"
 // #define DEFAULT_WX_TOPIC     "router/gps"      // MQTT topic with the GPS position instead
+
+// Firmware updates from the GitHub releases of this repo (Einstellungen -> System)
+// #define DEFAULT_UPDATE_REPO  "owner/camper-mqtt"

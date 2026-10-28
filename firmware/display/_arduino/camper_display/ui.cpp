@@ -476,6 +476,25 @@ String warnings() {
             (b.rt >= 0 ? ", noch " + runtimeText(b.rt) : String("")));
     }
   }
+  // own tiles with a warning rule (e.g. shore power from a Zigbee clamp)
+  for (size_t i = 0; i < settings.tiles.size(); i++) {
+    const Tile& t = settings.tiles[i];
+    if (!t.warnMode && !t.warnStale) continue;
+    String head = t.warnText.length() ? t.warnText : t.name;
+    if (t.warnStale && store::tileAgeMs(i) > (uint32_t)t.warnStale * 60000UL) {
+      add(head + ": keine Daten seit " + String(store::tileAgeMs(i) / 60000UL) + " min");
+      continue;
+    }
+    if (!t.warnMode || !store::tileHas(i)) continue;
+    const String& raw = store::tile(i);
+    char* end;
+    float v = strtof(raw.c_str(), &end);
+    if (end == raw.c_str()) continue;   // not a number
+    bool hit = t.warnMode == WARN_BELOW ? v < t.warnVal : v > t.warnVal;
+    if (!hit) continue;
+    if (!t.warnText.length()) head = t.name + (t.warnMode == WARN_BELOW ? " zu niedrig" : " zu hoch");
+    add(head + ": " + raw + (t.unit.length() ? " " + t.unit : String("")));
+  }
   // weather: gusts above the limit, thunderstorm
   String ww = wx::warning();
   if (ww.length()) add(ww);
