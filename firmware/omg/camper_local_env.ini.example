@@ -1,0 +1,11 @@
+; Copy to camper_local_env.ini (not in git) to put WiFi and MQTT into the firmware instead of using the
+; setup portal. setup.py copies it next to camper_env.ini into the OpenMQTTGateway checkout.
+[camper-local]
+build_flags =
+  '-DESPWifiManualSetup=true'
+  '-Dwifi_ssid="MyCamperWiFi"'
+  '-Dwifi_password="secret"'
+  '-DMQTT_SERVER="192.168.1.10"'
+  '-DMQTT_PORT="1883"'
+  '-DMQTT_USER=""'
+  '-DMQTT_PASS=""'

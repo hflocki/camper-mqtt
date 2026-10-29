@@ -53,6 +53,10 @@ arduino-cli compile --fqbn <fqbn> firmware/<gerät>/_arduino/<sketch>
 - Module: `ui.*` Oberfläche, `datastore.*` Werte, `mqtt_client.*`, `web.*`, `settings.*` (NVS), `notify.*` Pushover, `weather.*` Open-Meteo (eigener Task, Mutex wird beim ersten Zugriff angelegt), `icons.*` Symbole der Temperatur-/Batterie-Kachel, `otaprog.*` Fortschritt des Datei-Updates, `history.*` 24-h-Verlauf im RAM (`/api/history`), `rules.*` Automationen (`/api/rules`, NVS-Namespace `rules`).
 - Alles, was die UI beim Start abfragt, muss vor `ui::begin()` initialisiert sein (sonst Boot-Schleife).
 
+### Bluetooth-Gateway (`firmware/omg`)
+
+OpenMQTTGateway wird nicht ins Repo kopiert: `firmware/omg/setup.py` klont es (Tag `OMG_REF`) nach `firmware/omg/OpenMQTTGateway/` (gitignored) und legt `camper_env.ini` daneben. Eigene Anpassungen nur dort bzw. als Build-Flags, nie im Upstream-Code. Bauen mit PlatformIO: `python3 setup.py build camper-ble`.
+
 ### Heizung (`firmware/heater`)
 
 GPL-3.0 (Protokoll aus GPL-Projekten portiert). Der ESP ist LIN-**Slave** wie eine iNet Box, das CP Plus bleibt Master. Board-Profile in `truma_heater/config.h`; Heizungsmodell im Web-UI wählbar. Tests unter `tests/`.

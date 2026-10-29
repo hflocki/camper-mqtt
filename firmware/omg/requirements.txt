@@ -1,0 +1,2 @@
+# setup.py itself uses only the Python standard library; platformio builds and flashes the gateway
+platformio>=6.1

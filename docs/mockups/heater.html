@@ -225,6 +225,7 @@ input[type=file]{font-size:.8rem;color:var(--mute);width:100%}
   <div class="card">
     <div class="ct">LIN-Bus</div>
     <div class="info"><span>LIN-Verkehr</span><span id="s-traffic">--</span></div>
+    <div class="hint" id="s-diag" style="margin:4px 0 8px"></div>
     <div class="info"><span>CP Plus angemeldet</span><span id="s-cp">--</span></div>
     <div class="info"><span>CP Plus</span><span id="s-cpv">--</span></div>
     <div class="info"><span>Heizung</span><span id="s-hv">--</span></div>
@@ -233,6 +234,8 @@ input[type=file]{font-size:.8rem;color:var(--mute);width:100%}
     <div class="info"><span>Freier Speicher</span><span id="s-heap">--</span></div>
     <div class="sw" style="margin-top:12px"><div><div class="t">LIN-Sniffer</div><div class="hint">Schreibt alle geänderten Frames ins Log (Fehlersuche).</div></div>
       <label class="toggle"><input type="checkbox" id="sniff"><span></span></label></div>
+    <div class="sw" style="margin-top:12px"><div><div class="t">LIN-Rohdaten (60 s)</div><div class="hint">Schreibt jedes empfangene Byte als Hex ins Log, z. B. um zu sehen, ob überhaupt etwas ankommt.</div></div>
+      <label class="toggle"><input type="checkbox" id="rawd"><span></span></label></div>
     <div class="hint">Anmeldung am CP Plus: Einstellungen → RESET → PR SET. Danach steht im INDEX-Menü ein dritter Eintrag T23.70.0. Eine echte iNet Box darf nicht gleichzeitig am Bus hängen.</div>
   </div>
   <div class="card" id="f-sys">
@@ -375,6 +378,8 @@ function render(){
   setTxt('s-cpv',l.cpplus_version||'--');setTxt('s-hv',l.heater_version||'--');
   setTxt('s-frames',l.frames+' / '+l.crc_errors);setTxt('s-ack',l.ack_errors);setTxt('s-heap',Math.round(y.heap/1024)+' kB');
   if(document.activeElement!==$('sniff'))$('sniff').checked=!!l.sniffer;
+  if(document.activeElement!==$('rawd'))$('rawd').checked=!!l.raw;
+  setTxt('s-diag',l.diag||'');
   setTxt('w-state',y.wifi_state+(y.wifi&&y.ssid?' ('+y.ssid+')':''));setTxt('w-ip',y.ip+(y.ap?' (Access Point)':''));
   setTxt('w-rssi',y.wifi?y.rssi+' dBm':'--');setTxt('w-fw',y.fw);setTxt('w-up',fmtUp(y.uptime));
   setTxt('w-reset',y.reset_reason);setTxt('w-drops',y.wifi_drops);setTxt('w-reason',y.wifi_reason);
@@ -422,6 +427,7 @@ $('logclear').onclick=()=>{logLines=[];$('log').textContent=''};
 $('logsave').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([logLines.join('\n')],{type:'text/plain'}));a.download='camper-heater-log.txt';a.click()};
 $('loglvl').onchange=e=>cmd('log_level',e.target.value);
 $('sniff').onchange=e=>cmd('sniffer',e.target.checked?'1':'0');
+$('rawd').onchange=e=>cmd('rawdump',e.target.checked?'1':'0');
 $('upload').onclick=async()=>{const f=$('fw').files[0];if(!f)return;const fd=new FormData();fd.append('firmware',f,f.name);setTxt('up-status','Lade hoch …');
   try{const r=await fetch('/update',{method:'POST',body:fd});setTxt('up-status',r.ok?'Fertig, Neustart …':'Fehlgeschlagen')}catch(e){setTxt('up-status','Fehlgeschlagen')}};
 load();setInterval(load,2000);loadCfg().catch(()=>{});

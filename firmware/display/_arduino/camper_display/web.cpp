@@ -12,6 +12,7 @@
 #include "otaprog.h"
 #include "history.h"
 #include "rules.h"
+#include "sensors.h"
 #include "web_ui.h"
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
@@ -140,6 +141,10 @@ void buildSys(JsonObject s) {
   s["warn"] = ui::warningText();  // the same warnings as on the display (incl. tile rules and weather)
   JsonArray ind = s["ind"].to<JsonArray>();   // icons of true automation rules (door open ...)
   for (auto& k : rules::activeIcons()) ind.add(k);
+  for (auto& k : sensors::activeIcons()) ind.add(k);
+  JsonDocument sv;   // own Zigbee/BLE sensors with their values
+  deserializeJson(sv, sensors::valuesJson());
+  s["sen"] = sv.as<JsonArray>();
 }
 
 void sendTo(uint32_t client, JsonDocument& d) {
@@ -435,7 +440,7 @@ bool applySettings(JsonObject o, bool apply) {
 
 // hand-over buffers web task -> loop
 portMUX_TYPE pendingMux = portMUX_INITIALIZER_UNLOCKED;
-String pendingSettings, pendingPages, pendingRules;
+String pendingSettings, pendingPages, pendingRules, pendingSensors;
 
 void setPending(String& slot, const String& json) {
   portENTER_CRITICAL(&pendingMux);
@@ -503,6 +508,16 @@ void postRules(AsyncWebServerRequest* r, JsonVariant& j) {
   sendResult(r, true, "Automationen gespeichert");
 }
 
+void postSensors(AsyncWebServerRequest* r, JsonVariant& j) {
+  if (!auth(r)) return;
+  String json;
+  serializeJson(j, json);
+  String err;
+  if (!sensors::fromJson(json, err, false)) { sendResult(r, false, err); return; }
+  setPending(pendingSensors, json);
+  sendResult(r, true, "Sensoren gespeichert");
+}
+
 void applyPending() {
   String s = takePending(pendingSettings);
   if (s.length()) {
@@ -512,6 +527,15 @@ void applyPending() {
       cfg::save();
       reloadPrefix = true;
       if (reboot) rebootAt = millis() + 1500;
+    }
+  }
+  String sn = takePending(pendingSensors);
+  if (sn.length()) {
+    String err;
+    if (sensors::fromJson(sn, err, true)) {
+      sensors::save();
+      mqttc::resubscribe();
+      ui::requestRebuild();
     }
   }
   String rl = takePending(pendingRules);
@@ -605,6 +629,13 @@ void begin() {
     rebootAt = millis() + 1000;
   });
   server.on("/update", HTTP_POST, otaDone, otaUpload);
+  server.on("/api/sensors", HTTP_GET, [](AsyncWebServerRequest* r) {
+    if (!auth(r)) return;
+    r->send(200, "application/json", sensors::toJson());
+  });
+  server.on("/api/sensors/unknown", HTTP_GET, [](AsyncWebServerRequest* r) {
+    r->send(200, "application/json", sensors::unknownJson());
+  });
   server.on("/api/rules", HTTP_GET, getRules);
   server.on("/api/rules/state", HTTP_GET, [](AsyncWebServerRequest* r) {
     r->send(200, "application/json", rules::statusJson());
@@ -624,6 +655,10 @@ void begin() {
   hs->setMethod(HTTP_POST);
   hs->setMaxContentLength(8192);
   server.addHandler(hs);
+  auto* hsn = new AsyncCallbackJsonWebHandler("/api/sensors", postSensors);
+  hsn->setMethod(HTTP_POST);
+  hsn->setMaxContentLength(16384);
+  server.addHandler(hsn);
   auto* hr = new AsyncCallbackJsonWebHandler("/api/rules", postRules);
   hr->setMethod(HTTP_POST);
   hr->setMaxContentLength(16384);

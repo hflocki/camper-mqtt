@@ -9,6 +9,7 @@
 #include "icons.h"
 #include "otaprog.h"
 #include "rules.h"
+#include "sensors.h"
 #include <lvgl.h>
 #include <vector>
 #include <time.h>
@@ -414,6 +415,19 @@ std::vector<TempItem> tempItems() {
   return out;
 }
 
+// camper-temp sensors plus own Zigbee/BLE climate sensors (sensors.cpp)
+std::vector<TempItem> allTempItems() {
+  std::vector<TempItem> out = tempItems();
+  for (auto& c : sensors::climate()) {
+    TempItem it;
+    it.name = c.name;
+    it.val = String(c.temp, 1) + " \xC2\xB0""C";
+    it.alarm = 0;
+    out.push_back(it);
+  }
+  return out;
+}
+
 // ---- batteries (camper-battery) ---------------------------------------------
 struct BatItem { String name; String state; float soc, v, w; long rt; bool ok, problem; };
 
@@ -503,8 +517,9 @@ String warnings() {
     if (!t.warnText.length()) head = t.name + (t.warnMode == WARN_BELOW ? " zu niedrig" : " zu hoch");
     add(head + ": " + raw + (t.unit.length() ? " " + t.unit : String("")));
   }
-  // automation rules marked as warning (e.g. door open)
+  // automation rules marked as warning, open Zigbee contacts
   add(rules::warnings());
+  add(sensors::warnings());
   // weather: gusts above the limit, thunderstorm
   String ww = wx::warning();
   if (ww.length()) add(ww);
@@ -1167,7 +1182,9 @@ void refreshValues() {
     lv_label_set_text(ovWarnLbl, any ? dispText(warn).c_str() : "OK");
     if (ovInd) {
       String ic;
-      for (auto& k : rules::activeIcons()) { if (ic.length()) ic += "  "; ic += icons::glyph(k); }
+      std::vector<String> keys = rules::activeIcons();
+      for (auto& k : sensors::activeIcons()) keys.push_back(k);
+      for (auto& k : keys) { if (ic.length()) ic += "  "; ic += icons::glyph(k); }
       lv_label_set_text(ovInd, ic.c_str());
       lv_obj_set_style_text_color(ovInd, any ? C_TEXT : C_ACCENT, 0);
     }
@@ -1188,9 +1205,9 @@ void refreshValues() {
   lastWarnKeys = keys;
 
   // temperatures
-  bool tempOn = store::devOnline(DEV_TEMP);
+  bool tempOn = store::devOnline(DEV_TEMP) || !sensors::climate().empty();
   if (ovTemp.line[0] || tStatus) {
-    std::vector<TempItem> items = tempItems();
+    std::vector<TempItem> items = allTempItems();
     bool anyAlarm = false;
     for (auto& it : items) anyAlarm |= it.alarm != 0;
     if (ovTemp.line[0]) {
@@ -1797,6 +1814,7 @@ void refreshUpdateScreen() {
 
 void loop() {
   refreshUpdateScreen();
+  if (sensors::changed()) store::markAllDirty();   // new Zigbee/BLE value: redraw tiles
   if (rebuildPending) {
     rebuildPending = false;
     build();

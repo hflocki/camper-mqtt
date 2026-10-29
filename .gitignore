@@ -29,3 +29,11 @@ firmware/heater/pcb/
 # Python caches
 __pycache__/
 *.pyc
+
+# Local copy of the LVGL config next to the sketch (the real one is firmware/display/_arduino/lv_conf.h)
+firmware/display/_arduino/camper_display/lv_conf.h
+
+# OpenMQTTGateway checkout and local credentials (firmware/omg/setup.py)
+firmware/omg/OpenMQTTGateway/
+firmware/omg/camper_local_env.ini
+firmware/omg/.venv/

@@ -15,7 +15,7 @@ const M = {
     builtin: [true, true, true, true, true, true, true],
     pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'System'],
     ovTiles: 'water,gas,heater,level,fan,weather,temp,bat1,status',
-    fw: '2.7.0', mac: '24:0A:C4:00:00:01',
+    fw: '2.8.0', mac: '24:0A:C4:00:00:01',
     // In the mockup the device links open the other mockups
     links: [{n: 'Truma', u: 'heater.html'}, {n: 'MaxxFan', u: 'maxxfan.html'}, {n: 'Tanks', u: 'tanklevel.html'},
             {n: 'Level', u: 'level.html'}, {n: 'Temperatur', u: 'temp.html'}, {n: 'Batterie', u: 'battery.html'}]
@@ -27,6 +27,11 @@ const M = {
   H: {hvac: 'heat', set: 21, fan: 'eco', wmode: 'eco', room: 18.6, decoke: false, drem: 0},
   T: {t0: 'ON', t1: '180', t2: '0'},
   awake: true, bri: 80, finderOn: false,
+  sensors: {zbBase: 'camper/zigbee/data', bleBase: 'camper/OMG/BTtoMQTT', tempDiv: 10, humDiv: 1, devices: [
+    {name: 'Küche', bus: 0, kind: 1, addr: '0x00158d0000000001', alt: '1a01', icon: '', warn: false},
+    {name: 'Heki', bus: 0, kind: 0, addr: '0x00158d0000000002', alt: '1a02', icon: 'door', warn: false},
+    {name: 'Bullauge vorn', bus: 0, kind: 0, addr: '0x00158d0000000003', alt: '1a03', icon: 'door', warn: true},
+    {name: 'Govee Wohnen', bus: 1, kind: 1, addr: 'A4C1380000AA', icon: '', warn: false}]},
   rules: {rules: [{name: 'Eingangslicht', on: true, inTopic: 'camper/door', inKey: 'Door.state', cond: 0, inVal: 'open',
     outTopic: 'camper/zigbee/led_eingang/set', onPayload: '{"state":"ON"}', offPayload: '{"state":"OFF"}', offDelay: 10,
     onlyOwn: true, when: 2, from: '19:00', to: '07:00', icon: 'door', warn: false}]},
@@ -78,7 +83,11 @@ const M = {
       t0: M.T.t0, t1: M.T.t1, t2: (charging ? 0 : 1650 + Math.round(Math.sin(t / 5) * 40)).toString()
     };
     const door = Math.floor(t / 20) % 3 === 0;
-    return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake, ind: door ? ['door'] : []}};
+    const sen = [{n: 'Küche', k: 1, b: 0, t: 19.4, h: 54, bat: 87, age: 40, i: ''},
+      {n: 'Heki', k: 0, b: 0, o: door ? 1 : 0, bat: 92, age: 12, i: 'door'},
+      {n: 'Bullauge vorn', k: 0, b: 0, o: 0, bat: 65, age: 300, i: 'door'},
+      {n: 'Govee Wohnen', k: 1, b: 1, t: 20.1, h: 49, bat: 100, age: 8, i: ''}];
+    return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake, ind: door ? ['door'] : [], sen}};
   },
   wsCmd(o) {
     const H = M.H;
@@ -111,6 +120,9 @@ const M = {
       if (M.emit) setTimeout(() => { M.emit(M.cfgMsg()); M.emit(M.wxMsg()); }, 300);
       return {ok: true, msg: 'Gespeichert'}; }
     if (path === '/api/pages' && method === 'GET') return M.pages;
+    if (path === '/api/sensors' && method === 'GET') return M.sensors;
+    if (path === '/api/sensors') { M.sensors = body; return {ok: true, msg: 'Sensoren gespeichert'}; }
+    if (path === '/api/sensors/unknown') return [{bus: 0, addr: '00158d0000000009', ago: 25}, {bus: 1, addr: 'A4C1380000BB', ago: 70}];
     if (path === '/api/rules' && method === 'GET') return M.rules;
     if (path === '/api/rules') { M.rules = body; return {ok: true, msg: 'Automationen gespeichert'}; }
     if (path === '/api/rules/state') {

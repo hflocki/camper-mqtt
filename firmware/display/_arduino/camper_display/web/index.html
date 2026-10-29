@@ -335,6 +335,9 @@ function drawHist(){
 function pgTemp(){return `<div class="warnbox" id="t_warn" hidden></div><div class="grid" id="t_list"></div><div class="mu" id="t_st" style="margin-top:12px"></div><div class="card wide hist" id="h_t" hidden><h3>📈 Verlauf, letzte 24 h</h3><div class="hc"></div></div>`}
 // camper-temp: <prefix>/sensors = [{id,name,t,alarm}]
 function temps(){try{const a=JSON.parse(V.temp_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+// own Zigbee/BLE sensors (S.sen from the display): k 0 = contact, 1 = climate
+const sens=()=>Array.isArray(S.sen)?S.sen:[];
+function allTemps(){return temps().concat(sens().filter(x=>x.k===1&&x.t!=null).map(x=>({name:x.n,t:x.t,alarm:0,h:x.h,bat:x.bat,own:1,old:x.age>7200})))}
 function tval(t){return t.t===null||t.t===undefined?'--':Number(t.t).toFixed(1)+' °C'}
 function warnings(){
   // the display sends its own list (with tile rules); the local rules below are only the fallback
@@ -429,14 +432,15 @@ function update(){
   const warn=warnings();
   ['warn','t_warn'].forEach(id=>{const e=document.getElementById(id);if(e){e.hidden=!warn.length;e.textContent='⚠ '+warn.join('\n')}});
   if($('#ost')){const c=$('#ost'),v=$('#ost_v');c.classList.toggle('alarm',!!warn.length);v.textContent=warn.length?warn.join('\n'):'OK';v.style.fontSize=warn.length?'17px':'';v.classList.toggle('okc',!warn.length);$('#ost_i').textContent=(S.ind||[]).map(k=>(ICONS.find(x=>x[0]===k)||['','•'])[1]).join(' ')}
-  const tl=temps(),tOn=online('temp'),tAl=tl.some(t=>t.alarm);
+  const tl=allTemps(),tOn=online('temp')||tl.some(t=>t.own),tAl=tl.some(t=>t.alarm);
   if($('#ot_v')){
     {const sl=ovSlots(tl,true);set('ot_v',sl.length?sl.map(x=>`<span title="${esc(x.n)}">${x.e}</span> <span${x.it&&x.it.alarm?' class="err"':x.it?'':' class="mu"'}>${x.it?tval(x.it):'--'}</span>`).join(' &nbsp; '):'--')}
     set('ot_s',!tOn?'offline':tAl?'<span class="err">Alarm</span>':tl.length>3?tl.length+' Sensoren':'');
     $('#ot_v').closest('.card').classList.toggle('offline',!tOn);
   }
   if($('#t_list')){
-    set('t_list',tl.map(t=>`<div class="card wide${tOn?'':' offline'}"><div class="trow${t.alarm?' al':''}"><span class="n">${ico(t.name,true)} ${esc(t.name)}</span><span class="big">${tval(t)}</span></div></div>`).join(''));
+    set('t_list',tl.map(t=>`<div class="card wide${(t.own?!t.old:online('temp'))?'':' offline'}"><div class="trow${t.alarm?' al':''}"><span class="n">${ico(t.name,true)} ${esc(t.name)}${t.h!=null||t.bat!=null?`<br><span class="mu">${t.h!=null?'💧 '+t.h+' %':''}${t.bat!=null?' &nbsp;🔋 '+t.bat+' %':''}</span>`:''}</span><span class="big">${tval(t)}</span></div></div>`).join('')
+      +(sens().some(x=>x.k===0)?`<div class="card wide"><h3>🚪 Fenster &amp; Türen</h3>${sens().filter(x=>x.k===0).map(x=>`<div class="row" style="margin:6px 0"><span class="grow">${esc(x.n)}</span>${x.bat!=null?`<span class="mu">🔋 ${x.bat} %</span>`:''}<b class="${x.o===1?'err':x.o===0?'okc':'mu'}" style="min-width:60px;text-align:right">${x.o===1?'offen':x.o===0?'zu':'?'}</b></div>`).join('')}</div>`:''));
     set('t_st',!tOn?'Temperatursensoren offline':tl.length?'':'Keine Sensoren gemeldet');
   }
   // batteries
@@ -541,6 +545,15 @@ function pgSettings(){
    ${inp('wxTopic','GPS per MQTT (optional, z. B. Topic des Routers)','text','router/gps')}
    <p class="mu" style="margin-top:-4px">Mit Topic folgt das Wetter dem Fahrzeug. Inhalt: JSON mit <code>lat</code>/<code>lon</code> (auch <code>latitude</code>/<code>longitude</code>, auch verschachtelt wie beim RUT956) oder <code>52.52,13.40</code>. Ohne Position gilt der feste Ort oben.</p>
    <div class="f2">${inp('wxGust','Warnung ab Böen (km/h, 0 = aus)','number')}<div><label>Aktualisieren</label><select id="wxEvery"><option value="15">alle 15 min</option><option value="30">alle 30 min</option><option value="60">stündlich</option><option value="120">alle 2 h</option></select></div></div></details>
+  <details id="snd" ontoggle="if(this.open)loadSensors()"><summary>📡 Sensoren (Zigbee &amp; Bluetooth)</summary>
+   <p class="mu">Eigene Sensoren direkt per MQTT: Zigbee-Gateway mit Cluster-Topics (z. B. SMLIGHT: <code>&lt;Basis&gt;/&lt;Adresse&gt;/1/0006/0000</code>) und Bluetooth über OpenMQTTGateway (<code>&lt;Basis&gt;/&lt;MAC&gt;</code>, Govee, Ruuvi, Xiaomi …). Klima-Sensoren erscheinen bei den Temperaturen, Kontakte als Symbol in der Status-Kachel.</p>
+   <div class="f2">${inp('zbBase','Zigbee-Basis-Topic','text','camper/zigbee/data')}${inp('bleBase','Bluetooth-Basis-Topic (OMG)','text','camper/OMG/BTtoMQTT')}
+    <div><label>Zigbee-Temperatur geteilt durch</label><select id="tempDiv"><option value="10">10</option><option value="100">100 (ZCL-Standard)</option><option value="1">1</option></select></div>
+    <div><label>Zigbee-Luftfeuchte geteilt durch</label><select id="humDiv"><option value="1">1</option><option value="100">100 (ZCL-Standard)</option></select></div></div>
+   <div id="snlist"></div>
+   <div class="row"><button class="btn sm" type="button" id="snadd">+ Sensor</button><label class="btn sm" style="cursor:pointer">device.json einlesen<input type="file" id="snfile" accept=".json" hidden></label></div>
+   <div id="snnew" style="margin-top:10px"></div>
+   <div class="actions"><button class="btn pri" type="button" id="snsave" style="flex:1">Sensoren speichern</button></div></details>
   <details><summary>📲 Pushover</summary>
    <p class="mu">Schickt die Warnungen der Übersicht (Temperatur-Alarme, Heizungsfehler, Batterie, Wetter) als Push-Nachricht aufs Handy. Token einer eigenen Pushover-Anwendung und User-Key von <a href="https://pushover.net" target="_blank" rel="noopener">pushover.net</a>. Eine Warnung wird gesendet, wenn sie 30 s besteht.</p>
    <label class="chk"><input type="checkbox" id="poOn"> Warnungen senden</label>
@@ -623,12 +636,54 @@ function renderSlots(){
     const box=$('#'+id);if(!box)return;
     let cur=slotsOf(ST&&(temp?ST.ovTempSel:ST.ovBatSel));
     if(box.querySelector('[data-sn]'))cur=[0,1,2].map(i=>({n:box.querySelector(`[data-sn="${i}"]`).value,k:box.querySelector(`[data-sk="${i}"]`).value}));
-    const names=[...new Set([...(temp?temps():bats()).map(x=>x.name),...cur.map(x=>x.n)].filter(x=>x))];
+    const names=[...new Set([...(temp?allTemps():bats()).map(x=>x.name),...cur.map(x=>x.n)].filter(x=>x))];
     box.innerHTML=[0,1,2].map(i=>{const c=cur[i]||{n:'',k:''};
       return `<div class="row" style="gap:8px;margin:4px 0;flex-wrap:nowrap"><select data-sn="${i}" style="flex:1;min-width:0"><option value="">– leer –</option>${names.map(n=>`<option value="${esc(n)}"${n===c.n?' selected':''}>${esc(n)}</option>`).join('')}</select><select data-sk="${i}" style="flex:1;min-width:0"><option value="">Symbol automatisch</option>${ICONS.map(x=>`<option value="${x[0]}"${x[0]===c.k?' selected':''}>${x[1]} ${x[2]}</option>`).join('')}</select></div>`}).join('');
   });
 }
 function readSlots(id){const b=$('#'+id);if(!b)return'';const l=[];for(let i=0;i<3;i++){const n=b.querySelector(`[data-sn="${i}"]`).value;if(n)l.push(n+'='+b.querySelector(`[data-sk="${i}"]`).value)}return l.join('\n')}
+// ---- own sensors (/api/sensors)
+let SN={devices:[]};
+async function loadSensors(){
+  try{const r=await fetch('/api/sensors');if(r.ok)SN=await r.json()}catch(e){}
+  ['zbBase','bleBase'].forEach(k=>$('#'+k).value=SN[k]||'');$('#tempDiv').value=String(SN.tempDiv||10);$('#humDiv').value=String(SN.humDiv||1);
+  renderSensors();loadUnknown();
+  $('#snadd').onclick=()=>{readSensors();SN.devices.push({name:'',bus:0,kind:1,addr:'',alt:'',icon:'door',warn:false,invert:false});renderSensors()};
+  $('#snsave').onclick=async()=>{readSensors();if(await post('/api/sensors',SN))setTimeout(loadUnknown,1500)};
+  $('#snfile').onchange=async e=>{const f=e.target.files[0];if(!f)return;let j;try{j=JSON.parse(await f.text())}catch(x){return toast('Keine gültige JSON-Datei')}
+    readSensors();let n=0;
+    (j.zigbee_devices||[]).forEach(d=>{SN.devices.push({name:d.name||'',bus:0,kind:d.isWeatherSensor?1:0,addr:d.ieeeAddr||d.shortId||'',alt:d.ieeeAddr&&d.shortId?d.shortId:'',icon:'door',warn:false,invert:false});n++});
+    (j.ble_devices||[]).forEach(d=>{SN.devices.push({name:d.name||'',bus:1,kind:1,addr:d.mac||'',icon:'',warn:false});n++});
+    if(Array.isArray(j.devices))j.devices.forEach(d=>{SN.devices.push(d);n++});
+    renderSensors();toast(n+' Sensoren übernommen – noch speichern');e.target.value=''};
+}
+function renderSensors(){
+  const b=$('#snlist');if(!b)return;
+  const live=sens();
+  b.innerHTML=SN.devices.map((d,i)=>{const v=live.find(x=>x.n===d.name);
+    const val=!v?'':v.k===0?(v.o===1?'offen':v.o===0?'zu':'–'):(v.t!=null?String(v.t).replace('.',',')+' °C':'–')+(v.h!=null?' · '+v.h+' %':'');
+    return `<div class="tileed"><div class="row"><b class="grow">${esc(d.name||'Sensor')}</b><span class="mu">${esc(val)}${v&&v.age>=0?' · vor '+(v.age<120?v.age+' s':Math.round(v.age/60)+' min'):''}</span><button class="btn sm danger" data-sd="${i}">✕</button></div>
+    <div class="f2"><div><label>Name</label><input type="text" data-s="${i}" data-sf="name" value="${esc(d.name)}" placeholder="z. B. Heki"></div>
+     <div><label>Funk / Typ</label><select data-s="${i}" data-sf="type"><option value="0-0"${d.bus==0&&d.kind==0?' selected':''}>Zigbee · Tür-/Fensterkontakt</option><option value="0-1"${d.bus==0&&d.kind==1?' selected':''}>Zigbee · Klima (Temp./Feuchte)</option><option value="1-1"${d.bus==1?' selected':''}>Bluetooth · Klima (Govee, Ruuvi …)</option></select></div>
+     <div><label>${d.bus==1?'MAC-Adresse':'Adresse (IEEE oder Short-ID)'}</label><input type="text" data-s="${i}" data-sf="addr" value="${esc(d.addr)}" placeholder="${d.bus==1?'A4C138AEF56D':'0x00158d… oder 9c68'}"></div>
+     ${d.bus==0?`<div><label>Zweite Adresse (optional)</label><input type="text" data-s="${i}" data-sf="alt" value="${esc(d.alt||'')}" placeholder="Short-ID"></div>`:'<div></div>'}
+     ${d.kind==0?`<div><label>Symbol, wenn offen</label><select data-s="${i}" data-sf="icon"><option value="">kein Symbol</option>${ICONS.map(x=>`<option value="${x[0]}"${d.icon===x[0]?' selected':''}>${x[1]} ${x[2]}</option>`).join('')}</select></div>
+     <div><label class="chk"><input type="checkbox" data-s="${i}" data-sf="warn" ${d.warn?'checked':''}> Warnung, wenn offen</label><label class="chk"><input type="checkbox" data-s="${i}" data-sf="invert" ${d.invert?'checked':''}> umgekehrt (1 = zu)</label></div>`:''}</div></div>`}).join('')||'<p class="mu">Noch keine Sensoren.</p>';
+  b.querySelectorAll('[data-sf="type"]').forEach(e=>e.onchange=()=>{readSensors();renderSensors()});
+  b.querySelectorAll('[data-sd]').forEach(e=>e.onclick=()=>{readSensors();SN.devices.splice(+e.dataset.sd,1);renderSensors()});
+}
+function readSensors(){
+  ['zbBase','bleBase'].forEach(k=>{const e=$('#'+k);if(e)SN[k]=e.value.trim()});
+  if($('#tempDiv'))SN.tempDiv=+$('#tempDiv').value;if($('#humDiv'))SN.humDiv=+$('#humDiv').value;
+  document.querySelectorAll('[data-sf]').forEach(e=>{const d=SN.devices[+e.dataset.s];if(!d)return;const f=e.dataset.sf;
+    if(f==='type'){const [bus,kind]=e.value.split('-').map(Number);d.bus=bus;d.kind=kind}else d[f]=e.type==='checkbox'?e.checked:e.value.trim()});
+}
+async function loadUnknown(){
+  const b=$('#snnew');if(!b)return;
+  let a=[];try{a=await (await fetch('/api/sensors/unknown')).json()}catch(e){}
+  b.innerHTML=a.length?`<label>Gefunden, aber noch nicht eingetragen</label>${a.map(u=>`<div class="row" style="margin:4px 0"><span class="grow">${u.bus?'Bluetooth':'Zigbee'} · <code>${esc(u.addr)}</code> <span class="mu">vor ${u.ago<120?u.ago+' s':Math.round(u.ago/60)+' min'}</span></span><button class="btn sm" type="button" data-su="${u.bus}|${esc(u.addr)}">+ übernehmen</button></div>`).join('')}`:'';
+  b.querySelectorAll('[data-su]').forEach(e=>e.onclick=()=>{readSensors();const [bus,addr]=e.dataset.su.split('|');SN.devices.push({name:'',bus:+bus,kind:1,addr,alt:'',icon:'door',warn:false,invert:false});renderSensors()});
+}
 function saveSettings(){
   const o={};FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)o[f]=e.value});
   ['mqttPort','dimBrightness','screenTimeout','wxGust'].forEach(f=>o[f]=parseInt(o[f])||0);
@@ -674,9 +729,9 @@ const BK_READONLY=['fw','mac','poStatus'];
 const BK_NET=['wifiSsid','staticIp','ip','gateway','subnet','dns','hostname'];
 async function backupExport(){
   try{
-    const s=await (await fetch('/api/settings')).json();const p=await (await fetch('/api/pages')).json();let ru=null;try{ru=await (await fetch('/api/rules')).json()}catch(e){}
+    const s=await (await fetch('/api/settings')).json();const p=await (await fetch('/api/pages')).json();let ru=null,sn=null;try{ru=await (await fetch('/api/rules')).json()}catch(e){}try{sn=await (await fetch('/api/sensors')).json()}catch(e){}
     BK_SECRET.concat(BK_READONLY).forEach(k=>delete s[k]);
-    const b={type:'camper-display-backup',version:1,fw:ST.fw||'',date:new Date().toISOString(),settings:s,pages:p,rules:ru};
+    const b={type:'camper-display-backup',version:1,fw:ST.fw||'',date:new Date().toISOString(),settings:s,pages:p,rules:ru,sensors:sn};
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(b,null,1)],{type:'application/json'}));
     a.download=`${(s.hostname||'camper-display')}-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();
     toast('Sicherung gespeichert');
@@ -691,6 +746,7 @@ async function backupImport(){
   if(!$('#bknet').checked)BK_NET.forEach(k=>delete s[k]);
   if(b.pages&&b.pages.pages){if(!await post('/api/pages',b.pages))return}
   if(b.rules&&b.rules.rules){if(!await post('/api/rules',b.rules))return}
+  if(b.sensors&&b.sensors.devices){if(!await post('/api/sensors',b.sensors))return}
   if(await post('/api/settings',s))setTimeout(()=>location.reload(),2500);
 }
 // progress bar of the file upload; the panel shows its own update screen meanwhile

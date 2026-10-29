@@ -22,6 +22,7 @@
 #include "notify.h"
 #include "history.h"
 #include "rules.h"
+#include "sensors.h"
 #include "weather.h"
 #include <ArduinoOTA.h>
 
@@ -41,6 +42,7 @@ void setup() {
   mqttc::begin();
   history::begin();
   rules::begin();
+  sensors::begin();
   web::begin();
   notify::begin();
 }

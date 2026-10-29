@@ -1,6 +1,7 @@
 #include "history.h"
 #include "config.h"
 #include "datastore.h"
+#include "sensors.h"
 #include <ArduinoJson.h>
 #include <esp_heap_caps.h>
 #include <freertos/FreeRTOS.h>
@@ -69,6 +70,11 @@ void sample() {
         if (s) s->v[head] = scaled(o["t"].as<float>());
       }
     }
+  }
+  for (auto& c : sensors::climate()) {   // own Zigbee/BLE climate sensors
+    if (c.stale) continue;
+    Series* s = find(c.name, 't');
+    if (s) s->v[head] = scaled(c.temp);
   }
   if (store::devOnline(DEV_BATTERY) && store::has(DP_BAT_LIST)) {
     JsonDocument doc;

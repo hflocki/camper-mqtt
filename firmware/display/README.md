@@ -36,6 +36,7 @@ Passt zu den anderen Projekten:
 
 - **Wandpanel** mit LVGL-Oberfläche: Icon-Leiste unten zum Wechseln der Seiten (oder wischen), deutsche Umlaute und Icons
 - **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert (auf schmalen Bildschirmen Menü ☰ statt der Knopfleiste), hell/dunkel automatisch
+- **📡 Eigene Sensoren:** Zigbee-Kontakte und -Klimasensoren direkt vom Gateway (Cluster-Topics, z. B. SMLIGHT) und Bluetooth-Thermometer über OpenMQTTGateway (Govee, Ruuvi, Xiaomi …), siehe [Sensoren](#sensoren-zigbee--bluetooth)
 - **⚡ Automationen:** Regeln wie „Tür auf → Eingangslicht an, Tür zu → nach 10 s aus, nur wenn dunkel“, siehe [Automationen](#automationen)
 - **Display aufwecken:** Ist der Bildschirm gedimmt oder aus, zeigt die Webseite oben den Knopf **💡 Display an**.
 - **Feste IP abgesichert:** Eine feste IP, die nicht funktionieren kann (Gateway außerhalb des Netzes, falsches Subnetz), wird beim Speichern abgelehnt. Verbindet sich das Display mit fester IP zwar mit dem WLAN, erreicht aber 3 Minuten lang den MQTT-Broker nicht, schaltet es bis zum nächsten Neustart auf DHCP (Hinweis auf der Systemseite). Auf der Systemseite gibt es außerdem den Knopf *Feste IP aus (DHCP)* – lange drücken, das Display startet mit DHCP neu
@@ -83,6 +84,7 @@ docs/                      Screenshots
 | `otaprog.*` | Fortschritt des Firmware-Uploads für den Update-Bildschirm |
 | `history.*` | 24-h-Verlauf der Temperaturen und Batterien im RAM |
 | `rules.*` | Automationen (Regeln, eigener NVS-Bereich) |
+| `sensors.*` | Eigene Zigbee- und Bluetooth-Sensoren (eigener NVS-Bereich) |
 | `icons.*` | Symbole und Auswahl für die Temperatur- und Batterie-Kachel |
 | `weather.*` | Wetter von Open-Meteo (eigener Task), GPS-Position per MQTT, Wetter-Warnungen |
 | `font_de_*.c` | Montserrat mit Umlauten + Font-Awesome-Icons, erzeugt mit `tools/make_fonts.py` |
@@ -284,6 +286,29 @@ Bei GPS-Position sucht das Display den Ortsnamen über [OpenStreetMap Nominatim]
 Die Wetterseite zeigt das aktuelle Wetter mit gefühlter Temperatur, Höchst- und Tiefstwert, Wind mit Richtung und Böen, Luftfeuchte, Regen in der nächsten Stunde und heute sowie die nächsten 3 Tage. Für die Übersicht gibt es die Kachel **Wetter**. Bei Böen über dem Grenzwert und bei Gewitter erscheint eine Warnung (Kopfzeile, Status-Kachel, Pushover). Daten älter als 3 Stunden lösen keine Warnung aus.
 
 Vorbelegen in `config_local.h`: `DEFAULT_WX_LAT`, `DEFAULT_WX_LON`, `DEFAULT_WX_NAME`, `DEFAULT_WX_TOPIC`, `DEFAULT_WX_GUST`.
+
+## Sensoren (Zigbee & Bluetooth)
+
+*Einstellungen → 📡 Sensoren*. Jeder Sensor hat Name, Funk und Typ (Zigbee-Kontakt, Zigbee-Klima, Bluetooth-Klima) und die Adresse.
+
+**Zigbee** (Gateway, das ZCL-Attribute einzeln sendet, Topic `<Basis>/<Adresse>/1/<Cluster>/<Attribut>`, Basis Standard `camper/zigbee/data`):
+
+| Cluster/Attribut | Wert | Anzeige |
+| --- | --- | --- |
+| `0006/0000` | 0 = zu, 1 = offen (mit „umgekehrt“ andersherum) | Kontakt: zu/offen, Symbol und optional Warnung, solange offen |
+| `0001/0021` | 0…200 | Batterie in % (÷ 2) |
+| `0402/0000` | Temperatur | ÷ 10 (einstellbar; der ZCL-Standard wäre ÷ 100) |
+| `0405/0000` | Luftfeuchte | ÷ 1 (einstellbar) |
+| `0403/0000` | Luftdruck | hPa |
+
+Die Adresse darf die IEEE-Adresse (`0x00158d…`) oder die Short-ID (`9c68`) sein, mit oder ohne `0x`, Groß-/Kleinschreibung egal. Wer nicht weiß, welche das Gateway ins Topic schreibt, trägt beide ein (*Zweite Adresse*).
+
+**Bluetooth** über [OpenMQTTGateway](../omg): Topic `<Basis>/<MAC>` (Standard `camper/OMG/BTtoMQTT`), ausgewertet werden `tempc`, `hum`, `pres`, `batt`. Das funktioniert mit allen Thermometern, die OMG entschlüsselt (Govee H5075/H5179, Ruuvi-Tag, Xiaomi LYWSD03MMC, Inkbird …).
+
+- **Gefunden, aber noch nicht eingetragen:** Unten in der Liste stehen Adressen, die gesendet haben, aber unbekannt sind; *+ übernehmen* legt sie an.
+- **device.json einlesen:** Liste im Format `{"zigbee_devices":[{"name":"Kueche","shortId":"9c68","ieeeAddr":"0x00158d…","isWeatherSensor":true}],"ble_devices":[{"name":"Govee Wohnen","mac":"A4C138…"}]}` übernimmt alle Geräte auf einmal (danach *Sensoren speichern*).
+- Klima-Sensoren stehen auf der Temperaturseite (mit Luftfeuchte und Batterie), sind in der Temperatur-Kachel wählbar und im 24-h-Verlauf. Kontakte stehen unter *Fenster & Türen*.
+- Für Automationen mit einem Zigbee-Kontakt: *Wenn* Topic `camper/zigbee/data/<Adresse>/1/0006/0000`, Schlüssel leer, = `1`.
 
 ## Automationen
 

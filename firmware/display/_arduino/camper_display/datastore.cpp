@@ -74,10 +74,10 @@ String mapValue(const String& map, const String& v) {
     int end = map.indexOf(',', pos);
     if (end < 0) end = map.length();
     String part = map.substring(pos, end);
-    pos = end + 1;uuuu
+    pos = end + 1;
     int eq = part.indexOf('=');
     if (eq <= 0) continue;
-    String from = part.substring(0, eq),u to = part.substring(eq + 1);
+    String from = part.substring(0, eq), to = part.substring(eq + 1);
     from.trim();
     to.trim();
     if (from.equalsIgnoreCase(v)) return to;
