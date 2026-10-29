@@ -538,11 +538,15 @@ void otaUpload(AsyncWebServerRequest* r, const String& filename, size_t index, u
   if (index == 0) {
     Serial.printf("[ota] upload %s\n", filename.c_str());
     if (!Update.begin(UPDATE_SIZE_UNKNOWN)) Update.printError(Serial);
+    ghupdate::setProgress(0, "Datei");
   }
   if (Update.isRunning() && Update.write(data, len) != len) Update.printError(Serial);
+  // request length includes the multipart framing, close enough for a progress bar
+  size_t total = r->contentLength();
+  if (total > 0) ghupdate::setProgress(min(99, (int)((uint64_t)(index + len) * 100 / total)), "Datei");
   if (final) {
-    if (Update.end(true)) Serial.printf("[ota] done, %u bytes\n", (unsigned)(index + len));
-    else Update.printError(Serial);
+    if (Update.end(true)) { Serial.printf("[ota] done, %u bytes\n", (unsigned)(index + len)); ghupdate::setProgress(100, "Datei"); }
+    else { Update.printError(Serial); ghupdate::setProgress(-1, ""); }
   }
 }
 

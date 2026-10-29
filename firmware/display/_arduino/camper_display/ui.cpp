@@ -7,6 +7,7 @@
 #include "display_hw.h"
 #include "weather.h"
 #include "icons.h"
+#include "ghupdate.h"
 #include <lvgl.h>
 #include <vector>
 #include <time.h>
@@ -1736,7 +1737,55 @@ void begin() {
   build();
 }
 
+// Full screen "update running" with a progress bar on the top layer, above every page.
+// While the flash is written the RGB panel may flicker or shift: the frame buffer sits in PSRAM,
+// which is paused during flash writes. It settles by itself after the restart.
+lv_obj_t *updScr = nullptr, *updBar = nullptr, *updPct = nullptr, *updSrc = nullptr;
+int updShown = -2;
+
+void refreshUpdateScreen() {
+  int p = ghupdate::progress();
+  if (p == updShown) return;
+  updShown = p;
+  if (p < 0) {
+    if (updScr) { lv_obj_delete(updScr); updScr = nullptr; }
+    return;
+  }
+  if (!updScr) {
+    disp::wake();
+    updScr = lv_obj_create(lv_layer_top());
+    lv_obj_set_size(updScr, LCD_WIDTH, LCD_HEIGHT);
+    lv_obj_set_style_bg_color(updScr, C_BG, 0);
+    lv_obj_set_style_bg_opa(updScr, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(updScr, 0, 0);
+    lv_obj_set_style_radius(updScr, 0, 0);
+    lv_obj_remove_flag(updScr, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_t* ic = label(updScr, &font_de_28, C_ACCENT, LV_SYMBOL_DOWNLOAD);
+    lv_obj_align(ic, LV_ALIGN_CENTER, 0, -110);
+    lv_obj_t* t = label(updScr, &font_de_28, C_TEXT, "Firmware-Update");
+    lv_obj_align(t, LV_ALIGN_CENTER, 0, -64);
+    updSrc = label(updScr, &font_de_18, C_MUTED, "");
+    lv_obj_align(updSrc, LV_ALIGN_CENTER, 0, -28);
+    updBar = lv_bar_create(updScr);
+    lv_obj_set_size(updBar, LCD_WIDTH - 100, 22);
+    lv_obj_align(updBar, LV_ALIGN_CENTER, 0, 14);
+    lv_bar_set_range(updBar, 0, 100);
+    lv_obj_set_style_bg_color(updBar, C_CARD_HI, LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(updBar, LV_OPA_COVER, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(updBar, C_ACCENT, LV_PART_INDICATOR);
+    updPct = label(updScr, &font_de_28, C_TEXT, "0 %");
+    lv_obj_align(updPct, LV_ALIGN_CENTER, 0, 56);
+    lv_obj_t* n = label(updScr, &font_de_18, C_MUTED, "Bitte nicht ausschalten.\nDas Bild kann dabei flackern.");
+    lv_obj_set_style_text_align(n, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(n, LV_ALIGN_CENTER, 0, 120);
+  }
+  lv_bar_set_value(updBar, p, LV_ANIM_OFF);
+  lv_label_set_text(updPct, p >= 100 ? "Fertig, Neustart ..." : (String(p) + " %").c_str());
+  lv_label_set_text(updSrc, (String(strcmp(ghupdate::progressSource(), "GitHub") == 0 ? "Download von GitHub" : "Upload über die Webseite")).c_str());
+}
+
 void loop() {
+  refreshUpdateScreen();
   if (rebuildPending) {
     rebuildPending = false;
     build();

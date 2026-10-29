@@ -499,6 +499,7 @@ function pgSettings(){
    <div class="f2">${inp('webUser','Web-Benutzer')}${inp('webPass','Web-Passwort (leer = kein Schutz)','password')}</div>
    <div class="f2">${inp('ntpServer','Zeitserver')}${inp('tz','Zeitzone (POSIX)')}</div>
    <label>Firmware-Update (.bin)</label><div class="row"><input type="file" id="fw" accept=".bin" class="grow"><button class="btn" id="fwup">Hochladen</button></div>
+   <div id="updbox" hidden style="margin:8px 0"><div class="bar"><i id="updbar" style="width:0%;background:var(--ac)"></i></div><div class="mu" id="updtxt" style="margin-top:4px"></div></div>
    <label>Oder direkt von GitHub</label>
    <div class="row"><input type="text" id="updRepo" class="grow" placeholder="benutzer/repo" style="flex:1"><button class="btn" type="button" id="ghchk">Nach Update suchen</button></div>
    <p class="mu" id="ghst" style="margin-top:4px">Lädt das neueste Release mit Tag <code>display-v…</code> aus dem Repo (öffentlich). Repo eintragen, speichern, dann suchen.</p>
@@ -648,13 +649,23 @@ async function ghPoll(){
   const txt={checking:'Suche ...',downloading:`Lade Update ... ${j.pct||0} %`,done:j.msg,error:'⚠ '+j.msg,none:'✓ '+j.msg,available:`Neue Version ${j.latest} verfügbar (installiert: ${j.cur})`}[j.state];
   if(txt)st.textContent=txt;
   bi.hidden=j.state!=='available';
+  if(j.state==='downloading')updProgress(j.pct||0,`Lade von GitHub ... ${j.pct||0} %`);else if(j.state==='done')updProgress(100,'Fertig – Display startet neu ...');else if(j.state==='error')updProgress(-1);
   if(j.state==='checking'||j.state==='downloading')ghTimer=setTimeout(ghPoll,1000);
   if(j.state==='done')setTimeout(()=>location.reload(),15000);
 }
+// progress bar for both update paths; the panel shows its own update screen meanwhile
+function updProgress(pct,txt){const b=$('#updbox');if(!b)return;b.hidden=pct<0;$('#updbar').style.width=Math.max(0,Math.min(100,pct))+'%';$('#updtxt').textContent=txt||''}
 function upload(){
   const f=$('#fw').files[0];if(!f)return toast('Datei wählen');
-  const fd=new FormData();fd.append('firmware',f);toast('Lade hoch ...');
-  fetch('/update',{method:'POST',body:fd}).then(r=>r.json()).then(j=>{toast(j.msg);if(j.ok)setTimeout(()=>location.reload(),10000)}).catch(()=>toast('Upload fehlgeschlagen'));
+  if(!confirm('Firmware „'+f.name+'“ einspielen? Das Display startet danach neu.'))return;
+  const fd=new FormData();fd.append('firmware',f);
+  const x=new XMLHttpRequest();x.open('POST','/update');
+  x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.round(e.loaded*100/e.total);updProgress(p,p<100?`Übertrage ... ${p} %`:'Wird geschrieben ...')}};
+  x.onload=()=>{let j={};try{j=JSON.parse(x.responseText)}catch(e){}
+    if(j.ok||(x.status===200&&/^OK/.test(x.responseText))){updProgress(100,'Fertig – Display startet neu, die Seite lädt gleich neu ...');setTimeout(()=>location.reload(),12000)}
+    else{updProgress(-1);toast(j.msg||'Update fehlgeschlagen')}};
+  x.onerror=()=>{updProgress(-1);toast('Upload fehlgeschlagen')};
+  updProgress(0,'Übertrage ... 0 %');x.send(fd);
 }
 
 // ---- page + tile editor

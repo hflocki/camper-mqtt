@@ -24,6 +24,8 @@ TaskHandle_t task = nullptr;
 volatile uint8_t job = 0;            // 1 = check, 2 = install
 String state = "idle", latest, assetUrl, msg;
 int pct = 0;
+volatile int otaPct = -1;
+const char* volatile otaSrc = "";
 
 void set(const char* st, const String& m = "") {
   xSemaphoreTake(lock, portMAX_DELAY);
@@ -113,8 +115,13 @@ void doInstall() {
   // GitHub sends release files through a redirect to its download servers
   httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
   httpUpdate.rebootOnUpdate(false);
-  httpUpdate.onProgress([](int cur, int total) { if (total > 0) pct = (int)((int64_t)cur * 100 / total); });
+  setProgress(0, "GitHub");
+  httpUpdate.onProgress([](int cur, int total) {
+    if (total > 0) pct = (int)((int64_t)cur * 100 / total);
+    setProgress(pct, "GitHub");
+  });
   HTTPUpdateResult r = httpUpdate.update(client, url);
+  if (r != HTTP_UPDATE_OK) setProgress(-1, "");
   if (r == HTTP_UPDATE_OK) {
     set("done", "Update installiert, Neustart ...");
     delay(1500);
@@ -144,6 +151,10 @@ void begin() {
   if (!lock) lock = xSemaphoreCreateMutex();
   if (!task) xTaskCreatePinnedToCore(run, "ghupd", 12288, nullptr, 1, &task, 0);
 }
+
+void setProgress(int p, const char* source) { otaSrc = source; otaPct = p; }
+int progress() { return otaPct; }
+const char* progressSource() { return otaSrc; }
 
 void check() { if (state != "downloading") job = 1; }
 void install() { if (state != "downloading") job = 2; }
