@@ -178,9 +178,12 @@ Kacheln vom Typ *Wert* und *Schalter* können eine Warnung auslösen. Sie ersche
 
 | Feld | Wirkung |
 | --- | --- |
-| Warnung | keine, *wenn Wert unter …* oder *wenn Wert über …* den Grenzwert |
+| Anzeige umbenennen | nur Typ *Wert*: empfangene Texte anders anzeigen, z. B. `close=Zu, open=Offen` (Groß-/Kleinschreibung egal) |
+| Warnung | keine, *wenn Wert unter …* / *über …* den Grenzwert, oder *wenn Wert gleich …* einem Text (empfangen oder angezeigt, z. B. `open`) |
 | Warnen, wenn keine Daten seit | Minuten ohne Nachricht auf dem Status-Topic, 0 = aus |
 | Warntext | erscheint statt „<Name> zu niedrig/hoch“, z. B. „Landstrom weg“ |
+
+**Türkontakt am RUT956** (Eingang als MQTT, z. B. Topic `camper/door` mit `{"Door":{"name":"din2","type":"Digital In","state":"close",…}}`): Kachel *Wert*, Status-Topic `camper/door`, Schlüssel `Door.state`, Anzeige umbenennen `close=Zu, open=Offen`, Warnung *wenn Wert gleich* `open`, Warntext `Tür offen`. Den genauen Text für „offen“ zeigt der Topic-Finder, sobald die Tür einmal offen war.
 
 **Landstrom mit einer Tuya-Zigbee-Messzange** (über Zigbee2MQTT): Kachel *Wert* mit Status-Topic `zigbee2mqtt/<Name der Zange>`, Schlüssel `voltage`, Einheit `V`. Warnung *wenn Wert unter* `180`, Warntext `Landstrom weg`. Viele dieser Zangen hängen selbst am 230-V-Netz und schweigen, wenn der Landstrom fehlt. Deshalb zusätzlich *Warnen, wenn keine Daten seit* `10` Minuten eintragen; im Topic-Finder sieht man, wie oft die Zange sendet. Wer nur die Leistung hat, nimmt den Schlüssel `power` und warnt z. B. unter `1` W.
 

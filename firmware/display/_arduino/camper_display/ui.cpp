@@ -486,6 +486,12 @@ String warnings() {
       continue;
     }
     if (!t.warnMode || !store::tileHas(i)) continue;
+    if (t.warnMode == WARN_EQUAL) {
+      // text states like a door contact: "open" (received) or "Offen" (shown)
+      if (t.warnEq.length() && (store::tileRaw(i).equalsIgnoreCase(t.warnEq) || store::tile(i).equalsIgnoreCase(t.warnEq)))
+        add(t.warnText.length() ? t.warnText : t.name + ": " + store::tile(i));
+      continue;
+    }
     const String& raw = store::tile(i);
     char* end;
     float v = strtof(raw.c_str(), &end);

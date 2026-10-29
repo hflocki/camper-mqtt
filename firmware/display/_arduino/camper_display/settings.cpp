@@ -202,7 +202,9 @@ String pagesToJson() {
     if (t.payloadOff.length()) o["payloadOff"] = t.payloadOff;
     if (t.stateOn != "ON")     o["stateOn"] = t.stateOn;
     if (t.type == TILE_SLIDER) { o["min"] = t.min; o["max"] = t.max; o["step"] = t.step; }
+    if (t.valMap.length()) o["valMap"] = t.valMap;
     if (t.warnMode) { o["warnMode"] = t.warnMode; o["warnVal"] = t.warnVal; }
+    if (t.warnEq.length()) o["warnEq"] = t.warnEq;
     if (t.warnStale) o["warnStale"] = t.warnStale;
     if (t.warnText.length()) o["warnText"] = t.warnText;
   }
@@ -248,8 +250,12 @@ bool pagesFromJson(const String& json, String& err, bool apply) {
     t.warnVal    = o["warnVal"] | 0.0f;
     t.warnStale  = o["warnStale"] | 0;
     t.warnText   = o["warnText"] | "";
-    t.warnText.trim();
-    if (t.warnMode > WARN_ABOVE) t.warnMode = WARN_NONE;
+    t.warnEq     = o["warnEq"] | "";
+    t.valMap     = o["valMap"] | "";
+    t.warnText.trim(); t.warnEq.trim(); t.valMap.trim();
+    if (t.warnMode > WARN_EQUAL) t.warnMode = WARN_NONE;
+    if (t.valMap.length() > 120) t.valMap = t.valMap.substring(0, 120);
+    if (t.warnEq.length() > 32) t.warnEq = t.warnEq.substring(0, 32);
     if (t.warnStale > 1440) t.warnStale = 1440;
     if (t.warnText.length() > 40) t.warnText = t.warnText.substring(0, 40);
     t.topic.trim(); t.cmdTopic.trim(); t.key.trim();

@@ -22,13 +22,15 @@ struct Tile {
   String  payloadOff;       // switch OFF
   String  stateOn = "ON";   // value that means "on" for switches
   float   min = 0, max = 100, step = 1;
-  // warning (value and switch tiles): value below/above a limit, or no message for warnStale minutes
-  uint8_t  warnMode = 0;    // WARN_NONE, WARN_BELOW, WARN_ABOVE
+  String   valMap;          // shown text for received values: "close=Zu,open=Offen", "" = as received
+  // warning (value and switch tiles): value below/above a limit, equal to a text, or no message for warnStale minutes
+  uint8_t  warnMode = 0;    // WARN_NONE, WARN_BELOW, WARN_ABOVE, WARN_EQUAL
   float    warnVal = 0;
+  String   warnEq;          // WARN_EQUAL: received or shown value, case ignored ("open")
   uint16_t warnStale = 0;   // minutes, 0 = off
   String   warnText;        // "" = "<name> zu niedrig" ...
 };
-enum TileWarn : uint8_t { WARN_NONE = 0, WARN_BELOW = 1, WARN_ABOVE = 2 };
+enum TileWarn : uint8_t { WARN_NONE = 0, WARN_BELOW = 1, WARN_ABOVE = 2, WARN_EQUAL = 3 };
 
 struct Page {
   String name;

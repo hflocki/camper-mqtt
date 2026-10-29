@@ -44,6 +44,7 @@ namespace store {
   bool          tileHas(size_t i);
   bool          tileOn(size_t i);          // for switch tiles
   uint32_t      tileAgeMs(size_t i);       // since the last message for this tile (or since start)
+  const String& tileRaw(size_t i);         // value as received, before the tile's text mapping
 
   const char*   dpKey(DpId id);            // short key used on the web page
 

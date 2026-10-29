@@ -670,9 +670,10 @@ function renderPages(){
     <div class="f2"><div><label>${t.type==3?'Payload (mit {v})':t.type==2?'Payload':'Payload EIN'}</label><input type="text" data-t="${i}" data-f="payloadOn" value="${esc(t.payloadOn)}"></div>
     ${t.type==1?`<div><label>Payload AUS</label><input type="text" data-t="${i}" data-f="payloadOff" value="${esc(t.payloadOff)}"></div><div><label>Wert für „an“</label><input type="text" data-t="${i}" data-f="stateOn" value="${esc(t.stateOn??'ON')}"></div>`:''}
     ${t.type==3?`<div><label>Min</label><input type="number" data-t="${i}" data-f="min" value="${t.min??0}"></div><div><label>Max</label><input type="number" data-t="${i}" data-f="max" value="${t.max??100}"></div><div><label>Schritt</label><input type="number" data-t="${i}" data-f="step" value="${t.step??1}"></div>`:''}</div>`:''}
+    ${t.type===0?`<label>Anzeige umbenennen (optional, z. B. <code>close=Zu, open=Offen</code>)</label><input type="text" data-t="${i}" data-f="valMap" value="${esc(t.valMap||'')}" maxlength="120" placeholder="empfangen=angezeigt, …">`:''}
     ${t.type<2?`<label>Warnung (Status-Kachel, Kopfzeile, Pushover)</label>
-    <div class="f2"><div><select data-t="${i}" data-f="warnMode"><option value="0">keine</option><option value="1">wenn Wert unter …</option><option value="2">wenn Wert über …</option></select></div>
-    <div><input type="number" step="any" data-t="${i}" data-f="warnVal" value="${t.warnVal??0}" placeholder="Grenzwert"></div>
+    <div class="f2"><div><select data-t="${i}" data-f="warnMode"><option value="0">keine</option><option value="1">wenn Wert unter …</option><option value="2">wenn Wert über …</option><option value="3">wenn Wert gleich …</option></select></div>
+    <div>${t.warnMode===3?`<input type="text" data-t="${i}" data-f="warnEq" value="${esc(t.warnEq||'')}" maxlength="32" placeholder="z. B. open">`:`<input type="number" step="any" data-t="${i}" data-f="warnVal" value="${t.warnVal??0}" placeholder="Grenzwert">`}</div>
     <div><label>Warnen, wenn keine Daten seit (min, 0 = aus)</label><input type="number" data-t="${i}" data-f="warnStale" value="${t.warnStale||0}"></div>
     <div><label>Warntext (leer = Name + „zu niedrig/hoch“)</label><input type="text" data-t="${i}" data-f="warnText" value="${esc(t.warnText||'')}" maxlength="40" placeholder="z. B. Landstrom weg"></div></div>`:''}</div>`;
   });
@@ -689,7 +690,7 @@ function renderPages(){
     const t=PG.tiles[+e.dataset.t],f=e.dataset.f;let v=e.value;
     if(['page','type','warnMode'].includes(f))v=+v;else if(['min','max','step','warnVal'].includes(f))v=parseFloat(v);else if(f==='warnStale')v=parseInt(v)||0;
     else if(f==='decimals')v=v===''?-1:+v;
-    t[f]=v;if(f==='type'&&e.type!=='text')renderPages()}});
+    t[f]=v;if((f==='type'||f==='warnMode')&&e.type!=='text'&&e.type!=='number')renderPages()}});
   const ap=$('#addp');if(ap)ap.onclick=()=>{PG.pages.push({name:'Seite '+(PG.pages.length+1)});renderPages()};
   const at=$('#addt');if(at)at.onclick=()=>{PG.tiles.push({name:'',page:0,type:0,topic:''});renderPages()};
   $('#savep').onclick=()=>{const o=JSON.parse(JSON.stringify(PG));o.tiles.forEach(t=>{if(t.decimals===-1||t.decimals==='')delete t.decimals});post('/api/pages',o)};

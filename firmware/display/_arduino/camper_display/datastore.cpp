@@ -65,6 +65,25 @@ bool   dirty[2][DP_COUNT];
 std::vector<String> tileVals;
 std::vector<bool>   tileSeen;
 std::vector<uint32_t> tileAt;             // millis() of the last message
+std::vector<String> tileRawVals;          // as received, before valMap
+
+// "close=Zu,open=Offen": shown text for a received value (case ignored), unchanged if not listed
+String mapValue(const String& map, const String& v) {
+  int pos = 0;
+  while (pos < (int)map.length()) {
+    int end = map.indexOf(',', pos);
+    if (end < 0) end = map.length();
+    String part = map.substring(pos, end);
+    pos = end + 1;
+    int eq = part.indexOf('=');
+    if (eq <= 0) continue;
+    String from = part.substring(0, eq), to = part.substring(eq + 1);
+    from.trim();
+    to.trim();
+    if (from.equalsIgnoreCase(v)) return to;
+  }
+  return v;
+}
 std::vector<bool>   tileDirtyF[2];
 
 const String EMPTY;
@@ -141,6 +160,7 @@ void rebuildTopics() {
   tileVals.assign(n, String());
   tileSeen.assign(n, false);
   tileAt.assign(n, millis());
+  tileRawVals.assign(n, String());
   tileDirtyF[0].assign(n, true);
   tileDirtyF[1].assign(n, true);
 }
@@ -161,6 +181,8 @@ bool onMessage(const char* topic, const char* payload, unsigned int len) {
                              : (v = formatRaw(payload, len, t.decimals), true);
     if (!ok) continue;   // key not in this message (z2m sends partial updates too)
     tileAt[i] = millis();
+    tileRawVals[i] = v;
+    if (t.valMap.length()) v = mapValue(t.valMap, v);
     if (!tileSeen[i] || tileVals[i] != v) {
       tileVals[i] = v;
       tileSeen[i] = true;
@@ -190,6 +212,7 @@ size_t tileCount()              { return tileVals.size(); }
 const String& tile(size_t i)    { return i < tileVals.size() ? tileVals[i] : EMPTY; }
 bool tileHas(size_t i)          { return i < tileSeen.size() && tileSeen[i]; }
 uint32_t tileAgeMs(size_t i)    { return i < tileAt.size() ? millis() - tileAt[i] : 0; }
+const String& tileRaw(size_t i) { return i < tileRawVals.size() ? tileRawVals[i] : EMPTY; }
 bool tileOn(size_t i) {
   if (i >= tileVals.size() || i >= settings.tiles.size()) return false;
   return tileVals[i].equalsIgnoreCase(settings.tiles[i].stateOn);
