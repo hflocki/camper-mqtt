@@ -42,6 +42,7 @@ static const uint8_t LIN_IDENTIFIER[4] = {0x17, 0x46, 0x00, 0x1F};
 
 bool InetBox::begin(uart_port_t uart_num, int tx_pin, int rx_pin, int cs_pin, int fault_pin, bool observer_mode) {
   uart_num_ = uart_num;
+  rx_pin_ = rx_pin;
   cs_pin_ = cs_pin;
   fault_pin_ = fault_pin;
   observer_mode_ = observer_mode;
@@ -117,6 +118,7 @@ void InetBox::task_loop_() {
             int n = uart_read_bytes(uart_num_, buf, avail > sizeof(buf) ? sizeof(buf) : avail, 0);
             if (n <= 0) break;
             for (int i = 0; i < n; i++) {
+              diag_byte_(buf[i]);
               on_byte_(buf[i]);
               last_byte_us_ = micros();
             }
@@ -131,8 +133,14 @@ void InetBox::task_loop_() {
           xQueueReset(uart_queue_);
           reset_read_state_();
           break;
+        case UART_BREAK:
+          diag_breaks_++;
+          break;
+        case UART_FRAME_ERR:
+          diag_frame_err_++;   // also on every LIN break (13 low bits); counted for the diagnosis
+          break;
         default:
-          // UART_BREAK / UART_FRAME_ERR are expected on every LIN break; the 0x00 byte is handled by the parser.
+          // the 0x00 byte of a LIN break is handled by the parser
           break;
       }
     }
@@ -141,6 +149,10 @@ void InetBox::task_loop_() {
     if (now - last_periodic >= 20) {
       last_periodic = now;
       periodic_();
+    }
+    if (now - diag_window_ms_ >= 10000) {
+      diag_window_ms_ = now;
+      diag_window_();
     }
   }
 }
@@ -185,12 +197,14 @@ void InetBox::on_byte_(uint8_t b) {
       if (b == LIN_BREAK) {
         read_state_ = READ_SYNC;
       } else if (b == LIN_SYNC) {
+        diag_syncs_++;
         read_state_ = READ_PID;
       }
       break;
 
     case READ_SYNC:
       if (b == LIN_SYNC) {
+        diag_syncs_++;
         read_state_ = READ_PID;
       } else if (b != LIN_BREAK) {
         read_state_ = READ_BREAK;
@@ -200,6 +214,8 @@ void InetBox::on_byte_(uint8_t b) {
     case READ_PID:
       pid_with_parity_ = b;
       pid_ = b & 0x3F;
+      diag_headers_++;
+      diag_pids_ |= (1ULL << pid_);
       if (pid_with_parity_ != (pid_ | (addr_parity(pid_) << 6))) {
         data_valid_ = false;
         crc_errors_++;
@@ -967,6 +983,83 @@ void InetBox::process_command_(const Command &cmd) {
     case CommandType::TIMER_OFF: ok = cmd_timer_off_(); break;
   }
   if (ok) state_dirty_ = true;
+}
+
+// ===============================================================================================
+// Bus diagnosis (LIN task)
+// ===============================================================================================
+
+void InetBox::diag_byte_(uint8_t b) {
+  diag_bytes_++;
+  if (diag_sample_n_ < sizeof(diag_sample_)) diag_sample_[diag_sample_n_++] = b;
+  if (raw_until_ms_ == 0) return;
+  if ((int32_t) (millis() - raw_until_ms_) > 0) {
+    raw_until_ms_ = 0;
+    if (raw_n_) LOGW(TAG, "RAW %s", raw_line_);
+    raw_n_ = 0;
+    LOGI(TAG, "Raw dump off");
+    return;
+  }
+  snprintf(raw_line_ + raw_n_ * 3, 4, "%02X ", b);
+  if (++raw_n_ >= 24) {
+    LOGW(TAG, "RAW %s", raw_line_);
+    raw_n_ = 0;
+  }
+}
+
+void InetBox::set_raw_dump(bool on) {
+  raw_n_ = 0;
+  raw_until_ms_ = on ? (millis() + 60000) | 1 : 0;
+  LOGI(TAG, "Raw dump %s", on ? "on for 60 s" : "off");
+}
+
+void InetBox::diag_text(char *out, size_t len) {
+  portENTER_CRITICAL(&diag_mux_);
+  strlcpy(out, diag_text_, len);
+  portEXIT_CRITICAL(&diag_mux_);
+}
+
+void InetBox::diag_window_() {
+  char t[200];
+  bool problem = true;
+  bool inet = (diag_pids_ >> PID_DIAG_MASTER) & 1;   // CP Plus talks to an iNet Box (0x3C)
+  bool cp = last_cpplus_poll_ms_ != 0 && (millis() - last_cpplus_poll_ms_) < CPPLUS_TIMEOUT_MS;
+  if (diag_bytes_ == 0) {
+    snprintf(t, sizeof(t), "Kein Signal am RX-Pin (GPIO%d). Prüfen: LIN-Ader, Masse, 12 V am LIN-Modul, SLP/EN auf HIGH, RX-Pin.",
+             rx_pin_);
+  } else if (diag_syncs_ == 0) {
+    char hex[40] = "";
+    for (uint8_t i = 0; i < diag_sample_n_ && i < 8; i++) snprintf(hex + i * 3, 4, "%02X ", diag_sample_[i]);
+    snprintf(t, sizeof(t), "%u Bytes, aber keine LIN-Frames (kein Sync 0x55). Störung, TX/RX vertauscht oder kein LIN. Erste Bytes: %s",
+             (unsigned) diag_bytes_, hex);
+  } else if (!inet && !cp) {
+    char pids[64] = "";
+    size_t o = 0;
+    for (int p = 0; p < 64 && o < sizeof(pids) - 4; p++)
+      if ((diag_pids_ >> p) & 1) o += snprintf(pids + o, sizeof(pids) - o, "%02X ", p);
+    snprintf(t, sizeof(t), "%u LIN-Frames (PIDs %s), aber keine Anfrage an eine iNet Box (3C). Am CP Plus: Einstellungen -> RESET -> PR SET.",
+             (unsigned) diag_headers_, pids);
+  } else if (!cp) {
+    snprintf(t, sizeof(t), "CP Plus fragt nach einer iNet Box, Anmeldung noch nicht fertig (Frames ok %u, CRC-Fehler %u).",
+             (unsigned) frames_ok_, (unsigned) crc_errors_);
+  } else {
+    problem = false;
+    snprintf(t, sizeof(t), "LIN ok: %u Frames in 10 s, CP Plus angemeldet.", (unsigned) diag_headers_);
+  }
+  portENTER_CRITICAL(&diag_mux_);
+  strlcpy(diag_text_, t, sizeof(diag_text_));
+  portEXIT_CRITICAL(&diag_mux_);
+  uint32_t now = millis();
+  if (problem) {
+    LOGW(TAG, "Diagnose: %s (Bytes %u, Breaks %u, Syncs %u, Header %u)", t, (unsigned) diag_bytes_, (unsigned) diag_breaks_,
+         (unsigned) diag_syncs_, (unsigned) diag_headers_);
+  } else if (now - diag_last_ok_log_ms_ > 5UL * 60 * 1000 || diag_last_ok_log_ms_ == 0) {
+    diag_last_ok_log_ms_ = now;
+    LOGI(TAG, "Diagnose: %s", t);
+  }
+  diag_bytes_ = diag_breaks_ = diag_syncs_ = diag_headers_ = diag_frame_err_ = 0;
+  diag_pids_ = 0;
+  diag_sample_n_ = 0;
 }
 
 void InetBox::periodic_() {

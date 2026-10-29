@@ -50,5 +50,9 @@ int error_code();
 // so it shows up in the web log and the MQTT log with default settings. Not persisted.
 void set_sniffer(bool on);
 bool sniffer();
+// LIN bus diagnosis: plain-text verdict of the last 10 s, raw hex dump for 60 s
+String lin_diag();
+void set_raw_dump(bool on);
+bool raw_dump();
 
 }  // namespace heater

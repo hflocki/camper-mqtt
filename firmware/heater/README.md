@@ -191,6 +191,20 @@ Weboberfläche → **System**:
 - **Abgelehnte Befehle** → das CP Plus hat eine Änderung abgelehnt (z. B. nicht unterstützter Modus).
 - **smartavan-Board läuft an USB, aber nicht an 12–14 V** → das ist ein Hardware-Problem (Spannungsregler / Versorgung), keine Firmware-Frage. 3,3 V am ESP bei 12-V-Betrieb messen, auch während WLAN sendet.
 
+## LIN-Diagnose
+
+Wird die Heizung nicht erkannt, sagt das Log alle 10 Sekunden, woran es liegt. Dieselbe Zeile steht im Web-UI unter *LIN-Bus*:
+
+| Meldung | Bedeutung | Was tun |
+| --- | --- | --- |
+| Kein Signal am RX-Pin | In 10 s kam kein einziges Byte an | LIN-Ader und Masse messen, 12 V an der 12V-Klemme des LIN-Moduls, SLP/EN auf HIGH (3,3 V oder `LIN_CS_PIN`), RX-Pin im Board-Profil |
+| Bytes, aber keine LIN-Frames | Es kommt etwas an, aber nichts, was nach LIN aussieht | TX/RX vertauscht, falscher Pin, Störung. Die ersten Bytes stehen in der Meldung |
+| LIN-Frames, aber keine Anfrage an eine iNet Box | CP Plus und Heizung reden, das CP Plus kennt die iNet Box aber nicht | Am CP Plus *Einstellungen → RESET → PR SET* |
+| CP Plus fragt, Anmeldung noch nicht fertig | Die Anmeldung läuft | Warten, ggf. PR SET wiederholen |
+| LIN ok | Alles in Ordnung | – (diese Meldung kommt nur alle 5 Minuten) |
+
+Problem-Meldungen sind Warnungen und landen ohne Umstellen im Web-Log und im MQTT-Log. Mit dem Schalter **LIN-Rohdaten (60 s)** im Web-UI schreibt die Firmware zusätzlich jedes empfangene Byte als Hex ins Log (`RAW 00 55 20 …`), danach schaltet sie das selbst wieder ab.
+
 ## LIN-Sniffer
 
 Zum Erforschen des Busses: Der Sniffer schreibt jeden Frame der übrigen PIDs (alles außer dem iNet-Box-Verkehr 0x18/0x3C/0x3D) ins Log, aber nur, wenn sich sein Inhalt ändert. Nach dem Einschalten kommt jeder PID einmal. Die Zeilen sind Warnungen (`SNIFF PID 07: 01 00 FF FF FF FF FF FF`), damit sie ohne Umstellen im Web-Log und im MQTT-Log landen.

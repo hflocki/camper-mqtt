@@ -455,6 +455,15 @@ void set_sniffer(bool on) {
 
 bool sniffer() { return g_box != nullptr && g_box->sniffer(); }
 
+String lin_diag() {
+  if (g_box == nullptr) return "LIN nicht gestartet";
+  char b[200];
+  g_box->diag_text(b, sizeof(b));
+  return b;
+}
+void set_raw_dump(bool on) { if (g_box != nullptr) g_box->set_raw_dump(on); }
+bool raw_dump() { return g_box != nullptr && g_box->raw_dump(); }
+
 static void sniffer_loop() {
   SniffFrame f;
   for (int i = 0; i < 8 && g_box->sniff_pop(f); i++) {

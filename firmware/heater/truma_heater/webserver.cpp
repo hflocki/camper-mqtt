@@ -71,6 +71,8 @@ static void render_state() {
   lin["frames"] = s.frames_ok;
   lin["crc_errors"] = s.crc_errors;
   lin["sniffer"] = heater::sniffer();
+  lin["diag"] = heater::lin_diag();
+  lin["raw"] = heater::raw_dump();
   lin["ack_errors"] = s.ack_errors;
   lin["pending"] = s.update_pending;
   lin["cpplus_version"] = s.cpplus_version;
@@ -175,6 +177,7 @@ static void handle_command(const WebCommand &c) {
   else if (a == "sync_clock") heater::sync_clock();
   else if (a == "timer") heater::set_timer(v);
   else if (a == "sniffer") heater::set_sniffer(v == "1");
+  else if (a == "rawdump") heater::set_raw_dump(v == "1");
   else if (a == "log_level") {
     uint8_t lvl = constrain(v.toInt(), 0, 3);
     g_settings.log_level = lvl;

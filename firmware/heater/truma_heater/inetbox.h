@@ -102,6 +102,12 @@ class InetBox {
   bool sniffer() const { return sniffer_; }
   bool sniff_pop(SniffFrame &out);
 
+  // Bus diagnosis: every 10 s the LIN task counts what arrived on RX and writes a plain-text verdict
+  // to the log ("no signal on RX", "bytes but no LIN frames", "CP Plus does not ask for an iNet Box" ...).
+  void diag_text(char *out, size_t len);   // last verdict, thread safe
+  void set_raw_dump(bool on);              // hex dump of every received byte for 60 s
+  bool raw_dump() const { return raw_until_ms_ != 0; }
+
  private:
   // ---- LIN listener ---------------------------------------------------------------------------
   enum ReadState : uint8_t { READ_BREAK, READ_SYNC, READ_PID, READ_DATA, READ_DONE };
@@ -202,6 +208,21 @@ class InetBox {
   uint32_t ack_errors_ = 0;
   uint32_t frames_ok_ = 0;
   uint32_t crc_errors_ = 0;
+
+  // diagnosis counters of the current 10 s window (LIN task only)
+  int rx_pin_ = -1;
+  uint32_t diag_bytes_ = 0, diag_breaks_ = 0, diag_syncs_ = 0, diag_headers_ = 0, diag_frame_err_ = 0;
+  uint64_t diag_pids_ = 0;               // bit per PID seen in a header
+  uint8_t diag_sample_[12] = {};         // first bytes of the window for the log
+  uint8_t diag_sample_n_ = 0;
+  uint32_t diag_window_ms_ = 0, diag_last_ok_log_ms_ = 0;
+  char diag_text_[200] = "Noch keine Auswertung (nach 10 s)";
+  portMUX_TYPE diag_mux_ = portMUX_INITIALIZER_UNLOCKED;
+  volatile uint32_t raw_until_ms_ = 0;
+  char raw_line_[24 * 3 + 1] = "";
+  uint8_t raw_n_ = 0;
+  void diag_byte_(uint8_t b);
+  void diag_window_();
   char cpplus_version_[16] = "";
   char heater_version_[16] = "";
 
