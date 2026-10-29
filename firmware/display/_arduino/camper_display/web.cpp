@@ -136,6 +136,7 @@ void buildSys(JsonObject s) {
   s["bri"] = settings.brightness;
   s["finder"] = mqttc::finderActive();
   s["awake"] = disp::isAwake();   // the web page shows a wake button while the screen is dark
+  s["warn"] = ui::warningText();  // the same warnings as on the display (incl. tile rules and weather)
 }
 
 void sendTo(uint32_t client, JsonDocument& d) {

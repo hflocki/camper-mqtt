@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "2.5.1"
+#define FW_VERSION              "2.5.3"
 
 // ---- Device / access point ------------------------------------------
 #ifndef STATIC_IP_FALLBACK_MS
@@ -94,6 +94,9 @@
 // ---- Firmware update from GitHub releases (tag "display-v<version>") --
 #ifndef DEFAULT_UPDATE_REPO
 #define DEFAULT_UPDATE_REPO     ""      // "owner/repo" of the public repo with the releases
+#endif
+#ifndef UPDATE_ASSET
+#define UPDATE_ASSET            "camper-display-esp32s3.bin"   // release file name (build.yml)
 #endif
 
 // ---- History (24 h curves on the web page) ---------------------------

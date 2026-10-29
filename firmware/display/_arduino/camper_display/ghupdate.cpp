@@ -58,48 +58,44 @@ void doCheck() {
   client.setCACertBundle(x509_crt_bundle_start, x509_crt_bundle_end - x509_crt_bundle_start);
   HTTPClient http;
   http.setTimeout(15000);
-  http.useHTTP10(true);
   http.setUserAgent(FW_NAME "/" FW_VERSION);
-  String url = "https://api.github.com/repos/" + repo + "/releases?per_page=30";
+  // Only the tags starting with display-v: a small answer, unlike the full release list
+  String url = "https://api.github.com/repos/" + repo + "/git/matching-refs/tags/" + TAG_PREFIX;
   if (!http.begin(client, url)) { set("error", "Keine Verbindung zu GitHub"); return; }
   http.addHeader("Accept", "application/vnd.github+json");
   int code = http.GET();
   if (code != 200) {
-    set("error", code == 404 ? String("Repo nicht gefunden oder privat") : "GitHub: Fehler " + String(code));
+    set("error", code == 404 ? String("Repo nicht gefunden oder privat")
+               : code == 403 ? String("GitHub: zu viele Anfragen, später erneut versuchen")
+               : "GitHub: Fehler " + String(code));
     http.end();
     return;
   }
-  // only the fields we need; the full list can be large
-  JsonDocument filter;
-  filter[0]["tag_name"] = true;
-  filter[0]["draft"] = true;
-  filter[0]["prerelease"] = true;
-  filter[0]["assets"][0]["name"] = true;
-  filter[0]["assets"][0]["browser_download_url"] = true;
-  JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, http.getStream(), DeserializationOption::Filter(filter));
+  String body = http.getString();   // reads the whole answer (chunked or not)
   http.end();
-  if (err) { set("error", String("GitHub-Antwort: ") + err.c_str()); return; }
+  JsonDocument filter;
+  filter[0]["ref"] = true;
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, body, DeserializationOption::Filter(filter));
+  if (err) { set("error", String("GitHub-Antwort: ") + err.c_str() + " (" + body.length() + " Bytes)"); return; }
 
-  String bestVer, bestUrl;
+  String bestVer;
   for (JsonObjectConst r : doc.as<JsonArrayConst>()) {
-    if (r["draft"] | false || r["prerelease"] | false) continue;
-    String tag = r["tag_name"] | "";
-    if (!tag.startsWith(TAG_PREFIX)) continue;
-    String ver = tag.substring(strlen(TAG_PREFIX));
-    String bin;
-    for (JsonObjectConst a : r["assets"].as<JsonArrayConst>()) {
-      String n = a["name"] | "";
-      if (n.endsWith(".bin") && n.indexOf("display") >= 0) { bin = a["browser_download_url"] | ""; break; }
-    }
-    if (bin.isEmpty()) continue;
-    if (bestVer.isEmpty() || cmpVersion(ver, bestVer) > 0) { bestVer = ver; bestUrl = bin; }
+    String ref = r["ref"] | "";                       // "refs/tags/display-v2.5.1"
+    int i = ref.indexOf(TAG_PREFIX);
+    if (i < 0) continue;
+    String ver = ref.substring(i + strlen(TAG_PREFIX));
+    if (ver.isEmpty() || !isdigit((unsigned char)ver[0])) continue;
+    if (bestVer.isEmpty() || cmpVersion(ver, bestVer) > 0) bestVer = ver;
   }
+  // file name as built by .github/workflows/build.yml
+  String bestUrl = bestVer.isEmpty() ? String("")
+                 : "https://github.com/" + repo + "/releases/download/" + TAG_PREFIX + bestVer + "/" UPDATE_ASSET;
   xSemaphoreTake(lock, portMAX_DELAY);
   latest = bestVer;
   assetUrl = bestUrl;
   xSemaphoreGive(lock);
-  if (bestVer.isEmpty()) set("none", "Kein Release mit Tag display-v… gefunden");
+  if (bestVer.isEmpty()) set("none", "Kein Tag display-v… im Repo gefunden");
   else if (cmpVersion(bestVer, FW_VERSION) > 0) set("available", "Version " + bestVer + " verfügbar");
   else set("none", "Aktuell (neueste Version " + bestVer + ")");
 }
@@ -124,7 +120,10 @@ void doInstall() {
     delay(1500);
     ESP.restart();
   } else {
-    set("error", "Update fehlgeschlagen: " + httpUpdate.getLastErrorString());
+    String e = httpUpdate.getLastErrorString();
+    if (httpUpdate.getLastError() == HTTP_UE_SERVER_FILE_NOT_FOUND || e.indexOf("404") >= 0)
+      e = "Release-Datei fehlt (Build in GitHub Actions noch nicht fertig?)";
+    set("error", "Update fehlgeschlagen: " + e);
   }
 }
 

@@ -49,6 +49,7 @@ main{padding:14px;max-width:820px;margin:0 auto}
 input[type=range]{width:100%;accent-color:var(--ac)}
 .err{color:var(--warn)}
 .okc{color:var(--ok)}
+.card.alarm{background:var(--warn);color:#fff}.card.alarm h3{color:#fff}
 .hist{margin-top:12px}.hist svg{width:100%;height:auto;display:block}.hist .lg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font-size:13px;color:var(--mu)}.hist .lg i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .fanbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .fanbtns .btn{padding:18px}
@@ -172,9 +173,12 @@ function pgOverview(){
     if(t==='bat')return `<div class="card wide click" data-go="bat"><h3>🔋 ${esc(ptitle(5))}</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
     if(/^bat[123]$/.test(t)){const n=t[3];return `<div class="card click" data-go="bat"><h3 id="ob${n}_t">🔋 Batterie ${n}</h3><div class="big" id="ob${n}_v">--</div><div class="mu" id="ob${n}_s"></div></div>`}
     if(/^t\d+$/.test(t)){const i=+t.slice(1),k=(cfg.tiles||[])[i];if(!k)return '';return `<div class="card"><h3>${esc(k.n)}</h3><div class="big" id="t${i}_v">--</div></div>`}
-    return '';   // status (warning box above), clock (header), none
+    if(t==='status')return `<div class="card wide" id="ost"><h3>⚠ Status</h3><div class="big" id="ost_v" style="white-space:pre-line">OK</div></div>`;
+    return '';   // clock (header), none
   });
-  return `<div class="warnbox" id="warn" hidden></div><div class="grid">${parts.join('')}</div>`;
+  // without a status tile the warnings appear in a box above the tiles
+  const box=ovList().includes('status')?'':'<div class="warnbox" id="warn" hidden></div>';
+  return `${box}<div class="grid">${parts.join('')}</div>`;
 }
 // Links to the web pages of the other devices (Einstellungen -> Geräte-Links)
 function pgLinks(){
@@ -274,6 +278,8 @@ function pgTemp(){return `<div class="warnbox" id="t_warn" hidden></div><div cla
 function temps(){try{const a=JSON.parse(V.temp_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
 function tval(t){return t.t===null||t.t===undefined?'--':Number(t.t).toFixed(1)+' °C'}
 function warnings(){
+  // the display sends its own list (with tile rules); the local rules below are only the fallback
+  if(typeof S.warn==='string')return S.warn.split('\n').map(x=>x.trim()).filter(x=>x);
   const w=[];
   if(online('temp')&&V.temp_alarm)V.temp_alarm.split('; ').forEach(x=>w.push(x));
   if(online('heat')&&V.heat_errflag==='ON')w.push('Heizung: Fehler '+(V.heat_err||'?'));
@@ -363,6 +369,7 @@ function update(){
   // warnings + temperatures
   const warn=warnings();
   ['warn','t_warn'].forEach(id=>{const e=document.getElementById(id);if(e){e.hidden=!warn.length;e.textContent='⚠ '+warn.join('\n')}});
+  if($('#ost')){const c=$('#ost'),v=$('#ost_v');c.classList.toggle('alarm',!!warn.length);v.textContent=warn.length?warn.join('\n'):'OK';v.style.fontSize=warn.length?'17px':'';v.classList.toggle('okc',!warn.length)}
   const tl=temps(),tOn=online('temp'),tAl=tl.some(t=>t.alarm);
   if($('#ot_v')){
     {const sl=ovSlots(tl,true);set('ot_v',sl.length?sl.map(x=>`<span title="${esc(x.n)}">${x.e}</span> <span${x.it&&x.it.alarm?' class="err"':x.it?'':' class="mu"'}>${x.it?tval(x.it):'--'}</span>`).join(' &nbsp; '):'--')}
