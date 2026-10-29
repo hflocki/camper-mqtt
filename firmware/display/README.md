@@ -35,7 +35,8 @@ Passt zu den anderen Projekten:
 ## Funktionen
 
 - **Wandpanel** mit LVGL-Oberfläche: Icon-Leiste unten zum Wechseln der Seiten (oder wischen), deutsche Umlaute und Icons
-- **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert, hell/dunkel automatisch
+- **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert (auf schmalen Bildschirmen Menü ☰ statt der Knopfleiste), hell/dunkel automatisch
+- **⚡ Automationen:** Regeln wie „Tür auf → Eingangslicht an, Tür zu → nach 10 s aus, nur wenn dunkel“, siehe [Automationen](#automationen)
 - **Display aufwecken:** Ist der Bildschirm gedimmt oder aus, zeigt die Webseite oben den Knopf **💡 Display an**.
 - **Feste IP abgesichert:** Eine feste IP, die nicht funktionieren kann (Gateway außerhalb des Netzes, falsches Subnetz), wird beim Speichern abgelehnt. Verbindet sich das Display mit fester IP zwar mit dem WLAN, erreicht aber 3 Minuten lang den MQTT-Broker nicht, schaltet es bis zum nächsten Neustart auf DHCP (Hinweis auf der Systemseite). Auf der Systemseite gibt es außerdem den Knopf *Feste IP aus (DHCP)* – lange drücken, das Display startet mit DHCP neu
 - **Geräte-Links (nur Webseite):** Unter *Einstellungen → 🔗 Geräte-Links* Name und Adresse der anderen Geräte eintragen (oder „Camper-Geräte vorschlagen“ für die `.local`-Namen). Die Seite **🔗 Geräte** zeigt sie als Buttons, die die jeweilige Konfigurationsseite in einem neuen Tab öffnen
@@ -81,6 +82,7 @@ docs/                      Screenshots
 | `notify.*` | Push-Nachrichten per Pushover (eigener Task, HTTPS mit Zertifikatsprüfung) |
 | `otaprog.*` | Fortschritt des Firmware-Uploads für den Update-Bildschirm |
 | `history.*` | 24-h-Verlauf der Temperaturen und Batterien im RAM |
+| `rules.*` | Automationen (Regeln, eigener NVS-Bereich) |
 | `icons.*` | Symbole und Auswahl für die Temperatur- und Batterie-Kachel |
 | `weather.*` | Wetter von Open-Meteo (eigener Task), GPS-Position per MQTT, Wetter-Warnungen |
 | `font_de_*.c` | Montserrat mit Umlauten + Font-Awesome-Icons, erzeugt mit `tools/make_fonts.py` |
@@ -282,6 +284,26 @@ Bei GPS-Position sucht das Display den Ortsnamen über [OpenStreetMap Nominatim]
 Die Wetterseite zeigt das aktuelle Wetter mit gefühlter Temperatur, Höchst- und Tiefstwert, Wind mit Richtung und Böen, Luftfeuchte, Regen in der nächsten Stunde und heute sowie die nächsten 3 Tage. Für die Übersicht gibt es die Kachel **Wetter**. Bei Böen über dem Grenzwert und bei Gewitter erscheint eine Warnung (Kopfzeile, Status-Kachel, Pushover). Daten älter als 3 Stunden lösen keine Warnung aus.
 
 Vorbelegen in `config_local.h`: `DEFAULT_WX_LAT`, `DEFAULT_WX_LON`, `DEFAULT_WX_NAME`, `DEFAULT_WX_TOPIC`, `DEFAULT_WX_GUST`.
+
+## Automationen
+
+Webseite → **⚡ Automationen**. Jede Regel hat:
+
+| Teil | Felder | Beispiel Eingangslicht |
+| --- | --- | --- |
+| Wenn | Topic, JSON-Schlüssel, Bedingung (= ≠ < >), Wert | `camper/door`, `Door.state`, =, `open` |
+| Dann senden | Befehls-Topic und Payload, sofort | `camper/zigbee/led_eingang/set`, `{"state":"ON"}` |
+| Wenn nicht mehr erfüllt | Payload und Verzögerung in Sekunden | `{"state":"OFF"}` nach 10 s |
+| Zeitraum | immer, von–bis (auch über Mitternacht) oder nur wenn dunkel | nur wenn dunkel |
+| Anzeige | Symbol in der Status-Kachel solange erfüllt, optional als Warnung (Pushover) | 🚪 |
+
+- Eine Regel reagiert nur auf **Wechsel**. Der erste empfangene Wert nach dem Start (z. B. retained) löst nichts aus.
+- **Von Hand schalten geht immer.** Mit *Nur ausschalten, was diese Regel eingeschaltet hat* (Standard) bleibt ein Licht, das schon an war, an. Das Display liest dazu den Zustand der Lampe auf dem Befehls-Topic ohne `/set` mit (Zigbee2MQTT: `state`).
+- Der Zeitraum gilt nur fürs Einschalten; ausgeschaltet wird immer.
+- „Nur wenn dunkel“ nutzt Sonnenauf- und -untergang aus dem Wetter (Open-Meteo); ohne Wetterdaten gilt 18 bis 7 Uhr.
+- Mehrere Lampen: Regel mit ⧉ kopieren und nur das Befehls-Topic ändern (z. B. später die Markisenbeleuchtung).
+- Bis zu 16 Regeln, gespeichert im Display (auch in der Sicherung enthalten). Der Kasten über jeder Regel zeigt live, ob sie erfüllt ist und was sie zuletzt getan hat.
+- Nur ein Symbol ohne Aktion (z. B. 🚪 für einen Fensterkontakt): Befehls-Topic leer lassen.
 
 ## Router-Daten (RUT956)
 

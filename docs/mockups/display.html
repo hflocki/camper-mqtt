@@ -19,7 +19,7 @@ const M = {
     builtin: [true, true, true, true, true, true, true],
     pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'System'],
     ovTiles: 'water,gas,heater,level,fan,weather,temp,bat1,status',
-    fw: '2.6.0', mac: '24:0A:C4:00:00:01',
+    fw: '2.7.0', mac: '24:0A:C4:00:00:01',
     // In the mockup the device links open the other mockups
     links: [{n: 'Truma', u: 'heater.html'}, {n: 'MaxxFan', u: 'maxxfan.html'}, {n: 'Tanks', u: 'tanklevel.html'},
             {n: 'Level', u: 'level.html'}, {n: 'Temperatur', u: 'temp.html'}, {n: 'Batterie', u: 'battery.html'}]
@@ -31,6 +31,9 @@ const M = {
   H: {hvac: 'heat', set: 21, fan: 'eco', wmode: 'eco', room: 18.6, decoke: false, drem: 0},
   T: {t0: 'ON', t1: '180', t2: '0'},
   awake: true, bri: 80, finderOn: false,
+  rules: {rules: [{name: 'Eingangslicht', on: true, inTopic: 'camper/door', inKey: 'Door.state', cond: 0, inVal: 'open',
+    outTopic: 'camper/zigbee/led_eingang/set', onPayload: '{"state":"ON"}', offPayload: '{"state":"OFF"}', offDelay: 10,
+    onlyOwn: true, when: 2, from: '19:00', to: '07:00', icon: 'door', warn: false}]},
   cfgMsg() {
     const c = M.cfg;
     return {t: 'cfg', fw: c.fw, host: c.hostname, name: c.displayName, links: c.links, ap: false, setup: false,
@@ -78,7 +81,8 @@ const M = {
         {name: 'Starter', ok: true, soc: 82, v: 12.6, w: null, rt: null, st: 'Normal', p: false}]),
       t0: M.T.t0, t1: M.T.t1, t2: (charging ? 0 : 1650 + Math.round(Math.sin(t / 5) * 40)).toString()
     };
-    return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake}};
+    const door = Math.floor(t / 20) % 3 === 0;
+    return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake, ind: door ? ['door'] : []}};
   },
   wsCmd(o) {
     const H = M.H;
@@ -111,6 +115,12 @@ const M = {
       if (M.emit) setTimeout(() => { M.emit(M.cfgMsg()); M.emit(M.wxMsg()); }, 300);
       return {ok: true, msg: 'Gespeichert'}; }
     if (path === '/api/pages' && method === 'GET') return M.pages;
+    if (path === '/api/rules' && method === 'GET') return M.rules;
+    if (path === '/api/rules') { M.rules = body; return {ok: true, msg: 'Automationen gespeichert'}; }
+    if (path === '/api/rules/state') {
+      const door = Math.floor((Date.now() - M.t0) / 20000) % 3 === 0;
+      return M.rules.rules.map((r, i) => i === 0 ? {known: true, active: door, owned: door, allowed: true, last: door ? 'an 19:42' : 'aus 19:40'} : {known: false, active: false, owned: false, allowed: true, last: ''});
+    }
     if (path === '/api/pages') { M.pages = body; return {ok: true, msg: 'Seiten gespeichert'}; }
     if (path === '/api/scan') return {running: false, nets: [{ssid: 'Camper-WLAN', rssi: -48}, {ssid: 'Campingplatz-Gast', rssi: -77}]};
     if (path === '/api/pushover/test') { M.save({poStatus: 'OK ' + new Date().toTimeString().slice(0, 5)}); return {ok: true, msg: 'Testnachricht wird gesendet'}; }
@@ -258,6 +268,9 @@ nav{display:flex;gap:6px;overflow-x:auto;padding:10px 0;scrollbar-width:none}
 nav::-webkit-scrollbar{display:none}
 nav button{flex:none;border:0;border-radius:999px;padding:8px 14px;background:var(--hi);color:var(--tx);font:inherit;font-size:15px;cursor:pointer}
 nav button.on{background:var(--ac);color:#fff}
+#menu{display:none;border:0;background:var(--hi);color:var(--tx);border-radius:10px;font-size:20px;line-height:1;padding:6px 10px;cursor:pointer}
+@media (max-width:640px){#menu{display:block}nav{display:none;flex-direction:column;gap:4px;padding:8px 0 12px;max-height:70vh;overflow-y:auto}
+ header.open nav{display:flex}nav button{text-align:left;border-radius:12px;padding:12px 14px}#dname{display:none}}
 main{padding:14px;max-width:820px;margin:0 auto}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
 .card{background:var(--card);border-radius:16px;padding:14px;position:relative}
@@ -314,7 +327,7 @@ code{font-size:12px;color:var(--mu)}
 </head>
 <body>
 <header>
-  <div class="top"><span class="dot" id="dot" title="Verbindung"></span><h1 id="title">Camper</h1><span class="mu" id="dname" style="position:absolute;left:50%;transform:translateX(-50%);font-weight:600;pointer-events:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn" id="wake" hidden title="Display ist dunkel" style="padding:6px 12px;font-size:14px">💡 Display an</button><button class="btn" id="sleep" hidden title="Display ausschalten" style="padding:6px 10px;font-size:14px">💤</button><span id="clock"></span></div>
+  <div class="top"><button id="menu" aria-label="Menü" title="Menü">☰</button><span class="dot" id="dot" title="Verbindung"></span><h1 id="title">Camper</h1><span class="mu" id="dname" style="position:absolute;left:50%;transform:translateX(-50%);font-weight:600;pointer-events:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn" id="wake" hidden title="Display ist dunkel" style="padding:6px 12px;font-size:14px">💡 Display an</button><button class="btn" id="sleep" hidden title="Display ausschalten" style="padding:6px 10px;font-size:14px">💤</button><span id="clock"></span></div>
   <nav id="nav"></nav>
 </header>
 <main id="main"></main>
@@ -365,16 +378,18 @@ function pages(){
   const p=[];if(!cfg)return p;
   BUILTIN.forEach((b,i)=>{if(cfg.builtin[i])p.push({id:b[0],title:ptitle(i)})});
   cfg.pages.forEach((n,i)=>p.push({id:'p'+i,title:n,custom:i}));
+  p.push({id:'rules',title:'⚡ Automationen'});
   p.push({id:'links',title:'🔗 Geräte'});
   p.push({id:'settings',title:'⚙ Einstellungen'});
   return p;
 }
 function buildNav(){
   $('#nav').innerHTML=pages().map(p=>`<button data-p="${p.id}">${esc(p.title)}</button>`).join('');
-  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{page=b.dataset.p;localStorage.setItem('page',page);render()});
+  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{page=b.dataset.p;localStorage.setItem('page',page);document.querySelector('header').classList.remove('open');render()});
 }
 function render(){
   $('#nav').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.p===page));
+  if($('#menu'))$('#menu').textContent='☰';
   const p=pages().find(x=>x.id===page);if(!p)return;
   $('#title').textContent=p.title.replace('⚙ ','');
   $('#dname').textContent=cfg.name||'';document.title=cfg.name?cfg.name+' · Camper Display':'Camper Display';
@@ -387,6 +402,7 @@ function render(){
   else if(p.id==='bat'){m.innerHTML=pgBat();loadHist()}
   else if(p.id==='weather')m.innerHTML=pgWeather();
   else if(p.id==='links')m.innerHTML=pgLinks();
+  else if(p.id==='rules'){m.innerHTML=pgRules();loadRules()}
   else if(p.id==='settings'){m.innerHTML=pgSettings();loadSettings()}
   else m.innerHTML=pgCustom(p.custom);
   bind();update();
@@ -407,7 +423,7 @@ function pgOverview(){
     if(t==='bat')return `<div class="card wide click" data-go="bat"><h3>🔋 ${esc(ptitle(5))}</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
     if(/^bat[123]$/.test(t)){const n=t[3];return `<div class="card click" data-go="bat"><h3 id="ob${n}_t">🔋 Batterie ${n}</h3><div class="big" id="ob${n}_v">--</div><div class="mu" id="ob${n}_s"></div></div>`}
     if(/^t\d+$/.test(t)){const i=+t.slice(1),k=(cfg.tiles||[])[i];if(!k)return '';return `<div class="card"><h3>${esc(k.n)}</h3><div class="big" id="t${i}_v">--</div></div>`}
-    if(t==='status')return `<div class="card wide" id="ost"><h3>⚠ Status</h3><div class="big" id="ost_v" style="white-space:pre-line">OK</div></div>`;
+    if(t==='status')return `<div class="card" id="ost"><h3>⚠ Status</h3><div class="big" id="ost_v" style="white-space:pre-line">OK</div><div id="ost_i" style="font-size:22px;margin-top:4px"></div></div>`;
     return '';   // clock (header), none
   });
   // without a status tile the warnings appear in a box above the tiles
@@ -456,7 +472,7 @@ function updWeather(){
 function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div><div class="card wide hist" id="h_b" hidden><h3>📈 Ladestand, letzte 24 h</h3><div class="hc"></div></div><div class="card wide hist" id="h_v" hidden><h3>📈 Spannung, letzte 24 h</h3><div class="hc"></div></div>`}
 // camper-battery: <prefix>/batteries = [{name,ok,soc,v,w,rt,st,p}]
 // icons of batteries and temperature sensors; keys as in icons.cpp
-const ICONS=[['bat','🔋','Batterie'],['carbat','🚙','Starterbatterie'],['home','🏠','Wohnraum / Aufbau'],['sun','☀️','Sonne'],['solar','🔆','Solarpanel'],['car','🚗','Fahrzeug'],['plug','🔌','Landstrom'],['bolt','⚡','Strom'],['therm','🌡️','Thermometer'],['fridge','🧊','Kühlschrank'],['snow','❄️','Gefrierfach'],['couch','🛋️','Innenraum'],['tree','🌳','Außen'],['bed','🛏️','Schlafen'],['water','💧','Wasser'],['fire','🔥','Heizung'],['shower','🚿','Bad'],['box','📦','Stauraum']];
+const ICONS=[['bat','🔋','Batterie'],['carbat','🚙','Starterbatterie'],['home','🏠','Wohnraum / Aufbau'],['sun','☀️','Sonne'],['solar','🔆','Solarpanel'],['car','🚗','Fahrzeug'],['plug','🔌','Landstrom'],['bolt','⚡','Strom'],['therm','🌡️','Thermometer'],['fridge','🧊','Kühlschrank'],['snow','❄️','Gefrierfach'],['couch','🛋️','Innenraum'],['tree','🌳','Außen'],['bed','🛏️','Schlafen'],['water','💧','Wasser'],['fire','🔥','Heizung'],['shower','🚿','Bad'],['box','📦','Stauraum'],['door','🚪','Tür / Fenster offen'],['light','💡','Licht'],['awning','⛱️','Markise'],['lock','🔓','Schloss offen']];
 // overview slots: up to 3 'name=icon' lines (cfg.ovTempSel / cfg.ovBatSel), icon '' = automatic
 function slotsOf(raw){return (raw||'').split('\n').map(l=>{const i=l.lastIndexOf('=');return i<0?{n:l,k:''}:{n:l.slice(0,i),k:l.slice(i+1)}}).filter(x=>x.n).slice(0,3)}
 function autoIco(n,temp){n=(n||'').toLowerCase();const h=(...k)=>k.some(x=>n.includes(x));
@@ -473,6 +489,63 @@ const BAT_WARN_SOC=20;
 const cnum=(v,d)=>Number(v).toFixed(d).replace('.',',');
 function rtText(m){return m>=2880?cnum(m/1440,1)+' Tage':m>=60?Math.floor(m/60)+' h '+(m%60)+' min':m+' min'}
 function batBad(b){return b.ok&&(b.p||b.st==='Kritisch'||b.st==='Schwach'||(!b.st&&b.soc!=null&&b.soc<BAT_WARN_SOC))}
+// ---- automations (/api/rules): when <topic/key> <condition> <value> -> send, when no longer true -> send after a delay
+let RULES=[],ruleTimer=null;
+const CONDS=[['=','gleich'],['≠','ungleich'],['<','kleiner als'],['>','größer als']];
+const WHENS=['immer','nur von … bis … Uhr','nur wenn dunkel (Sonnenuntergang bis -aufgang)'];
+function pgRules(){return `<p class="mu" style="margin-top:0">Eine Regel reagiert nur, wenn sich der Zustand ändert. Licht lässt sich daher weiter von Hand schalten. Mit „nur ausschalten, was diese Regel eingeschaltet hat“ bleibt ein von Hand eingeschaltetes Licht an. Topics und Schlüssel findest du im 🔎 Topic-Finder unter Einstellungen.</p>
+  <div id="rlist"></div>
+  <div class="row" style="margin-top:12px"><button class="btn" id="radd">+ Regel</button><button class="btn" id="rtpl">+ Vorlage Eingangslicht (Tür)</button></div>
+  <div class="actions"><button class="btn pri" id="rsave" style="flex:1">Automationen speichern</button></div>`}
+async function loadRules(){
+  try{const r=await fetch('/api/rules');if(!r.ok)throw 0;RULES=(await r.json()).rules||[]}catch(e){RULES=[]}
+  renderRules();ruleState();
+  $('#radd').onclick=()=>{readRules();RULES.push({name:'',on:true,inTopic:'',inKey:'',cond:0,inVal:'',outTopic:'',onPayload:'',offPayload:'',offDelay:10,onlyOwn:true,when:0,from:'19:00',to:'07:00',icon:'',warn:false});renderRules()};
+  $('#rtpl').onclick=()=>{readRules();RULES.push({name:'Eingangslicht',on:true,inTopic:'camper/door',inKey:'Door.state',cond:0,inVal:'open',outTopic:'camper/zigbee/led_eingang/set',onPayload:'{"state":"ON"}',offPayload:'{"state":"OFF"}',offDelay:10,onlyOwn:true,when:2,from:'19:00',to:'07:00',icon:'door',warn:false});renderRules()};
+  $('#rsave').onclick=()=>{readRules();post('/api/rules',{rules:RULES})};
+}
+function rIn(i,f,label,ph,extra){return `<div><label>${label}</label><input type="text" data-r="${i}" data-rf="${f}" value="${esc(RULES[i][f]??'')}" placeholder="${ph||''}" ${extra||''}></div>`}
+function renderRules(){
+  const b=$('#rlist');if(!b)return;
+  if(!RULES.length){b.innerHTML='<div class="card mu">Noch keine Automationen. „+ Vorlage Eingangslicht“ legt ein Beispiel an.</div>';return}
+  b.innerHTML=RULES.map((r,i)=>`<div class="card rule${r.on?'':' offline'}" style="margin-bottom:12px">
+    <div class="row" style="margin:0"><label class="chk" style="margin:0"><input type="checkbox" data-r="${i}" data-rf="on" ${r.on?'checked':''}></label>
+     <input type="text" data-r="${i}" data-rf="name" value="${esc(r.name)}" placeholder="Name, z. B. Eingangslicht" style="flex:1;font-weight:600">
+     <button class="btn sm" data-rc="${i}" title="Kopieren">⧉</button><button class="btn sm" data-ru="${i}" title="Nach oben">▲</button><button class="btn sm danger" data-rd="${i}" title="Löschen">✕</button></div>
+    <div class="mu" id="rst${i}" style="margin:6px 0 2px"></div>
+    <h4 style="margin:10px 0 4px">Wenn</h4>
+    <div class="f2">${rIn(i,'inTopic','Topic','camper/door')}${rIn(i,'inKey','JSON-Schlüssel (leer = ganzer Wert)','Door.state')}
+     <div><label>Bedingung</label><select data-r="${i}" data-rf="cond">${CONDS.map((c,k)=>`<option value="${k}"${r.cond==k?' selected':''}>${c[0]} ${c[1]}</option>`).join('')}</select></div>${rIn(i,'inVal','Wert','open')}</div>
+    <h4 style="margin:10px 0 4px">Dann senden</h4>
+    <div class="f2">${rIn(i,'outTopic','Befehls-Topic (leer = nur Anzeige)','camper/zigbee/led_eingang/set')}${rIn(i,'onPayload','Payload sofort','{"state":"ON"}')}
+     ${rIn(i,'offPayload','Wenn nicht mehr erfüllt: Payload (leer = nichts)','{"state":"OFF"}')}<div><label>… nach Sekunden</label><input type="number" min="0" data-r="${i}" data-rf="offDelay" value="${r.offDelay??10}"></div></div>
+    <div class="row" style="gap:6px;margin:4px 0"><span class="mu">Payload-Vorlage:</span><button class="btn sm" data-rp="${i}" data-v="z2m">Zigbee an/aus</button><button class="btn sm" data-rp="${i}" data-v="onoff">ON / OFF</button><button class="btn sm" data-rp="${i}" data-v="10">1 / 0</button></div>
+    <label class="chk"><input type="checkbox" data-r="${i}" data-rf="onlyOwn" ${r.onlyOwn!==false?'checked':''}> Nur ausschalten, was diese Regel eingeschaltet hat</label>
+    <h4 style="margin:10px 0 4px">Zeitraum für das Einschalten</h4>
+    <div class="f2"><div><select data-r="${i}" data-rf="when">${WHENS.map((w,k)=>`<option value="${k}"${r.when==k?' selected':''}>${w}</option>`).join('')}</select></div>
+     <div class="row" style="margin:0;gap:6px;${r.when==1?'':'display:none'}"><input type="time" data-r="${i}" data-rf="from" value="${esc(r.from||'19:00')}" style="flex:1"><span>bis</span><input type="time" data-r="${i}" data-rf="to" value="${esc(r.to||'07:00')}" style="flex:1"></div></div>
+    <h4 style="margin:10px 0 4px">Anzeige, solange erfüllt</h4>
+    <div class="f2"><div><select data-r="${i}" data-rf="icon"><option value="">kein Symbol</option>${ICONS.map(x=>`<option value="${x[0]}"${r.icon===x[0]?' selected':''}>${x[1]} ${x[2]}</option>`).join('')}</select></div>
+     <label class="chk"><input type="checkbox" data-r="${i}" data-rf="warn" ${r.warn?'checked':''}> auch als Warnung (Pushover)</label></div>
+  </div>`).join('');
+  b.querySelectorAll('[data-rf="when"]').forEach(e=>e.onchange=()=>{readRules();renderRules()});
+  b.querySelectorAll('[data-rf="on"]').forEach(e=>e.onchange=()=>e.closest('.rule').classList.toggle('offline',!e.checked));
+  b.querySelectorAll('[data-rc]').forEach(e=>e.onclick=()=>{readRules();const c=JSON.parse(JSON.stringify(RULES[+e.dataset.rc]));c.name=(c.name||'Regel')+' (Kopie)';RULES.splice(+e.dataset.rc+1,0,c);renderRules()});
+  b.querySelectorAll('[data-ru]').forEach(e=>e.onclick=()=>{readRules();const i=+e.dataset.ru;if(i>0){[RULES[i-1],RULES[i]]=[RULES[i],RULES[i-1]];renderRules()}});
+  b.querySelectorAll('[data-rd]').forEach(e=>e.onclick=()=>{if(!confirm('Regel löschen?'))return;readRules();RULES.splice(+e.dataset.rd,1);renderRules()});
+  b.querySelectorAll('[data-rp]').forEach(e=>e.onclick=()=>{readRules();const r=RULES[+e.dataset.rp],v=e.dataset.v;
+    [r.onPayload,r.offPayload]=v==='z2m'?['{"state":"ON"}','{"state":"OFF"}']:v==='onoff'?['ON','OFF']:['1','0'];renderRules()});
+}
+function readRules(){
+  document.querySelectorAll('[data-rf]').forEach(e=>{const r=RULES[+e.dataset.r];if(!r)return;const f=e.dataset.rf;
+    r[f]=e.type==='checkbox'?e.checked:['cond','when','offDelay'].includes(f)?(parseInt(e.value)||0):e.value.trim()});
+}
+async function ruleState(){
+  clearTimeout(ruleTimer);if(page!=='rules')return;ruleTimer=setTimeout(ruleState,2000);
+  let a;try{a=await (await fetch('/api/rules/state')).json()}catch(e){return}
+  a.forEach((s,i)=>{const e=$('#rst'+i);if(!e)return;
+    e.innerHTML=!s.known?'Noch kein Wert empfangen':(s.active?'<b class="okc">● erfüllt</b>':'○ nicht erfüllt')+(s.offIn!=null?` · aus in ${s.offIn} s`:'')+(s.owned?' · hat eingeschaltet':'')+(s.last?' · zuletzt: '+esc(s.last):'')+(s.allowed?'':' · außerhalb des Zeitraums')});
+}
 // ---- 24 h history (/api/history), drawn as SVG lines
 // no red: red means warning on this page
 const HCOL=['#5ab0f0','#f0a030','#4cc27a','#b07cf0','#3cc6c0','#f06aa8','#c8b040','#8fa0b0','#6a8cf0','#a0d060'];
@@ -603,7 +676,7 @@ function update(){
   // warnings + temperatures
   const warn=warnings();
   ['warn','t_warn'].forEach(id=>{const e=document.getElementById(id);if(e){e.hidden=!warn.length;e.textContent='⚠ '+warn.join('\n')}});
-  if($('#ost')){const c=$('#ost'),v=$('#ost_v');c.classList.toggle('alarm',!!warn.length);v.textContent=warn.length?warn.join('\n'):'OK';v.style.fontSize=warn.length?'17px':'';v.classList.toggle('okc',!warn.length)}
+  if($('#ost')){const c=$('#ost'),v=$('#ost_v');c.classList.toggle('alarm',!!warn.length);v.textContent=warn.length?warn.join('\n'):'OK';v.style.fontSize=warn.length?'17px':'';v.classList.toggle('okc',!warn.length);$('#ost_i').textContent=(S.ind||[]).map(k=>(ICONS.find(x=>x[0]===k)||['','•'])[1]).join(' ')}
   const tl=temps(),tOn=online('temp'),tAl=tl.some(t=>t.alarm);
   if($('#ot_v')){
     {const sl=ovSlots(tl,true);set('ot_v',sl.length?sl.map(x=>`<span title="${esc(x.n)}">${x.e}</span> <span${x.it&&x.it.alarm?' class="err"':x.it?'':' class="mu"'}>${x.it?tval(x.it):'--'}</span>`).join(' &nbsp; '):'--')}
@@ -849,9 +922,9 @@ const BK_READONLY=['fw','mac','poStatus'];
 const BK_NET=['wifiSsid','staticIp','ip','gateway','subnet','dns','hostname'];
 async function backupExport(){
   try{
-    const s=await (await fetch('/api/settings')).json();const p=await (await fetch('/api/pages')).json();
+    const s=await (await fetch('/api/settings')).json();const p=await (await fetch('/api/pages')).json();let ru=null;try{ru=await (await fetch('/api/rules')).json()}catch(e){}
     BK_SECRET.concat(BK_READONLY).forEach(k=>delete s[k]);
-    const b={type:'camper-display-backup',version:1,fw:ST.fw||'',date:new Date().toISOString(),settings:s,pages:p};
+    const b={type:'camper-display-backup',version:1,fw:ST.fw||'',date:new Date().toISOString(),settings:s,pages:p,rules:ru};
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(b,null,1)],{type:'application/json'}));
     a.download=`${(s.hostname||'camper-display')}-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();
     toast('Sicherung gespeichert');
@@ -865,6 +938,7 @@ async function backupImport(){
   const s=Object.assign({},b.settings);BK_SECRET.concat(BK_READONLY).forEach(k=>delete s[k]);
   if(!$('#bknet').checked)BK_NET.forEach(k=>delete s[k]);
   if(b.pages&&b.pages.pages){if(!await post('/api/pages',b.pages))return}
+  if(b.rules&&b.rules.rules){if(!await post('/api/rules',b.rules))return}
   if(await post('/api/settings',s))setTimeout(()=>location.reload(),2500);
 }
 // progress bar of the file upload; the panel shows its own update screen meanwhile
@@ -956,6 +1030,7 @@ function addFromFinder(topic,key){
   PG.tiles.push(t);renderPages();toast('Kachel hinzugefügt – unter „Seiten & Kacheln“ prüfen und speichern');
 }
 
+$('#menu').onclick=()=>{const h=document.querySelector('header');h.classList.toggle('open');$('#menu').textContent=h.classList.contains('open')?'✕':'☰'};
 $('#wake').onclick=()=>{send({c:'screen',v:'on'});S.awake=true;$('#wake').hidden=true;$('#sleep').hidden=false};
 $('#sleep').onclick=()=>{send({c:'screen',v:'off'});S.awake=false;$('#sleep').hidden=true;$('#wake').hidden=false};
 setInterval(()=>{const d=new Date();$('#clock').textContent=d.toTimeString().slice(0,5)},10000);

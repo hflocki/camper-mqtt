@@ -57,14 +57,14 @@ void setStatus(const String& s) {
 float num(JsonVariantConst v) { return v.is<float>() ? v.as<float>() : NAN; }
 
 bool fetch(float lat, float lon, bool fromGps) {
-  char url[420];
+  char url[512];
   snprintf(url, sizeof(url),
            "%s?latitude=%.4f&longitude=%.4f"
            "&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,"
            "wind_speed_10m,wind_direction_10m,wind_gusts_10m"
            "&hourly=precipitation,precipitation_probability&forecast_hours=2"
            "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,"
-           "precipitation_probability_max,wind_gusts_10m_max&forecast_days=%d&timezone=auto&timeformat=unixtime",
+           "precipitation_probability_max,wind_gusts_10m_max,sunrise,sunset&forecast_days=%d&timezone=auto&timeformat=unixtime",
            API, lat, lon, DAYS);
   NetworkClientSecure client;
   client.setCACertBundle(x509_crt_bundle_start, x509_crt_bundle_end - x509_crt_bundle_start);
@@ -101,6 +101,7 @@ bool fetch(float lat, float lon, bool fromGps) {
   JsonObjectConst dl = doc["daily"];
   for (int i = 0; i < DAYS; i++) {
     d.dCode[i] = dl["weather_code"][i] | -1;
+    if (i == 0) { d.sunrise = dl["sunrise"][0] | 0L; d.sunset = dl["sunset"][0] | 0L; }
     d.tMax[i] = num(dl["temperature_2m_max"][i]);
     d.tMin[i] = num(dl["temperature_2m_min"][i]);
     d.rainSum[i] = num(dl["precipitation_sum"][i]);
@@ -354,6 +355,24 @@ String warning() {
   return w;
 }
 
+bool isDark() {
+  time_t now = time(nullptr);
+  Data d = get();
+  // sun times of today; tomorrow's sunrise is about the same, which is close enough
+  if (d.valid && d.sunrise > 0 && d.sunset > 0 && now > 1700000000) {
+    struct tm t, r, s;
+    localtime_r(&now, &t);
+    localtime_r(&d.sunrise, &r);
+    localtime_r(&d.sunset, &s);
+    int m = t.tm_hour * 60 + t.tm_min, mr = r.tm_hour * 60 + r.tm_min, ms = s.tm_hour * 60 + s.tm_min;
+    return m >= ms || m < mr;
+  }
+  if (now < 1700000000) return true;   // no clock yet: rather light than dark
+  struct tm t;
+  localtime_r(&now, &t);
+  return t.tm_hour >= 18 || t.tm_hour < 7;
+}
+
 String json() {
   Data d = get();
   JsonDocument doc;
@@ -371,6 +390,7 @@ String json() {
     doc["t"] = d.temp; doc["f"] = d.feels; doc["h"] = d.hum; doc["w"] = d.wind; doc["g"] = d.gust;
     doc["dir"] = dirText(d.dir); doc["c"] = d.code; doc["day"] = d.day; doc["txt"] = text(d.code);
     doc["rn"] = d.rainNext; doc["pn"] = d.popNext; doc["at"] = (long)d.at;
+    doc["sr"] = (long)d.sunrise; doc["ss"] = (long)d.sunset;
     JsonArray a = doc["d"].to<JsonArray>();
     for (int i = 0; i < DAYS; i++) {
       JsonObject o = a.add<JsonObject>();

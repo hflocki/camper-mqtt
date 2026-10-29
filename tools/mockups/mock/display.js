@@ -15,7 +15,7 @@ const M = {
     builtin: [true, true, true, true, true, true, true],
     pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'System'],
     ovTiles: 'water,gas,heater,level,fan,weather,temp,bat1,status',
-    fw: '2.6.0', mac: '24:0A:C4:00:00:01',
+    fw: '2.7.0', mac: '24:0A:C4:00:00:01',
     // In the mockup the device links open the other mockups
     links: [{n: 'Truma', u: 'heater.html'}, {n: 'MaxxFan', u: 'maxxfan.html'}, {n: 'Tanks', u: 'tanklevel.html'},
             {n: 'Level', u: 'level.html'}, {n: 'Temperatur', u: 'temp.html'}, {n: 'Batterie', u: 'battery.html'}]
@@ -27,6 +27,9 @@ const M = {
   H: {hvac: 'heat', set: 21, fan: 'eco', wmode: 'eco', room: 18.6, decoke: false, drem: 0},
   T: {t0: 'ON', t1: '180', t2: '0'},
   awake: true, bri: 80, finderOn: false,
+  rules: {rules: [{name: 'Eingangslicht', on: true, inTopic: 'camper/door', inKey: 'Door.state', cond: 0, inVal: 'open',
+    outTopic: 'camper/zigbee/led_eingang/set', onPayload: '{"state":"ON"}', offPayload: '{"state":"OFF"}', offDelay: 10,
+    onlyOwn: true, when: 2, from: '19:00', to: '07:00', icon: 'door', warn: false}]},
   cfgMsg() {
     const c = M.cfg;
     return {t: 'cfg', fw: c.fw, host: c.hostname, name: c.displayName, links: c.links, ap: false, setup: false,
@@ -74,7 +77,8 @@ const M = {
         {name: 'Starter', ok: true, soc: 82, v: 12.6, w: null, rt: null, st: 'Normal', p: false}]),
       t0: M.T.t0, t1: M.T.t1, t2: (charging ? 0 : 1650 + Math.round(Math.sin(t / 5) * 40)).toString()
     };
-    return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake}};
+    const door = Math.floor(t / 20) % 3 === 0;
+    return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake, ind: door ? ['door'] : []}};
   },
   wsCmd(o) {
     const H = M.H;
@@ -107,6 +111,12 @@ const M = {
       if (M.emit) setTimeout(() => { M.emit(M.cfgMsg()); M.emit(M.wxMsg()); }, 300);
       return {ok: true, msg: 'Gespeichert'}; }
     if (path === '/api/pages' && method === 'GET') return M.pages;
+    if (path === '/api/rules' && method === 'GET') return M.rules;
+    if (path === '/api/rules') { M.rules = body; return {ok: true, msg: 'Automationen gespeichert'}; }
+    if (path === '/api/rules/state') {
+      const door = Math.floor((Date.now() - M.t0) / 20000) % 3 === 0;
+      return M.rules.rules.map((r, i) => i === 0 ? {known: true, active: door, owned: door, allowed: true, last: door ? 'an 19:42' : 'aus 19:40'} : {known: false, active: false, owned: false, allowed: true, last: ''});
+    }
     if (path === '/api/pages') { M.pages = body; return {ok: true, msg: 'Seiten gespeichert'}; }
     if (path === '/api/scan') return {running: false, nets: [{ssid: 'Camper-WLAN', rssi: -48}, {ssid: 'Campingplatz-Gast', rssi: -77}]};
     if (path === '/api/pushover/test') { M.save({poStatus: 'OK ' + new Date().toTimeString().slice(0, 5)}); return {ok: true, msg: 'Testnachricht wird gesendet'}; }

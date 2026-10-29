@@ -11,6 +11,7 @@
 #include "notify.h"
 #include "otaprog.h"
 #include "history.h"
+#include "rules.h"
 #include "web_ui.h"
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
@@ -137,6 +138,8 @@ void buildSys(JsonObject s) {
   s["finder"] = mqttc::finderActive();
   s["awake"] = disp::isAwake();   // the web page shows a wake button while the screen is dark
   s["warn"] = ui::warningText();  // the same warnings as on the display (incl. tile rules and weather)
+  JsonArray ind = s["ind"].to<JsonArray>();   // icons of true automation rules (door open ...)
+  for (auto& k : rules::activeIcons()) ind.add(k);
 }
 
 void sendTo(uint32_t client, JsonDocument& d) {
@@ -432,7 +435,7 @@ bool applySettings(JsonObject o, bool apply) {
 
 // hand-over buffers web task -> loop
 portMUX_TYPE pendingMux = portMUX_INITIALIZER_UNLOCKED;
-String pendingSettings, pendingPages;
+String pendingSettings, pendingPages, pendingRules;
 
 void setPending(String& slot, const String& json) {
   portENTER_CRITICAL(&pendingMux);
@@ -485,6 +488,21 @@ void postPages(AsyncWebServerRequest* r, JsonVariant& j) {
   sendResult(r, true, "Seiten gespeichert");
 }
 
+void getRules(AsyncWebServerRequest* r) {
+  if (!auth(r)) return;
+  r->send(200, "application/json", rules::toJson());
+}
+
+void postRules(AsyncWebServerRequest* r, JsonVariant& j) {
+  if (!auth(r)) return;
+  String json;
+  serializeJson(j, json);
+  String err;
+  if (!rules::fromJson(json, err, false)) { sendResult(r, false, err); return; }
+  setPending(pendingRules, json);
+  sendResult(r, true, "Automationen gespeichert");
+}
+
 void applyPending() {
   String s = takePending(pendingSettings);
   if (s.length()) {
@@ -494,6 +512,14 @@ void applyPending() {
       cfg::save();
       reloadPrefix = true;
       if (reboot) rebootAt = millis() + 1500;
+    }
+  }
+  String rl = takePending(pendingRules);
+  if (rl.length()) {
+    String err;
+    if (rules::fromJson(rl, err, true)) {
+      rules::save();
+      mqttc::resubscribe();
     }
   }
   String p = takePending(pendingPages);
@@ -579,6 +605,10 @@ void begin() {
     rebootAt = millis() + 1000;
   });
   server.on("/update", HTTP_POST, otaDone, otaUpload);
+  server.on("/api/rules", HTTP_GET, getRules);
+  server.on("/api/rules/state", HTTP_GET, [](AsyncWebServerRequest* r) {
+    r->send(200, "application/json", rules::statusJson());
+  });
   server.on("/api/history", HTTP_GET, [](AsyncWebServerRequest* r) {
     AsyncResponseStream* res = r->beginResponseStream("application/json");
     history::write(*res);
@@ -594,6 +624,10 @@ void begin() {
   hs->setMethod(HTTP_POST);
   hs->setMaxContentLength(8192);
   server.addHandler(hs);
+  auto* hr = new AsyncCallbackJsonWebHandler("/api/rules", postRules);
+  hr->setMethod(HTTP_POST);
+  hr->setMaxContentLength(16384);
+  server.addHandler(hr);
   auto* hp = new AsyncCallbackJsonWebHandler("/api/pages", postPages);
   hp->setMethod(HTTP_POST);
   hp->setMaxContentLength(24576);

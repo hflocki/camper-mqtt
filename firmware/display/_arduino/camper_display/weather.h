@@ -19,6 +19,7 @@ struct Data {
   // daily, [0] = today
   int    dCode[DAYS] = {-1, -1, -1, -1};
   float  tMax[DAYS], tMin[DAYS], rainSum[DAYS], popMax[DAYS], gustMax[DAYS];
+  time_t sunrise = 0, sunset = 0;   // today, 0 = unknown
   float  lat = NAN, lon = NAN;  // position the data is for
   bool   gps = false;           // position came from the MQTT GPS topic
 };
@@ -39,5 +40,7 @@ const char* text(int code);                // German description
 const char* dirText(int deg);              // N, NO, O ...
 String warning();                          // "Wind: Böen bis 62 km/h", "Gewitter", "" = none
 String json();                             // current data for the web page
+// true between sunset and sunrise; without weather data from 18:00 to 07:00 local time
+bool isDark();
 
 }  // namespace wx

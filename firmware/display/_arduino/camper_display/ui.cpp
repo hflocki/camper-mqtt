@@ -8,6 +8,7 @@
 #include "weather.h"
 #include "icons.h"
 #include "otaprog.h"
+#include "rules.h"
 #include <lvgl.h>
 #include <vector>
 #include <time.h>
@@ -100,7 +101,7 @@ String wShownStatus;
 lv_obj_t *ovWxIcon = nullptr, *ovWxVal = nullptr, *ovWxSub = nullptr;
 
 // warnings (overview banner) and temperatures (camper-temp)
-lv_obj_t *ovWarn, *ovWarnLbl;
+lv_obj_t *ovWarn, *ovWarnLbl, *ovInd = nullptr;
 // overview tiles with up to three single lines (temperatures, batteries)
 struct ListW { lv_obj_t* line[3] = {nullptr, nullptr, nullptr}; lv_obj_t* sub = nullptr; };
 ListW ovTemp, ovBat;
@@ -502,6 +503,8 @@ String warnings() {
     if (!t.warnText.length()) head = t.name + (t.warnMode == WARN_BELOW ? " zu niedrig" : " zu hoch");
     add(head + ": " + raw + (t.unit.length() ? " " + t.unit : String("")));
   }
+  // automation rules marked as warning (e.g. door open)
+  add(rules::warnings());
   // weather: gusts above the limit, thunderstorm
   String ww = wx::warning();
   if (ww.length()) add(ww);
@@ -615,6 +618,9 @@ void buildOverview(lv_obj_t* tab) {
       lv_obj_set_width(ovWarnLbl, TILE_IN);
       lv_label_set_long_mode(ovWarnLbl, LV_LABEL_LONG_WRAP);
       lv_obj_align(ovWarnLbl, LV_ALIGN_TOP_LEFT, 0, 20);
+      // icons of true automation rules, e.g. an open door
+      ovInd = label(ovWarn, &font_de_22, C_ACCENT, "");
+      lv_obj_align(ovInd, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     } else if (t == "bat1" || t == "bat2" || t == "bat3") {
       OneW w;
       w.idx = t[3] - '1';
@@ -1159,6 +1165,12 @@ void refreshValues() {
     lv_obj_set_style_text_font(ovWarnLbl, any ? &font_de_14 : &font_de_28, 0);
     lv_obj_set_style_text_color(ovWarnLbl, any ? C_TEXT : C_OK, 0);
     lv_label_set_text(ovWarnLbl, any ? dispText(warn).c_str() : "OK");
+    if (ovInd) {
+      String ic;
+      for (auto& k : rules::activeIcons()) { if (ic.length()) ic += "  "; ic += icons::glyph(k); }
+      lv_label_set_text(ovInd, ic.c_str());
+      lv_obj_set_style_text_color(ovInd, any ? C_TEXT : C_ACCENT, 0);
+    }
   }
   // Only a NEW warning wakes the screen, and only if enabled on the web page; a changing value
   // in an existing one (temperature, voltage, runtime) must not keep the display on.
@@ -1583,7 +1595,7 @@ void clearHandles() {
   for (auto& d : wDays) d = DayW();
   ovWxIcon = ovWxVal = ovWxSub = nullptr;
   wShown = -1;
-  ovWarn = ovWarnLbl = nullptr;
+  ovWarn = ovWarnLbl = ovInd = nullptr;
   ovTemp = ovBat = ListW();
   ovOneBat.clear();
   ovCustom.clear();

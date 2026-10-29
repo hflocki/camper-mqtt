@@ -23,6 +23,10 @@ const Icon LIST[] = {
   {"fire",   "\xEF\x81\xAD"},   // fire
   {"shower", "\xEF\x8B\x8C"},   // shower
   {"box",    "\xEF\x91\xA6"},   // box (storage, garage)
+  {"door",   "\xEF\x94\xAB"},   // door-open
+  {"light",  "\xEF\x83\xAB"},   // lightbulb
+  {"awning", "\xEF\x97\x8A"},   // umbrella-beach (awning)
+  {"lock",   "\xEF\x8F\x81"},   // lock-open
 };
 const size_t COUNT = sizeof(LIST) / sizeof(LIST[0]);
 

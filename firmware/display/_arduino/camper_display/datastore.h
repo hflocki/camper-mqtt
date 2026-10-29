@@ -45,6 +45,8 @@ namespace store {
   bool          tileOn(size_t i);          // for switch tiles
   uint32_t      tileAgeMs(size_t i);       // since the last message for this tile (or since start)
   const String& tileRaw(size_t i);         // value as received, before the tile's text mapping
+  // value of a JSON key ("a.b" for nested objects) or the whole payload if key is empty
+  bool extract(const char* payload, unsigned int len, const String& key, String& out);
 
   const char*   dpKey(DpId id);            // short key used on the web page
 

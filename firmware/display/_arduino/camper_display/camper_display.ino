@@ -21,6 +21,7 @@
 #include "web.h"
 #include "notify.h"
 #include "history.h"
+#include "rules.h"
 #include "weather.h"
 #include <ArduinoOTA.h>
 
@@ -39,6 +40,7 @@ void setup() {
   ui::begin();
   mqttc::begin();
   history::begin();
+  rules::begin();
   web::begin();
   notify::begin();
 }
@@ -52,6 +54,7 @@ void loop() {
   ui::loop();
   notify::loop();
   history::loop();
+  rules::loop();
   disp::loop();
   if (!otaStarted && wifimgr::staConnected()) {   // network upload from the Arduino IDE
     ArduinoOTA.setHostname(settings.hostname.c_str());

@@ -1,4 +1,5 @@
 #include "settings.h"
+#include "rules.h"
 #include "config.h"
 #include <Preferences.h>
 #include <ArduinoJson.h>
@@ -179,6 +180,7 @@ void factoryReset() {
   prefs.begin(NS, false);
   prefs.clear();
   prefs.end();
+  rules::clear();
 }
 
 String pagesToJson() {
