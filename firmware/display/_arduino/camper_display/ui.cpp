@@ -7,7 +7,7 @@
 #include "display_hw.h"
 #include "weather.h"
 #include "icons.h"
-#include "ghupdate.h"
+#include "otaprog.h"
 #include <lvgl.h>
 #include <vector>
 #include <time.h>
@@ -1744,7 +1744,7 @@ lv_obj_t *updScr = nullptr, *updBar = nullptr, *updPct = nullptr, *updSrc = null
 int updShown = -2;
 
 void refreshUpdateScreen() {
-  int p = ghupdate::progress();
+  int p = otaprog::get();
   if (p == updShown) return;
   updShown = p;
   if (p < 0) {
@@ -1764,7 +1764,7 @@ void refreshUpdateScreen() {
     lv_obj_align(ic, LV_ALIGN_CENTER, 0, -110);
     lv_obj_t* t = label(updScr, &font_de_28, C_TEXT, "Firmware-Update");
     lv_obj_align(t, LV_ALIGN_CENTER, 0, -64);
-    updSrc = label(updScr, &font_de_18, C_MUTED, "");
+    updSrc = label(updScr, &font_de_18, C_MUTED, "Upload \xC3\xBC" "ber die Webseite");
     lv_obj_align(updSrc, LV_ALIGN_CENTER, 0, -28);
     updBar = lv_bar_create(updScr);
     lv_obj_set_size(updBar, LCD_WIDTH - 100, 22);
@@ -1781,7 +1781,6 @@ void refreshUpdateScreen() {
   }
   lv_bar_set_value(updBar, p, LV_ANIM_OFF);
   lv_label_set_text(updPct, p >= 100 ? "Fertig, Neustart ..." : (String(p) + " %").c_str());
-  lv_label_set_text(updSrc, (String(strcmp(ghupdate::progressSource(), "GitHub") == 0 ? "Download von GitHub" : "Upload über die Webseite")).c_str());
 }
 
 void loop() {

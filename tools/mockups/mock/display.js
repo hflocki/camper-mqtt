@@ -11,11 +11,11 @@ const M = {
     ntpServer: 'pool.ntp.org', tz: 'CET-1CEST,M3.5.0,M10.5.0/3',
     poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
     brightness: 80, dimBrightness: 10, screenTimeout: 120, warnWake: false,
-    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, updRepo: 'owner/camper-mqtt', ovTempSel: '', ovBatSel: '',
+    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, ovTempSel: '', ovBatSel: '',
     builtin: [true, true, true, true, true, true, true],
     pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'System'],
     ovTiles: 'water,gas,heater,level,fan,weather,temp,bat1,status',
-    fw: '2.5.0', mac: '24:0A:C4:00:00:01',
+    fw: '2.6.0', mac: '24:0A:C4:00:00:01',
     // In the mockup the device links open the other mockups
     links: [{n: 'Truma', u: 'heater.html'}, {n: 'MaxxFan', u: 'maxxfan.html'}, {n: 'Tanks', u: 'tanklevel.html'},
             {n: 'Level', u: 'level.html'}, {n: 'Temperatur', u: 'temp.html'}, {n: 'Batterie', u: 'battery.html'}]
@@ -121,9 +121,6 @@ const M = {
         S('Aufbau', 'b', i => i < 120 ? 95 - i * 0.25 : i < 200 ? 65 - (i - 120) * 0.1 : Math.min(100, 57 + (i - 200) * 0.6)),
         S('Starter', 'v', i => 12.6 + (i > 210 && i < 260 ? 1.6 : 0) - i * 0.0005)]};
     }
-    if (path === '/api/ghupdate/check') { M.gh = {state: 'available', latest: '2.6.0', cur: M.cfg.fw, pct: 0, msg: 'Version 2.6.0 verfügbar'}; return {ok: true, msg: 'Suche Update ...'}; }
-    if (path === '/api/ghupdate/install') { M.gh = {state: 'done', latest: '2.6.0', cur: M.cfg.fw, pct: 100, msg: 'Update installiert, Neustart ... (simuliert)'}; return {ok: true, msg: 'Update wird geladen ...'}; }
-    if (path === '/api/ghupdate') return M.gh || {state: 'idle', latest: '', cur: M.cfg.fw, pct: 0, msg: ''};
     if (path === '/update') return {ok: true, msg: 'Update ok – Neustart (simuliert)'};
     if (path === '/api/reboot' || path === '/api/factory') return {ok: true, msg: 'Neustart (simuliert)'};
   }

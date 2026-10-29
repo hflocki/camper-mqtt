@@ -52,7 +52,7 @@ Passt zu den anderen Projekten:
 - **Setup-WLAN** wie bei den anderen Projekten: ohne WLAN-Daten oder nach 1 Minute ohne Verbindung öffnet sich `Camper-Display-XXXXXX`, Captive Portal unter `http://192.168.4.1`. Das Display zeigt dazu einen QR-Code zum Verbinden.
 - **Stromausfallsicher:** keine SD-Karte, kein Dateisystem. Webseite und Oberfläche stecken in der Firmware, Einstellungen im NVS. Strom an → nach ca. 1–2 s läuft alles wieder.
 - Bildschirm dimmt bzw. schaltet nach einstellbarer Zeit ab (Helligkeit gedimmt 0 = ganz aus), Berühren weckt (die erste Berührung löst nichts aus). Sofort ausschalten: **Kopfzeile lange drücken**, Knopf **Aus** auf der Systemseite oder **💤** oben auf der Webseite
-- Uhrzeit per NTP, Firmware-Update über die Webseite (Datei oder **direkt aus den GitHub-Releases**) oder Arduino-IDE-Netzwerkport
+- Uhrzeit per NTP, Firmware-Update über die Webseite (`.bin`-Datei, mit Fortschrittsbalken) oder Arduino-IDE-Netzwerkport
 - **Einstellungen sichern und wiederherstellen** als JSON-Datei (ohne Passwörter)
 - **Verlauf der letzten 24 h** als Kurven auf der Webseite: Temperaturen, Ladestand bzw. Spannung der Batterien
 - **Warnungen für eigene Kacheln**, z. B. Landstrom über eine Zigbee-Messzange: Wert unter/über einer Grenze oder keine Daten mehr
@@ -79,7 +79,7 @@ docs/                      Screenshots
 | `wifi_manager.*` | WLAN, feste IP, Setup-AP, mDNS, NTP |
 | `settings.*` | Einstellungen, Seiten und Kacheln im NVS |
 | `notify.*` | Push-Nachrichten per Pushover (eigener Task, HTTPS mit Zertifikatsprüfung) |
-| `ghupdate.*` | Firmware-Update aus den GitHub-Releases (eigener Task) |
+| `otaprog.*` | Fortschritt des Firmware-Uploads für den Update-Bildschirm |
 | `history.*` | 24-h-Verlauf der Temperaturen und Batterien im RAM |
 | `icons.*` | Symbole und Auswahl für die Temperatur- und Batterie-Kachel |
 | `weather.*` | Wetter von Open-Meteo (eigener Task), GPS-Position per MQTT, Wetter-Warnungen |
@@ -299,7 +299,7 @@ Am Display dann im **Topic-Finder** `camper/router/#` starten und die gewünscht
 
 **Einstellungen sichern:** *Einstellungen → 🔧 System → ⬇ Sichern* lädt eine JSON-Datei mit allen Einstellungen, Seiten und Kacheln herunter. Passwörter und Tokens (WLAN, MQTT, Web, Setup-WLAN, Pushover) sind nicht enthalten. *⬆ Einspielen* übernimmt die Datei; vorhandene Passwörter bleiben. WLAN, feste IP und Gerätename werden nur übernommen, wenn der Haken dafür gesetzt ist, damit ein zweites Display nicht dieselbe Adresse bekommt.
 
-**Update von GitHub:** Unter *🔧 System → Oder direkt von GitHub* das öffentliche Repo eintragen (`benutzer/repo`, eine kopierte Repo-Adresse geht auch), *Nach Update suchen*, dann *Installieren*. Das Display sucht den höchsten Tag `display-v<version>` und lädt aus dem Release dazu die Datei `camper-display-esp32s3.bin` (so heißt sie in der GitHub Action, `UPDATE_ASSET` in `config.h`) per HTTPS, danach startet es neu. Ein solches Release legt die GitHub Action automatisch an, sobald der Tag gepusht wird (`git tag display-v2.5.0 && git push origin display-v2.5.0`). Vorbelegen in `config_local.h`: `DEFAULT_UPDATE_REPO`. Der Datei-Upload funktioniert weiter wie bisher. Bei beiden Wegen zeigt die Webseite einen Fortschrittsbalken und das Display einen eigenen Update-Bildschirm mit Prozentanzeige. Während in den Flash geschrieben wird, kann das Bild flackern oder kurz verrutschen: Der Bildspeicher liegt im PSRAM, und der ist beim Schreiben in den Flash kurz blockiert. Das ist harmlos und nach dem Neustart vorbei.
+**Firmware-Update:** *🔧 System → Firmware-Update (.bin)*, Datei wählen, *Hochladen*. Die Webseite zeigt einen Fortschrittsbalken, das Display einen eigenen Update-Bildschirm mit Prozentanzeige. Während in den Flash geschrieben wird, kann das Bild flackern oder kurz verrutschen: Der Bildspeicher liegt im PSRAM, und der ist beim Schreiben in den Flash kurz blockiert. Das ist harmlos und nach dem Neustart vorbei.
 
 **Verlauf:** Alle 5 Minuten merkt sich das Display jeden Temperatursensor und jede Batterie (Ladestand, beim BM2 die Spannung), 24 Stunden lang. Die Seiten *Temperatur* und *Batterie* der Webseite zeigen daraus Kurven. Der Verlauf liegt nur im Arbeitsspeicher: Nach einem Neustart oder Stromausfall beginnt er neu. Schrittweite und Länge: `HISTORY_STEP_S`, `HISTORY_POINTS` in `config.h`.
 

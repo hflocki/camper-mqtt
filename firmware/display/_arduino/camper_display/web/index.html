@@ -496,10 +496,6 @@ function pgSettings(){
    <div class="f2">${inp('ntpServer','Zeitserver')}${inp('tz','Zeitzone (POSIX)')}</div>
    <label>Firmware-Update (.bin)</label><div class="row"><input type="file" id="fw" accept=".bin" class="grow"><button class="btn" id="fwup">Hochladen</button></div>
    <div id="updbox" hidden style="margin:8px 0"><div class="bar"><i id="updbar" style="width:0%;background:var(--ac)"></i></div><div class="mu" id="updtxt" style="margin-top:4px"></div></div>
-   <label>Oder direkt von GitHub</label>
-   <div class="row"><input type="text" id="updRepo" class="grow" placeholder="benutzer/repo" style="flex:1"><button class="btn" type="button" id="ghchk">Nach Update suchen</button></div>
-   <p class="mu" id="ghst" style="margin-top:4px">Lädt das neueste Release mit Tag <code>display-v…</code> aus dem Repo (öffentlich). Repo eintragen, speichern, dann suchen.</p>
-   <div class="row" id="ghinst" hidden><button class="btn pri" type="button" id="ghgo">Installieren</button></div>
    <label>Einstellungen sichern / wiederherstellen</label>
    <p class="mu" style="margin-top:0">Alle Einstellungen, Seiten und Kacheln als Datei. Passwörter und Tokens sind nicht enthalten, beim Einspielen bleiben die vorhandenen erhalten.</p>
    <div class="row"><button class="btn" type="button" id="bkexp">⬇ Sichern</button><input type="file" id="bkfile" accept=".json,application/json" class="grow"><button class="btn" type="button" id="bkimp">⬆ Einspielen</button></div>
@@ -518,7 +514,7 @@ async function loadSettings(){
     for(let i=0;i<=BUILTIN.length;i++){const e=$('#pn'+i);if(e)e.value=(ST.pageNames||[])[i]||''}
     {const l=(ST.ovTiles||OV_DEFAULT).split(',');for(let i=0;i<9;i++){const e=$('#ov'+i);if(e)e.value=l[i]||'none'}}
     LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
-    $('#warnWake').checked=!!ST.warnWake;$('#updRepo').value=ST.updRepo||'';$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||60);
+    $('#warnWake').checked=!!ST.warnWake;$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||60);
     $('#slt').innerHTML=$('#slb').innerHTML='';renderSlots();
     $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#poPrio').value=String(ST.poPrio||0);
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
@@ -535,9 +531,6 @@ async function loadSettings(){
   $('#factory').onclick=()=>{if(confirm('Alle Einstellungen löschen?'))post('/api/factory')};
   $('#fwup').onclick=upload;
   $('#bkexp').onclick=backupExport;$('#bkimp').onclick=backupImport;
-  $('#ghchk').onclick=async()=>{if(($('#updRepo').value||'').trim()!==(ST.updRepo||'')){await post('/api/settings',{updRepo:$('#updRepo').value.trim()});ST.updRepo=$('#updRepo').value.trim();await new Promise(r=>setTimeout(r,600))}
-    await post('/api/ghupdate/check');ghPoll()};
-  $('#ghgo').onclick=async()=>{if(!confirm('Update installieren? Das Display startet danach neu.'))return;await post('/api/ghupdate/install');ghPoll()};
   $('#potest').onclick=async()=>{await post('/api/pushover/test');setTimeout(async()=>{try{const r=await fetch('/api/settings');const s=await r.json();$('#postat').textContent=s.poStatus?'Zuletzt: '+s.poStatus:''}catch(e){}},6000)};
   $('#fstart').onclick=()=>send({c:'finder',on:!finder.on,f:$('#ffilter').value});
   renderFinder();
@@ -576,7 +569,7 @@ function readSlots(id){const b=$('#'+id);if(!b)return'';const l=[];for(let i=0;i
 function saveSettings(){
   const o={};FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)o[f]=e.value});
   ['mqttPort','dimBrightness','screenTimeout','wxGust'].forEach(f=>o[f]=parseInt(o[f])||0);
-  o.warnWake=$('#warnWake').checked;o.updRepo=$('#updRepo').value.trim();o.wxOn=$('#wxOn').checked;o.wxEvery=+$('#wxEvery').value;
+  o.warnWake=$('#warnWake').checked;o.wxOn=$('#wxOn').checked;o.wxEvery=+$('#wxEvery').value;
   o.ovTempSel=readSlots('slt');o.ovBatSel=readSlots('slb');
   o.staticIp=$('#staticIp').checked;o.fanPort=+$('#fanPort').value;o.brightness=+$('#brightness').value;
   o.builtin=BUILTIN.map((b,i)=>$('#bp'+i).checked);
@@ -636,20 +629,7 @@ async function backupImport(){
   if(b.pages&&b.pages.pages){if(!await post('/api/pages',b.pages))return}
   if(await post('/api/settings',s))setTimeout(()=>location.reload(),2500);
 }
-// ---- update from GitHub releases: poll the state while something is going on
-let ghTimer=null;
-async function ghPoll(){
-  clearTimeout(ghTimer);
-  let j;try{const r=await fetch('/api/ghupdate');if(!r.ok)return;j=await r.json()}catch(e){return}
-  const st=$('#ghst'),bi=$('#ghinst');if(!st)return;
-  const txt={checking:'Suche ...',downloading:`Lade Update ... ${j.pct||0} %`,done:j.msg,error:'⚠ '+j.msg,none:'✓ '+j.msg,available:`Neue Version ${j.latest} verfügbar (installiert: ${j.cur})`}[j.state];
-  if(txt)st.textContent=txt;
-  bi.hidden=j.state!=='available';
-  if(j.state==='downloading')updProgress(j.pct||0,`Lade von GitHub ... ${j.pct||0} %`);else if(j.state==='done')updProgress(100,'Fertig – Display startet neu ...');else if(j.state==='error')updProgress(-1);
-  if(j.state==='checking'||j.state==='downloading')ghTimer=setTimeout(ghPoll,1000);
-  if(j.state==='done')setTimeout(()=>location.reload(),15000);
-}
-// progress bar for both update paths; the panel shows its own update screen meanwhile
+// progress bar of the file upload; the panel shows its own update screen meanwhile
 function updProgress(pct,txt){const b=$('#updbox');if(!b)return;b.hidden=pct<0;$('#updbar').style.width=Math.max(0,Math.min(100,pct))+'%';$('#updtxt').textContent=txt||''}
 function upload(){
   const f=$('#fw').files[0];if(!f)return toast('Datei wählen');

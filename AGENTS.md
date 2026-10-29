@@ -50,7 +50,7 @@ arduino-cli compile --fqbn <fqbn> firmware/<gerät>/_arduino/<sketch>
 - LVGL 9.2.x. `firmware/display/_arduino/lv_conf.h` muss **neben** den `lvgl`-Ordner in `Arduino/libraries/` (CI kopiert sie dorthin). Nicht in den Sketch-Ordner verschieben.
 - Web-Oberfläche: `web/index.html` bearbeiten, danach `python3 firmware/display/tools/embed_web.py` (erzeugt `web_ui.h`). Danach Mockups neu erzeugen.
 - Schriften `font_de_*.c`: nur über `python3 firmware/display/tools/make_fonts.py` erzeugen (braucht Node/npx, lv_font_conv 1.5.3). Neue Font-Awesome-Icons dort eintragen, sonst erscheinen am Display Kästchen.
-- Module: `ui.*` Oberfläche, `datastore.*` Werte, `mqtt_client.*`, `web.*`, `settings.*` (NVS), `notify.*` Pushover, `weather.*` Open-Meteo (eigener Task, Mutex wird beim ersten Zugriff angelegt), `icons.*` Symbole der Temperatur-/Batterie-Kachel, `ghupdate.*` Update aus GitHub-Releases (Tag `display-v<version>`), `history.*` 24-h-Verlauf im RAM (`/api/history`).
+- Module: `ui.*` Oberfläche, `datastore.*` Werte, `mqtt_client.*`, `web.*`, `settings.*` (NVS), `notify.*` Pushover, `weather.*` Open-Meteo (eigener Task, Mutex wird beim ersten Zugriff angelegt), `icons.*` Symbole der Temperatur-/Batterie-Kachel, `otaprog.*` Fortschritt des Datei-Updates, `history.*` 24-h-Verlauf im RAM (`/api/history`).
 - Alles, was die UI beim Start abfragt, muss vor `ui::begin()` initialisiert sein (sonst Boot-Schleife).
 
 ### Heizung (`firmware/heater`)

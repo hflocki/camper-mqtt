@@ -86,7 +86,6 @@ void load() {
   settings.wxEvery      = prefs.getUChar ("wxevery", 60);
   settings.ovTempSel    = prefs.getString("ovtsel", "");
   settings.ovBatSel     = prefs.getString("ovbsel", "");
-  settings.updRepo      = prefs.getString("updrepo", DEFAULT_UPDATE_REPO);
   settings.ovTiles      = prefs.getString("ovt",    DEFAULT_OV_TILES);
 
   String pagesJson;
@@ -165,7 +164,6 @@ void save() {
   prefs.putUChar ("wxevery", settings.wxEvery);
   prefs.putString("ovtsel", settings.ovTempSel);
   prefs.putString("ovbsel", settings.ovBatSel);
-  prefs.putString("updrepo", settings.updRepo);
   prefs.putUChar("bpknown", BP_COUNT);
   prefs.end();
 }

@@ -9,7 +9,7 @@
 #include "display_hw.h"
 #include "ui.h"
 #include "notify.h"
-#include "ghupdate.h"
+#include "otaprog.h"
 #include "history.h"
 #include "web_ui.h"
 #include <WiFi.h>
@@ -260,7 +260,6 @@ void getSettings(AsyncWebServerRequest* r) {
   d["wxTopic"] = settings.wxTopic;
   d["wxGust"] = settings.wxGust;
   d["wxEvery"] = settings.wxEvery;
-  d["updRepo"] = settings.updRepo;
   d["poStatus"] = notify::status();
   d["brightness"] = settings.brightness;
   d["dimBrightness"] = settings.dimBrightness;
@@ -377,13 +376,6 @@ bool applySettings(JsonObject o, bool apply) {
   settings.wxTopic.trim();
   if (o["wxGust"].is<int>()) settings.wxGust = constrain(o["wxGust"].as<int>(), 0, 200);
   if (o["wxEvery"].is<int>()) settings.wxEvery = constrain(o["wxEvery"].as<int>(), 10, 180);
-  if (o["updRepo"].is<const char*>() && apply) {
-    String v = o["updRepo"].as<const char*>();
-    v.trim();
-    v.replace("https://github.com/", "");   // a pasted repo URL works too
-    while (v.endsWith("/")) v.remove(v.length() - 1);
-    if (v.length() <= 80) settings.updRepo = v;
-  }
   if (o["ovTempSel"].is<const char*>() && apply) settings.ovTempSel = icons::clean(o["ovTempSel"].as<const char*>());
   if (o["ovBatSel"].is<const char*>() && apply) settings.ovBatSel = icons::clean(o["ovBatSel"].as<const char*>());
   settings.prefixSelf = cleanPrefix(settings.prefixSelf);
@@ -538,15 +530,15 @@ void otaUpload(AsyncWebServerRequest* r, const String& filename, size_t index, u
   if (index == 0) {
     Serial.printf("[ota] upload %s\n", filename.c_str());
     if (!Update.begin(UPDATE_SIZE_UNKNOWN)) Update.printError(Serial);
-    ghupdate::setProgress(0, "Datei");
+    otaprog::set(0);
   }
   if (Update.isRunning() && Update.write(data, len) != len) Update.printError(Serial);
   // request length includes the multipart framing, close enough for a progress bar
   size_t total = r->contentLength();
-  if (total > 0) ghupdate::setProgress(min(99, (int)((uint64_t)(index + len) * 100 / total)), "Datei");
+  if (total > 0) otaprog::set(min(99, (int)((uint64_t)(index + len) * 100 / total)));
   if (final) {
-    if (Update.end(true)) { Serial.printf("[ota] done, %u bytes\n", (unsigned)(index + len)); ghupdate::setProgress(100, "Datei"); }
-    else { Update.printError(Serial); ghupdate::setProgress(-1, ""); }
+    if (Update.end(true)) { Serial.printf("[ota] done, %u bytes\n", (unsigned)(index + len)); otaprog::set(100); }
+    else { Update.printError(Serial); otaprog::set(-1); }
   }
 }
 
@@ -587,20 +579,6 @@ void begin() {
     rebootAt = millis() + 1000;
   });
   server.on("/update", HTTP_POST, otaDone, otaUpload);
-  server.on("/api/ghupdate", HTTP_GET, [](AsyncWebServerRequest* r) {
-    if (!auth(r)) return;
-    r->send(200, "application/json", ghupdate::json());
-  });
-  server.on("/api/ghupdate/check", HTTP_POST, [](AsyncWebServerRequest* r) {
-    if (!auth(r)) return;
-    ghupdate::check();
-    sendResult(r, true, "Suche Update ...");
-  });
-  server.on("/api/ghupdate/install", HTTP_POST, [](AsyncWebServerRequest* r) {
-    if (!auth(r)) return;
-    ghupdate::install();
-    sendResult(r, true, "Update wird geladen ...");
-  });
   server.on("/api/history", HTTP_GET, [](AsyncWebServerRequest* r) {
     AsyncResponseStream* res = r->beginResponseStream("application/json");
     history::write(*res);

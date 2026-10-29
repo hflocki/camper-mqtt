@@ -68,7 +68,6 @@ struct Settings {
   uint8_t  wxEvery = 60;        // update interval in minutes
   // overview tiles temperature / battery: up to 3 "name=icon" lines (see icons.cpp), "" = first 3
   String   ovTempSel, ovBatSel;
-  String   updRepo;             // GitHub "owner/repo" for firmware updates
   // display
   uint8_t  brightness, dimBrightness;
   uint16_t screenTimeout;
