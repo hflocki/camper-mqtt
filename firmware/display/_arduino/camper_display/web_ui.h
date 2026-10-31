@@ -98,7 +98,12 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let ws,cfg=null,V={},S={},WX={},page=localStorage.getItem('page')||'',finder={on:false,l:{}};
 let pendingSet=null,setTimer=null,setHold=0;
-const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie'],['weather','Wetter'],['actors','Aktoren'],['warn','Warnungen'],['light','Licht']];
+const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie'],['weather','Wetter'],['actors','Sensoren'],['warn','Warnungen'],['light','Licht'],['switch','Schalter'],['extra1','Energie'],['extra2','Extra']];
+// default icons of the fixed pages (BUILTIN order, last = system page); own choice in cfg.pageIcons (keys of ICONS)
+const PICON_DEF=['🏠','♨️','🌀','📐','🌡️','🔋','🌦','🚪','⚠','💡','🔌','⚡','📦','⚙'];
+const picon=i=>{const k=cfg&&cfg.pageIcons&&cfg.pageIcons[i];const f=k&&ICONS.find(x=>x[0]===k);return f?f[1]:PICON_DEF[i]||'📄'};
+// device pages: page id -> Show bit of the sensors (sensors.h)
+const DEVPAGE={actors:4,light:16,switch:32,extra1:64,extra2:128};
 const NAV_FREE=6;   // icon bar on the panel: Home + 6 chosen pages + System
 // page title: name from the display settings, otherwise the default above
 const ptitle=i=>(cfg&&cfg.pageNames&&cfg.pageNames[i])||BUILTIN[i][1];
@@ -108,7 +113,7 @@ const ovList=()=>((cfg&&cfg.ovTiles)||OV_DEFAULT).split(',').map(x=>x.trim()).fi
 function ovChoices(){
   const c=[['water','Frischwasser'],['grey','Grauwasser'],['gas','Gas'],['heater',ptitle(1)],['level',ptitle(3)],['fan',ptitle(2)],
     ['temp',ptitle(4)],['bat',ptitle(5)+' (alle)'],['bat1','Batterie 1 (einzeln)'],['bat2','Batterie 2 (einzeln)'],['bat3','Batterie 3 (einzeln)'],
-    ['status','Status / Warnungen'],['weather',ptitle(6)],['actors',ptitle(7)+' (offene Fenster)'],['lights',ptitle(9)+' (was an ist)'],['clock','Uhr / Datum'],['none','(leer)']];
+    ['status','Status / Warnungen'],['weather',ptitle(6)],['actors','Offene Fenster/Türen'],['lights',ptitle(9)+' (was an ist)'],['switches',ptitle(10)+' (was an ist)'],['clock','Uhr / Datum'],['none','(leer)']];
   ((cfg&&cfg.tiles)||[]).forEach((t,i)=>c.push(['t'+i,'Kachel: '+t.n]));
   return c;
 }
@@ -137,7 +142,7 @@ function connect(){
 // ---------- pages ----------
 function pages(){
   const p=[];if(!cfg)return p;
-  BUILTIN.forEach((b,i)=>{if(cfg.builtin[i])p.push({id:b[0],title:ptitle(i)})});
+  BUILTIN.forEach((b,i)=>{if(cfg.builtin[i])p.push({id:b[0],title:ptitle(i),icon:picon(i)})});
   cfg.pages.forEach((n,i)=>p.push({id:'p'+i,title:n,custom:i}));
   p.push({id:'rules',title:'⚡ Automationen'});
   p.push({id:'links',title:'🔗 Geräte'});
@@ -145,7 +150,7 @@ function pages(){
   return p;
 }
 function buildNav(){
-  $('#nav').innerHTML=pages().map(p=>`<button data-p="${p.id}">${esc(p.title)}</button>`).join('');
+  $('#nav').innerHTML=pages().map(p=>`<button data-p="${p.id}">${p.icon?p.icon+' ':''}${esc(p.title)}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{page=b.dataset.p;localStorage.setItem('page',page);document.querySelector('header').classList.remove('open');render()});
 }
 function render(){
@@ -162,8 +167,7 @@ function render(){
   else if(p.id==='temp'){m.innerHTML=pgTemp();loadHist()}
   else if(p.id==='bat'){m.innerHTML=pgBat();loadHist()}
   else if(p.id==='weather')m.innerHTML=pgWeather();
-  else if(p.id==='actors')m.innerHTML=pgActors();
-  else if(p.id==='light')m.innerHTML=pgLight();
+  else if(p.id in DEVPAGE)m.innerHTML=pgDev(p.id);
   else if(p.id==='warn')m.innerHTML=pgWarn();
   else if(p.id==='links')m.innerHTML=pgLinks();
   else if(p.id==='rules'){m.innerHTML=pgRules();loadRules()}
@@ -187,8 +191,9 @@ function pgOverview(){
     if(t==='bat')return `<div class="card wide click" data-go="bat"><h3>🔋 ${esc(ptitle(5))}</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
     if(/^bat[123]$/.test(t)){const n=t[3];return `<div class="card click" data-go="bat"><h3 id="ob${n}_t">🔋 Batterie ${n}</h3><div class="big" id="ob${n}_v">--</div><div class="mu" id="ob${n}_s"></div></div>`}
     if(/^t\d+$/.test(t)){const i=+t.slice(1),k=(cfg.tiles||[])[i];if(!k)return '';return `<div class="card"><h3>${esc(k.n)}</h3><div class="big" id="t${i}_v">--</div></div>`}
-    if(t==='lights')return `<div class="card click" data-go="light"><h3>💡 ${esc(ptitle(9))}</h3><div class="big" id="ol_v" style="font-size:20px">--</div><div class="mu" id="ol_s"></div></div>`;
-    if(t==='actors')return `<div class="card click" data-go="actors"><h3>🚪 ${esc(ptitle(7))}</h3><div class="big" id="oa_v" style="font-size:20px">--</div><div class="mu" id="oa_s"></div></div>`;
+    if(t==='lights')return `<div class="card click" data-go="light"><h3>${picon(9)} ${esc(ptitle(9))}</h3><div class="big" id="ol_v" style="font-size:20px">--</div><div class="mu" id="ol_s"></div></div>`;
+    if(t==='switches')return `<div class="card click" data-go="switch"><h3>${picon(10)} ${esc(ptitle(10))}</h3><div class="big" id="osw_v" style="font-size:20px">--</div><div class="mu" id="osw_s"></div></div>`;
+    if(t==='actors')return `<div class="card click" data-go="actors"><h3>${picon(7)} ${esc(ptitle(7))}</h3><div class="big" id="oa_v" style="font-size:20px">--</div><div class="mu" id="oa_s"></div></div>`;
     if(t==='status')return `<div class="card click" id="ost" data-go="warn"><h3>⚠ Status</h3><div class="big" id="ost_v" style="white-space:pre-line">OK</div><div id="ost_i" style="font-size:22px;margin-top:4px"></div></div>`;
     return '';   // clock (header), none
   });
@@ -197,35 +202,41 @@ function pgOverview(){
   return `${box}<div class="grid">${parts.join('')}</div>`;
 }
 // windows / doors (own Zigbee contacts marked for this page) and all warnings
-const contacts=()=>sens().filter(x=>x.k===0&&((x.sh??4)&4));
-// lights with one of the given Show bits (4 = Aktoren, 16 = Licht)
-const lightsOf=(bits)=>sens().map((x,i)=>Object.assign({di:i},x)).filter(x=>x.k===2&&((x.sh??16)&bits));
+// Show bits of a sensor: stored ones or the default of its kind
+const shDef=k=>k===1?1:k===2?16:k===3?32:4;
+const devsOf=bits=>sens().map((x,i)=>Object.assign({di:i},x)).filter(x=>(x.sh??shDef(x.k))&bits);
+const contacts=()=>devsOf(4|64|128).filter(x=>x.k===0);
 // same quick colours as on the panel: [key, value, shown colour, text]
 const SWATCH=[['ct','370','#ffc27a','Warm'],['ct','153','#e6f0ff','Kalt'],['color','#ff0000','#ff2020',''],['color','#ff8000','#ff8a00',''],['color','#00ff00','#30d050',''],['color','#0040ff','#2f6bff',''],['color','#a000ff','#a040ff','']];
-const LSIG={};
-function pgLight(){LSIG.lp_list='';return `<div class="grid" id="lp_list"></div><div class="mu" id="lp_st" style="margin-top:12px"></div>`}
-function pgActors(){LSIG.l_list='';return `<div class="grid" id="l_list"></div><div class="grid" id="a_list" style="margin-top:12px"></div><div class="mu" id="a_st" style="margin-top:12px"></div>`}
-// light cards are built once per light list, then only their state is updated (sliders keep working)
-function updLights(id,bits){
-  const box=$('#'+id);if(!box)return;const ls=lightsOf(bits);
-  const sig=ls.map(l=>l.di+l.n).join('|');
-  if(sig!==LSIG[id]){LSIG[id]=sig;
-    box.innerHTML=ls.map(l=>`<div class="card wide" data-ld="${l.di}"><div class="row"><h3 class="grow" style="margin:0;font-size:17px;color:var(--tx)">💡 ${esc(l.n)}</h3><button class="btn" data-lon="${l.di}">⏻</button></div>
-      <div class="row" style="margin-top:10px"><input type="range" min="1" max="254" class="grow" data-llv="${l.di}"><span class="mu" style="min-width:48px;text-align:right" data-llt="${l.di}"></span></div>
+let devSig='';
+function pgDev(id){devSig='';return `<div class="grid" id="dv_cards"></div><div class="grid" id="dv_rows" style="margin-top:12px"></div><div class="mu" id="dv_st" style="margin-top:12px"></div>`}
+// device page: cards for lights / switches (built once per list, so sliders keep working), rows for contacts / climate
+function updDev(){
+  const box=$('#dv_cards');if(!box)return;
+  const bit=DEVPAGE[page],all=devsOf(bit),cs=all.filter(x=>x.k===2||x.k===3).sort((a,b)=>a.k-b.k),rs=all.filter(x=>x.k<2);
+  const sig=cs.map(l=>l.di+':'+l.k+l.n).join('|');
+  if(sig!==devSig){devSig=sig;
+    box.innerHTML=cs.map(l=>`<div class="card wide" data-ld="${l.di}"><div class="row"><h3 class="grow" style="margin:0;font-size:17px;color:var(--tx)">${l.k===2?'💡':'🔌'} ${esc(l.n)}</h3><button class="btn" data-lon="${l.di}">⏻</button></div>
+      ${l.k===2?`<div class="row" style="margin-top:10px"><input type="range" min="1" max="254" class="grow" data-llv="${l.di}"><span class="mu" style="min-width:48px;text-align:right" data-llt="${l.di}"></span></div>
       <div class="row" style="gap:6px;margin-top:10px">${SWATCH.map(w=>`<button class="btn sm" data-lsw="${l.di}" data-k="${w[0]}" data-v="${w[1]}" style="background:${w[2]};color:#1a1f24;min-width:44px">${w[3]||'&nbsp;'}</button>`).join('')}
-       <input type="color" data-lcol="${l.di}" value="#ffffff" title="Eigene Farbe" style="width:48px;height:36px;border:0;background:none;padding:0"></div></div>`).join('');
+       <input type="color" data-lcol="${l.di}" value="#ffffff" title="Eigene Farbe" style="width:48px;height:36px;border:0;background:none;padding:0"></div>`:''}</div>`).join('');
     box.querySelectorAll('[data-lon]').forEach(e=>e.onclick=()=>send({c:'light',i:+e.dataset.lon,k:'on',v:'TOGGLE'}));
     box.querySelectorAll('[data-llv]').forEach(e=>{e.oninput=()=>box.querySelector(`[data-llt="${e.dataset.llv}"]`).textContent=Math.round(e.value*100/254)+' %';
       e.onchange=()=>send({c:'light',i:+e.dataset.llv,k:'level',v:e.value})});
     box.querySelectorAll('[data-lsw]').forEach(e=>e.onclick=()=>send({c:'light',i:+e.dataset.lsw,k:e.dataset.k,v:e.dataset.v}));
     box.querySelectorAll('[data-lcol]').forEach(e=>e.onchange=()=>send({c:'light',i:+e.dataset.lcol,k:'color',v:e.value}));
   }
-  ls.forEach(l=>{const c=box.querySelector(`[data-ld="${l.di}"]`);if(!c)return;
+  cs.forEach(l=>{const c=box.querySelector(`[data-ld="${l.di}"]`);if(!c)return;
     const b=c.querySelector('[data-lon]');b.classList.toggle('on',l.o===1);b.textContent=l.o===1?'⏻ An':l.o===0?'⏻ Aus':'⏻ ?';
-    const r=c.querySelector('[data-llv]');if(l.lv!=null&&document.activeElement!==r){r.value=l.lv;c.querySelector('[data-llt]').textContent=Math.round(l.lv*100/254)+' %'}
-    r.style.opacity=l.o===1?1:.5;
-    const cp=c.querySelector('[data-lcol]');if(l.col&&l.col[0]==='#'&&document.activeElement!==cp)cp.value=l.col;
+    const r=c.querySelector('[data-llv]');if(r){if(l.lv!=null&&document.activeElement!==r){r.value=l.lv;c.querySelector('[data-llt]').textContent=Math.round(l.lv*100/254)+' %'}r.style.opacity=l.o===1?1:.5}
+    const cp=c.querySelector('[data-lcol]');if(cp&&l.col&&l.col[0]==='#'&&document.activeElement!==cp)cp.value=l.col;
     c.classList.toggle('offline',l.age<0||l.age>7200)});
+  set('dv_rows',rs.map(x=>{const old=x.age<0||x.age>7200;
+    const v=x.k===0?`<b class="big ${x.o===1?'err':x.o===0?'okc':'mu'}" style="font-size:24px">${x.o===1?'offen':x.o===0?'zu':'?'}</b>`:`<span class="big">${x.t!=null?cnum(x.t,1)+' °C':'--'}</span>`;
+    const sub=[x.h!=null?'💧 '+x.h+' %':'',x.bat!=null?'🔋 '+x.bat+' %':''].filter(y=>y).join(' &nbsp;');
+    return `<div class="card wide${old?' offline':''}"><div class="trow"><span class="n">${x.k===0?'🚪':ico(x.n,true)} ${esc(x.n)}${sub?`<br><span class="mu">${sub}</span>`:''}</span>${v}</div></div>`}).join(''));
+  const pi=BUILTIN.findIndex(b=>b[0]===page);
+  set('dv_st',all.length?'':`Noch nichts auf dieser Seite. Unter ⚙ Einstellungen → 📡 Sensoren bei einem Sensor „${esc(ptitle(pi))}“ ankreuzen.`);
 }
 function pgWarn(){return `<div class="card" id="wn_box"><div id="wn_l" style="white-space:pre-line;font-size:18px;font-weight:600">--</div></div>`}
 // Links to the web pages of the other devices (Einstellungen -> Geräte-Links)
@@ -487,14 +498,12 @@ function update(){
   if($('#wn_l')){$('#wn_l').textContent=warn.length?'⚠ '+warn.join('\n\n⚠ '):'Keine Warnungen';$('#wn_l').className=warn.length?'err':'okc'}
   {const cs=contacts(),op=cs.filter(x=>x.o===1);
    if($('#oa_v')){set('oa_v',!cs.length?'--':op.length?op.slice(0,3).map(x=>`<span class="err">${esc(x.n)}</span>`).join('<br>'):'<span class="okc">Alles zu</span>');
-     set('oa_s',!cs.length?'keine Sensoren':op.length>3?'+'+(op.length-3)+' offen':op.length?op.length+' offen':'')}
-   if($('#a_list')){set('a_list',cs.map(x=>`<div class="card wide${x.age<0||x.age>7200?' offline':''}"><div class="trow"><span class="n">🚪 ${esc(x.n)}${x.bat!=null?`<br><span class="mu">🔋 ${x.bat} %</span>`:''}</span><b class="big ${x.o===1?'err':x.o===0?'okc':'mu'}" style="font-size:24px">${x.o===1?'offen':x.o===0?'zu':'?'}</b></div></div>`).join(''));
-     set('a_st',cs.length||lightsOf(4).length?'':'Keine Fenster, Türen oder Lichter. Unter ⚙ Einstellungen → 📡 Sensoren anlegen und „Aktoren“ ankreuzen.')}
-   updLights('l_list',4);updLights('lp_list',16);
-   set('lp_st',lightsOf(16).length?'':'Keine Lichter. Unter ⚙ Einstellungen → 📡 Sensoren ein Licht anlegen und „💡 Licht“ ankreuzen.');
-   if($('#ol_v')){const all=lightsOf(20),on=all.filter(x=>x.o===1);
-     set('ol_v',!all.length?'--':on.length?on.slice(0,3).map(x=>`<span style="color:var(--gas)">${esc(x.n)}</span>`).join('<br>'):'<span class="mu">Alle aus</span>');
-     set('ol_s',!all.length?'keine Lichter':on.length>3?'+'+(on.length-3)+' an':on.length?on.length+' an':'')}}
+     set('oa_s',!cs.length?'keine Kontakte':op.length>3?'+'+(op.length-3)+' offen':op.length?op.length+' offen':'')}
+   updDev();
+   [['ol',2,'keine Lichter'],['osw',3,'keine Schalter']].forEach(([id,k,none])=>{if(!$('#'+id+'_v'))return;
+     const all=devsOf(4|16|32|64|128).filter(x=>x.k===k),on=all.filter(x=>x.o===1);
+     set(id+'_v',!all.length?'--':on.length?on.slice(0,3).map(x=>`<span style="color:var(--gas)">${esc(x.n)}</span>`).join('<br>'):'<span class="mu">Alle aus</span>');
+     set(id+'_s',!all.length?none:on.length>3?'+'+(on.length-3)+' an':on.length?on.length+' an':'')})}
   const tl=allTemps(),tOn=online('temp')||tl.some(t=>t.own),tAl=tl.some(t=>t.alarm);
   if($('#ot_v')){
     {const sl=ovSlots(tl,true);set('ot_v',sl.length?sl.map(x=>`<span title="${esc(x.n)}">${x.e}</span> <span${x.it&&x.it.alarm?' class="err"':x.it?'':' class="mu"'}>${x.it?tval(x.it):'--'}</span>`).join(' &nbsp; '):'--')}
@@ -585,8 +594,8 @@ function pgSettings(){
    ${inp('displayName','Anzeigename (oben in der Mitte, z. B. Wohnraum)')}
 </details>
   <details data-g="view"><summary>📑 Seiten &amp; Symbolleiste</summary>
-   <label>Feste Seiten (Haken = anzeigen, Feld = Name)</label>${BUILTIN.map((b,i)=>`<div class="row" style="gap:8px;margin:4px 0"><input type="checkbox" id="bp${i}" style="width:auto"><input id="pn${i}" placeholder="${b[1]}" maxlength="24" style="flex:1;min-width:0"></div>`).join('')}
-   <div class="row" style="gap:8px;margin:4px 0"><span style="width:20px"></span><input id="pn${BUILTIN.length}" placeholder="System" maxlength="24" style="flex:1;min-width:0"></div>
+   <label>Feste Seiten: Haken = anzeigen, dazu Symbol und Name frei wählbar</label>${[...BUILTIN,['system','System']].map((b,i)=>`<div class="row" style="gap:6px;margin:4px 0;flex-wrap:nowrap">${i<BUILTIN.length?`<input type="checkbox" id="bp${i}" style="width:auto">`:'<span style="width:20px;flex:none"></span>'}<select id="pi${i}" style="width:74px;flex:none;padding:8px 4px"><option value="">${PICON_DEF[i]}</option>${ICONS.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('')}</select><input id="pn${i}" placeholder="${b[1]}" maxlength="24" style="flex:1;min-width:0"></div>`).join('')}
+   <p class="mu" style="margin-top:4px">„Energie“ und „Extra“ sind freie Seiten für später: einschalten, umbenennen, Symbol wählen und unter 📡 Sensoren Geräte zuordnen.</p>
    <label>Symbolleiste unten am Display: Home und System sind immer da, dazu bis zu ${NAV_FREE} Seiten (leer = die ersten ${NAV_FREE})</label>
    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px" id="navsel"></div>
    <p class="mu" style="margin-top:4px">Seiten ohne Symbol erreichst du über ihre Kachel auf Home oder durch Wischen.</p>
@@ -598,7 +607,7 @@ function pgSettings(){
    <label>Batterie-Kachel: Batterien und Symbole</label><div id="slb"></div></details>
   <details data-g="view"><summary>🧩 Eigene Seiten &amp; MQTT-Kacheln <span class="mu" style="font-weight:400">· eigener Speichern-Knopf</span></summary><p class="mu">Für Werte, die keine Sensoren sind, z. B. ein beliebiges MQTT-Topic, Landstrom-Messzange, Router-Daten.</p><div id="pged"></div></details>
   <details data-g="dev" id="snd" ontoggle="if(this.open)loadSensors()"><summary>📡 Sensoren (Zigbee &amp; Bluetooth) <span class="mu" style="font-weight:400">· eigener Speichern-Knopf</span></summary>
-   <p class="mu">Eigene Sensoren direkt per MQTT: Zigbee-Gateway mit Cluster-Topics (z. B. SMLIGHT: <code>&lt;Basis&gt;/&lt;Adresse&gt;/1/0006/0000</code>) und Bluetooth über OpenMQTTGateway (<code>&lt;Basis&gt;/&lt;MAC&gt;</code>, Govee, Ruuvi, Xiaomi …). Je Sensor wählst du, auf welchen Seiten er erscheint. Kontakte auf „Aktoren“ werden auf Home in der Status-Kachel gezählt (z. B. 2 🚪).</p>
+   <p class="mu">Eigene Sensoren direkt per MQTT: Zigbee-Gateway mit Cluster-Topics (z. B. SMLIGHT: <code>&lt;Basis&gt;/&lt;Adresse&gt;/1/0006/0000</code>) und Bluetooth über OpenMQTTGateway (<code>&lt;Basis&gt;/&lt;MAC&gt;</code>, Govee, Ruuvi, Xiaomi …). Je Sensor wählst du, auf welchen Seiten er erscheint. Offene Kontakte auf den Geräteseiten werden auf Home in der Status-Kachel gezählt (z. B. 2 🚪).</p>
    <div class="f2">${inp('zbBase','Zigbee-Basis-Topic','text','camper/zigbee/data')}${inp('bleBase','Bluetooth-Basis-Topic (OMG)','text','camper/OMG/BTtoMQTT')}
     <div><label>Zigbee-Temperatur geteilt durch (nur Rohwerte, „report_raw“)</label><select id="tempDiv"><option value="10">10</option><option value="100">100 (ZCL-Standard)</option><option value="1">1</option></select></div>
     <div><label>Zigbee-Luftfeuchte geteilt durch</label><select id="humDiv"><option value="1">1</option><option value="100">100 (ZCL-Standard)</option></select></div></div>
@@ -675,7 +684,7 @@ async function loadSettings(){
     $('#staticIp').checked=ST.staticIp;$('#fanPort').value=ST.fanPort;$('#brightness').value=ST.brightness;
     $('#heaterSrc').value=String(ST.heaterSrc||0);renderNavSel();
     BUILTIN.forEach((b,i)=>$('#bp'+i).checked=ST.builtin[i]);
-    for(let i=0;i<=BUILTIN.length;i++){const e=$('#pn'+i);if(e)e.value=(ST.pageNames||[])[i]||''}
+    for(let i=0;i<=BUILTIN.length;i++){const e=$('#pn'+i);if(e)e.value=(ST.pageNames||[])[i]||'';const ic=$('#pi'+i);if(ic)ic.value=(ST.pageIcons||[])[i]||''}
     {const l=(ST.ovTiles||OV_DEFAULT).split(',');for(let i=0;i<9;i++){const e=$('#ov'+i);if(e)e.value=l[i]||'none'}}
     LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
     $('#warnWake').checked=!!ST.warnWake;$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||60);
@@ -759,23 +768,25 @@ async function loadSensors(){
     renderSensors();toast(n+' Sensoren übernommen – noch speichern');e.target.value=''};
 }
 // pages a sensor is shown on (bits as in sensors.h); third value: only for this kind (-1 = all)
-const SHOW=[[1,'🌡️ Temperatur',[1]],[2,'🔋 Batterie',[0,1]],[16,'💡 Licht',[2]],[4,'🚪 Aktoren',[0,2]],[8,'🌦 Wetter (Außen)',[1]]];
-const shOf=d=>d.show??(d.kind==1?1:d.kind==2?16:4);
+// pages a sensor can be shown on: [Show bit, page index (BUILTIN), kinds that make sense there]
+const SHOW=[[1,4,[1]],[4,7,[0,1]],[16,9,[2]],[32,10,[2,3]],[64,11,[0,1,2,3]],[128,12,[0,1,2,3]],[2,5,[0,1]],[8,6,[1]]];
+const showLabel=(bit,pi)=>picon(pi)+' '+esc(ptitle(pi))+(bit===8?' (Außen)':'')+(cfg&&cfg.builtin&&!cfg.builtin[pi]?' <span class="mu">(Seite aus)</span>':'');
+const shOf=d=>d.show??shDef(+d.kind);
 const SN_OPEN=new Set();   // sensors unfolded in the editor (kept while re-rendering)
 function renderSensors(){
   const b=$('#snlist');if(!b)return;
   const live=sens();
   b.innerHTML=SN.devices.map((d,i)=>{const v=live.find(x=>x.n===d.name);
-    const val=!v?'':v.k===2?(v.o===1?'an':v.o===0?'aus':'–'):v.k===0?(v.o===1?'offen':v.o===0?'zu':'–'):(v.t!=null?String(v.t).replace('.',',')+' °C':'–')+(v.h!=null?' · '+v.h+' %':'');
-    const ty=d.bus==1?'📶':d.kind==0?'🚪':d.kind==2?'💡':'🌡️';
+    const val=!v?'':v.k>=2?(v.o===1?'an':v.o===0?'aus':'–'):v.k===0?(v.o===1?'offen':v.o===0?'zu':'–'):(v.t!=null?String(v.t).replace('.',',')+' °C':'–')+(v.h!=null?' · '+v.h+' %':'');
+    const ty=d.bus==1?'📶':d.kind==0?'🚪':d.kind==2?'💡':d.kind==3?'🔌':'🌡️';
     return `<details class="tileed sn"${!d.name||!d.addr||SN_OPEN.has(i)?' open':''} data-si="${i}"><summary class="row"><span>${ty}</span><b class="grow">${esc(d.name||'Neuer Sensor')}</b><span class="mu">${esc(val)}${v&&v.age>=0?' · vor '+(v.age<120?v.age+' s':Math.round(v.age/60)+' min'):''}</span><button class="btn sm danger" data-sd="${i}" title="Entfernen">✕</button></summary>
     <div class="f2"><div><label>Name</label><input type="text" data-s="${i}" data-sf="name" value="${esc(d.name)}" placeholder="z. B. Heki"></div>
-     <div><label>Funk / Typ</label><select data-s="${i}" data-sf="type"><option value="0-0"${d.bus==0&&d.kind==0?' selected':''}>Zigbee · Tür-/Fensterkontakt</option><option value="0-1"${d.bus==0&&d.kind==1?' selected':''}>Zigbee · Klima (Temp./Feuchte)</option><option value="0-2"${d.bus==0&&d.kind==2?' selected':''}>Zigbee · Licht / LED-Leiste</option><option value="1-1"${d.bus==1?' selected':''}>Bluetooth · Klima (Govee, Ruuvi …)</option></select></div>
-     <div><label>${d.bus==1?'MAC-Adresse':d.kind==2?'IEEE-Adresse (zum Schalten nötig)':'Adresse (IEEE oder Short-ID)'}</label><input type="text" data-s="${i}" data-sf="addr" value="${esc(d.addr)}" placeholder="${d.bus==1?'A4C138AEF56D':'0x00158d… oder 9c68'}"></div>
+     <div><label>Funk / Typ</label><select data-s="${i}" data-sf="type"><option value="0-0"${d.bus==0&&d.kind==0?' selected':''}>Zigbee · Tür-/Fensterkontakt</option><option value="0-1"${d.bus==0&&d.kind==1?' selected':''}>Zigbee · Klima (Temp./Feuchte)</option><option value="0-2"${d.bus==0&&d.kind==2?' selected':''}>Zigbee · Licht / LED-Leiste</option><option value="0-3"${d.bus==0&&d.kind==3?' selected':''}>Zigbee · Schalter / Steckdose</option><option value="1-1"${d.bus==1?' selected':''}>Bluetooth · Klima (Govee, Ruuvi …)</option></select></div>
+     <div><label>${d.bus==1?'MAC-Adresse':d.kind>=2?'IEEE-Adresse (zum Schalten nötig)':'Adresse (IEEE oder Short-ID)'}</label><input type="text" data-s="${i}" data-sf="addr" value="${esc(d.addr)}" placeholder="${d.bus==1?'A4C138AEF56D':'0x00158d… oder 9c68'}"></div>
      ${d.bus==0?`<div><label>Zweite Adresse (optional)</label><input type="text" data-s="${i}" data-sf="alt" value="${esc(d.alt||'')}" placeholder="Short-ID"></div>`:'<div></div>'}
      ${d.kind==0?`<div><label>Symbol, wenn offen</label><select data-s="${i}" data-sf="icon"><option value="">kein Symbol</option>${ICONS.map(x=>`<option value="${x[0]}"${d.icon===x[0]?' selected':''}>${x[1]} ${x[2]}</option>`).join('')}</select></div>
      <div><label class="chk"><input type="checkbox" data-s="${i}" data-sf="warn" ${d.warn?'checked':''}> Warnung, wenn offen</label><label class="chk"><input type="checkbox" data-s="${i}" data-sf="invert" ${d.invert?'checked':''}> umgekehrt (1 = zu)</label></div>`:''}</div>
-    <label>Anzeigen auf</label><div class="row" style="gap:4px 14px">${SHOW.filter(x=>x[2].includes(+d.kind)).map(([bit,t])=>`<label class="chk" style="margin:2px 0"><input type="checkbox" data-s="${i}" data-sh="${bit}" ${(shOf(d)&bit)?'checked':''}> ${t}</label>`).join('')}</div></details>`}).join('')||'<p class="mu">Noch keine Sensoren.</p>';
+    <label>Anzeigen auf</label><div class="row" style="gap:4px 14px">${SHOW.filter(x=>x[2].includes(+d.kind)).map(([bit,pi])=>`<label class="chk" style="margin:2px 0"><input type="checkbox" data-s="${i}" data-sh="${bit}" ${(shOf(d)&bit)?'checked':''}> ${showLabel(bit,pi)}</label>`).join('')}</div></details>`}).join('')||'<p class="mu">Noch keine Sensoren.</p>';
   b.querySelectorAll('details.sn').forEach(e=>e.ontoggle=()=>{const i=+e.dataset.si;if(e.open)SN_OPEN.add(i);else SN_OPEN.delete(i)});
   b.querySelectorAll('[data-sf="type"]').forEach(e=>e.onchange=()=>{readSensors();renderSensors()});
   b.querySelectorAll('[data-sd]').forEach(e=>e.onclick=ev=>{ev.preventDefault();if(!confirm('Sensor entfernen?'))return;SN_OPEN.clear();readSensors();SN.devices.splice(+e.dataset.sd,1);renderSensors()});
@@ -784,7 +795,7 @@ function readSensors(){
   ['zbBase','bleBase'].forEach(k=>{const e=$('#'+k);if(e)SN[k]=e.value.trim()});
   if($('#tempDiv'))SN.tempDiv=+$('#tempDiv').value;if($('#humDiv'))SN.humDiv=+$('#humDiv').value;
   document.querySelectorAll('[data-sf]').forEach(e=>{const d=SN.devices[+e.dataset.s];if(!d)return;const f=e.dataset.sf;
-    if(f==='type'){const [bus,kind]=e.value.split('-').map(Number);if(d.kind!==kind)d.show=kind==1?1:kind==2?16:4;d.bus=bus;d.kind=kind}else d[f]=e.type==='checkbox'?e.checked:e.value.trim()});
+    if(f==='type'){const [bus,kind]=e.value.split('-').map(Number);if(d.kind!==kind)d.show=shDef(kind);d.bus=bus;d.kind=kind}else d[f]=e.type==='checkbox'?e.checked:e.value.trim()});
   SN.devices.forEach((d,i)=>{const boxes=document.querySelectorAll(`[data-s="${i}"][data-sh]`);if(!boxes.length)return;
     let m=0;boxes.forEach(b=>{if(b.checked)m|=+b.dataset.sh});d.show=m});
 }
@@ -805,6 +816,7 @@ function saveSettings(){
   o.builtin=BUILTIN.map((b,i)=>$('#bp'+i).checked);
   o.ovTiles=[0,1,2,3,4,5,6,7,8].map(i=>$('#ov'+i).value).join(',').replace(/(,none)+$/,'');
   o.pageNames=[...BUILTIN.map((b,i)=>$('#pn'+i).value.trim()),$('#pn'+BUILTIN.length).value.trim()];
+  o.pageIcons=[...BUILTIN.keys(),BUILTIN.length].map(i=>$('#pi'+i).value);
   readLinks();o.links=LINKS.filter(x=>x.n.trim()&&x.u.trim());
   o.poOn=$('#poOn').checked;o.poClear=$('#poClear').checked;o.poPrio=+$('#poPrio').value;
   post('/api/settings',o);

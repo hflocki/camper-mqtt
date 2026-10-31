@@ -6,8 +6,9 @@
 #include <ArduinoJson.h>
 
 const char* const DEFAULT_PAGE_NAMES[BP_COUNT + 1] = {"Home", "Truma", "MaxxFan", "Level", "Temperatur", "Batterie", "Wetter",
-                                                       "Aktoren", "Warnungen", "Licht", "System"};
-const char* const PAGE_IDS[BP_COUNT] = {"overview", "heater", "fan", "level", "temp", "bat", "weather", "actors", "warn", "light"};
+                                                       "Sensoren", "Warnungen", "Licht", "Schalter", "Energie", "Extra", "System"};
+const char* const PAGE_IDS[BP_COUNT] = {"overview", "heater", "fan", "level", "temp", "bat", "weather", "actors", "warn", "light",
+                                        "switch", "extra1", "extra2"};
 
 String pageTitle(int idx) {
   if (idx < 0 || idx > BP_COUNT) return "";
@@ -70,7 +71,12 @@ void load() {
   // Pages added in later versions start switched on (older masks do not have their bit)
   uint8_t bknown        = prefs.getUChar ("bpknown", BP_LEVEL + 1);
   for (int i = bknown; i < BP_COUNT; i++) bmask |= (1u << i);
-  for (int i = 0; i < BP_COUNT; i++) settings.builtin[i] = bmask & (1 << i);
+  for (int i = 0; i < BP_COUNT; i++) settings.builtin[i] = bmask & (1u << i);
+  // the spare pages start switched off
+  if (bknown <= BP_EXTRA1) settings.builtin[BP_EXTRA1] = settings.builtin[BP_EXTRA2] = false;
+  // page icons: fixed pages by index, the system page under its own key (does not move when pages are added)
+  for (int i = 0; i < BP_COUNT; i++) settings.pageIcon[i] = prefs.getString((String("pgi") + i).c_str(), "");
+  settings.pageIcon[BP_COUNT] = prefs.getString("pgisys", "");
   for (int i = 0; i <= BP_COUNT; i++) settings.pageName[i] = prefs.getString((String("pgn") + i).c_str(), "");
   // The system page title is stored after the fixed pages: move it when pages were added
   if (bknown < BP_COUNT) {
@@ -157,6 +163,8 @@ void save() {
   for (int i = 0; i < BP_COUNT; i++) if (settings.builtin[i]) bmask |= (1u << i);
   prefs.putUShort("bpmask", bmask);
   for (int i = 0; i <= BP_COUNT; i++) prefs.putString((String("pgn") + i).c_str(), settings.pageName[i]);
+  for (int i = 0; i < BP_COUNT; i++) prefs.putString((String("pgi") + i).c_str(), settings.pageIcon[i]);
+  prefs.putString("pgisys", settings.pageIcon[BP_COUNT]);
   prefs.putString("ovt",    settings.ovTiles);
   prefs.putString("navsel", settings.navSel);
   prefs.putUChar ("hsrc",   settings.heaterSrc);

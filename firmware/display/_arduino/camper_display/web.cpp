@@ -118,6 +118,8 @@ void buildCfg(JsonDocument& d) {
   d["heaterSrc"] = settings.heaterSrc;
   JsonArray pn = d["pageNames"].to<JsonArray>();      // titles incl. defaults, last = system page
   for (int i = 0; i <= BP_COUNT; i++) pn.add(pageTitle(i));
+  JsonArray pi = d["pageIcons"].to<JsonArray>();      // chosen icon keys, "" = default, last = system page
+  for (int i = 0; i <= BP_COUNT; i++) pi.add(settings.pageIcon[i]);
   JsonArray p = d["pages"].to<JsonArray>();
   for (auto& pg : settings.pages) p.add(pg.name);
   JsonArray ta = d["tiles"].to<JsonArray>();
@@ -281,6 +283,8 @@ void getSettings(AsyncWebServerRequest* r) {
   for (int i = 0; i < BP_COUNT; i++) b.add(settings.builtin[i]);
   JsonArray pn = d["pageNames"].to<JsonArray>();
   for (int i = 0; i <= BP_COUNT; i++) pn.add(pageTitle(i));
+  JsonArray pi = d["pageIcons"].to<JsonArray>();
+  for (int i = 0; i <= BP_COUNT; i++) pi.add(settings.pageIcon[i]);
   d["ovTiles"] = settings.ovTiles.length() ? settings.ovTiles : String(DEFAULT_OV_TILES);
   d["ovTempSel"] = settings.ovTempSel;
   d["ovBatSel"] = settings.ovBatSel;
@@ -440,7 +444,7 @@ bool applySettings(JsonObject o, bool apply) {
       String t = in.substring(start, c < 0 ? in.length() : c);
       t.trim();
       static const char* const known[] = {"water", "grey", "gas", "heater", "level", "fan", "temp", "bat",
-                                          "status", "bat1", "bat2", "bat3", "clock", "weather", "actors", "lights", "none"};
+                                          "status", "bat1", "bat2", "bat3", "clock", "weather", "actors", "lights", "switches", "none"};
       bool ok = false;
       for (const char* k : known) if (t == k) ok = true;
       if (t.length() > 1 && t[0] == 't' && isdigit(t[1]) && t.substring(1).toInt() < (int)settings.tiles.size()) ok = true;
@@ -463,6 +467,18 @@ bool applySettings(JsonObject o, bool apply) {
       if (v.length() > 24) v = v.substring(0, 24);
       if (v == DEFAULT_PAGE_NAMES[i]) v = "";        // store only real changes
       if (apply) settings.pageName[i] = v;
+    }
+  }
+  if (o["pageIcons"].is<JsonArray>()) {
+    JsonArray pi = o["pageIcons"];
+    int n = pi.size();   // last entry = system page, as with the names
+    for (int j = 0; j < n && j <= BP_COUNT; j++) {
+      int i = (j == n - 1) ? BP_COUNT : j;
+      if (j < n - 1 && j >= BP_COUNT) continue;
+      String v = pi[j] | "";
+      v.trim();
+      if (v.length() && !icons::known(v)) v = "";
+      if (apply) settings.pageIcon[i] = v;
     }
   }
   if (settings.hostname.isEmpty()) settings.hostname = DEFAULT_HOSTNAME;

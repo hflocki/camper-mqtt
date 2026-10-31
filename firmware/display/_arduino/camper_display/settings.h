@@ -4,7 +4,8 @@
 
 // Built-in pages. Their order here is the order on the display and web page.
 // New pages are appended: the index is also the bit in the stored page mask.
-enum BuiltinPage : uint8_t { BP_OVERVIEW, BP_HEATER, BP_FAN, BP_LEVEL, BP_TEMP, BP_BATTERY, BP_WEATHER, BP_ACTORS, BP_WARN, BP_LIGHT, BP_COUNT };
+enum BuiltinPage : uint8_t { BP_OVERVIEW, BP_HEATER, BP_FAN, BP_LEVEL, BP_TEMP, BP_BATTERY, BP_WEATHER, BP_ACTORS, BP_WARN, BP_LIGHT,
+                            BP_SWITCH, BP_EXTRA1, BP_EXTRA2, BP_COUNT };
 // Short ids of the fixed pages (web page, nav selection), BP_* order
 extern const char* const PAGE_IDS[BP_COUNT];
 
@@ -82,6 +83,8 @@ struct Settings {
   bool     builtin[BP_COUNT];
   // Titles of the fixed pages (index BP_*) and of the system page (index BP_COUNT), "" = default
   String   pageName[BP_COUNT + 1];
+  // Icons of the fixed pages and the system page: key from icons.cpp, "" = default icon
+  String   pageIcon[BP_COUNT + 1];
   // Overview tiles in order, comma separated (max. 9): water grey gas heater level fan temp bat
   // status bat1 bat2 bat3 clock none t<n> (custom tile n). "" = default layout
   String   ovTiles;

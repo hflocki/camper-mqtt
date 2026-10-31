@@ -14,11 +14,15 @@
 // Climate sensors appear on the temperature page/tile, contacts as icon and optional warning.
 namespace sensors {
 
-enum Kind : uint8_t { K_CONTACT = 0, K_CLIMATE = 1, K_LIGHT = 2 };
+enum Kind : uint8_t { K_CONTACT = 0, K_CLIMATE = 1, K_LIGHT = 2, K_SWITCH = 3 };   // switch = on/off only (plug, relay)
 enum Bus : uint8_t { B_ZIGBEE = 0, B_BLE = 1 };
-// Pages a sensor is shown on (bit mask, "show" in the JSON)
-enum Show : uint8_t { SH_TEMP = 1, SH_BAT = 2, SH_ACT = 4, SH_WX = 8, SH_LIGHT = 16 };
-inline uint8_t defaultShow(uint8_t kind) { return kind == K_CLIMATE ? SH_TEMP : kind == K_LIGHT ? SH_LIGHT : SH_ACT; }
+// Pages a sensor is shown on (bit mask, "show" in the JSON). SH_ACT = page "Sensoren" (id actors),
+// SH_X1 / SH_X2 = the two spare pages ("Energie", "Extra")
+enum Show : uint8_t { SH_TEMP = 1, SH_BAT = 2, SH_ACT = 4, SH_WX = 8, SH_LIGHT = 16, SH_SWITCH = 32, SH_X1 = 64, SH_X2 = 128 };
+const uint8_t SH_DEVPAGES = SH_ACT | SH_LIGHT | SH_SWITCH | SH_X1 | SH_X2;   // pages that list devices
+inline uint8_t defaultShow(uint8_t kind) {
+  return kind == K_CLIMATE ? SH_TEMP : kind == K_LIGHT ? SH_LIGHT : kind == K_SWITCH ? SH_SWITCH : SH_ACT;
+}
 
 struct Device {
   String  name;
@@ -56,14 +60,18 @@ struct TempOut { String name; float temp; float hum; bool stale; };
 std::vector<TempOut> climate();        // climate sensors shown on the temperature page, with a temperature
 bool outdoor(TempOut& out);            // first sensor marked for the weather page (outside temperature)
 struct ContactOut { String name; int8_t open; float batt; bool stale; };
-std::vector<ContactOut> contacts();    // contacts shown on the actuator page
+std::vector<ContactOut> contacts();    // contacts shown on one of the device pages (Sensoren, Energie, Extra)
 int openCount();                       // of those, how many are open
+// Everything shown on a device page: kind decides the look (card with switch / row with value)
+struct DevOut { size_t idx; uint8_t kind; String name; int8_t on; int16_t level; String color;
+                float temp, hum, batt; bool stale; };
+std::vector<DevOut> devices(uint8_t pages);
 struct BattOut { String name; float batt; bool stale; };
 std::vector<BattOut> batteries();      // sensors shown on the battery page with their battery level
 std::vector<String> activeIcons();     // open contacts with an icon (not shown on the actuator page)
 struct LightOut { size_t idx; String name; int8_t on; int16_t level; String color; bool stale; };
-std::vector<LightOut> lights(uint8_t pages);   // lights with one of these Show bits (idx = device index for lightCommand)
-// Topic and payload for a light command; key: on ("ON"/"OFF"/"TOGGLE"), level (1..254),
+std::vector<LightOut> lights(uint8_t pages, uint8_t kind = K_LIGHT);   // lights / switches with one of these Show bits
+// Topic and payload for a light or switch command; key: on ("ON"/"OFF"/"TOGGLE"), lights also level (1..254),
 // color ("#rrggbb"), ct (mireds). Updates the shown state at once. false = unknown light / no IEEE address.
 bool lightCommand(size_t idx, const String& key, const String& value, String& topic, String& payload);
 String warnings();                     // "Heki offen" ... one per line

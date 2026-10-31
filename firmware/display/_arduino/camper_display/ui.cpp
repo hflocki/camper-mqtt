@@ -12,6 +12,7 @@
 #include "sensors.h"
 #include <lvgl.h>
 #include <vector>
+#include <algorithm>
 #include <time.h>
 #include <ArduinoJson.h>
 
@@ -106,7 +107,7 @@ lv_obj_t *ovWxIcon = nullptr, *ovWxVal = nullptr, *ovWxSub = nullptr;
 lv_obj_t *ovWarn, *ovWarnLbl, *ovInd = nullptr;
 // overview tiles with up to three single lines (temperatures, batteries)
 struct ListW { lv_obj_t* line[3] = {nullptr, nullptr, nullptr}; lv_obj_t* sub = nullptr; };
-ListW ovTemp, ovBat, ovAct, ovLight;
+ListW ovTemp, ovBat, ovAct, ovLight, ovSw;
 int ovTempPage = 0;                     // temperature tile: which 3 of more chosen sensors are shown
 uint32_t ovTempFlip = 0;
 const uint32_t TEMP_FLIP_MS = 4000;
@@ -121,16 +122,14 @@ struct BatRowW { lv_obj_t *card, *soc, *top, *sub, *bar; };
 std::vector<BatRowW> bRows;
 lv_obj_t* bStatus = nullptr;
 lv_obj_t *bSensCard = nullptr, *bSensLbl = nullptr;   // battery levels of own Zigbee/BLE sensors
-// actuator page (open windows / doors) and warnings page
-lv_obj_t* aStatus = nullptr;
-std::vector<lv_obj_t*> aRows, aVals, aSubs;
-String aSig;
-// light cards on the actuator page: switch, brightness, colour buttons
-struct LightW { lv_obj_t *card, *sw, *slider, *lvl, *info; size_t dev; };
-std::vector<LightW> lRows;              // actuator page
-std::vector<LightW> lpRows;             // light page
-lv_obj_t* lpStatus = nullptr;
-String lpSig;
+// Device pages (Sensoren, Licht, Schalter, Energie, Extra): the same builder for all of them.
+// Lights and switches get a card with a switch, contacts and climate sensors a row with their value.
+struct LightW { lv_obj_t *card, *sw, *slider, *lvl; size_t dev; };
+struct RowW { lv_obj_t *card, *val, *sub; size_t dev; };
+struct DevPageW { int bp; uint8_t bit; lv_obj_t* status; String sig; std::vector<LightW> cards; std::vector<RowW> rows; };
+DevPageW devPages[] = {{BP_ACTORS, sensors::SH_ACT, nullptr, "", {}, {}}, {BP_LIGHT, sensors::SH_LIGHT, nullptr, "", {}, {}},
+                       {BP_SWITCH, sensors::SH_SWITCH, nullptr, "", {}, {}}, {BP_EXTRA1, sensors::SH_X1, nullptr, "", {}, {}},
+                       {BP_EXTRA2, sensors::SH_X2, nullptr, "", {}, {}}};
 // colour buttons: key "color" with #rrggbb or "ct" with mireds; shown colour of the button
 struct Swatch { const char* key; const char* val; uint32_t show; const char* text; };
 const Swatch SWATCHES[] = {
@@ -632,6 +631,7 @@ void setList(ListW& w, const std::vector<String>& lines, const std::vector<lv_co
 
 void buildBattery(lv_obj_t* tab);
 void buildBatteryRows(size_t n, lv_obj_t* tab);
+const char* builtinIcon(int bp);
 
 void buildOverview(lv_obj_t* tab) {
   pageContainer(tab);
@@ -654,8 +654,9 @@ void buildOverview(lv_obj_t* tab) {
     else if (t == "fan")    infoCard(tab, ICON_FAN, pageTitle(BP_FAN).c_str(), ovFanVal, ovFanSub, BP_FAN);
     else if (t == "temp")   listCard(tab, ICON_THERMOMETER, pageTitle(BP_TEMP).c_str(), ovTemp, BP_TEMP);
     else if (t == "bat")    listCard(tab, LV_SYMBOL_BATTERY_FULL, pageTitle(BP_BATTERY).c_str(), ovBat, BP_BATTERY);
-    else if (t == "actors") listCard(tab, icons::glyph("door"), pageTitle(BP_ACTORS).c_str(), ovAct, BP_ACTORS);
-    else if (t == "lights") listCard(tab, icons::glyph("light"), pageTitle(BP_LIGHT).c_str(), ovLight, BP_LIGHT);
+    else if (t == "actors")   listCard(tab, builtinIcon(BP_ACTORS), pageTitle(BP_ACTORS).c_str(), ovAct, BP_ACTORS);
+    else if (t == "lights")   listCard(tab, builtinIcon(BP_LIGHT), pageTitle(BP_LIGHT).c_str(), ovLight, BP_LIGHT);
+    else if (t == "switches") listCard(tab, builtinIcon(BP_SWITCH), pageTitle(BP_SWITCH).c_str(), ovSw, BP_SWITCH);
     else if (t == "status") {
       // green "OK" or the active warnings on red; tap = warnings page with the full text
       ovWarn = tile(tab, LV_SYMBOL_WARNING, "Status", BP_WARN);
@@ -751,18 +752,6 @@ void buildBatteryRows(size_t n, lv_obj_t* tab) {
   if (bSensCard) lv_obj_move_to_index(bSensCard, -1);
 }
 
-// Actuator page: one row per window / door contact
-void buildActors(lv_obj_t* tab) {
-  pageContainer(tab);
-  aStatus = label(tab, &font_de_18, C_MUTED, "");
-  lv_obj_set_width(aStatus, PAGE_W - 20);
-  aRows.clear();
-  aVals.clear();
-  aSubs.clear();
-  lRows.clear();
-  aSig = "\x01";
-}
-
 void onLightSwitch(lv_event_t* e) {
   size_t dev = (size_t)(intptr_t)lv_event_get_user_data(e);
   lv_obj_t* sw = (lv_obj_t*)lv_event_get_target(e);
@@ -774,9 +763,9 @@ void onLightLevel(lv_event_t* e) {
   cmd::light(dev, "level", String(lv_slider_get_value(sl)));
 }
 void onLightLevelDrag(lv_event_t* e) {
-  for (auto* rows : {&lRows, &lpRows})
-    for (auto& r : *rows)
-      if (r.slider == lv_event_get_target(e))
+  for (auto& p : devPages)
+    for (auto& r : p.cards)
+      if (r.slider && r.slider == lv_event_get_target(e))
         lv_label_set_text_fmt(r.lvl, "%d %%", (int)lroundf(lv_slider_get_value(r.slider) * 100.0f / 254));
 }
 // user data: device index * 16 + swatch
@@ -786,91 +775,156 @@ void onLightSwatch(lv_event_t* e) {
   cmd::light(ud / 16, sw.key, sw.val);
 }
 
-// One card per light: switch, brightness slider, colour buttons
-void buildLightCards(lv_obj_t* tab, const std::vector<sensors::LightOut>& lights, std::vector<LightW>& out) {
-  for (auto& li : lights) {
-    LightW w;
-    w.dev = li.idx;
-    w.card = card(tab, PAGE_W - 20, 150);
-    lv_obj_t* n = label(w.card, &font_de_22, C_TEXT, dispText(String(icons::glyph("light")) + "  " + li.name).c_str());
-    lv_obj_set_width(n, 300);
-    lv_label_set_long_mode(n, LV_LABEL_LONG_DOT);
-    lv_obj_align(n, LV_ALIGN_TOP_LEFT, 0, 4);
-    w.sw = lv_switch_create(w.card);
-    lv_obj_set_size(w.sw, 72, 38);
-    lv_obj_align(w.sw, LV_ALIGN_TOP_RIGHT, 0, 0);
-    lv_obj_set_style_bg_color(w.sw, C_OK, LV_PART_INDICATOR | LV_STATE_CHECKED);
-    lv_obj_add_event_cb(w.sw, onLightSwitch, LV_EVENT_VALUE_CHANGED, (void*)(intptr_t)li.idx);
-    w.slider = lv_slider_create(w.card);
-    lv_slider_set_range(w.slider, 1, 254);
-    lv_obj_set_size(w.slider, PAGE_W - 44 - 80, 14);
-    lv_obj_align(w.slider, LV_ALIGN_LEFT_MID, 8, 4);
-    lv_obj_set_style_bg_color(w.slider, C_GAS, LV_PART_INDICATOR);
-    lv_obj_set_style_bg_color(w.slider, C_TEXT, LV_PART_KNOB);
-    lv_obj_add_event_cb(w.slider, onLightLevel, LV_EVENT_RELEASED, (void*)(intptr_t)li.idx);
-    lv_obj_add_event_cb(w.slider, onLightLevelDrag, LV_EVENT_VALUE_CHANGED, nullptr);
-    w.lvl = label(w.card, &font_de_18, C_MUTED, "");
-    lv_obj_align(w.lvl, LV_ALIGN_RIGHT_MID, 0, 4);
-    int bw = (PAGE_W - 44 - (SWATCH_N - 1) * 6) / SWATCH_N;
-    for (int k = 0; k < SWATCH_N; k++) {
-      lv_obj_t* b = button(w.card, SWATCHES[k].text, bw, 34, onLightSwatch,
-                           (void*)(intptr_t)(li.idx * 16 + k), lv_color_hex(SWATCHES[k].show), &font_de_14);
-      lv_obj_set_style_text_color(lv_obj_get_child(b, 0), C_ONBANNER, 0);
-      lv_obj_set_style_radius(b, 10, 0);
-      lv_obj_align(b, LV_ALIGN_BOTTOM_LEFT, k * (bw + 6), 0);
-    }
-    w.info = nullptr;
-    out.push_back(w);
+// Card for a light (switch, brightness slider, colour buttons) or a switch (only the switch)
+LightW buildLightCard(lv_obj_t* tab, const sensors::DevOut& li) {
+  bool full = li.kind == sensors::K_LIGHT;
+  LightW w{};
+  w.dev = li.idx;
+  w.card = card(tab, PAGE_W - 20, full ? 150 : 64);
+  lv_obj_t* n = label(w.card, &font_de_22, C_TEXT,
+                      dispText(String(icons::glyph(full ? "light" : "plug")) + "  " + li.name).c_str());
+  lv_obj_set_width(n, 300);
+  lv_label_set_long_mode(n, LV_LABEL_LONG_DOT);
+  lv_obj_align(n, full ? LV_ALIGN_TOP_LEFT : LV_ALIGN_LEFT_MID, 0, full ? 4 : 0);
+  w.sw = lv_switch_create(w.card);
+  lv_obj_set_size(w.sw, 72, 38);
+  lv_obj_align(w.sw, full ? LV_ALIGN_TOP_RIGHT : LV_ALIGN_RIGHT_MID, 0, 0);
+  lv_obj_set_style_bg_color(w.sw, C_OK, LV_PART_INDICATOR | LV_STATE_CHECKED);
+  lv_obj_add_event_cb(w.sw, onLightSwitch, LV_EVENT_VALUE_CHANGED, (void*)(intptr_t)li.idx);
+  if (!full) return w;
+  w.slider = lv_slider_create(w.card);
+  lv_slider_set_range(w.slider, 1, 254);
+  lv_obj_set_size(w.slider, PAGE_W - 44 - 80, 14);
+  lv_obj_align(w.slider, LV_ALIGN_LEFT_MID, 8, 4);
+  lv_obj_set_style_bg_color(w.slider, C_GAS, LV_PART_INDICATOR);
+  lv_obj_set_style_bg_color(w.slider, C_TEXT, LV_PART_KNOB);
+  lv_obj_add_event_cb(w.slider, onLightLevel, LV_EVENT_RELEASED, (void*)(intptr_t)li.idx);
+  lv_obj_add_event_cb(w.slider, onLightLevelDrag, LV_EVENT_VALUE_CHANGED, nullptr);
+  w.lvl = label(w.card, &font_de_18, C_MUTED, "");
+  lv_obj_align(w.lvl, LV_ALIGN_RIGHT_MID, 0, 4);
+  int bw = (PAGE_W - 44 - (SWATCH_N - 1) * 6) / SWATCH_N;
+  for (int k = 0; k < SWATCH_N; k++) {
+    lv_obj_t* b = button(w.card, SWATCHES[k].text, bw, 34, onLightSwatch,
+                         (void*)(intptr_t)(li.idx * 16 + k), lv_color_hex(SWATCHES[k].show), &font_de_14);
+    lv_obj_set_style_text_color(lv_obj_get_child(b, 0), C_ONBANNER, 0);
+    lv_obj_set_style_radius(b, 10, 0);
+    lv_obj_align(b, LV_ALIGN_BOTTOM_LEFT, k * (bw + 6), 0);
   }
+  return w;
 }
 
-void updateLightCards(const std::vector<sensors::LightOut>& ls, std::vector<LightW>& rows) {
-  for (size_t i = 0; i < ls.size() && i < rows.size(); i++) {
-    const auto& l = ls[i];
-    LightW& w = rows[i];
-    if (l.on == 1) lv_obj_add_state(w.sw, LV_STATE_CHECKED);
-    else           lv_obj_remove_state(w.sw, LV_STATE_CHECKED);
-    if (l.level >= 0 && !lv_obj_has_state(w.slider, LV_STATE_PRESSED)) {
-      lv_slider_set_value(w.slider, l.level, LV_ANIM_OFF);
-      lv_label_set_text_fmt(w.lvl, "%d %%", (int)lroundf(l.level * 100.0f / 254));
-    } else if (l.level < 0) lv_label_set_text(w.lvl, "");
-    lv_obj_set_style_opa(w.slider, l.on == 1 ? LV_OPA_COVER : LV_OPA_50, 0);
-  }
+// Row for a contact or climate sensor: name, small line below, value right
+RowW buildDevRow(lv_obj_t* tab, const sensors::DevOut& d) {
+  RowW r{};
+  r.dev = d.idx;
+  r.card = card(tab, PAGE_W - 20, 58);
+  lv_obj_set_style_pad_ver(r.card, 6, 0);
+  const char* ic = d.kind == sensors::K_CONTACT ? icons::glyph("door") : icons::glyph(icons::autoKey(d.name, true));
+  lv_obj_t* n = label(r.card, &font_de_22, C_TEXT, dispText(String(ic) + "  " + d.name).c_str());
+  lv_obj_set_width(n, 280);
+  lv_label_set_long_mode(n, LV_LABEL_LONG_DOT);
+  lv_obj_align(n, LV_ALIGN_LEFT_MID, 0, -8);
+  r.sub = label(r.card, &font_de_14, C_MUTED, "");
+  lv_obj_align(r.sub, LV_ALIGN_BOTTOM_LEFT, 0, 2);
+  r.val = label(r.card, &font_de_22, C_TEXT, "--");
+  lv_obj_align(r.val, LV_ALIGN_RIGHT_MID, 0, 0);
+  return r;
 }
 
-// Light page: all lights marked "Licht"
-void buildLightPage(lv_obj_t* tab) {
+void buildDevPage(lv_obj_t* tab, DevPageW& p) {
   pageContainer(tab);
-  lpStatus = label(tab, &font_de_18, C_MUTED, "");
-  lv_obj_set_width(lpStatus, PAGE_W - 20);
-  lpRows.clear();
-  lpSig = "\x01";
+  p.status = label(tab, &font_de_18, C_MUTED, "");
+  lv_obj_set_width(p.status, PAGE_W - 20);
+  p.cards.clear();
+  p.rows.clear();
+  p.sig = "\x01";
 }
 
-void buildActorRows(const std::vector<sensors::ContactOut>& items, const std::vector<sensors::LightOut>& lights, lv_obj_t* tab) {
-  for (auto r : aRows) lv_obj_delete(r);
-  for (auto& r : lRows) lv_obj_delete(r.card);
-  aRows.clear();
-  aVals.clear();
-  aSubs.clear();
-  lRows.clear();
-  // lights first: they are what you touch here
-  buildLightCards(tab, lights, lRows);
-  for (auto& it : items) {
-    lv_obj_t* c = card(tab, PAGE_W - 20, 58);
-    lv_obj_set_style_pad_ver(c, 6, 0);
-    lv_obj_t* n = label(c, &font_de_22, C_TEXT, dispText(it.name).c_str());
-    lv_obj_set_width(n, 260);
-    lv_label_set_long_mode(n, LV_LABEL_LONG_DOT);
-    lv_obj_align(n, LV_ALIGN_LEFT_MID, 0, -8);
-    lv_obj_t* sub = label(c, &font_de_14, C_MUTED, "");
-    lv_obj_align(sub, LV_ALIGN_BOTTOM_LEFT, 0, 2);
-    lv_obj_t* v = label(c, &font_de_22, C_TEXT, "--");
-    lv_obj_align(v, LV_ALIGN_RIGHT_MID, 0, 0);
-    aRows.push_back(c);
-    aVals.push_back(v);
-    aSubs.push_back(sub);
+DevPageW* devPageFor(int bp) {
+  for (auto& p : devPages) if (p.bp == bp) return &p;
+  return nullptr;
+}
+
+void refreshDevPage(DevPageW& p) {
+  if (!p.status) return;
+  std::vector<sensors::DevOut> ds = sensors::devices(p.bit);
+  // lights and switches first: they are what you touch
+  std::stable_sort(ds.begin(), ds.end(), [](const sensors::DevOut& a, const sensors::DevOut& b) {
+    auto rank = [](uint8_t k) { return k == sensors::K_LIGHT ? 0 : k == sensors::K_SWITCH ? 1 : 2; };
+    return rank(a.kind) < rank(b.kind);
+  });
+  String sig;
+  for (auto& d : ds) { sig += String(d.idx) + ":" + String(d.kind) + d.name; sig += '\x01'; }
+  if (sig != p.sig) {
+    p.sig = sig;
+    for (auto& c : p.cards) lv_obj_delete(c.card);
+    for (auto& r : p.rows) lv_obj_delete(r.card);
+    p.cards.clear();
+    p.rows.clear();
+    lv_obj_t* tab = lv_obj_get_parent(p.status);
+    for (auto& d : ds) {
+      if (d.kind == sensors::K_LIGHT || d.kind == sensors::K_SWITCH) p.cards.push_back(buildLightCard(tab, d));
+      else p.rows.push_back(buildDevRow(tab, d));
+    }
   }
+  size_t ci = 0, ri = 0;
+  for (auto& d : ds) {
+    if (d.kind == sensors::K_LIGHT || d.kind == sensors::K_SWITCH) {
+      if (ci >= p.cards.size()) break;
+      LightW& w = p.cards[ci++];
+      if (d.on == 1) lv_obj_add_state(w.sw, LV_STATE_CHECKED);
+      else           lv_obj_remove_state(w.sw, LV_STATE_CHECKED);
+      if (!w.slider) continue;
+      if (d.level >= 0 && !lv_obj_has_state(w.slider, LV_STATE_PRESSED)) {
+        lv_slider_set_value(w.slider, d.level, LV_ANIM_OFF);
+        lv_label_set_text_fmt(w.lvl, "%d %%", (int)lroundf(d.level * 100.0f / 254));
+      } else if (d.level < 0) lv_label_set_text(w.lvl, "");
+      lv_obj_set_style_opa(w.slider, d.on == 1 ? LV_OPA_COVER : LV_OPA_50, 0);
+    } else {
+      if (ri >= p.rows.size()) break;
+      RowW& r = p.rows[ri++];
+      String val, sub;
+      lv_color_t col = C_TEXT;
+      if (d.kind == sensors::K_CONTACT) {
+        val = d.on == 1 ? "offen" : d.on == 0 ? "zu" : "?";
+        col = d.on == 1 ? C_WARN : d.on == 0 ? C_OK : C_MUTED;
+      } else {
+        val = isnan(d.temp) ? String("--") : commaNum(d.temp, 1) + " \xC2\xB0""C";
+        if (!isnan(d.hum)) sub = String((int)lroundf(d.hum)) + " % Luftfeuchte";
+      }
+      if (!isnan(d.batt)) sub += (sub.length() ? "  \xE2\x80\xA2  " : "") + String("Batterie ") + String((int)lroundf(d.batt)) + " %";
+      if (d.stale) { sub += sub.length() ? "  \xE2\x80\xA2  keine Daten" : "keine Daten"; col = C_MUTED; }
+      lv_label_set_text(r.val, dispText(val).c_str());
+      lv_obj_set_style_text_color(r.val, col, 0);
+      lv_label_set_text(r.sub, dispText(sub).c_str());
+    }
+  }
+  String st = ds.empty() ? "Noch nichts auf dieser Seite. Im Browser unter Einstellungen / Sensoren bei einem Sensor \""
+                           + pageTitle(p.bp) + "\" ankreuzen." : String("");
+  lv_label_set_text(p.status, dispText(st).c_str());
+  if (st.length()) lv_obj_remove_flag(p.status, LV_OBJ_FLAG_HIDDEN);
+  else             lv_obj_add_flag(p.status, LV_OBJ_FLAG_HIDDEN);
+}
+
+// Overview tile with the lights / switches that are on
+void setOnTile(ListW& w, uint8_t pages, uint8_t kind, const char* none) {
+  if (!w.line[0]) return;
+  std::vector<sensors::LightOut> all = sensors::lights(pages, kind);
+  std::vector<String> lines;
+  std::vector<lv_color_t> cols;
+  int on = 0;
+  for (auto& l : all) {
+    if (l.on != 1) continue;
+    on++;
+    if (lines.size() < 3) {
+      lines.push_back(l.name + (l.level >= 0 ? "  " + String((int)lroundf(l.level * 100.0f / 254)) + " %" : String("")));
+      cols.push_back(C_GAS);
+    }
+  }
+  if (all.empty()) { lines.push_back("--"); cols.push_back(C_MUTED); }
+  else if (!on) { lines.push_back("Alle aus"); cols.push_back(C_MUTED); }
+  String sub = all.empty() ? String(none) : on > 3 ? "+" + String(on - 3) + " an" : on ? String(on) + " an" : String("");
+  setList(w, lines, cols, sub);
 }
 
 // Warnings page: all active warnings with their full text
@@ -1435,86 +1489,28 @@ void refreshValues() {
     lv_obj_set_style_text_color(wnLbl, warn.length() ? C_WARN : C_OK, 0);
   }
 
-  // windows / doors: overview tile with the open ones, actuator page with all
-  if (ovAct.line[0] || aStatus) {
+  // windows / doors: overview tile with the open ones
+  if (ovAct.line[0]) {
     std::vector<sensors::ContactOut> cs = sensors::contacts();
-    std::vector<sensors::LightOut> ls = aStatus ? sensors::lights(sensors::SH_ACT) : std::vector<sensors::LightOut>();
-    if (ovAct.line[0]) {
-      std::vector<String> lines;
-      std::vector<lv_color_t> cols;
-      int open = 0;
-      for (auto& c : cs) {
-        if (c.open != 1) continue;
-        open++;
-        if (lines.size() < 3) { lines.push_back(c.name); cols.push_back(C_WARN); }
-      }
-      if (cs.empty()) { lines.push_back("--"); cols.push_back(C_MUTED); }
-      else if (!open) { lines.push_back("Alles zu"); cols.push_back(C_OK); }
-      String sub = cs.empty() ? String("keine Sensoren")
-                 : open > 3 ? "+" + String(open - 3) + " offen"
-                 : open ? String(open) + " offen" : String("");
-      setList(ovAct, lines, cols, sub);
+    std::vector<String> lines;
+    std::vector<lv_color_t> cols;
+    int open = 0;
+    for (auto& c : cs) {
+      if (c.open != 1) continue;
+      open++;
+      if (lines.size() < 3) { lines.push_back(c.name); cols.push_back(C_WARN); }
     }
-    if (aStatus) {
-      String sig;
-      for (auto& c : cs) { sig += c.name; sig += '\x01'; }
-      for (auto& l : ls) { sig += "L"; sig += String(l.idx); sig += l.name; sig += '\x01'; }
-      if (sig != aSig) {
-        aSig = sig;
-        buildActorRows(cs, ls, lv_obj_get_parent(aStatus));
-      }
-      updateLightCards(ls, lRows);
-      for (size_t i = 0; i < cs.size() && i < aVals.size(); i++) {
-        const auto& c = cs[i];
-        lv_label_set_text(aVals[i], c.open == 1 ? "offen" : c.open == 0 ? "zu" : "?");
-        lv_obj_set_style_text_color(aVals[i], c.stale || c.open < 0 ? C_MUTED : (c.open ? C_WARN : C_OK), 0);
-        String sub = isnan(c.batt) ? String("") : "Batterie " + String((int)lroundf(c.batt)) + " %";
-        if (c.stale) sub += sub.length() ? "  \xE2\x80\xA2  keine Daten" : "keine Daten";
-        lv_label_set_text(aSubs[i], dispText(sub).c_str());
-      }
-      String st = cs.empty() && ls.empty() ? String("Keine Fenster, T\xC3\xBCren oder Lichter. Im Browser unter Einstellungen / Sensoren anlegen.") : String("");
-      lv_label_set_text(aStatus, dispText(st).c_str());
-      if (st.length()) lv_obj_remove_flag(aStatus, LV_OBJ_FLAG_HIDDEN);
-      else             lv_obj_add_flag(aStatus, LV_OBJ_FLAG_HIDDEN);
-    }
+    if (cs.empty()) { lines.push_back("--"); cols.push_back(C_MUTED); }
+    else if (!open) { lines.push_back("Alles zu"); cols.push_back(C_OK); }
+    String sub = cs.empty() ? String("keine Kontakte")
+               : open > 3 ? "+" + String(open - 3) + " offen"
+               : open ? String(open) + " offen" : String("");
+    setList(ovAct, lines, cols, sub);
   }
-
-  // lights: overview tile with the ones that are on, light page with all
-  if (ovLight.line[0] || lpStatus) {
-    if (ovLight.line[0]) {
-      std::vector<sensors::LightOut> all = sensors::lights(sensors::SH_LIGHT | sensors::SH_ACT);
-      std::vector<String> lines;
-      std::vector<lv_color_t> cols;
-      int on = 0;
-      for (auto& l : all) {
-        if (l.on != 1) continue;
-        on++;
-        if (lines.size() < 3)
-          lines.push_back(l.name + (l.level >= 0 ? "  " + String((int)lroundf(l.level * 100.0f / 254)) + " %" : String("")));
-        if (cols.size() < 3) cols.push_back(C_GAS);
-      }
-      if (all.empty()) { lines.push_back("--"); cols.push_back(C_MUTED); }
-      else if (!on) { lines.push_back("Alle aus"); cols.push_back(C_MUTED); }
-      String sub = all.empty() ? String("keine Lichter") : on > 3 ? "+" + String(on - 3) + " an" : on ? String(on) + " an" : String("");
-      setList(ovLight, lines, cols, sub);
-    }
-    if (lpStatus) {
-      std::vector<sensors::LightOut> ls = sensors::lights(sensors::SH_LIGHT);
-      String sig;
-      for (auto& l : ls) { sig += String(l.idx); sig += l.name; sig += '\x01'; }
-      if (sig != lpSig) {
-        lpSig = sig;
-        for (auto& r : lpRows) lv_obj_delete(r.card);
-        lpRows.clear();
-        buildLightCards(lv_obj_get_parent(lpStatus), ls, lpRows);
-      }
-      updateLightCards(ls, lpRows);
-      String st = ls.empty() ? String("Keine Lichter. Im Browser unter Einstellungen / Sensoren ein Licht anlegen und \"Licht\" ankreuzen.") : String("");
-      lv_label_set_text(lpStatus, st.c_str());
-      if (st.length()) lv_obj_remove_flag(lpStatus, LV_OBJ_FLAG_HIDDEN);
-      else             lv_obj_add_flag(lpStatus, LV_OBJ_FLAG_HIDDEN);
-    }
-  }
+  // lights / switches that are on, device pages
+  setOnTile(ovLight, sensors::SH_DEVPAGES, sensors::K_LIGHT, "keine Lichter");
+  setOnTile(ovSw, sensors::SH_DEVPAGES, sensors::K_SWITCH, "keine Schalter");
+  for (auto& p : devPages) refreshDevPage(p);
 
   // weather page / tile: measured outside temperature
   if (wOut) {
@@ -1933,15 +1929,9 @@ void clearHandles() {
   ovWxIcon = ovWxVal = ovWxSub = nullptr;
   wShown = -1;
   ovWarn = ovWarnLbl = ovInd = nullptr;
-  ovTemp = ovBat = ovAct = ovLight = ListW();
-  lpStatus = nullptr;
-  lpRows.clear();
+  ovTemp = ovBat = ovAct = ovLight = ovSw = ListW();
+  for (auto& p : devPages) { p.status = nullptr; p.cards.clear(); p.rows.clear(); p.sig = ""; }
   bSensCard = bSensLbl = nullptr;
-  aStatus = nullptr;
-  aRows.clear();
-  aVals.clear();
-  aSubs.clear();
-  lRows.clear();
   wnCard = wnLbl = nullptr;
   wOut = nullptr;
   wxTileBase = "";
@@ -1957,9 +1947,10 @@ void clearHandles() {
   tileW.assign(settings.tiles.size(), TileW());
 }
 
-// Icon of a page in the bottom bar
-const char* pageIcon(const PageInfo& p) {
-  switch (p.builtin) {
+// Icon of a fixed page (or of the system page with BP_COUNT): the chosen one, otherwise the default
+const char* builtinIcon(int bp) {
+  if (bp >= 0 && bp <= BP_COUNT && settings.pageIcon[bp].length()) return icons::glyph(settings.pageIcon[bp]);
+  switch (bp) {
     case BP_OVERVIEW: return LV_SYMBOL_HOME;
     case BP_HEATER:   return ICON_FIRE;
     case BP_FAN:      return ICON_FAN;
@@ -1970,9 +1961,19 @@ const char* pageIcon(const PageInfo& p) {
     case BP_ACTORS:   return icons::glyph("door");
     case BP_WARN:     return LV_SYMBOL_WARNING;
     case BP_LIGHT:    return icons::glyph("light");
-    case PG_SYSTEM:   return LV_SYMBOL_SETTINGS;
+    case BP_SWITCH:   return icons::glyph("plug");
+    case BP_EXTRA1:   return icons::glyph("bolt");
+    case BP_EXTRA2:   return icons::glyph("box");
+    case BP_COUNT:    return LV_SYMBOL_SETTINGS;
     default:          return LV_SYMBOL_LIST;
   }
+}
+
+// Icon of a page in the bottom bar
+const char* pageIcon(const PageInfo& p) {
+  if (p.builtin == PG_SYSTEM) return builtinIcon(BP_COUNT);
+  if (p.builtin >= 0) return builtinIcon(p.builtin);
+  return LV_SYMBOL_LIST;
 }
 
 // Icon bar: Home, up to NAV_FREE chosen pages, System. Pages not in the bar stay reachable by
@@ -2068,9 +2069,10 @@ void build() {
       case BP_TEMP:     buildTemp(tab); break;
       case BP_BATTERY:  buildBattery(tab); break;
       case BP_WEATHER:  buildWeather(tab); break;
-      case BP_ACTORS:   buildActors(tab); break;
       case BP_WARN:     buildWarnPage(tab); break;
-      case BP_LIGHT:    buildLightPage(tab); break;
+      case BP_ACTORS: case BP_LIGHT: case BP_SWITCH: case BP_EXTRA1: case BP_EXTRA2:
+        buildDevPage(tab, *devPageFor(p.builtin));
+        break;
       case PG_SYSTEM:   buildSystem(tab); break;
       default:          buildCustom(tab, p.custom); break;
     }

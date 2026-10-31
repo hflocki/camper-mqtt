@@ -12,10 +12,11 @@ const M = {
     poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
     brightness: 80, dimBrightness: 10, screenTimeout: 120, warnWake: false,
     wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, ovTempSel: '', ovBatSel: '',
-    builtin: [true, true, true, true, true, true, true, true, true, true],
-    pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'Aktoren', 'Warnungen', 'Licht', 'System'],
-    navSel: 'heater,temp,weather,actors,light,warn', heaterSrc: 0,
-    ovTiles: 'water,gas,heater,lights,actors,weather,temp,bat1,status',
+    builtin: [true, true, true, true, true, true, true, true, true, true, true, false, false],
+    pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'Sensoren', 'Warnungen', 'Licht', 'Schalter', 'Energie', 'Extra', 'System'],
+    pageIcons: ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    navSel: 'heater,temp,actors,light,switch,warn', heaterSrc: 0,
+    ovTiles: 'water,gas,heater,lights,actors,switches,temp,bat1,status',
     fw: '2.8.0', mac: '24:0A:C4:00:00:01',
     // In the mockup the device links open the other mockups
     links: [{n: 'Truma', u: 'heater.html'}, {n: 'MaxxFan', u: 'maxxfan.html'}, {n: 'Tanks', u: 'tanklevel.html'},
@@ -33,14 +34,15 @@ const M = {
     {name: 'Heki', bus: 0, kind: 0, addr: '0x00158d0000000002', alt: '1a02', icon: 'door', warn: false, show: 6},
     {name: 'Bullauge vorn', bus: 0, kind: 0, addr: '0x00158d0000000003', alt: '1a03', icon: 'door', warn: true, show: 6},
     {name: 'Govee Außen', bus: 1, kind: 1, addr: 'A4C1380000AA', icon: '', warn: false, show: 8},
-    {name: 'LED Eingang', bus: 0, kind: 2, addr: '0xa4c1380000000004', icon: '', warn: false, show: 16}]},
+    {name: 'LED Eingang', bus: 0, kind: 2, addr: '0xa4c1380000000004', icon: '', warn: false, show: 16},
+    {name: 'Steckdose Kühlbox', bus: 0, kind: 3, addr: '0xa4c1380000000005', icon: '', warn: false, show: 32}]},
   rules: {rules: [{name: 'Eingangslicht', on: true, inTopic: 'camper/door', inKey: 'Door.state', cond: 0, inVal: 'open',
     outTopic: 'camper/zigbee/led_eingang/set', onPayload: '{"state":"ON"}', offPayload: '{"state":"OFF"}', offDelay: 10,
     onlyOwn: true, when: 2, from: '19:00', to: '07:00', icon: 'door', warn: false}]},
   cfgMsg() {
     const c = M.cfg;
     return {t: 'cfg', fw: c.fw, host: c.hostname, name: c.displayName, links: c.links, ap: false, setup: false,
-            builtin: c.builtin, ovTiles: c.ovTiles, ovTempSel: c.ovTempSel, ovBatSel: c.ovBatSel, pageNames: c.pageNames, navSel: c.navSel, heaterSrc: c.heaterSrc, pages: M.pages.pages.map(p => p.name),
+            builtin: c.builtin, ovTiles: c.ovTiles, ovTempSel: c.ovTempSel, ovBatSel: c.ovBatSel, pageNames: c.pageNames, navSel: c.navSel, heaterSrc: c.heaterSrc, pageIcons: c.pageIcons, pages: M.pages.pages.map(p => p.name),
             tiles: M.pages.tiles.map(t => Object.assign({n: t.name, p: t.page, y: t.type, u: t.unit || ''},
               t.type === 1 ? {son: t.stateOn || 'ON'} : {}, t.type === 3 ? {min: t.min, max: t.max, step: t.step} : {}))};
   },
@@ -89,7 +91,8 @@ const M = {
       {n: 'Heki', k: 0, b: 0, o: door ? 1 : 0, bat: 92, age: 12, i: 'door', sh: 6},
       {n: 'Bullauge vorn', k: 0, b: 0, o: 1, bat: 65, age: 300, i: 'door', sh: 6},
       {n: 'Govee Außen', k: 1, b: 1, t: 8.6, h: 81, bat: 100, age: 8, i: '', sh: 8},
-      {n: 'LED Eingang', k: 2, b: 0, o: door ? 1 : 0, lv: 180, col: '#ff8000', age: 20, i: '', sh: 16}];
+      {n: 'LED Eingang', k: 2, b: 0, o: door ? 1 : 0, lv: 180, col: '#ff8000', age: 20, i: '', sh: 16},
+      {n: 'Steckdose Kühlbox', k: 3, b: 0, o: 1, age: 30, i: '', sh: 32}];
     return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake, ind: [], open: door ? 2 : 1, sen}};
   },
   wsCmd(o) {

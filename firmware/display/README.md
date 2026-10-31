@@ -43,7 +43,7 @@ Passt zu den anderen Projekten:
 - **Geräte-Links (nur Webseite):** Unter *Einstellungen → 🔗 Geräte-Links* Name und Adresse der anderen Geräte eintragen (oder „Camper-Geräte vorschlagen“ für die `.local`-Namen). Die Seite **🔗 Geräte** zeigt sie als Buttons, die die jeweilige Konfigurationsseite in einem neuen Tab öffnen
 - **Anzeigename:** Unter *Einstellungen → Display & Seiten* lässt sich ein Name eintragen (z. B. „Wohnraum“), der oben in der Mitte neben dem Seitentitel steht – am Display und auf der Webseite. Leer = kein Name
 - **Übersicht ohne Scrollen:** 3 × 3 Kacheln, Standard: Frischwasser, Grauwasser, Gas, Truma, Level, MaxxFan, Temperatur (bis 3 Sensoren), Batterie (bis 3), jeweils mit Symbol statt Name (siehe *Symbole* unten) und Status (grün „OK“ oder die Warnungen auf Rot). Antippen öffnet die jeweilige Seite. **Welche Kachel wo steht, ist frei wählbar** (*Einstellungen → Display & Seiten → Kacheln der Übersicht*): zusätzlich einzelne Batterien (Batterie 1–3 groß), Uhr/Datum, eigene MQTT-Kacheln aus *Seiten & Kacheln* oder leer. Die Webseite übernimmt dieselbe Reihenfolge
-- **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie · **Wetter** · **Aktoren** (Fenster und Türen) · **Warnungen** · **Licht** (einzeln abschaltbar) und **System** (Netzwerk, IP, Signal, MQTT, Firmware, Laufzeit, Speicher als Liste, dazu QR-Code und Helligkeit). Die Namen lassen sich unter *Einstellungen → Display & Seiten* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
+- **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie · **Wetter** · **Sensoren** (Fenster, Türen und weitere Sensoren) · **Warnungen** · **Licht** · **Schalter** · **Energie** und **Extra** (zwei freie Seiten für später, ab Werk aus) – einzeln abschaltbar und **System** (Netzwerk, IP, Signal, MQTT, Firmware, Laufzeit, Speicher als Liste, dazu QR-Code und Helligkeit). **Name und Symbol** jeder festen Seite (auch System) lassen sich unter *Einstellungen → 🖥 Anzeige → Seiten & Symbolleiste* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
 - **Kopfzeile:** Seitenname · Anzeigename · Datum · Uhr. Antippen springt zur Übersicht. Bei Verbindungsproblemen steht dort „WLAN“ bzw. „MQTT“
 - **Icon-Leiste unten:** 8 Knöpfe: **Home** und **System** sind immer da, dazu bis zu 6 frei wählbare Seiten (*Einstellungen → Display & Seiten → Symbolleiste*, leer = die ersten 6). Seiten ohne Knopf erreicht man über ihre Kachel auf Home oder durch Wischen. Die aktive Seite ist hervorgehoben
 - **Wetter** von [Open-Meteo](https://open-meteo.com) (kostenlos, ohne Konto): aktuelles Wetter, nächste Stunde, heute und 3 Tage Vorschau. Fester Ort oder GPS per MQTT (z. B. vom Router), siehe [Wetter](#wetter)
@@ -320,7 +320,9 @@ Neue Geräte starten ohne Beispielseite. Die frühere Beispielseite „Zigbee“
 
 Textwerte wie `"ON"`/`"OFF"` (so meldet z. B. eine LED-Leiste ihren Zustand) gelten als 1/0.
 
-**Lichter / LED-Leisten** (Typ *Zigbee · Licht*): Auf der Seite *Licht* (und, wenn angehakt, auf *Aktoren*) gibt es je Licht eine Karte mit Schalter, Helligkeit und Farbknöpfen (Warmweiß, Kaltweiß, Rot, Orange, Grün, Blau, Lila), auf der Webseite zusätzlich einen freien Farbwähler. Geschaltet wird über die Befehls-Topics des SMLIGHT-Hubs, Basis = Zigbee-Basis ohne `/data` (also `camper/zigbee/cmd/<IEEE>/1/…`). Dafür muss beim Licht die **16-stellige IEEE-Adresse** eingetragen sein (Short-ID reicht hier nicht):
+**Schalter / Steckdosen** (Typ *Zigbee · Schalter / Steckdose*): nur An/Aus über `…/cmd/<IEEE>/1/0006`, Zustand aus `0006/0000`. Ebenfalls volle IEEE-Adresse eintragen.
+
+**Lichter / LED-Leisten** (Typ *Zigbee · Licht*): Auf der Seite *Licht* (und überall, wo angehakt) gibt es je Licht eine Karte mit Schalter, Helligkeit und Farbknöpfen (Warmweiß, Kaltweiß, Rot, Orange, Grün, Blau, Lila), auf der Webseite zusätzlich einen freien Farbwähler. Geschaltet wird über die Befehls-Topics des SMLIGHT-Hubs, Basis = Zigbee-Basis ohne `/data` (also `camper/zigbee/cmd/<IEEE>/1/…`). Dafür muss beim Licht die **16-stellige IEEE-Adresse** eingetragen sein (Short-ID reicht hier nicht):
 
 | Aktion | Topic | Payload |
 | --- | --- | --- |
@@ -340,10 +342,14 @@ Die Adresse darf die IEEE-Adresse (`0x00158d…`) oder die Short-ID (`9c68`) sei
 - **Anzeigen auf:** je Sensor Haken für die Seiten, auf denen er erscheint:
   - **🌡️ Temperatur** (Klima-Sensoren, Standard): Temperaturseite mit Luftfeuchte und Batterie, in der Temperatur-Kachel wählbar, 24-h-Verlauf
   - **💡 Licht** (Lichter, Standard): Seite *Licht* mit einer Karte je Licht, die Home-Kachel *Licht* zeigt, welche an sind
-  - **🚪 Aktoren** (Kontakte, Standard; Lichter auf Wunsch zusätzlich): Seite *Aktoren* mit den Lichtern zum Schalten und allen Fenstern und Türen (offen/zu, Batterie), die Kachel *Aktoren* auf Home listet die offenen mit Namen, und die Status-Kachel zählt sie, z. B. „2 🚪“
+  - **🔌 Schalter** (Typ *Zigbee · Schalter / Steckdose*, Standard; Lichter auf Wunsch): Seite *Schalter* mit An/Aus je Gerät, Home-Kachel *Schalter*
+  - **🚪 Sensoren** (Kontakte, Standard; Klima-Sensoren auf Wunsch): Seite *Sensoren* mit allen Fenstern und Türen (offen/zu, Batterie) bzw. Temperatur und Luftfeuchte. Die Home-Kachel *Offene Fenster/Türen* listet die offenen mit Namen, die Status-Kachel zählt sie, z. B. „2 🚪“
   - **🔋 Batterie:** der Ladestand des Sensors steht auf der Batterieseite unter *Sensor-Batterien*
+  - **⚡ Energie / 📦 Extra:** die beiden freien Seiten; jeder Sensortyp kann dort erscheinen
   - **🌦 Wetter (Außen):** der Sensor ist das Außenthermometer (z. B. ein Ruuvi-Tag draußen). Die gemessene Temperatur und Luftfeuchte stehen auf der Wetterseite unter der Vorhersage-Temperatur und unten in der Wetter-Kachel
-- Kontakte ohne Haken bei *Aktoren* erscheinen wie bisher nur als Symbol in der Status-Kachel, solange sie offen sind.
+- Die Haken heißen so, wie du die Seiten benannt hast, und tragen ihr Symbol. Ist eine Seite ausgeschaltet, steht „(Seite aus)“ dahinter.
+- Seiten wie Sensoren, Licht, Schalter, Energie und Extra sind gleich aufgebaut: Lichter und Schalter oben als Karten zum Bedienen, Kontakte und Klima-Sensoren darunter als Zeilen mit Wert.
+- Kontakte, die auf keiner dieser Seiten stehen, erscheinen nur als Symbol in der Status-Kachel, solange sie offen sind.
 - Für Automationen mit einem Zigbee-Kontakt (SMLIGHT): *Wenn* Topic `camper/zigbee/data/<Adresse>/1/0006/0000`, Schlüssel `data.val`, = `1`.
 - Licht per Automation schalten (z. B. Eingangslicht): *Dann senden* an `camper/zigbee/cmd/<IEEE>/1/0006`, Payload `ON` bzw. `OFF`. Die Vorlage *Eingangslicht* trägt die IEEE des ersten angelegten Lichts schon ein, sofern die Sensorliste in dieser Sitzung geöffnet war.
 

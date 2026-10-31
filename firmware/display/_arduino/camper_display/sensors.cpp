@@ -260,9 +260,9 @@ bool fromJson(const String& json, String& err, bool apply) {
     d.invert = o["invert"] | false;
     d.name.trim(); d.addr.trim(); d.alt.trim();
     if (d.bus > B_BLE) d.bus = B_ZIGBEE;
-    if (d.kind > K_LIGHT) d.kind = K_CLIMATE;
+    if (d.kind > K_SWITCH) d.kind = K_CLIMATE;
     if (d.bus == B_BLE) d.kind = K_CLIMATE;
-    d.show = o["show"].is<int>() ? (uint8_t)(o["show"].as<int>() & 0x1F) : defaultShow(d.kind);
+    d.show = o["show"].is<int>() ? (uint8_t)(o["show"].as<int>() & 0xFF) : defaultShow(d.kind);
     if (!icons::known(d.icon)) d.icon = "";
     if (d.addr.isEmpty()) { err = (d.name.length() ? d.name : String("Sensor")) + ": Adresse fehlt"; return false; }
     if (d.name.isEmpty()) d.name = d.addr;
@@ -368,7 +368,7 @@ std::vector<ContactOut> contacts() {
   std::vector<ContactOut> out;
   uint32_t now = millis();
   for (size_t i = 0; i < devs.size(); i++) {
-    if (devs[i].kind != K_CONTACT || !(devs[i].show & SH_ACT)) continue;
+    if (devs[i].kind != K_CONTACT || !(devs[i].show & (SH_ACT | SH_X1 | SH_X2))) continue;
     out.push_back({devs[i].name, vals[i].open, vals[i].batt, !vals[i].at || now - vals[i].at > STALE_MS});
   }
   return out;
@@ -378,8 +378,21 @@ int openCount() {
   Lock lock;
   int n = 0;
   for (size_t i = 0; i < devs.size(); i++)
-    if (devs[i].kind == K_CONTACT && (devs[i].show & SH_ACT) && vals[i].open == 1) n++;
+    if (devs[i].kind == K_CONTACT && (devs[i].show & (SH_ACT | SH_X1 | SH_X2)) && vals[i].open == 1) n++;
   return n;
+}
+
+std::vector<DevOut> devices(uint8_t pages) {
+  Lock lock;
+  std::vector<DevOut> out;
+  uint32_t now = millis();
+  for (size_t i = 0; i < devs.size(); i++) {
+    if (!(devs[i].show & pages)) continue;
+    const Value& v = vals[i];
+    out.push_back({i, devs[i].kind, devs[i].name, v.open, v.level, v.color, v.temp, v.hum, v.batt,
+                   !v.at || now - v.at > STALE_MS});
+  }
+  return out;
 }
 
 std::vector<BattOut> batteries() {
@@ -393,12 +406,12 @@ std::vector<BattOut> batteries() {
   return out;
 }
 
-std::vector<LightOut> lights(uint8_t pages) {
+std::vector<LightOut> lights(uint8_t pages, uint8_t kind) {
   Lock lock;
   std::vector<LightOut> out;
   uint32_t now = millis();
   for (size_t i = 0; i < devs.size(); i++) {
-    if (devs[i].kind != K_LIGHT || !(devs[i].show & pages)) continue;
+    if (devs[i].kind != kind || !(devs[i].show & pages)) continue;
     out.push_back({i, devs[i].name, vals[i].open, vals[i].level, vals[i].color, !vals[i].at || now - vals[i].at > STALE_MS});
   }
   return out;
@@ -406,7 +419,8 @@ std::vector<LightOut> lights(uint8_t pages) {
 
 bool lightCommand(size_t idx, const String& key, const String& value, String& topic, String& payload) {
   Lock lock;
-  if (idx >= devs.size() || devs[idx].kind != K_LIGHT || devs[idx].bus != B_ZIGBEE) return false;
+  if (idx >= devs.size() || devs[idx].bus != B_ZIGBEE) return false;
+  if (devs[idx].kind != K_LIGHT && !(devs[idx].kind == K_SWITCH && key == "on")) return false;
   // the hub's command topics need the 16 digit IEEE address
   String ieee = normZb(devs[idx].addr);
   if (ieee.length() != 16) ieee = normZb(devs[idx].alt);
@@ -454,7 +468,7 @@ std::vector<String> activeIcons() {
   Lock lock;
   std::vector<String> out;
   for (size_t i = 0; i < devs.size(); i++)
-    if (devs[i].kind == K_CONTACT && !(devs[i].show & SH_ACT) && vals[i].open == 1 && devs[i].icon.length())
+    if (devs[i].kind == K_CONTACT && !(devs[i].show & (SH_ACT | SH_X1 | SH_X2)) && vals[i].open == 1 && devs[i].icon.length())
       out.push_back(devs[i].icon);
   return out;
 }
