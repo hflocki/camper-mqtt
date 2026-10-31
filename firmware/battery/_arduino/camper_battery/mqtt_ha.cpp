@@ -24,10 +24,11 @@
 //   <prefix>/<id>/state             battery state text (BM2 only): Kritisch, Schwach, Normal, Lädt, Erhaltungsladung
 //   <prefix>/<id>/charging          ON / OFF
 //   <prefix>/<id>/problem           ON / OFF (BMS reports an error or protection)
+//   <prefix>/<id>/problem_text      readable text of the problem, "" without one
 //   <prefix>/batteries              all batteries as one JSON list for displays:
 //                                   [{"id":"house","name":"Bordbatterie","soc":87,"v":13.31,"a":-2.4,"w":-32,"ok":true}, ...]
 //                                   optional: "st" = state text (BM2), "rt" = remaining runtime in min
-//                                   while discharging, "p":true = BMS reports a problem, "t" = type (1 Daly, 2 Ective, 3 BM2)
+//                                   while discharging, "p":true = BMS reports a problem, "pt" = its text, "t" = type (1 Daly, 2 Ective, 3 BM2)
 //
 // Monitors without a current sensor (BM2) get no current, power, capacity, energy and runtime entities.
 //
@@ -106,7 +107,7 @@ void mqttInit() {
         return;
     }
     mqtt.setServer(config.mqtt_server, config.mqtt_port);
-    mqtt.setBufferSize(1024);
+    mqtt.setBufferSize(1280);
     mqtt.setKeepAlive(30);
     mqtt.setSocketTimeout(5);
     Serial.printf("[MQTT] Configured: %s:%d\n", config.mqtt_server, config.mqtt_port);
@@ -244,6 +245,11 @@ static void publishBattery(int i, const BmsLive& l) {
                     s.bat_state == BAT_STATE_CHARGING || s.bat_state == BAT_STATE_FLOATING;
     mqtt.publish(batTopic(i, "charging").c_str(), charging ? "ON" : "OFF", true);
     mqtt.publish(batTopic(i, "problem").c_str(), s.problem ? "ON" : "OFF", true);
+    {
+        char pt[160];
+        bmsProblemText(s, pt, sizeof(pt));
+        mqtt.publish(batTopic(i, "problem_text").c_str(), pt, true);   // "" when there is no problem
+    }
 
     // New sensors appeared (cell count known only after the first reading): announce them
     if (s.cell_count != announcedCells[i] || (!isnan(s.temperature) && !announcedTemp[i]) ||
@@ -271,10 +277,15 @@ static void publishList(const BmsLive* all) {
             const char* st = batStateName(l.s.bat_state);
             if (st) o["st"] = st;
             if (!isnan(l.s.runtime_s)) o["rt"] = (long)lroundf(l.s.runtime_s / 60.0f);
-            if (l.s.problem) o["p"] = true;
+            if (l.s.problem) {
+                o["p"] = true;
+                char pt[100];   // short: the whole list has to fit into one MQTT message
+                bmsProblemText(l.s, pt, sizeof(pt));
+                o["pt"] = pt;
+            }
         }
     }
-    char buf[900];
+    char buf[1000];
     size_t len = serializeJson(doc, buf, sizeof(buf));
     if (len == 0 || len >= sizeof(buf)) return;
     mqtt.publish(topic("batteries").c_str(), buf, true);

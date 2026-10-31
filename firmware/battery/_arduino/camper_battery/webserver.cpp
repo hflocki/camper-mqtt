@@ -344,6 +344,11 @@ void wsSendSensorData() {
         putNum(o, "rt", s.runtime_s, 1);
         o["cyc"] = s.cycles;
         o["prob"] = s.problem;
+        if (s.problem) {
+            char pt[160];
+            bmsProblemText(s, pt, sizeof(pt));
+            o["ptxt"] = pt;
+        }
         o["cfet"] = s.charge_fet;
         o["dfet"] = s.discharge_fet;
         o["bst"] = s.bat_state;

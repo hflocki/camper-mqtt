@@ -12,7 +12,7 @@ Passt zu den anderen Projekten:
 | --- | --- | --- |
 | Frischwasser, Grauwasser, Gas | [camper-tanklevel](../tanklevel) | `camper/tanklevel` |
 | Ausrichtung (BNO085) | [camper-level](../level) | `camper/level` ¹ |
-| Truma Combi Heizung | [camper-heater](../heater) | `camper/heater` ² |
+| Truma Combi Heizung | [camper-heater](../heater) oder CampMatic-Box, siehe [Heizung über CampMatic](#heizung-über-campmatic) | `camper/heater` ² |
 | MaxxFan (VanTurtle) | [camper-maxxfan](../maxxfan) | `camper/maxxfan` |
 | Temperaturen (DS18B20) | [camper-temp](../temp) | `camper/temp` |
 | Batterien (Daly, Ective, BM2) | [camper-battery](../battery) | `camper/battery` |
@@ -43,12 +43,12 @@ Passt zu den anderen Projekten:
 - **Geräte-Links (nur Webseite):** Unter *Einstellungen → 🔗 Geräte-Links* Name und Adresse der anderen Geräte eintragen (oder „Camper-Geräte vorschlagen“ für die `.local`-Namen). Die Seite **🔗 Geräte** zeigt sie als Buttons, die die jeweilige Konfigurationsseite in einem neuen Tab öffnen
 - **Anzeigename:** Unter *Einstellungen → Display & Seiten* lässt sich ein Name eintragen (z. B. „Wohnraum“), der oben in der Mitte neben dem Seitentitel steht – am Display und auf der Webseite. Leer = kein Name
 - **Übersicht ohne Scrollen:** 3 × 3 Kacheln, Standard: Frischwasser, Grauwasser, Gas, Truma, Level, MaxxFan, Temperatur (bis 3 Sensoren), Batterie (bis 3), jeweils mit Symbol statt Name (siehe *Symbole* unten) und Status (grün „OK“ oder die Warnungen auf Rot). Antippen öffnet die jeweilige Seite. **Welche Kachel wo steht, ist frei wählbar** (*Einstellungen → Display & Seiten → Kacheln der Übersicht*): zusätzlich einzelne Batterien (Batterie 1–3 groß), Uhr/Datum, eigene MQTT-Kacheln aus *Seiten & Kacheln* oder leer. Die Webseite übernimmt dieselbe Reihenfolge
-- **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie · **Wetter** (einzeln abschaltbar) und **System** (Netzwerk, IP, Signal, MQTT, Firmware, Laufzeit, Speicher als Liste, dazu QR-Code und Helligkeit). Die Namen lassen sich unter *Einstellungen → Display & Seiten* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
+- **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie · **Wetter** · **Aktoren** (Fenster und Türen) · **Warnungen** (einzeln abschaltbar) und **System** (Netzwerk, IP, Signal, MQTT, Firmware, Laufzeit, Speicher als Liste, dazu QR-Code und Helligkeit). Die Namen lassen sich unter *Einstellungen → Display & Seiten* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
 - **Kopfzeile:** Seitenname · Anzeigename · Datum · Uhr. Antippen springt zur Übersicht. Bei Verbindungsproblemen steht dort „WLAN“ bzw. „MQTT“
-- **Icon-Leiste unten:** ein Knopf je Seite (Home, Flamme, Lüfter, Waage, Thermometer, Batterie, Wetter, Zahnrad; eigene Seiten mit Listen-Icon). Die aktive Seite ist hervorgehoben. Mehr als 8 Seiten lassen sich in der Leiste seitlich schieben
+- **Icon-Leiste unten:** 8 Knöpfe: **Home** und **System** sind immer da, dazu bis zu 6 frei wählbare Seiten (*Einstellungen → Display & Seiten → Symbolleiste*, leer = die ersten 6). Seiten ohne Knopf erreicht man über ihre Kachel auf Home oder durch Wischen. Die aktive Seite ist hervorgehoben
 - **Wetter** von [Open-Meteo](https://open-meteo.com) (kostenlos, ohne Konto): aktuelles Wetter, nächste Stunde, heute und 3 Tage Vorschau. Fester Ort oder GPS per MQTT (z. B. vom Router), siehe [Wetter](#wetter)
-- **Warnungen:** Temperatur-Alarme von camper-temp, Heizungsfehler, Batterie- und Wetter-Warnungen erscheinen in der roten Status-Kachel der Übersicht und als **gelbes Band mit Lauftext** in der Kopfzeile. Wer möchte, dass eine neue Warnung das Display einschaltet, setzt unter *Einstellungen → Display & Seiten* den Haken **Neue Warnung schaltet das Display ein** (Standard aus); war es dunkel, springt es dann auf die Übersicht. Optional zusätzlich als **Push-Nachricht** per Pushover
-- **Temperatur- und Batterie-Kachel frei belegbar:** unter *Einstellungen → Display & Seiten* je Kachel bis zu 3 Sensoren bzw. Batterien aus einer Liste wählen und dahinter das Symbol (Batterie, Starterbatterie, Wohnraum, Sonne, Solarpanel, Fahrzeug, Landstrom, Strom, Thermometer, Kühlschrank, Gefrierfach, Innenraum, Außen, Schlafen, Wasser, Heizung, Bad, Stauraum). Die Kachel zeigt dann Symbol und Wert in dieser Reihenfolge. Leer = die ersten 3, „Symbol automatisch“ wählt nach dem Namen (z. B. Kühlschrank 🧊, Gefrierfach ❄️, Außen 🌳, Aufbau 🏠, Solar ☀️, Starter 🚗). Meldet ein gewählter Sensor nichts, steht dort „--“
+- **Warnungen:** Temperatur-Alarme von camper-temp, Heizungsfehler, Batterie- (mit dem Fehler des BMS im Klartext) und Wetter-Warnungen erscheinen in der roten Status-Kachel der Übersicht (antippen öffnet die Seite **Warnungen** mit dem vollen Text; auf der Webseite ebenso) und als **gelbes Band mit Lauftext** in der Kopfzeile. Wer möchte, dass eine neue Warnung das Display einschaltet, setzt unter *Einstellungen → Display & Seiten* den Haken **Neue Warnung schaltet das Display ein** (Standard aus); war es dunkel, springt es dann auf die Übersicht. Optional zusätzlich als **Push-Nachricht** per Pushover
+- **Temperatur- und Batterie-Kachel frei belegbar:** unter *Einstellungen → Display & Seiten* für die Temperatur-Kachel bis zu 6 Sensoren (auch eigene Zigbee-/Bluetooth-Sensoren; mehr als 3 wechseln alle 4 s, unten steht „1 / 2“), für die Batterie-Kachel bis zu 3 Batterien aus einer Liste wählen und dahinter das Symbol (Batterie, Starterbatterie, Wohnraum, Sonne, Solarpanel, Fahrzeug, Landstrom, Strom, Thermometer, Kühlschrank, Gefrierfach, Innenraum, Außen, Schlafen, Wasser, Heizung, Bad, Stauraum). Die Kachel zeigt dann Symbol und Wert in dieser Reihenfolge. Leer = alle Temperatursensoren bzw. die ersten 3 Batterien, „Symbol automatisch“ wählt nach dem Namen (z. B. Kühlschrank 🧊, Gefrierfach ❄️, Außen 🌳, Aufbau 🏠, Solar ☀️, Starter 🚗). Meldet ein gewählter Sensor nichts, steht dort „--“
 - **Eigene Seiten und Kacheln** für beliebige MQTT-Topics: *Wert*, *Schalter*, *Taster*, *Regler* – erscheinen automatisch auf Display **und** Webseite
 - **Topic-Finder:** lauscht z. B. auf `zigbee2mqtt/#`, zeigt alle Geräte mit ihren JSON-Werten; ein Klick legt eine Kachel an (Temperatur, Luftfeuchte, Licht an/aus, Helligkeit …)
 - **Setup-WLAN** wie bei den anderen Projekten: ohne WLAN-Daten oder nach 1 Minute ohne Verbindung öffnet sich `Camper-Display-XXXXXX`, Captive Portal unter `http://192.168.4.1`. Das Display zeigt dazu einen QR-Code zum Verbinden.
@@ -242,7 +242,7 @@ Die Status-Kachel der Übersicht wird rot und zeigt die Warnungen, solange etwas
 | camper-temp | `alarm_text` ist nicht leer (Grenzwert eines Sensors länger als die eingestellte Verzögerung verletzt) |
 | camper-heater | `control_status/heater_error` = `ON`, mit Fehlercode |
 | Wetter | Böen ab dem eingestellten Wert (Standard 60 km/h) oder Gewitter, siehe [Wetter](#wetter) |
-| camper-battery | Ladestand unter 20 % (`BAT_WARN_SOC` in `config.h`, mit Restlaufzeit), BM2-Zustand „Schwach“ oder „Kritisch“ (Starterbatterie), BMS meldet einen Fehler. Batterien ohne Verbindung lösen keine Warnung aus |
+| camper-battery | Ladestand unter 20 % (`BAT_WARN_SOC` in `config.h`, mit Restlaufzeit), BM2-Zustand „Schwach“ oder „Kritisch“ (Starterbatterie), BMS meldet einen Fehler – ab camper-battery 1.3.1 mit Text, z. B. „Bordbatterie BMS: Zellspannung zu hoch (Stufe 1)“, auch auf der Batterieseite. Batterien ohne Verbindung lösen keine Warnung aus |
 
 Warnungen von Geräten, die `offline` sind, werden nicht gezeigt (alte retained Werte sollen keinen Fehlalarm auslösen). Grenzwerte und Verzögerung stellt man direkt in camper-temp ein, nicht am Display.
 
@@ -291,15 +291,15 @@ Vorbelegen in `config_local.h`: `DEFAULT_WX_LAT`, `DEFAULT_WX_LON`, `DEFAULT_WX_
 
 *Einstellungen → 📡 Sensoren*. Jeder Sensor hat Name, Funk und Typ (Zigbee-Kontakt, Zigbee-Klima, Bluetooth-Klima) und die Adresse.
 
-**Zigbee** (Gateway, das ZCL-Attribute einzeln sendet, Topic `<Basis>/<Adresse>/1/<Cluster>/<Attribut>`, Basis Standard `camper/zigbee/data`):
+**Zigbee** (Gateway, das ZCL-Attribute einzeln sendet, Topic `<Basis>/<Adresse>/1/<Cluster>/<Attribut>`, Basis Standard `camper/zigbee/data`). Der SMLIGHT-Hub sendet `{"data":{"val":…,"type_sm":"report","status":"SUCCESS"}}`; Werte mit `"type_sm":"report"` hat der Hub schon umgerechnet (°C, %, kPa) und werden so übernommen. Nur Rohwerte (`report_raw` oder eine nackte Zahl) laufen über die Teiler:
 
 | Cluster/Attribut | Wert | Anzeige |
 | --- | --- | --- |
-| `0006/0000` | 0 = zu, 1 = offen (mit „umgekehrt“ andersherum) | Kontakt: zu/offen, Symbol und optional Warnung, solange offen |
-| `0001/0021` | 0…200 | Batterie in % (÷ 2) |
-| `0402/0000` | Temperatur | ÷ 10 (einstellbar; der ZCL-Standard wäre ÷ 100) |
-| `0405/0000` | Luftfeuchte | ÷ 1 (einstellbar) |
-| `0403/0000` | Luftdruck | hPa |
+| `0006/0000` | 0 = zu, 1 = offen (mit „umgekehrt“ andersherum) | Kontakt: zu/offen |
+| `0001/0021` | % (report) bzw. 0…200 roh | Batterie in % |
+| `0402/0000` | °C (report) bzw. roh | roh ÷ 10 (einstellbar; der ZCL-Standard wäre ÷ 100) |
+| `0405/0000` | % (report) bzw. roh | roh ÷ 1 (einstellbar) |
+| `0403/0000` | kPa (report) bzw. roh in hPa | hPa |
 
 Die Adresse darf die IEEE-Adresse (`0x00158d…`) oder die Short-ID (`9c68`) sein, mit oder ohne `0x`, Groß-/Kleinschreibung egal. Wer nicht weiß, welche das Gateway ins Topic schreibt, trägt beide ein (*Zweite Adresse*).
 
@@ -307,8 +307,42 @@ Die Adresse darf die IEEE-Adresse (`0x00158d…`) oder die Short-ID (`9c68`) sei
 
 - **Gefunden, aber noch nicht eingetragen:** Unten in der Liste stehen Adressen, die gesendet haben, aber unbekannt sind; *+ übernehmen* legt sie an.
 - **device.json einlesen:** Liste im Format `{"zigbee_devices":[{"name":"Kueche","shortId":"9c68","ieeeAddr":"0x00158d…","isWeatherSensor":true}],"ble_devices":[{"name":"Govee Wohnen","mac":"A4C138…"}]}` übernimmt alle Geräte auf einmal (danach *Sensoren speichern*).
-- Klima-Sensoren stehen auf der Temperaturseite (mit Luftfeuchte und Batterie), sind in der Temperatur-Kachel wählbar und im 24-h-Verlauf. Kontakte stehen unter *Fenster & Türen*.
-- Für Automationen mit einem Zigbee-Kontakt: *Wenn* Topic `camper/zigbee/data/<Adresse>/1/0006/0000`, Schlüssel leer, = `1`.
+- **Anzeigen auf:** je Sensor Haken für die Seiten, auf denen er erscheint:
+  - **🌡️ Temperatur** (Klima-Sensoren, Standard): Temperaturseite mit Luftfeuchte und Batterie, in der Temperatur-Kachel wählbar, 24-h-Verlauf
+  - **🚪 Aktoren** (Kontakte, Standard): Seite *Aktoren* mit allen Fenstern und Türen (offen/zu, Batterie), die Kachel *Aktoren* auf Home listet die offenen mit Namen, und die Status-Kachel zählt sie, z. B. „2 🚪“
+  - **🔋 Batterie:** der Ladestand des Sensors steht auf der Batterieseite unter *Sensor-Batterien*
+  - **🌦 Wetter (Außen):** der Sensor ist das Außenthermometer (z. B. ein Ruuvi-Tag draußen). Die gemessene Temperatur und Luftfeuchte stehen auf der Wetterseite unter der Vorhersage-Temperatur und unten in der Wetter-Kachel
+- Kontakte ohne Haken bei *Aktoren* erscheinen wie bisher nur als Symbol in der Status-Kachel, solange sie offen sind.
+- Für Automationen mit einem Zigbee-Kontakt (SMLIGHT): *Wenn* Topic `camper/zigbee/data/<Adresse>/1/0006/0000`, Schlüssel `data.val`, = `1`.
+
+## Heizung über CampMatic
+
+Statt der eigenen Firmware ([camper-heater](../heater)) kann das Display auch eine **CampMatic-Box** steuern: *Einstellungen → Topics der Geräte → Heizung: Steuerung über* auf **CampMatic-Box** stellen und als Basis-Topic `campmatic/<Gerätenummer>` eintragen (dreistellige Nummer aus der CampMatic-App, z. B. `campmatic/003`).
+
+Die Box redet mit dem Broker von CampMatic (`campmatic.de:8883`). Damit ihre Werte beim Display ankommen, braucht der Broker, an dem das Display hängt, eine **MQTT-Bridge** dorthin – beim Mosquitto-Add-on von Home Assistant mit der Vorlage von CampMatic, sinngemäß:
+
+```
+connection campmatic-<GERAETE_ID>
+address campmatic.de:8883
+bridge_capath /etc/ssl/certs
+remote_username <MQTT_USER>
+remote_password <MQTT_PASSWORT>
+remote_clientid display-bridge-<GERAETE_ID>
+topic # both 0 campmatic/<GERAETE_ID>/ campmatic/<GERAETE_ID>/
+```
+
+Zugangsdaten stehen in der CampMatic-App auf der Status-Seite; sie gehören nur auf den Broker, nie ins Repo. Die Client-ID muss sich von der der Box und einer Home-Assistant-Bridge unterscheiden.
+
+| Display | CampMatic-Topic (unter `campmatic/<Nr>/`) |
+| --- | --- |
+| online/offline | `status` |
+| Heizung an/aus | `climate/truma_heizung/mode/state` · Befehl: aus = `mode/command` `off`, an = Solltemperatur senden |
+| Solltemperatur | `climate/truma_heizung/target_temperature/state` / `…/command` (`nan` = aus) |
+| Warmwasser Aus/Eco/High | `climate/truma_wasser/mode/state` + `target_temperature` (Eco = 40 °C, High = 60 °C) |
+| Raumtemperatur, Wassertemperatur | `climate/truma_heizung/current_temperature/state`, `climate/truma_wasser/current_temperature/state` |
+| Gebläse | `climate/truma_heizung/fan_mode/state` / `…/command` |
+
+Einschalten schickt nur die Solltemperatur (die zuletzt gesehene, sonst 20 °C): ein zusätzlicher Einschaltbefehl würde den Sollwert der Box auf den Mindestwert zurücksetzen. Freibrennen und Timer gibt es über die Box nicht. **IN ENTWICKLUNG:** Die Topics für Modus, Solltemperatur und Warmwasser stammen aus dem Home-Assistant-Paket von CampMatic; Raum-/Wassertemperatur und Gebläse folgen dem üblichen ESPHome-Schema und sind noch nicht an einer echten Box geprüft.
 
 ## Automationen
 

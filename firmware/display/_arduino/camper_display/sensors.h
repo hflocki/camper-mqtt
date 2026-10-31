@@ -3,15 +3,20 @@
 #include <vector>
 
 // Own Zigbee and Bluetooth sensors, read straight from MQTT:
-//  - Zigbee gateway publishing raw ZCL attributes (e.g. SMLIGHT): <zbBase>/<id>/1/<cluster>/<attribute>
-//      0006/0000 on/off = contact (0 closed, 1 open), 0001/0021 battery (0..200 = 0..100 %),
-//      0402/0000 temperature, 0405/0000 humidity, 0403/0000 pressure (hPa)
+//  - Zigbee gateway publishing ZCL attributes (e.g. SMLIGHT hub): <zbBase>/<id>/1/<cluster>/<attribute>
+//      payload {"data":{"val":..,"type_sm":"report"|"report_raw"}} or a plain number.
+//      "report" values are already scaled by the hub (°C, %, kPa), raw ones use the dividers below.
+//      0006/0000 on/off = contact (0 closed, 1 open), 0001/0021 battery (raw 0..200 = 0..100 %),
+//      0402/0000 temperature, 0405/0000 humidity, 0403/0000 pressure
 //  - OpenMQTTGateway BLE: <bleBase>/<MAC> JSON with tempc, hum, pres, batt (Govee, Ruuvi, Xiaomi ...)
 // Climate sensors appear on the temperature page/tile, contacts as icon and optional warning.
 namespace sensors {
 
 enum Kind : uint8_t { K_CONTACT = 0, K_CLIMATE = 1 };
 enum Bus : uint8_t { B_ZIGBEE = 0, B_BLE = 1 };
+// Pages a sensor is shown on (bit mask, "show" in the JSON)
+enum Show : uint8_t { SH_TEMP = 1, SH_BAT = 2, SH_ACT = 4, SH_WX = 8 };
+inline uint8_t defaultShow(uint8_t kind) { return kind == K_CONTACT ? SH_ACT : SH_TEMP; }
 
 struct Device {
   String  name;
@@ -22,6 +27,7 @@ struct Device {
   String  icon = "door";     // contacts: icon while open ("" = none)
   bool    warn = false;      // contacts: warning while open
   bool    invert = false;    // contacts: 1 = closed
+  uint8_t show = SH_TEMP;    // Show bits
 };
 
 struct Value {
@@ -43,8 +49,14 @@ String unknownJson();                  // addresses seen but not configured (to 
 
 // for the UI
 struct TempOut { String name; float temp; float hum; bool stale; };
-std::vector<TempOut> climate();        // configured climate sensors with a temperature
-std::vector<String> activeIcons();     // open contacts with an icon
+std::vector<TempOut> climate();        // climate sensors shown on the temperature page, with a temperature
+bool outdoor(TempOut& out);            // first sensor marked for the weather page (outside temperature)
+struct ContactOut { String name; int8_t open; float batt; bool stale; };
+std::vector<ContactOut> contacts();    // contacts shown on the actuator page
+int openCount();                       // of those, how many are open
+struct BattOut { String name; float batt; bool stale; };
+std::vector<BattOut> batteries();      // sensors shown on the battery page with their battery level
+std::vector<String> activeIcons();     // open contacts with an icon (not shown on the actuator page)
 String warnings();                     // "Heki offen" ... one per line
 bool changed();                        // something new since the last call (UI refresh)
 

@@ -58,6 +58,26 @@ const DpDef DEFS[DP_COUNT] = {
   {"bat_list",    DEV_BATTERY, "batteries"},
 };
 
+// CampMatic box (ESPHome style climate topics below <heater prefix>), used instead of the
+// "sub" column above for the heater when settings.heaterSrc == HEAT_SRC_CAMPMATIC.
+// "" = not available. Hot water (40 / 60 °C / off) is put together from two topics, see cmWater*.
+const char* const CM_WATER   = "climate/truma_wasser/";
+const char* campmaticSub(int i) {
+  switch (i) {
+    case DP_HEAT_STATUS:   return "status";
+    case DP_HEAT_ROOM:     return "climate/truma_heizung/current_temperature/state";
+    case DP_HEAT_SETPOINT: return "climate/truma_heizung/target_temperature/state";
+    case DP_HEAT_HVAC:     return "climate/truma_heizung/mode/state";
+    case DP_HEAT_ACTION:   return "climate/truma_heizung/action/state";
+    case DP_HEAT_FANMODE:  return "climate/truma_heizung/fan_mode/state";
+    case DP_HEAT_WATER:    return "climate/truma_wasser/current_temperature/state";
+    default:               return "";
+  }
+}
+String cmWaterModeTopic, cmWaterSetTopic;   // full topics, empty unless CampMatic
+String cmWaterMode, cmWaterSet;             // last values ("heat"/"off", "40"/"60"/"nan")
+float lastHeatSet = NAN;                    // last real heater setpoint (CampMatic: "nan" while off)
+
 String values[DP_COUNT];
 String topics[DP_COUNT];
 bool   dirty[2][DP_COUNT];
@@ -149,13 +169,22 @@ void begin() {
 }
 
 void rebuildTopics() {
+  bool cm = settings.heaterSrc == HEAT_SRC_CAMPMATIC;
   for (int i = 0; i < DP_COUNT; i++) {
     const String& pre = prefixOf(DEFS[i].dev);
-    if (pre.isEmpty()) { topics[i] = ""; continue; }
-    String sub = DEFS[i].sub;
-    sub.replace("#", String(settings.fanPort));
-    topics[i] = pre + "/" + sub;
+    String sub = (cm && DEFS[i].dev == DEV_HEATER) ? campmaticSub(i) : DEFS[i].sub;
+    String t;
+    if (pre.length() && sub.length()) {
+      sub.replace("#", String(settings.fanPort));
+      t = pre + "/" + sub;
+    }
+    if (t != topics[i]) setDp(i, "");   // value of a topic that is no longer read
+    topics[i] = t;
   }
+  const String& hp = settings.prefixHeater;
+  cmWaterModeTopic = cm && hp.length() ? hp + "/" + CM_WATER + "mode/state" : String("");
+  cmWaterSetTopic  = cm && hp.length() ? hp + "/" + CM_WATER + "target_temperature/state" : String("");
+  cmWaterMode = cmWaterSet = "";
   size_t n = settings.tiles.size();
   tileVals.assign(n, String());
   tileSeen.assign(n, false);
@@ -169,9 +198,25 @@ bool onMessage(const char* topic, const char* payload, unsigned int len) {
   bool used = false;
   for (int i = 0; i < DP_COUNT; i++) {
     if (topics[i].length() && topics[i] == topic) {
-      setDp(i, formatRaw(payload, len, -1));
+      String v = formatRaw(payload, len, -1);
+      // "nan" = no value (CampMatic sends it as setpoint while heating or water is off)
+      if (v.equalsIgnoreCase("nan") || v.equalsIgnoreCase("inf") || v.equalsIgnoreCase("-inf")) v = "";
+      setDp(i, v);
+      if (i == DP_HEAT_SETPOINT && v.length() && v.toFloat() >= 5) lastHeatSet = v.toFloat();
       used = true;
     }
+  }
+  // CampMatic hot water: mode heat/off plus setpoint 40 / 60 -> water_mode off / eco / high
+  bool wm = cmWaterModeTopic.length() && cmWaterModeTopic == topic;
+  bool ws = cmWaterSetTopic.length() && cmWaterSetTopic == topic;
+  if (wm || ws) {
+    (wm ? cmWaterMode : cmWaterSet) = formatRaw(payload, len, -1);
+    float set = cmWaterSet.toFloat();
+    String mode = cmWaterMode.isEmpty() ? String("")
+                : cmWaterMode != "heat" ? String("off")
+                : set >= 50 ? String("high") : String("eco");
+    setDp(DP_HEAT_WATERMODE, mode);
+    used = true;
   }
   for (size_t i = 0; i < settings.tiles.size() && i < tileVals.size(); i++) {
     const Tile& t = settings.tiles[i];
@@ -195,6 +240,7 @@ bool onMessage(const char* topic, const char* payload, unsigned int len) {
 
 const String& get(DpId id)      { return values[id]; }
 bool has(DpId id)               { return values[id].length() > 0; }
+float lastHeaterSetpoint()      { return lastHeatSet; }
 float getf(DpId id, float def) {
   if (!has(id)) return def;
   char* end;

@@ -138,11 +138,12 @@ Prefix (Web-UI) Standard `camper/battery`, `<id>` ist die ID aus dem Tab Batteri
 | `<prefix>/<id>/runtime` | Restlaufzeit in min beim Entladen, sonst `None` |
 | `<prefix>/<id>/charging` | `ON` / `OFF` |
 | `<prefix>/<id>/problem` | `ON`, wenn das BMS einen Fehler oder eine Schutzabschaltung meldet |
+| `<prefix>/<id>/problem_text` | der Fehler im Klartext, z. B. „Zellspannung zu hoch (Stufe 1)“; leer ohne Fehler. Daly (`0xD2`): Fehlerbits nach dem Daly-Protokoll gedeutet, sonst „Fehlercode 0x…“ |
 | `<prefix>/<id>/temperature` | Temperatur in °C, Mittel aller Fühler (nur Daly) |
 | `<prefix>/<id>/cycles` | Ladezyklen (nur Daly) |
 | `<prefix>/<id>/delta` | Differenz höchste − niedrigste Zelle in V (nur Daly) |
 | `<prefix>/<id>/cell_1` … | Zellspannungen in V (nur Daly) |
-| `<prefix>/batteries` | Alle Batterien als eine JSON-Liste für Displays: `[{"id":"house","name":"Bordbatterie","ok":true,"t":2,"soc":78,"v":13.31,"a":-4.2,"w":-56,"rt":2830}, …]`. Optional: `rt` Restlaufzeit in Minuten (nur beim Entladen), `st` Zustand (BM2), `p` = BMS meldet Fehler, `t` = Typ (1 Daly, 2 Ective, 3 BM2). Road Buddy und Display lesen diese Liste. |
+| `<prefix>/batteries` | Alle Batterien als eine JSON-Liste für Displays: `[{"id":"house","name":"Bordbatterie","ok":true,"t":2,"soc":78,"v":13.31,"a":-4.2,"w":-56,"rt":2830}, …]`. Optional: `rt` Restlaufzeit in Minuten (nur beim Entladen), `st` Zustand (BM2), `p` = BMS meldet Fehler, `pt` = Fehlertext, `t` = Typ (1 Daly, 2 Ective, 3 BM2). Road Buddy und Display lesen diese Liste. |
 
 Alle Werte sind retained und werden nach jeder Abfrage gesendet, spätestens jede Minute. Antwortet ein BMS 2 Minuten lang nicht, wird es als nicht verfügbar gemeldet; die letzten Werte bleiben auf dem Broker stehen.
 
@@ -172,6 +173,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 |---|---|
+| 1.3.1 | BMS-Fehler im Klartext: Web-UI, Topic `<id>/problem_text` und `pt` in der Batterieliste (Display) |
 | 1.2.2 | Batterieliste `batteries` mit Restlaufzeit, Typ und Fehler-Flag (für Road Buddy und Display) |
 | 1.2.1 | BM2: Zustand (Normal/Schwach/Kritisch/Lädt/Erhaltungsladung) aus der Spannung, Werte ohne Strommessung (Strom, Leistung, Ah, Wh, Restlaufzeit) im Web-UI und in HA ausgeblendet bzw. entfernt |
 | 1.2.0 | BM2-Batteriewächter (Spannung, Ladestand); Firmware und Web-Oberfläche (`index.html.gz`) im Web-UI unter WiFi hochladbar, ohne USB |

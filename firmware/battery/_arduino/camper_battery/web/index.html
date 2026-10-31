@@ -442,7 +442,7 @@ function renderLive(list) {
         let state = b.state;
         if (b.ok) state = 'Gelesen ' + formatAge(b.age) + (b.rssi ? ' · ' + b.rssi + ' dBm' : '');
         else if (b.age >= 0) state += ' · letzter Wert ' + formatAge(b.age);
-        if (b.ok && b.prob) state = '⚠ BMS meldet einen Fehler · ' + state;
+        if (b.ok && b.prob) state = '⚠ BMS: ' + (b.ptxt || 'Fehler') + ' · ' + state;
         if (b.ok && (b.cfet === 0 || b.dfet === 0)) state += ' · ' + (b.cfet === 0 ? 'Laden aus ' : '') + (b.dfet === 0 ? 'Entladen aus' : '');
         q('.bat-state').textContent = state;
     }

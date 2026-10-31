@@ -75,6 +75,7 @@ lv_obj_t* hdr = nullptr;
 lv_obj_t* hdrWarn = nullptr;            // scrolling warning text, replaces the title while warnings are active
 lv_obj_t* nav = nullptr;
 std::vector<lv_obj_t*> navBtns;
+std::vector<int> navTabs;               // tab index of each button in the icon bar
 
 bool rebuildPending = false;
 uint32_t lastHeader = 0;
@@ -105,7 +106,10 @@ lv_obj_t *ovWxIcon = nullptr, *ovWxVal = nullptr, *ovWxSub = nullptr;
 lv_obj_t *ovWarn, *ovWarnLbl, *ovInd = nullptr;
 // overview tiles with up to three single lines (temperatures, batteries)
 struct ListW { lv_obj_t* line[3] = {nullptr, nullptr, nullptr}; lv_obj_t* sub = nullptr; };
-ListW ovTemp, ovBat;
+ListW ovTemp, ovBat, ovAct;
+int ovTempPage = 0;                     // temperature tile: which 3 of more chosen sensors are shown
+uint32_t ovTempFlip = 0;
+const uint32_t TEMP_FLIP_MS = 4000;
 // optional overview tiles: one battery each, clock, custom MQTT tiles
 struct OneW { lv_obj_t *title = nullptr, *val = nullptr, *sub = nullptr; int idx = 0; };
 std::vector<OneW> ovOneBat, ovCustom;
@@ -116,6 +120,13 @@ std::vector<lv_obj_t*> tRows, tVals;
 struct BatRowW { lv_obj_t *card, *soc, *top, *sub, *bar; };
 std::vector<BatRowW> bRows;
 lv_obj_t* bStatus = nullptr;
+lv_obj_t *bSensCard = nullptr, *bSensLbl = nullptr;   // battery levels of own Zigbee/BLE sensors
+// actuator page (open windows / doors) and warnings page
+lv_obj_t* aStatus = nullptr;
+std::vector<lv_obj_t*> aRows, aVals, aSubs;
+String aSig;
+lv_obj_t *wnCard = nullptr, *wnLbl = nullptr;
+lv_obj_t* wOut = nullptr;               // weather page: outside sensor
 String bSig;
 String tSig;          // sensor names the rows were built for
 String lastWarn;      // to wake the screen when a new warning appears
@@ -280,14 +291,13 @@ void updateHeaderTitle() {
       lv_obj_align(hdrName, LV_ALIGN_LEFT_MID, left, 2);
     }
   }
-  // icon bar: highlight the active page
-  for (size_t p = 0; p < navBtns.size(); p++) {
-    bool on = p == i;
+  // icon bar: highlight the active page (none if it is not in the bar)
+  for (size_t p = 0; p < navBtns.size() && p < navTabs.size(); p++) {
+    bool on = navTabs[p] == (int)i;
     lv_obj_set_style_bg_color(navBtns[p], on ? C_CARD_HI : C_NAV, 0);
     lv_obj_set_style_text_color(lv_obj_get_child(navBtns[p], 0), on ? C_ACCENT : C_MUTED, 0);
     lv_obj_set_style_border_width(navBtns[p], on ? 3 : 0, 0);
   }
-  if (nav && i < navBtns.size()) lv_obj_scroll_to_view(navBtns[i], LV_ANIM_OFF);
 }
 
 // ---- events -----------------------------------------------------------------
@@ -322,7 +332,9 @@ void onOverviewCard(lv_event_t* e) { gotoTab(tabIndexOfBuiltin((int)(intptr_t)lv
 
 void onSetpoint(lv_event_t* e) {
   int delta = (int)(intptr_t)lv_event_get_user_data(e);
-  float base = !isnan(pendingSet) ? pendingSet : store::getf(DP_HEAT_SETPOINT, 20);
+  float base = !isnan(pendingSet) ? pendingSet : store::getf(DP_HEAT_SETPOINT, NAN);
+  if (isnan(base)) base = store::lastHeaterSetpoint();
+  if (isnan(base)) base = 20;
   pendingSet = constrain(roundf(base) + delta, 5.0f, 30.0f);
   pendingAt = millis();
   pendingSentAt = 0;
@@ -428,8 +440,10 @@ std::vector<TempItem> allTempItems() {
   return out;
 }
 
+void refreshTempTile();
+
 // ---- batteries (camper-battery) ---------------------------------------------
-struct BatItem { String name; String state; float soc, v, w; long rt; bool ok, problem; };
+struct BatItem { String name; String state; String ptext; float soc, v, w; long rt; bool ok, problem; };
 
 // icon of the overview slot, or picked from the name (living area, solar, starter ...)
 const char* batIcon(const String& name) { return icons::forName(name, false); }
@@ -451,6 +465,7 @@ std::vector<BatItem> batItems() {
     b.w = o["w"].is<float>() ? o["w"].as<float>() : NAN;
     b.rt = o["rt"].is<long>() ? o["rt"].as<long>() : -1;
     b.problem = o["p"] | false;
+    b.ptext = (const char*)(o["pt"] | "");   // camper-battery 1.3.1+: readable BMS problem
     out.push_back(b);
   }
   return out;
@@ -484,7 +499,7 @@ String warnings() {
   if (store::devOnline(DEV_BATTERY)) {
     for (auto& b : batItems()) {
       if (!b.ok) continue;
-      if (b.problem) add(b.name + " BMS-Fehler: bitte pr\xC3\xBC" "fen");
+      if (b.problem) add(b.name + " BMS: " + (b.ptext.length() ? b.ptext : String("Fehler, bitte pr\xC3\xBC" "fen")));
       if (b.state == "Kritisch" || b.state == "Schwach")
         add(b.name + " " + (b.state == "Kritisch" ? "kritisch" : "schwach") + ": " + commaNum(b.v, 2) + " V");
       else if (b.state.isEmpty() && !isnan(b.soc) && b.soc < BAT_WARN_SOC)
@@ -626,14 +641,15 @@ void buildOverview(lv_obj_t* tab) {
     else if (t == "fan")    infoCard(tab, ICON_FAN, pageTitle(BP_FAN).c_str(), ovFanVal, ovFanSub, BP_FAN);
     else if (t == "temp")   listCard(tab, ICON_THERMOMETER, pageTitle(BP_TEMP).c_str(), ovTemp, BP_TEMP);
     else if (t == "bat")    listCard(tab, LV_SYMBOL_BATTERY_FULL, pageTitle(BP_BATTERY).c_str(), ovBat, BP_BATTERY);
+    else if (t == "actors") listCard(tab, icons::glyph("door"), pageTitle(BP_ACTORS).c_str(), ovAct, BP_ACTORS);
     else if (t == "status") {
-      // green "OK" or the active warnings on red
-      ovWarn = tile(tab, LV_SYMBOL_WARNING, "Status", -1);
+      // green "OK" or the active warnings on red; tap = warnings page with the full text
+      ovWarn = tile(tab, LV_SYMBOL_WARNING, "Status", BP_WARN);
       ovWarnLbl = label(ovWarn, &font_de_14, C_TEXT, "");
       lv_obj_set_width(ovWarnLbl, TILE_IN);
       lv_label_set_long_mode(ovWarnLbl, LV_LABEL_LONG_WRAP);
       lv_obj_align(ovWarnLbl, LV_ALIGN_TOP_LEFT, 0, 20);
-      // icons of true automation rules, e.g. an open door
+      // number of open windows and icons of true automation rules, e.g. an open door
       ovInd = label(ovWarn, &font_de_22, C_ACCENT, "");
       lv_obj_align(ovInd, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     } else if (t == "bat1" || t == "bat2" || t == "bat3") {
@@ -677,6 +693,14 @@ void buildBattery(lv_obj_t* tab) {
   lv_obj_set_width(bStatus, PAGE_W - 20);
   bRows.clear();
   bSig = "\x01";   // force a row build on the first refresh
+  // battery levels of own sensors (Einstellungen -> Sensoren, page "Batterie"), always last
+  bSensCard = card(tab, PAGE_W - 20, LV_SIZE_CONTENT);
+  lv_obj_t* t = label(bSensCard, &font_de_18, C_MUTED, "Sensor-Batterien");
+  lv_obj_align(t, LV_ALIGN_TOP_LEFT, 0, 0);
+  bSensLbl = label(bSensCard, &font_de_18, C_TEXT, "");
+  lv_obj_set_width(bSensLbl, PAGE_W - 44);
+  lv_obj_set_pos(bSensLbl, 0, 28);
+  lv_obj_add_flag(bSensCard, LV_OBJ_FLAG_HIDDEN);
 }
 
 // (Re)creates one card per battery when the battery list changed
@@ -699,6 +723,9 @@ void buildBatteryRows(size_t n, lv_obj_t* tab) {
     r.soc = label(r.card, &font_de_28, C_TEXT, "--");
     lv_obj_align(r.soc, LV_ALIGN_LEFT_MID, 0, 0);
     r.sub = label(r.card, &font_de_18, C_MUTED, "");
+    lv_obj_set_width(r.sub, PAGE_W - 48 - 110);   // room for the SoC on the left
+    lv_label_set_long_mode(r.sub, LV_LABEL_LONG_DOT);
+    lv_obj_set_style_text_align(r.sub, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_align(r.sub, LV_ALIGN_RIGHT_MID, 0, 2);
     r.bar = lv_bar_create(r.card);
     lv_obj_set_size(r.bar, PAGE_W - 48, 12);
@@ -707,6 +734,49 @@ void buildBatteryRows(size_t n, lv_obj_t* tab) {
     lv_obj_set_style_bg_color(r.bar, C_CARD_HI, LV_PART_MAIN);
     bRows.push_back(r);
   }
+  if (bSensCard) lv_obj_move_to_index(bSensCard, -1);
+}
+
+// Actuator page: one row per window / door contact
+void buildActors(lv_obj_t* tab) {
+  pageContainer(tab);
+  aStatus = label(tab, &font_de_18, C_MUTED, "");
+  lv_obj_set_width(aStatus, PAGE_W - 20);
+  aRows.clear();
+  aVals.clear();
+  aSubs.clear();
+  aSig = "\x01";
+}
+
+void buildActorRows(const std::vector<sensors::ContactOut>& items, lv_obj_t* tab) {
+  for (auto r : aRows) lv_obj_delete(r);
+  aRows.clear();
+  aVals.clear();
+  aSubs.clear();
+  for (auto& it : items) {
+    lv_obj_t* c = card(tab, PAGE_W - 20, 58);
+    lv_obj_set_style_pad_ver(c, 6, 0);
+    lv_obj_t* n = label(c, &font_de_22, C_TEXT, dispText(it.name).c_str());
+    lv_obj_set_width(n, 260);
+    lv_label_set_long_mode(n, LV_LABEL_LONG_DOT);
+    lv_obj_align(n, LV_ALIGN_LEFT_MID, 0, -8);
+    lv_obj_t* sub = label(c, &font_de_14, C_MUTED, "");
+    lv_obj_align(sub, LV_ALIGN_BOTTOM_LEFT, 0, 2);
+    lv_obj_t* v = label(c, &font_de_22, C_TEXT, "--");
+    lv_obj_align(v, LV_ALIGN_RIGHT_MID, 0, 0);
+    aRows.push_back(c);
+    aVals.push_back(v);
+    aSubs.push_back(sub);
+  }
+}
+
+// Warnings page: all active warnings with their full text
+void buildWarnPage(lv_obj_t* tab) {
+  pageContainer(tab);
+  wnCard = card(tab, PAGE_W - 20, LV_SIZE_CONTENT);
+  wnLbl = label(wnCard, &font_de_22, C_TEXT, "");
+  lv_obj_set_width(wnLbl, PAGE_W - 44);
+  lv_label_set_long_mode(wnLbl, LV_LABEL_LONG_WRAP);
 }
 
 void buildTemp(lv_obj_t* tab) {
@@ -803,6 +873,7 @@ void buildHeater(lv_obj_t* tab) {
   lv_obj_add_event_cb(hDecoke, onDecoke, LV_EVENT_LONG_PRESSED, nullptr);
   lv_obj_align(hDecoke, LV_ALIGN_RIGHT_MID, 0, 0);
   hDecokeLbl = lv_obj_get_child(hDecoke, 0);
+  if (settings.heaterSrc == HEAT_SRC_CAMPMATIC) lv_obj_add_flag(hDecoke, LV_OBJ_FLAG_HIDDEN);   // not on the box
 }
 
 void buildFan(lv_obj_t* tab) {
@@ -1036,7 +1107,12 @@ void buildWeather(lv_obj_t* tab) {
   wIcon = label(hero, &font_de_56, C_GAS, "");
   lv_obj_align(wIcon, LV_ALIGN_LEFT_MID, 4, 0);
   wTemp = label(hero, &font_de_56, C_TEXT, "--");
-  lv_obj_align(wTemp, LV_ALIGN_LEFT_MID, 92, 0);
+  lv_obj_align(wTemp, LV_ALIGN_LEFT_MID, 92, -10);
+  // measured outside temperature from an own sensor (Einstellungen -> Sensoren, page "Wetter")
+  wOut = label(hero, &font_de_14, C_ACCENT, "");
+  lv_obj_set_width(wOut, PAGE_W - 44 - 196 - 8);
+  lv_label_set_long_mode(wOut, LV_LABEL_LONG_DOT);
+  lv_obj_align(wOut, LV_ALIGN_BOTTOM_LEFT, 0, 0);
   wText = label(hero, &font_de_22, C_TEXT, "");
   lv_obj_set_width(wText, 196);
   lv_label_set_long_mode(wText, LV_LABEL_LONG_DOT);
@@ -1091,6 +1167,49 @@ String wedgeText(DpId id) {
   float v = store::getf(id, 0);
   if (fabsf(v) < 0.05f) return "OK";
   return String(v, 1) + " cm";
+}
+
+// Weather tile, bottom line: measured outside temperature if there is a sensor, else the forecast text
+String wxTileBase;
+void setWxTileSub() {
+  if (!ovWxSub) return;
+  sensors::TempOut o{};
+  String sub = wxTileBase;
+  if (sensors::outdoor(o) && !o.stale) {
+    sub = "Au\xC3\x9F" "en " + commaNum(o.temp, 1) + "\xC2\xB0";
+    if (!isnan(o.hum)) sub += "  " + String((int)lroundf(o.hum)) + " %";
+  }
+  lv_label_set_text(ovWxSub, sub.c_str());
+}
+
+// Temperature tile: the chosen sensors (or all), 3 at a time; more than 3 flip every few seconds
+void refreshTempTile() {
+  if (!ovTemp.line[0]) return;
+  bool tempOn = store::devOnline(DEV_TEMP) || !sensors::climate().empty();
+  std::vector<TempItem> items = allTempItems();
+  bool anyAlarm = false;
+  for (auto& it : items) anyAlarm |= it.alarm != 0;
+  std::vector<icons::Slot> sel = icons::slots(true);
+  if (sel.empty())
+    for (auto& it : items) sel.push_back({it.name, ""});
+  int pagesN = sel.empty() ? 1 : (sel.size() + 2) / 3;
+  if (ovTempPage >= pagesN) ovTempPage = 0;
+  std::vector<String> lines;
+  std::vector<lv_color_t> cols;
+  for (size_t k = ovTempPage * 3; k < sel.size() && k < (size_t)ovTempPage * 3 + 3; k++) {
+    const icons::Slot& sl = sel[k];
+    const char* ic = sl.key.length() ? icons::glyph(sl.key) : icons::glyph(icons::autoKey(sl.name, true));
+    const TempItem* it = nullptr;
+    for (auto& x : items) if (x.name == sl.name) { it = &x; break; }
+    // value first, so it stays visible when a long name is cut off
+    lines.push_back(String(ic) + "  " + (it ? it->val : String("--")));
+    cols.push_back(!tempOn || !it ? C_MUTED : (it->alarm ? C_WARN : C_TEXT));
+  }
+  String sub = !tempOn ? String("offline")
+             : anyAlarm ? String("Alarm")
+             : pagesN > 1 ? String(ovTempPage + 1) + " / " + String(pagesN)
+             : String("");
+  setList(ovTemp, lines, cols, sub);
 }
 
 void refreshValues() {
@@ -1182,6 +1301,8 @@ void refreshValues() {
     lv_label_set_text(ovWarnLbl, any ? dispText(warn).c_str() : "OK");
     if (ovInd) {
       String ic;
+      int open = sensors::openCount();
+      if (open > 0) ic = String(open) + " " + icons::glyph("door");
       std::vector<String> keys = rules::activeIcons();
       for (auto& k : sensors::activeIcons()) keys.push_back(k);
       for (auto& k : keys) { if (ic.length()) ic += "  "; ic += icons::glyph(k); }
@@ -1204,35 +1325,72 @@ void refreshValues() {
   lastWarn = warn;
   lastWarnKeys = keys;
 
+  if (wnLbl) {
+    String t = warn.length() ? warn : String("Keine Warnungen");
+    t.replace("\n", "\n\n");
+    lv_label_set_text(wnLbl, dispText(t).c_str());
+    lv_obj_set_style_text_color(wnLbl, warn.length() ? C_WARN : C_OK, 0);
+  }
+
+  // windows / doors: overview tile with the open ones, actuator page with all
+  if (ovAct.line[0] || aStatus) {
+    std::vector<sensors::ContactOut> cs = sensors::contacts();
+    if (ovAct.line[0]) {
+      std::vector<String> lines;
+      std::vector<lv_color_t> cols;
+      int open = 0;
+      for (auto& c : cs) {
+        if (c.open != 1) continue;
+        open++;
+        if (lines.size() < 3) { lines.push_back(c.name); cols.push_back(C_WARN); }
+      }
+      if (cs.empty()) { lines.push_back("--"); cols.push_back(C_MUTED); }
+      else if (!open) { lines.push_back("Alles zu"); cols.push_back(C_OK); }
+      String sub = cs.empty() ? String("keine Sensoren")
+                 : open > 3 ? "+" + String(open - 3) + " offen"
+                 : open ? String(open) + " offen" : String("");
+      setList(ovAct, lines, cols, sub);
+    }
+    if (aStatus) {
+      String sig;
+      for (auto& c : cs) { sig += c.name; sig += '\x01'; }
+      if (sig != aSig) {
+        aSig = sig;
+        buildActorRows(cs, lv_obj_get_parent(aStatus));
+      }
+      for (size_t i = 0; i < cs.size() && i < aVals.size(); i++) {
+        const auto& c = cs[i];
+        lv_label_set_text(aVals[i], c.open == 1 ? "offen" : c.open == 0 ? "zu" : "?");
+        lv_obj_set_style_text_color(aVals[i], c.stale || c.open < 0 ? C_MUTED : (c.open ? C_WARN : C_OK), 0);
+        String sub = isnan(c.batt) ? String("") : "Batterie " + String((int)lroundf(c.batt)) + " %";
+        if (c.stale) sub += sub.length() ? "  \xE2\x80\xA2  keine Daten" : "keine Daten";
+        lv_label_set_text(aSubs[i], dispText(sub).c_str());
+      }
+      String st = cs.empty() ? String("Keine Fenster- oder T\xC3\xBCrkontakte. Im Browser unter Einstellungen / Sensoren anlegen.") : String("");
+      lv_label_set_text(aStatus, dispText(st).c_str());
+      if (st.length()) lv_obj_remove_flag(aStatus, LV_OBJ_FLAG_HIDDEN);
+      else             lv_obj_add_flag(aStatus, LV_OBJ_FLAG_HIDDEN);
+    }
+  }
+
+  // weather page / tile: measured outside temperature
+  if (wOut) {
+    sensors::TempOut o{};
+    String t;
+    if (sensors::outdoor(o)) {
+      t = "Au\xC3\x9F" "en " + commaNum(o.temp, 1) + "\xC2\xB0";
+      if (!isnan(o.hum)) t += "  \xE2\x80\xA2  " + String((int)lroundf(o.hum)) + " %";
+    }
+    lv_label_set_text(wOut, dispText(t).c_str());
+    lv_obj_set_style_text_color(wOut, o.stale ? C_MUTED : C_ACCENT, 0);
+  }
+  setWxTileSub();
+
   // temperatures
   bool tempOn = store::devOnline(DEV_TEMP) || !sensors::climate().empty();
   if (ovTemp.line[0] || tStatus) {
     std::vector<TempItem> items = allTempItems();
-    bool anyAlarm = false;
-    for (auto& it : items) anyAlarm |= it.alarm != 0;
-    if (ovTemp.line[0]) {
-      // value first, so it stays visible when a long name is cut off
-      std::vector<String> lines;
-      std::vector<lv_color_t> cols;
-      // chosen sensors with their icons, otherwise the first 3
-      std::vector<icons::Slot> sel = icons::slots(true);
-      size_t shown = 0;
-      if (sel.empty())
-        for (size_t i = 0; i < items.size() && i < 3; i++) sel.push_back({items[i].name, ""});
-      for (auto& sl : sel) {
-        const char* ic = sl.key.length() ? icons::glyph(sl.key) : icons::glyph(icons::autoKey(sl.name, true));
-        const TempItem* it = nullptr;
-        for (auto& x : items) if (x.name == sl.name) { it = &x; break; }
-        lines.push_back(String(ic) + "  " + (it ? it->val : String("--")));
-        cols.push_back(!tempOn || !it ? C_MUTED : (it->alarm ? C_WARN : C_TEXT));
-        if (it) shown++;
-      }
-      String sub = !tempOn ? String("offline")
-                 : anyAlarm ? String("Alarm")
-                 : items.size() > shown ? "+" + String(items.size() - shown) + " weitere"
-                 : String("");
-      setList(ovTemp, lines, cols, sub);
-    }
+    refreshTempTile();
     if (tStatus) {
       String sig;
       for (auto& it : items) { sig += it.name; sig += '\x01'; }
@@ -1336,7 +1494,8 @@ void refreshValues() {
 
       // middle right: voltage / SoC and runtime
       String sub;
-      if (b.ok) {
+      if (b.ok && b.problem && b.ptext.length()) sub = b.ptext;   // what the BMS reports
+      else if (b.ok) {
         if (bm2) sub = isnan(b.soc) ? String("") : String((int)lroundf(b.soc)) + " % (gesch\xC3\xA4tzt)";
         else {
           if (!isnan(b.v)) sub = commaNum(b.v, 2) + " V";
@@ -1345,11 +1504,22 @@ void refreshValues() {
         }
       }
       lv_label_set_text(r.sub, dispText(sub).c_str());
+      lv_obj_set_style_text_color(r.sub, b.ok && b.problem ? C_WARN : C_MUTED, 0);
 
       lv_bar_set_value(r.bar, isnan(b.soc) ? 0 : constrain((int)lroundf(b.soc), 0, 100), LV_ANIM_OFF);
       lv_obj_set_style_bg_color(r.bar, socCol, LV_PART_INDICATOR);
       lv_obj_set_style_border_width(r.card, (live && (b.problem || stateBad || low)) ? 2 : 0, 0);
       lv_obj_set_style_border_color(r.card, C_WARN, 0);
+    }
+    if (bSensLbl) {
+      String t;
+      for (auto& sb : sensors::batteries()) {
+        if (t.length()) t += "\n";
+        t += sb.name + ":  " + String((int)lroundf(sb.batt)) + " %" + (sb.stale ? " (alt)" : "");
+      }
+      lv_label_set_text(bSensLbl, dispText(t).c_str());
+      if (t.length()) lv_obj_remove_flag(bSensCard, LV_OBJ_FLAG_HIDDEN);
+      else            lv_obj_add_flag(bSensCard, LV_OBJ_FLAG_HIDDEN);
     }
     String st = !batOn ? String("Batterie-Gateway offline")
               : items.empty() ? String("Keine Batterien gemeldet") : String("");
@@ -1373,8 +1543,14 @@ void refreshValues() {
 
     uint32_t now = millis();
     if (!isnan(pendingSet) && pendingSentAt && now - pendingSentAt > SETPOINT_HOLD_MS) pendingSet = NAN;
-    if (isnan(pendingSet))
-      lv_label_set_text(hSet, fmt(store::get(DP_HEAT_SETPOINT), 0, "\xC2\xB0""C").c_str());
+    if (isnan(pendingSet)) {
+      // CampMatic sends no setpoint while off: show the last one, it is used when switching on
+      float last = store::lastHeaterSetpoint();
+      bool shown = store::has(DP_HEAT_SETPOINT) || isnan(last);
+      lv_label_set_text(hSet, shown ? fmt(store::get(DP_HEAT_SETPOINT), 0, "\xC2\xB0""C").c_str()
+                                    : (String((int)lroundf(last)) + " \xC2\xB0""C").c_str());
+      lv_obj_set_style_text_color(hSet, shown ? C_TEXT : C_MUTED, 0);
+    }
 
     String fm = store::get(DP_HEAT_FANMODE);
     setMatrix(hFanBm, fm == "eco" ? 0 : (fm == "high" || fm == "boost") ? 1 : -1);
@@ -1465,7 +1641,8 @@ void refreshWeather() {
     String sub = !wx::enabled() ? String("aus") : ok ? dispText(wx::text(d.code)) : dispText(st);
     if (ok && !isnan(d.gust)) sub = num0(d.gust) + " km/h B\xC3\xB6" "en";
     if (ok && d.code >= 51) sub = dispText(wx::text(d.code));
-    lv_label_set_text(ovWxSub, sub.c_str());
+    wxTileBase = sub;
+    setWxTileSub();
   }
   if (!wIcon) return;
   lv_label_set_text(wIcon, ok ? wx::icon(d.code, d.day) : "");
@@ -1613,7 +1790,15 @@ void clearHandles() {
   ovWxIcon = ovWxVal = ovWxSub = nullptr;
   wShown = -1;
   ovWarn = ovWarnLbl = ovInd = nullptr;
-  ovTemp = ovBat = ListW();
+  ovTemp = ovBat = ovAct = ListW();
+  bSensCard = bSensLbl = nullptr;
+  aStatus = nullptr;
+  aRows.clear();
+  aVals.clear();
+  aSubs.clear();
+  wnCard = wnLbl = nullptr;
+  wOut = nullptr;
+  wxTileBase = "";
   ovOneBat.clear();
   ovCustom.clear();
   ovClock = OneW();
@@ -1636,15 +1821,48 @@ const char* pageIcon(const PageInfo& p) {
     case BP_TEMP:     return ICON_THERMOMETER;
     case BP_BATTERY:  return LV_SYMBOL_BATTERY_3;
     case BP_WEATHER:  return ICON_CLOUD_SUN;
+    case BP_ACTORS:   return icons::glyph("door");
+    case BP_WARN:     return LV_SYMBOL_WARNING;
     case PG_SYSTEM:   return LV_SYMBOL_SETTINGS;
     default:          return LV_SYMBOL_LIST;
   }
 }
 
-// Bottom bar: one icon button per page. Up to 8 share the width, more scroll sideways.
+// Icon bar: Home, up to NAV_FREE chosen pages, System. Pages not in the bar stay reachable by
+// swiping and through their overview tiles.
+std::vector<int> navPages() {
+  std::vector<int> out;
+  int home = tabIndexOfBuiltin(BP_OVERVIEW);
+  if (home >= 0) out.push_back(home);
+  auto idOf = [](const PageInfo& p) -> String {
+    if (p.builtin >= 0 && p.builtin < BP_COUNT) return PAGE_IDS[p.builtin];
+    if (p.custom >= 0) return "p" + String(p.custom);
+    return "";
+  };
+  int added = 0;
+  if (settings.navSel.length()) {
+    int start = 0;
+    while (start <= (int)settings.navSel.length() && added < NAV_FREE) {
+      int c = settings.navSel.indexOf(',', start);
+      String id = settings.navSel.substring(start, c < 0 ? settings.navSel.length() : c);
+      id.trim();
+      for (size_t i = 0; i < pages.size(); i++)
+        if ((int)i != home && pages[i].builtin != PG_SYSTEM && idOf(pages[i]) == id) { out.push_back(i); added++; break; }
+      if (c < 0) break;
+      start = c + 1;
+    }
+  } else {
+    for (size_t i = 0; i < pages.size() && added < NAV_FREE; i++)
+      if ((int)i != home && pages[i].builtin != PG_SYSTEM) { out.push_back(i); added++; }
+  }
+  out.push_back(pages.size() - 1);   // system page, always last
+  return out;
+}
+
 void buildNav() {
   if (nav) lv_obj_delete(nav);
   navBtns.clear();
+  navTabs = navPages();
   nav = lv_obj_create(scr);
   lv_obj_set_size(nav, LCD_WIDTH, NAV_H);
   lv_obj_align(nav, LV_ALIGN_BOTTOM_MID, 0, 0);
@@ -1654,13 +1872,12 @@ void buildNav() {
   lv_obj_set_style_pad_all(nav, 0, 0);
   lv_obj_set_style_pad_gap(nav, 0, 0);
   lv_obj_set_flex_flow(nav, LV_FLEX_FLOW_ROW);
-  lv_obj_set_scroll_dir(nav, LV_DIR_HOR);
-  lv_obj_set_scrollbar_mode(nav, LV_SCROLLBAR_MODE_OFF);
-  int n = pages.size();
-  int w = n <= 8 ? LCD_WIDTH / n : 60;
+  lv_obj_remove_flag(nav, LV_OBJ_FLAG_SCROLLABLE);
+  int n = navTabs.size();
+  int w = LCD_WIDTH / n;
   for (int i = 0; i < n; i++) {
     lv_obj_t* b = lv_button_create(nav);
-    lv_obj_set_size(b, (i == n - 1 && n <= 8) ? LCD_WIDTH - w * (n - 1) : w, NAV_H);
+    lv_obj_set_size(b, i == n - 1 ? LCD_WIDTH - w * (n - 1) : w, NAV_H);
     lv_obj_set_style_radius(b, 0, 0);
     lv_obj_set_style_shadow_width(b, 0, 0);
     lv_obj_set_style_bg_color(b, C_NAV, 0);
@@ -1668,9 +1885,9 @@ void buildNav() {
     lv_obj_set_style_border_side(b, LV_BORDER_SIDE_TOP, 0);
     lv_obj_set_style_border_color(b, C_ACCENT, 0);
     lv_obj_set_style_border_width(b, 0, 0);
-    lv_obj_t* l = label(b, &font_de_28, C_MUTED, pageIcon(pages[i]));
+    lv_obj_t* l = label(b, &font_de_28, C_MUTED, pageIcon(pages[navTabs[i]]));
     lv_obj_center(l);
-    lv_obj_add_event_cb(b, onNav, LV_EVENT_CLICKED, (void*)(intptr_t)i);
+    lv_obj_add_event_cb(b, onNav, LV_EVENT_CLICKED, (void*)(intptr_t)navTabs[i]);
     navBtns.push_back(b);
   }
 }
@@ -1704,6 +1921,8 @@ void build() {
       case BP_TEMP:     buildTemp(tab); break;
       case BP_BATTERY:  buildBattery(tab); break;
       case BP_WEATHER:  buildWeather(tab); break;
+      case BP_ACTORS:   buildActors(tab); break;
+      case BP_WARN:     buildWarnPage(tab); break;
       case PG_SYSTEM:   buildSystem(tab); break;
       default:          buildCustom(tab, p.custom); break;
     }
@@ -1838,6 +2057,11 @@ void loop() {
   if (now - lastHeader > 1000) {
     lastHeader = now;
     refreshHeader();
+  }
+  if (ovTemp.line[0] && now - ovTempFlip > TEMP_FLIP_MS) {
+    ovTempFlip = now;
+    ovTempPage++;          // wraps in refreshTempTile
+    refreshTempTile();
   }
 }
 

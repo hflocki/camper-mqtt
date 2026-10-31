@@ -264,6 +264,28 @@ std::vector<Found> finderAll() {
 // ---------------------------------------------------------------------
 namespace cmd {
 
+// CampMatic box: ESPHome style climate entities "truma_heizung" and "truma_wasser".
+// Switching on is done with the setpoint alone: an extra mode "heat" in the same moment would make
+// the box reset the setpoint to its minimum (see CampMatic's Home Assistant package).
+bool campmaticHeater(const String& key, const String& v) {
+  String heat = settings.prefixHeater + "/climate/truma_heizung/";
+  String water = settings.prefixHeater + "/climate/truma_wasser/";
+  if (key == "hvac_mode") {
+    if (v == "off") return publish(heat + "mode/command", "off");
+    float set = store::getf(DP_HEAT_SETPOINT, NAN);
+    if (isnan(set) || set < 5) set = store::lastHeaterSetpoint();
+    if (isnan(set) || set < 5) set = 20;
+    return publish(heat + "target_temperature/command", String((int)lroundf(set)));
+  }
+  if (key == "room_setpoint") return publish(heat + "target_temperature/command", v);
+  if (key == "fan_mode")      return publish(heat + "fan_mode/command", v);   // not confirmed for the box yet
+  if (key == "water_mode") {
+    if (v == "off") return publish(water + "mode/command", "off");
+    return publish(water + "target_temperature/command", v == "eco" ? "40" : "60");
+  }
+  return false;   // decoke / timer: not available on the box
+}
+
 bool heater(const String& key, const String& value) {
   if (settings.prefixHeater.isEmpty()) return false;
   String v = value;
@@ -283,6 +305,7 @@ bool heater(const String& key, const String& value) {
   } else {
     return false;
   }
+  if (settings.heaterSrc == HEAT_SRC_CAMPMATIC) return campmaticHeater(key, v);
   return publish(settings.prefixHeater + "/set/" + key, v);
 }
 

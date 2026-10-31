@@ -64,18 +64,39 @@ void seen(const String& key) {
   if (unknown.count(key) || unknown.size() < MAX_UNKNOWN) unknown[key] = millis();
 }
 
-// first number in a payload: "215", "21.5", {"value":215} ...
-bool number(const char* p, unsigned len, float& out) {
+// first number in a payload: "215", "21.5", {"value":215}, {"data":{"val":"13.11","type_sm":"report"}} ...
+// scaled = the gateway already converted the value into its unit (SMLIGHT "type_sm":"report")
+bool numberIn(JsonVariantConst v, float& out) {
+  if (v.is<float>()) { out = v.as<float>(); return true; }
+  if (v.is<const char*>()) {
+    const char* c = v.as<const char*>();
+    char* end;
+    out = strtof(c, &end);
+    return end != c;
+  }
+  return false;
+}
+
+bool number(const char* p, unsigned len, float& out, bool& scaled) {
+  scaled = false;
   String s;
   s.reserve(len);
   for (unsigned i = 0; i < len; i++) s += p[i];
   JsonDocument d;
   if (!deserializeJson(d, s)) {
-    if (d.is<float>()) { out = d.as<float>(); return true; }
-    if (d.is<const char*>()) s = d.as<const char*>();
-    else if (d.is<JsonObject>()) {
-      for (JsonPair kv : d.as<JsonObject>())
-        if (kv.value().is<float>()) { out = kv.value().as<float>(); return true; }
+    if (numberIn(d.as<JsonVariantConst>(), out)) return true;
+    if (d.is<JsonObject>()) {
+      JsonObjectConst o = d.as<JsonObjectConst>();
+      if (o["data"].is<JsonObjectConst>()) {
+        JsonObjectConst data = o["data"];
+        const char* st = data["status"] | "SUCCESS";
+        if (strcmp(st, "SUCCESS") != 0) return false;
+        const char* type = data["type_sm"] | "";
+        scaled = strcmp(type, "report") == 0;
+        return numberIn(data["val"], out);
+      }
+      for (JsonPairConst kv : o)
+        if (numberIn(kv.value(), out)) return true;
       return false;
     }
   }
@@ -148,16 +169,17 @@ bool onMessage(const char* topic, const char* payload, unsigned int len) {
     int i = findZb(id);
     if (i < 0) { seen("z:" + normZb(id)); return true; }
     float v;
-    if (!number(payload, len, v)) return true;
+    bool scaled;
+    if (!number(payload, len, v, scaled)) return true;
     Value& x = vals[i];
     if (cluster == "0006" && attr == "0000") {
       bool open = v != 0;
       if (devs[i].invert) open = !open;
       x.open = open ? 1 : 0;
-    } else if (cluster == "0001" && attr == "0021") x.batt = v / 2;              // ZCL: 0..200 = 0..100 %
-    else if (cluster == "0402" && attr == "0000") x.temp = v / (tempDiv > 0 ? tempDiv : 1);
-    else if (cluster == "0405" && attr == "0000") x.hum = v / (humDiv > 0 ? humDiv : 1);
-    else if (cluster == "0403" && attr == "0000") x.pres = v;
+    } else if (cluster == "0001" && attr == "0021") x.batt = constrain(scaled ? v : v / 2, 0.0f, 100.0f);   // raw ZCL: 0..200
+    else if (cluster == "0402" && attr == "0000") x.temp = scaled ? v : v / (tempDiv > 0 ? tempDiv : 1);
+    else if (cluster == "0405" && attr == "0000") x.hum = scaled ? v : v / (humDiv > 0 ? humDiv : 1);
+    else if (cluster == "0403" && attr == "0000") x.pres = scaled ? v * 10 : v;   // scaled: kPa, raw: 0.1 kPa = hPa
     else return true;
     x.at = millis();
     if (!x.at) x.at = 1;
@@ -208,6 +230,7 @@ String toJson() {
     o["icon"] = d.icon;
     o["warn"] = d.warn;
     if (d.invert) o["invert"] = true;
+    o["show"] = d.show;
   }
   String out;
   serializeJson(doc, out);
@@ -234,6 +257,7 @@ bool fromJson(const String& json, String& err, bool apply) {
     if (d.bus > B_BLE) d.bus = B_ZIGBEE;
     if (d.kind > K_CLIMATE) d.kind = K_CLIMATE;
     if (d.bus == B_BLE) d.kind = K_CLIMATE;
+    d.show = o["show"].is<int>() ? (uint8_t)(o["show"].as<int>() & 0x0F) : defaultShow(d.kind);
     if (!icons::known(d.icon)) d.icon = "";
     if (d.addr.isEmpty()) { err = (d.name.length() ? d.name : String("Sensor")) + ": Adresse fehlt"; return false; }
     if (d.name.isEmpty()) d.name = d.addr;
@@ -287,6 +311,7 @@ String valuesJson() {
     if (v.open >= 0) o["o"] = v.open;
     o["age"] = v.at ? (int32_t)((now - v.at) / 1000) : -1;
     o["i"] = devs[i].icon;
+    o["sh"] = devs[i].show;
   }
   String out;
   serializeJson(doc, out);
@@ -314,17 +339,60 @@ std::vector<TempOut> climate() {
   std::vector<TempOut> out;
   uint32_t now = millis();
   for (size_t i = 0; i < devs.size(); i++) {
-    if (devs[i].kind != K_CLIMATE || isnan(vals[i].temp)) continue;
+    if (devs[i].kind != K_CLIMATE || !(devs[i].show & SH_TEMP) || isnan(vals[i].temp)) continue;
     out.push_back({devs[i].name, vals[i].temp, vals[i].hum, !vals[i].at || now - vals[i].at > STALE_MS});
   }
   return out;
 }
 
+bool outdoor(TempOut& out) {
+  Lock lock;
+  uint32_t now = millis();
+  for (size_t i = 0; i < devs.size(); i++) {
+    if (devs[i].kind != K_CLIMATE || !(devs[i].show & SH_WX) || isnan(vals[i].temp)) continue;
+    out = {devs[i].name, vals[i].temp, vals[i].hum, !vals[i].at || now - vals[i].at > STALE_MS};
+    return true;
+  }
+  return false;
+}
+
+std::vector<ContactOut> contacts() {
+  Lock lock;
+  std::vector<ContactOut> out;
+  uint32_t now = millis();
+  for (size_t i = 0; i < devs.size(); i++) {
+    if (devs[i].kind != K_CONTACT || !(devs[i].show & SH_ACT)) continue;
+    out.push_back({devs[i].name, vals[i].open, vals[i].batt, !vals[i].at || now - vals[i].at > STALE_MS});
+  }
+  return out;
+}
+
+int openCount() {
+  Lock lock;
+  int n = 0;
+  for (size_t i = 0; i < devs.size(); i++)
+    if (devs[i].kind == K_CONTACT && (devs[i].show & SH_ACT) && vals[i].open == 1) n++;
+  return n;
+}
+
+std::vector<BattOut> batteries() {
+  Lock lock;
+  std::vector<BattOut> out;
+  uint32_t now = millis();
+  for (size_t i = 0; i < devs.size(); i++) {
+    if (!(devs[i].show & SH_BAT) || isnan(vals[i].batt)) continue;
+    out.push_back({devs[i].name, vals[i].batt, !vals[i].at || now - vals[i].at > STALE_MS});
+  }
+  return out;
+}
+
+// Contacts on the actuator page are counted in the status tile instead (openCount)
 std::vector<String> activeIcons() {
   Lock lock;
   std::vector<String> out;
   for (size_t i = 0; i < devs.size(); i++)
-    if (devs[i].kind == K_CONTACT && vals[i].open == 1 && devs[i].icon.length()) out.push_back(devs[i].icon);
+    if (devs[i].kind == K_CONTACT && !(devs[i].show & SH_ACT) && vals[i].open == 1 && devs[i].icon.length())
+      out.push_back(devs[i].icon);
   return out;
 }
 

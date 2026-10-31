@@ -4,7 +4,9 @@
 
 // Built-in pages. Their order here is the order on the display and web page.
 // New pages are appended: the index is also the bit in the stored page mask.
-enum BuiltinPage : uint8_t { BP_OVERVIEW, BP_HEATER, BP_FAN, BP_LEVEL, BP_TEMP, BP_BATTERY, BP_WEATHER, BP_COUNT };
+enum BuiltinPage : uint8_t { BP_OVERVIEW, BP_HEATER, BP_FAN, BP_LEVEL, BP_TEMP, BP_BATTERY, BP_WEATHER, BP_ACTORS, BP_WARN, BP_COUNT };
+// Short ids of the fixed pages (web page, nav selection), BP_* order
+extern const char* const PAGE_IDS[BP_COUNT];
 
 // User tile types
 enum TileType : uint8_t { TILE_VALUE = 0, TILE_SWITCH = 1, TILE_BUTTON = 2, TILE_SLIDER = 3 };
@@ -31,6 +33,9 @@ struct Tile {
   String   warnText;        // "" = "<name> zu niedrig" ...
 };
 enum TileWarn : uint8_t { WARN_NONE = 0, WARN_BELOW = 1, WARN_ABOVE = 2, WARN_EQUAL = 3 };
+
+enum HeaterSrc : uint8_t { HEAT_SRC_OWN = 0, HEAT_SRC_CAMPMATIC = 1 };
+const int NAV_FREE = 6;
 
 struct Page {
   String name;
@@ -66,8 +71,10 @@ struct Settings {
   String   wxTopic;             // MQTT topic with the position (GPS); empty = fixed position
   uint8_t  wxGust = 60;         // warn from these gusts in km/h, 0 = off
   uint8_t  wxEvery = 60;        // update interval in minutes
-  // overview tiles temperature / battery: up to 3 "name=icon" lines (see icons.cpp), "" = first 3
+  // overview tiles temperature / battery: "name=icon" lines (see icons.cpp), "" = all / first 3
   String   ovTempSel, ovBatSel;
+  // heater source: own camper-heater firmware or a CampMatic box (topics <prefixHeater>/climate/truma_*/...)
+  uint8_t  heaterSrc = 0;       // HEAT_SRC_*
   // display
   uint8_t  brightness, dimBrightness;
   uint16_t screenTimeout;
@@ -78,6 +85,9 @@ struct Settings {
   // Overview tiles in order, comma separated (max. 9): water grey gas heater level fan temp bat
   // status bat1 bat2 bat3 clock none t<n> (custom tile n). "" = default layout
   String   ovTiles;
+  // Icon bar: up to NAV_FREE pages between Home and System, comma separated page ids
+  // (PAGE_IDS or p<n> for user page n). "" = the first NAV_FREE pages
+  String   navSel;
   // user pages
   std::vector<Page> pages;
   std::vector<Tile> tiles;

@@ -12,8 +12,9 @@ const M = {
     poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
     brightness: 80, dimBrightness: 10, screenTimeout: 120, warnWake: false,
     wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, ovTempSel: '', ovBatSel: '',
-    builtin: [true, true, true, true, true, true, true],
-    pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'System'],
+    builtin: [true, true, true, true, true, true, true, true, true],
+    pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'Aktoren', 'Warnungen', 'System'],
+    navSel: 'heater,temp,weather,actors,warn', heaterSrc: 0,
     ovTiles: 'water,gas,heater,level,fan,weather,temp,bat1,status',
     fw: '2.8.0', mac: '24:0A:C4:00:00:01',
     // In the mockup the device links open the other mockups
@@ -28,17 +29,17 @@ const M = {
   T: {t0: 'ON', t1: '180', t2: '0'},
   awake: true, bri: 80, finderOn: false,
   sensors: {zbBase: 'camper/zigbee/data', bleBase: 'camper/OMG/BTtoMQTT', tempDiv: 10, humDiv: 1, devices: [
-    {name: 'Küche', bus: 0, kind: 1, addr: '0x00158d0000000001', alt: '1a01', icon: '', warn: false},
-    {name: 'Heki', bus: 0, kind: 0, addr: '0x00158d0000000002', alt: '1a02', icon: 'door', warn: false},
-    {name: 'Bullauge vorn', bus: 0, kind: 0, addr: '0x00158d0000000003', alt: '1a03', icon: 'door', warn: true},
-    {name: 'Govee Wohnen', bus: 1, kind: 1, addr: 'A4C1380000AA', icon: '', warn: false}]},
+    {name: 'Küche', bus: 0, kind: 1, addr: '0x00158d0000000001', alt: '1a01', icon: '', warn: false, show: 3},
+    {name: 'Heki', bus: 0, kind: 0, addr: '0x00158d0000000002', alt: '1a02', icon: 'door', warn: false, show: 6},
+    {name: 'Bullauge vorn', bus: 0, kind: 0, addr: '0x00158d0000000003', alt: '1a03', icon: 'door', warn: true, show: 6},
+    {name: 'Govee Außen', bus: 1, kind: 1, addr: 'A4C1380000AA', icon: '', warn: false, show: 8}]},
   rules: {rules: [{name: 'Eingangslicht', on: true, inTopic: 'camper/door', inKey: 'Door.state', cond: 0, inVal: 'open',
     outTopic: 'camper/zigbee/led_eingang/set', onPayload: '{"state":"ON"}', offPayload: '{"state":"OFF"}', offDelay: 10,
     onlyOwn: true, when: 2, from: '19:00', to: '07:00', icon: 'door', warn: false}]},
   cfgMsg() {
     const c = M.cfg;
     return {t: 'cfg', fw: c.fw, host: c.hostname, name: c.displayName, links: c.links, ap: false, setup: false,
-            builtin: c.builtin, ovTiles: c.ovTiles, ovTempSel: c.ovTempSel, ovBatSel: c.ovBatSel, pageNames: c.pageNames, pages: M.pages.pages.map(p => p.name),
+            builtin: c.builtin, ovTiles: c.ovTiles, ovTempSel: c.ovTempSel, ovBatSel: c.ovBatSel, pageNames: c.pageNames, navSel: c.navSel, heaterSrc: c.heaterSrc, pages: M.pages.pages.map(p => p.name),
             tiles: M.pages.tiles.map(t => Object.assign({n: t.name, p: t.page, y: t.type, u: t.unit || ''},
               t.type === 1 ? {son: t.stateOn || 'ON'} : {}, t.type === 3 ? {min: t.min, max: t.max, step: t.step} : {}))};
   },
@@ -78,16 +79,16 @@ const M = {
       temp_alarm: '',
       bat_status: 'online',
       bat_list: JSON.stringify([
-        {name: 'Aufbau', ok: true, soc: 74, v: 13.3, w: charging ? 90 : -45, rt: charging ? null : 1960, st: '', p: false},
+        {name: 'Aufbau', ok: true, soc: 74, v: 13.3, w: charging ? 90 : -45, rt: charging ? null : 1960, st: '', p: charging, pt: charging ? 'Ladezustand zu hoch (Stufe 1)' : ''},
         {name: 'Starter', ok: true, soc: 82, v: 12.6, w: null, rt: null, st: 'Normal', p: false}]),
       t0: M.T.t0, t1: M.T.t1, t2: (charging ? 0 : 1650 + Math.round(Math.sin(t / 5) * 40)).toString()
     };
     const door = Math.floor(t / 20) % 3 === 0;
-    const sen = [{n: 'Küche', k: 1, b: 0, t: 19.4, h: 54, bat: 87, age: 40, i: ''},
-      {n: 'Heki', k: 0, b: 0, o: door ? 1 : 0, bat: 92, age: 12, i: 'door'},
-      {n: 'Bullauge vorn', k: 0, b: 0, o: 0, bat: 65, age: 300, i: 'door'},
-      {n: 'Govee Wohnen', k: 1, b: 1, t: 20.1, h: 49, bat: 100, age: 8, i: ''}];
-    return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake, ind: door ? ['door'] : [], sen}};
+    const sen = [{n: 'Küche', k: 1, b: 0, t: 19.4, h: 54, bat: 87, age: 40, i: '', sh: 3},
+      {n: 'Heki', k: 0, b: 0, o: door ? 1 : 0, bat: 92, age: 12, i: 'door', sh: 6},
+      {n: 'Bullauge vorn', k: 0, b: 0, o: 1, bat: 65, age: 300, i: 'door', sh: 6},
+      {n: 'Govee Außen', k: 1, b: 1, t: 8.6, h: 81, bat: 100, age: 8, i: '', sh: 8}];
+    return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake, ind: [], open: door ? 2 : 1, sen}};
   },
   wsCmd(o) {
     const H = M.H;

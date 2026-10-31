@@ -38,6 +38,7 @@ namespace store {
   float         getf(DpId id, float def = NAN);
   bool          has(DpId id);
   bool          devOnline(Dev d);          // device status topic says "online"
+  float         lastHeaterSetpoint();      // last setpoint >= 5 °C seen (NAN = none), kept while the heater is off
 
   size_t        tileCount();
   const String& tile(size_t i);

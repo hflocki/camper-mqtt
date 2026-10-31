@@ -3,6 +3,7 @@
 #include "bms_proto.h"
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 
 const uint8_t ECTIVE_DEV_IDS[4] = {0x22, 0x0B, 0x08, 0x38};
 
@@ -119,6 +120,7 @@ bool dalyDecode(DalyProto p, const uint8_t* f1, size_t n1, const uint8_t* f2, si
         s.discharge_fet = be(d1 + 108, 2) ? 1 : 0;
         s.problem_code = 0;
         for (int i = 0; i < 8; i++) s.problem_code = (s.problem_code << 8) | d1[116 + i];
+        s.problem_fmt = 1;
         dalyCells(d1, l1, cells, s);
         dalyTemps(d1, l1, 32 * 2, temps, s);
     } else {
@@ -258,4 +260,68 @@ const char* bmsTypeName(uint8_t t) {
         case BMS_BM2:    return "BM2";
         default:         return "-";
     }
+}
+
+// ============================================================
+// Problem text
+// ============================================================
+
+// Daly fault bytes (same layout as the 0x98 "failure status" answer of the Daly UART protocol).
+// Level 1 = warning, level 2 = protection (the BMS switches the MOSFETs off).
+static const char* const DALY_FAULTS[7][8] = {
+    {"Zellspannung zu hoch (Stufe 1)", "Zellspannung zu hoch (Stufe 2)", "Zellspannung zu niedrig (Stufe 1)", "Zellspannung zu niedrig (Stufe 2)",
+     "Gesamtspannung zu hoch (Stufe 1)", "Gesamtspannung zu hoch (Stufe 2)", "Gesamtspannung zu niedrig (Stufe 1)", "Gesamtspannung zu niedrig (Stufe 2)"},
+    {"Ladetemperatur zu hoch (Stufe 1)", "Ladetemperatur zu hoch (Stufe 2)", "Ladetemperatur zu niedrig (Stufe 1)", "Ladetemperatur zu niedrig (Stufe 2)",
+     "Entladetemperatur zu hoch (Stufe 1)", "Entladetemperatur zu hoch (Stufe 2)", "Entladetemperatur zu niedrig (Stufe 1)", "Entladetemperatur zu niedrig (Stufe 2)"},
+    {"Ladestrom zu hoch (Stufe 1)", "Ladestrom zu hoch (Stufe 2)", "Entladestrom zu hoch (Stufe 1)", "Entladestrom zu hoch (Stufe 2)",
+     "Ladezustand zu hoch (Stufe 1)", "Ladezustand zu hoch (Stufe 2)", "Ladezustand zu niedrig (Stufe 1)", "Ladezustand zu niedrig (Stufe 2)"},
+    {"Zellen ungleich (Stufe 1)", "Zellen ungleich (Stufe 2)", "Temperaturen ungleich (Stufe 1)", "Temperaturen ungleich (Stufe 2)",
+     nullptr, nullptr, nullptr, nullptr},
+    {"Lade-MOSFET zu heiß", "Entlade-MOSFET zu heiß", "Temperaturfühler Lade-MOSFET defekt", "Temperaturfühler Entlade-MOSFET defekt",
+     "Lade-MOSFET klebt", "Entlade-MOSFET klebt", "Lade-MOSFET unterbrochen", "Entlade-MOSFET unterbrochen"},
+    {"Messchip (AFE) defekt", "Zellspannungsmessung ausgefallen", "Zelltemperaturfühler defekt", "EEPROM-Fehler",
+     "Uhr (RTC) defekt", "Vorladung fehlgeschlagen", "Kommunikationsfehler", "interner Kommunikationsfehler"},
+    {"Strommessung defekt", "Gesamtspannungsmessung defekt", "Kurzschlussschutz ausgelöst", "Laden gesperrt (Spannung zu niedrig)",
+     nullptr, nullptr, nullptr, nullptr},
+};
+
+size_t bmsProblemText(const BmsSample& s, char* out, size_t n) {
+    if (!n) return 0;
+    out[0] = 0;
+    if (!s.problem) return 0;
+    size_t len = 0;
+    uint64_t unknown = 0;
+    bool full = false;
+    // whole entries only (no cut UTF-8 characters); "..." once nothing more fits
+    auto add = [&](const char* t) {
+        if (full) return;
+        size_t need = strlen(t) + (len ? 2 : 0);
+        if (len + need + 1 > n) {
+            if (len + 4 < n) { memcpy(out + len, " ...", 4); len += 4; out[len] = 0; }
+            full = true;
+            return;
+        }
+        if (len) { out[len++] = ','; out[len++] = ' '; }
+        while (*t) out[len++] = *t++;
+        out[len] = 0;
+    };
+    if (s.problem_fmt == 1) {
+        for (int byte = 0; byte < 8; byte++) {
+            uint8_t v = (s.problem_code >> (8 * (7 - byte))) & 0xFF;
+            for (int bit = 0; bit < 8; bit++) {
+                if (!(v & (1 << bit))) continue;
+                const char* t = byte < 7 ? DALY_FAULTS[byte][bit] : nullptr;
+                if (t) add(t);
+                else unknown |= (uint64_t)1 << (8 * (7 - byte) + bit);
+            }
+        }
+    } else {
+        unknown = s.problem_code;
+    }
+    if (unknown || !len) {
+        char hex[32];
+        snprintf(hex, sizeof(hex), "Fehlercode 0x%llX", (unsigned long long)(unknown ? unknown : s.problem_code));
+        add(hex);
+    }
+    return len;
 }

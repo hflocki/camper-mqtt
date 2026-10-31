@@ -94,7 +94,8 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let ws,cfg=null,V={},S={},WX={},page=localStorage.getItem('page')||'',finder={on:false,l:{}};
 let pendingSet=null,setTimer=null,setHold=0;
-const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie'],['weather','Wetter']];
+const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie'],['weather','Wetter'],['actors','Aktoren'],['warn','Warnungen']];
+const NAV_FREE=6;   // icon bar on the panel: Home + 6 chosen pages + System
 // page title: name from the display settings, otherwise the default above
 const ptitle=i=>(cfg&&cfg.pageNames&&cfg.pageNames[i])||BUILTIN[i][1];
 // overview tiles (same list as on the panel)
@@ -103,7 +104,7 @@ const ovList=()=>((cfg&&cfg.ovTiles)||OV_DEFAULT).split(',').map(x=>x.trim()).fi
 function ovChoices(){
   const c=[['water','Frischwasser'],['grey','Grauwasser'],['gas','Gas'],['heater',ptitle(1)],['level',ptitle(3)],['fan',ptitle(2)],
     ['temp',ptitle(4)],['bat',ptitle(5)+' (alle)'],['bat1','Batterie 1 (einzeln)'],['bat2','Batterie 2 (einzeln)'],['bat3','Batterie 3 (einzeln)'],
-    ['status','Status / Warnungen'],['weather',ptitle(6)],['clock','Uhr / Datum'],['none','(leer)']];
+    ['status','Status / Warnungen'],['weather',ptitle(6)],['actors',ptitle(7)+' (offene Fenster)'],['clock','Uhr / Datum'],['none','(leer)']];
   ((cfg&&cfg.tiles)||[]).forEach((t,i)=>c.push(['t'+i,'Kachel: '+t.n]));
   return c;
 }
@@ -157,6 +158,8 @@ function render(){
   else if(p.id==='temp'){m.innerHTML=pgTemp();loadHist()}
   else if(p.id==='bat'){m.innerHTML=pgBat();loadHist()}
   else if(p.id==='weather')m.innerHTML=pgWeather();
+  else if(p.id==='actors')m.innerHTML=pgActors();
+  else if(p.id==='warn')m.innerHTML=pgWarn();
   else if(p.id==='links')m.innerHTML=pgLinks();
   else if(p.id==='rules'){m.innerHTML=pgRules();loadRules()}
   else if(p.id==='settings'){m.innerHTML=pgSettings();loadSettings()}
@@ -179,13 +182,18 @@ function pgOverview(){
     if(t==='bat')return `<div class="card wide click" data-go="bat"><h3>🔋 ${esc(ptitle(5))}</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
     if(/^bat[123]$/.test(t)){const n=t[3];return `<div class="card click" data-go="bat"><h3 id="ob${n}_t">🔋 Batterie ${n}</h3><div class="big" id="ob${n}_v">--</div><div class="mu" id="ob${n}_s"></div></div>`}
     if(/^t\d+$/.test(t)){const i=+t.slice(1),k=(cfg.tiles||[])[i];if(!k)return '';return `<div class="card"><h3>${esc(k.n)}</h3><div class="big" id="t${i}_v">--</div></div>`}
-    if(t==='status')return `<div class="card" id="ost"><h3>⚠ Status</h3><div class="big" id="ost_v" style="white-space:pre-line">OK</div><div id="ost_i" style="font-size:22px;margin-top:4px"></div></div>`;
+    if(t==='actors')return `<div class="card click" data-go="actors"><h3>🚪 ${esc(ptitle(7))}</h3><div class="big" id="oa_v" style="font-size:20px">--</div><div class="mu" id="oa_s"></div></div>`;
+    if(t==='status')return `<div class="card click" id="ost" data-go="warn"><h3>⚠ Status</h3><div class="big" id="ost_v" style="white-space:pre-line">OK</div><div id="ost_i" style="font-size:22px;margin-top:4px"></div></div>`;
     return '';   // clock (header), none
   });
   // without a status tile the warnings appear in a box above the tiles
   const box=ovList().includes('status')?'':'<div class="warnbox" id="warn" hidden></div>';
   return `${box}<div class="grid">${parts.join('')}</div>`;
 }
+// windows / doors (own Zigbee contacts marked for this page) and all warnings
+const contacts=()=>sens().filter(x=>x.k===0&&((x.sh??4)&4));
+function pgActors(){return `<div class="grid" id="a_list"></div><div class="mu" id="a_st" style="margin-top:12px"></div>`}
+function pgWarn(){return `<div class="card" id="wn_box"><div id="wn_l" style="white-space:pre-line;font-size:18px;font-weight:600">--</div></div>`}
 // Links to the web pages of the other devices (Einstellungen -> Geräte-Links)
 function pgLinks(){
   const l=(cfg&&cfg.links)||[];
@@ -202,13 +210,17 @@ function pgWeather(){
   return `<div class="grid"><div class="card wide"><div class="row"><span style="font-size:56px;line-height:1" id="x_i"></span><span class="huge grow" id="x_t" style="margin-left:12px">--</span>
    <div style="text-align:right"><div class="big" id="x_txt" style="font-size:22px"></div><div class="mu" id="x_f"></div><div class="mu" id="x_p"></div></div></div></div>
    <div class="card"><h3>📍 Standort</h3><div class="big" id="x_l_v" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">--</div><div class="mu" id="x_l_c" style="white-space:nowrap"></div><div class="mu" id="x_l_s"></div></div>
+   <div class="card wide" id="x_o" hidden><div class="row"><span class="mu grow" id="x_o_n">🌡️ Außen (Sensor)</span><span class="big" id="x_o_v">--</span><span class="mu" id="x_o_h"></span></div></div>
    ${sm('x_w','💨 Wind')}${sm('x_h','💧 Luftfeuchte')}${sm('x_n','☂️ Nächste Stunde')}${sm('x_r','☂️ Regen heute')}
    ${[1,2,3].map(i=>`<div class="card"><h3 id="x_d${i}">--</h3><div class="row"><span style="font-size:30px" id="x_di${i}"></span><span class="big grow" style="text-align:right;font-size:20px" id="x_dt${i}"></span></div><div class="mu" style="text-align:right" id="x_dr${i}"></div></div>`).join('')}
    </div><div class="mu" id="x_st" style="margin-top:12px"></div>`;
 }
+// first own sensor marked for the weather page: measured outside temperature
+function outdoor(){return sens().find(x=>x.k===1&&((x.sh??1)&8)&&x.t!=null)}
 function updWeather(){
-  const ok=WX.on&&WX.t!=null;
-  if($('#owx_v')){set('owx_v',ok?WXI(WX.c,WX.day)+' '+n0(WX.t)+'°':'--');set('owx_s',!WX.on?'aus':ok?esc(WX.txt||''):esc(WX.status||''))}
+  const ok=WX.on&&WX.t!=null,od=outdoor(),odTxt=od?'Außen '+cnum(od.t,1)+'°'+(od.h!=null?' · '+od.h+' %':''):'';
+  if($('#owx_v')){set('owx_v',ok?WXI(WX.c,WX.day)+' '+n0(WX.t)+'°':'--');set('owx_s',od&&od.age<7200?esc(odTxt):!WX.on?'aus':ok?esc(WX.txt||''):esc(WX.status||''))}
+  if($('#x_o')){$('#x_o').hidden=!od;if(od){set('x_o_n','🌡️ Außen · '+esc(od.n));set('x_o_v',cnum(od.t,1)+' °C');set('x_o_h',od.h!=null?'💧 '+od.h+' %':'');$('#x_o').classList.toggle('offline',od.age>7200)}}
   if(!$('#x_t'))return;
   set('x_i',ok?WXI(WX.c,WX.day):'');set('x_t',ok?n0(WX.t)+'°':'--');set('x_txt',ok?esc(WX.txt):(WX.on?'Keine Daten':'Wetter aus'));
   set('x_f',ok&&WX.d?`Gefühlt ${n0(WX.f)}° · ${n0(WX.d[0].hi)}° / ${n0(WX.d[0].lo)}°`:(WX.on?'':'Unter ⚙ Einstellungen → 🌦 Wetter einrichten'));
@@ -225,19 +237,20 @@ function updWeather(){
     set('x_d'+i,i===1?'Morgen':WDAYS[t.getDay()]);set('x_di'+i,d?WXI(d.c,true):'');set('x_dt'+i,d?n0(d.hi)+'° / '+n0(d.lo)+'°':'--');set('x_dr'+i,d?n1(d.r)+' mm · '+n0(d.p)+' %':'')}
   set('x_st',esc(WX.status||'')+' · Daten: Open-Meteo');
 }
-function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div><div class="card wide hist" id="h_b" hidden><h3>📈 Ladestand, letzte 24 h</h3><div class="hc"></div></div><div class="card wide hist" id="h_v" hidden><h3>📈 Spannung, letzte 24 h</h3><div class="hc"></div></div>`}
+function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div><div class="card wide" id="b_sens" hidden style="margin-top:12px"><h3>🔋 Sensor-Batterien</h3><div id="b_sens_l"></div></div><div class="card wide hist" id="h_b" hidden><h3>📈 Ladestand, letzte 24 h</h3><div class="hc"></div></div><div class="card wide hist" id="h_v" hidden><h3>📈 Spannung, letzte 24 h</h3><div class="hc"></div></div>`}
 // camper-battery: <prefix>/batteries = [{name,ok,soc,v,w,rt,st,p}]
 // icons of batteries and temperature sensors; keys as in icons.cpp
 const ICONS=[['bat','🔋','Batterie'],['carbat','🚙','Starterbatterie'],['home','🏠','Wohnraum / Aufbau'],['sun','☀️','Sonne'],['solar','🔆','Solarpanel'],['car','🚗','Fahrzeug'],['plug','🔌','Landstrom'],['bolt','⚡','Strom'],['therm','🌡️','Thermometer'],['fridge','🧊','Kühlschrank'],['snow','❄️','Gefrierfach'],['couch','🛋️','Innenraum'],['tree','🌳','Außen'],['bed','🛏️','Schlafen'],['water','💧','Wasser'],['fire','🔥','Heizung'],['shower','🚿','Bad'],['box','📦','Stauraum'],['door','🚪','Tür / Fenster offen'],['light','💡','Licht'],['awning','⛱️','Markise'],['lock','🔓','Schloss offen']];
-// overview slots: up to 3 'name=icon' lines (cfg.ovTempSel / cfg.ovBatSel), icon '' = automatic
-function slotsOf(raw){return (raw||'').split('\n').map(l=>{const i=l.lastIndexOf('=');return i<0?{n:l,k:''}:{n:l.slice(0,i),k:l.slice(i+1)}}).filter(x=>x.n).slice(0,3)}
+// overview slots: 'name=icon' lines (cfg.ovTempSel up to 6 / cfg.ovBatSel up to 3), icon '' = automatic
+const SLOTS_T=6,SLOTS_B=3;
+function slotsOf(raw,n){return (raw||'').split('\n').map(l=>{const i=l.lastIndexOf('=');return i<0?{n:l,k:''}:{n:l.slice(0,i),k:l.slice(i+1)}}).filter(x=>x.n).slice(0,n||SLOTS_T)}
 function autoIco(n,temp){n=(n||'').toLowerCase();const h=(...k)=>k.some(x=>n.includes(x));
   if(temp)return h('gefrier','tiefk','frost','freez')?'snow':h('kühl','kuehl','fridge')?'fridge':h('außen','aussen','draußen','outdoor','outside')?'tree':h('bad','dusch','wc')?'shower':h('schlaf','bett','alkoven')?'bed':h('wasser','boiler','tank')?'water':h('heiz','truma')?'fire':h('garage','stau','keller')?'box':h('innen','wohn','raum','inside')?'couch':h('motor','fahrer','cockpit')?'car':'therm';
   return h('solar','pv')?'sun':h('start','motor','fahrzeug','kfz','auto','lkw')?'car':h('land','230')?'plug':h('aufbau','wohn','bord','versorg','house','service')?'home':'bat'}
 function icoKey(n,temp){const sl=slotsOf(cfg&&(temp?cfg.ovTempSel:cfg.ovBatSel)).find(x=>x.n===n);return sl&&ICONS.some(x=>x[0]===sl.k)?sl.k:autoIco(n,temp)}
 const icoE=k=>(ICONS.find(x=>x[0]===k)||ICONS[0])[1];
-// entries of an overview tile: chosen slots or the first 3
-function ovSlots(list,temp){const sl=slotsOf(cfg&&(temp?cfg.ovTempSel:cfg.ovBatSel));return (sl.length?sl:list.slice(0,3).map(x=>({n:x.name,k:''}))).map(x=>({n:x.n,e:icoE(ICONS.some(i=>i[0]===x.k)?x.k:autoIco(x.n,temp)),it:list.find(y=>y.name===x.n)}))}
+// entries of an overview tile: chosen slots, otherwise all temperatures / the first 3 batteries
+function ovSlots(list,temp){const sl=slotsOf(cfg&&(temp?cfg.ovTempSel:cfg.ovBatSel),temp?SLOTS_T:SLOTS_B);return (sl.length?sl:list.slice(0,temp?99:3).map(x=>({n:x.name,k:''}))).map(x=>({n:x.n,e:icoE(ICONS.some(i=>i[0]===x.k)?x.k:autoIco(x.n,temp)),it:list.find(y=>y.name===x.n)}))}
 function ico(n,temp){return icoE(icoKey(n,temp))}
 const batIco=n=>ico(n,false);
 function bats(){try{const a=JSON.parse(V.bat_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
@@ -341,7 +354,7 @@ function pgTemp(){return `<div class="warnbox" id="t_warn" hidden></div><div cla
 function temps(){try{const a=JSON.parse(V.temp_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
 // own Zigbee/BLE sensors (S.sen from the display): k 0 = contact, 1 = climate
 const sens=()=>Array.isArray(S.sen)?S.sen:[];
-function allTemps(){return temps().concat(sens().filter(x=>x.k===1&&x.t!=null).map(x=>({name:x.n,t:x.t,alarm:0,h:x.h,bat:x.bat,own:1,old:x.age>7200})))}
+function allTemps(){return temps().concat(sens().filter(x=>x.k===1&&((x.sh??1)&1)&&x.t!=null).map(x=>({name:x.n,t:x.t,alarm:0,h:x.h,bat:x.bat,own:1,old:x.age>7200})))}
 function tval(t){return t.t===null||t.t===undefined?'--':Number(t.t).toFixed(1)+' °C'}
 function warnings(){
   // the display sends its own list (with tile rules); the local rules below are only the fallback
@@ -351,7 +364,7 @@ function warnings(){
   if(online('heat')&&V.heat_errflag==='ON')w.push('Heizung: Fehler '+(V.heat_err||'?'));
   if(WX.warn)WX.warn.split('\n').forEach(x=>w.push(x));
   if(online('bat'))bats().forEach(b=>{if(!b.ok)return;
-    if(b.p)w.push(b.name+' BMS-Fehler: bitte prüfen');
+    if(b.p)w.push(b.name+' BMS: '+(b.pt||'Fehler, bitte prüfen'));
     if(b.st==='Kritisch'||b.st==='Schwach')w.push(b.name+' '+b.st.toLowerCase()+': '+cnum(b.v,2)+' V');
     else if(!b.st&&b.soc!=null&&b.soc<BAT_WARN_SOC)w.push(b.name+' niedrig: '+Math.round(b.soc)+' %'+(b.rt!=null?', noch '+rtText(b.rt):''));});
   return w;
@@ -363,7 +376,7 @@ function pgHeater(){
   <div class="card wide"><div class="row"><span class="grow mu">Solltemperatur</span><button class="btn" data-set="-1">−</button><span class="big" id="h_set" style="min-width:90px;text-align:center">--</span><button class="btn" data-set="1">+</button></div></div>
   <div class="card wide"><div class="row"><span class="grow mu">Gebläse</span><span class="seg" id="h_fan"><button class="btn" data-hk="fan_mode" data-hv="eco">Eco</button><button class="btn" data-hk="fan_mode" data-hv="high">High</button></span></div></div>
   <div class="card wide"><div class="row"><span class="grow mu">Warmwasser</span><span class="seg" id="h_wm"><button class="btn" data-hk="water_mode" data-hv="off">Aus</button><button class="btn" data-hk="water_mode" data-hv="eco">Eco</button><button class="btn" data-hk="water_mode" data-hv="high">High</button></span></div></div>
-  <div class="card wide"><div class="row"><span class="grow" id="h_st"></span><button class="btn" id="h_dec" data-h="decoke">Freibrennen</button></div></div></div>`;
+  <div class="card wide"><div class="row"><span class="grow" id="h_st"></span><button class="btn" id="h_dec" data-h="decoke"${cfg&&cfg.heaterSrc===1?' hidden':''}>Freibrennen</button></div></div></div>`;
 }
 function pgFan(){
   const b=(k,t)=>`<button class="btn" data-fan="${k}">${t}</button>`;
@@ -435,16 +448,22 @@ function update(){
   // warnings + temperatures
   const warn=warnings();
   ['warn','t_warn'].forEach(id=>{const e=document.getElementById(id);if(e){e.hidden=!warn.length;e.textContent='⚠ '+warn.join('\n')}});
-  if($('#ost')){const c=$('#ost'),v=$('#ost_v');c.classList.toggle('alarm',!!warn.length);v.textContent=warn.length?warn.join('\n'):'OK';v.style.fontSize=warn.length?'17px':'';v.classList.toggle('okc',!warn.length);$('#ost_i').textContent=(S.ind||[]).map(k=>(ICONS.find(x=>x[0]===k)||['','•'])[1]).join(' ')}
+  if($('#ost')){const c=$('#ost'),v=$('#ost_v');c.classList.toggle('alarm',!!warn.length);v.textContent=warn.length?warn.join('\n'):'OK';v.style.fontSize=warn.length?'17px':'';v.classList.toggle('okc',!warn.length);$('#ost_i').textContent=((S.open>0?S.open+' 🚪 ':'')+(S.ind||[]).map(k=>(ICONS.find(x=>x[0]===k)||['','•'])[1]).join(' ')).trim()}
+  if($('#wn_l')){$('#wn_l').textContent=warn.length?'⚠ '+warn.join('\n\n⚠ '):'Keine Warnungen';$('#wn_l').className=warn.length?'err':'okc'}
+  {const cs=contacts(),op=cs.filter(x=>x.o===1);
+   if($('#oa_v')){set('oa_v',!cs.length?'--':op.length?op.slice(0,3).map(x=>`<span class="err">${esc(x.n)}</span>`).join('<br>'):'<span class="okc">Alles zu</span>');
+     set('oa_s',!cs.length?'keine Sensoren':op.length>3?'+'+(op.length-3)+' offen':op.length?op.length+' offen':'')}
+   if($('#a_list')){set('a_list',cs.map(x=>`<div class="card wide${x.age<0||x.age>7200?' offline':''}"><div class="trow"><span class="n">🚪 ${esc(x.n)}${x.bat!=null?`<br><span class="mu">🔋 ${x.bat} %</span>`:''}</span><b class="big ${x.o===1?'err':x.o===0?'okc':'mu'}" style="font-size:24px">${x.o===1?'offen':x.o===0?'zu':'?'}</b></div></div>`).join(''));
+     set('a_st',cs.length?'':'Keine Fenster- oder Türkontakte. Unter ⚙ Einstellungen → 📡 Sensoren anlegen und „Aktoren“ ankreuzen.')}}
   const tl=allTemps(),tOn=online('temp')||tl.some(t=>t.own),tAl=tl.some(t=>t.alarm);
   if($('#ot_v')){
     {const sl=ovSlots(tl,true);set('ot_v',sl.length?sl.map(x=>`<span title="${esc(x.n)}">${x.e}</span> <span${x.it&&x.it.alarm?' class="err"':x.it?'':' class="mu"'}>${x.it?tval(x.it):'--'}</span>`).join(' &nbsp; '):'--')}
-    set('ot_s',!tOn?'offline':tAl?'<span class="err">Alarm</span>':tl.length>3?tl.length+' Sensoren':'');
+    set('ot_s',!tOn?'offline':tAl?'<span class="err">Alarm</span>':'');
     $('#ot_v').closest('.card').classList.toggle('offline',!tOn);
   }
   if($('#t_list')){
     set('t_list',tl.map(t=>`<div class="card wide${(t.own?!t.old:online('temp'))?'':' offline'}"><div class="trow${t.alarm?' al':''}"><span class="n">${ico(t.name,true)} ${esc(t.name)}${t.h!=null||t.bat!=null?`<br><span class="mu">${t.h!=null?'💧 '+t.h+' %':''}${t.bat!=null?' &nbsp;🔋 '+t.bat+' %':''}</span>`:''}</span><span class="big">${tval(t)}</span></div></div>`).join('')
-      +(sens().some(x=>x.k===0)?`<div class="card wide"><h3>🚪 Fenster &amp; Türen</h3>${sens().filter(x=>x.k===0).map(x=>`<div class="row" style="margin:6px 0"><span class="grow">${esc(x.n)}</span>${x.bat!=null?`<span class="mu">🔋 ${x.bat} %</span>`:''}<b class="${x.o===1?'err':x.o===0?'okc':'mu'}" style="min-width:60px;text-align:right">${x.o===1?'offen':x.o===0?'zu':'?'}</b></div>`).join('')}</div>`:''));
+      );
     set('t_st',!tOn?'Temperatursensoren offline':tl.length?'':'Keine Sensoren gemeldet');
   }
   // batteries
@@ -458,14 +477,17 @@ function update(){
   if($('#b_list')){
     set('b_list',bl.map(b=>{
       const c=b.soc==null?'var(--mu)':b.soc<20?'var(--warn)':b.soc<40?'var(--gas)':'var(--ok)';
-      const top=!b.ok?'<span class="mu">keine Verbindung</span>':b.p?'<span class="err">BMS-Fehler</span>':b.st?`<span class="${b.st==='Kritisch'||b.st==='Schwach'?'err':b.st==='Normal'?'':'okc'}">${esc(b.st)}</span>`
+      const top=!b.ok?'<span class="mu">keine Verbindung</span>':b.p?'<span class="err">⚠ BMS-Fehler</span>':b.st?`<span class="${b.st==='Kritisch'||b.st==='Schwach'?'err':b.st==='Normal'?'':'okc'}">${esc(b.st)}</span>`
         :b.w==null?'':b.w>1?`<span class="okc">▲ ${Math.round(b.w)} W</span>`:b.w<-1?`▼ ${Math.round(-b.w)} W`:'Ruhe';
       const big=!b.ok?'--':b.st?(b.v==null?'--':cnum(b.v,2)+' V'):(b.soc==null?'--':Math.round(b.soc)+' %');
-      const sub=!b.ok?'':b.st?(b.soc==null?'':Math.round(b.soc)+' % (geschätzt)'):[b.v!=null?cnum(b.v,2)+' V':'',b.rt!=null?'noch '+rtText(b.rt):(b.w>1?'lädt':'')].filter(x=>x).join(' · ');
+      const sub=!b.ok?'':b.p&&b.pt?`<span class="err">${esc(b.pt)}</span>`:b.st?(b.soc==null?'':Math.round(b.soc)+' % (geschätzt)'):[b.v!=null?cnum(b.v,2)+' V':'',b.rt!=null?'noch '+rtText(b.rt):(b.w>1?'lädt':'')].filter(x=>x).join(' · ');
       return `<div class="card wide${bOn&&b.ok?'':' offline'}"${batBad(b)?' style="outline:2px solid var(--warn)"':''}><div class="row"><h3 class="grow" style="margin:0">${batIco(b.name)} ${esc(b.name)}</h3><span>${top}</span></div>
       <div class="row" style="margin-top:6px"><span class="big grow"${b.st?'':` style="color:${c}"`}>${big}</span><span class="mu">${sub}</span></div>
       <div class="bar"><i style="width:${b.soc==null?0:Math.max(0,Math.min(100,b.soc))}%;background:${c}"></i></div></div>`}).join(''));
     set('b_st',!bOn?'Batterie-Gateway offline':bl.length?'':'Keine Batterien gemeldet');
+    const sb=sens().filter(x=>((x.sh??0)&2)&&x.bat!=null);
+    $('#b_sens').hidden=!sb.length;
+    set('b_sens_l',sb.map(x=>`<div class="row" style="margin:4px 0"><span class="grow">${esc(x.n)}</span><b class="${x.bat<20?'err':''}">${x.bat} %</b></div>`).join(''));
   }
   [1,2,3].forEach(n=>{
     if(!$('#ob'+n+'_v'))return;const b=bl[n-1];
@@ -520,7 +542,9 @@ function pgSettings(){
    <div class="f2">${inp('mqttHost','Broker (IP/Name)','text','192.168.1.1')}${inp('mqttPort','Port','number')}${inp('mqttUser','Benutzer')}${inp('mqttPass','Passwort','password')}</div></details>
   <details><summary>🏷 Topics der Geräte</summary>
    <p class="mu">Basis-Topic je Gerät. Leer lassen, wenn das Gerät nicht vorhanden ist.</p>
-   ${inp('prefixTank','Tanks (Wasser/Gas)')}${inp('prefixLevel','Ausrichtung (Levelsensor)')}${inp('prefixHeater','Heizung (camper-heater)')}${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (camper-temp)')}${inp('prefixBattery','Batterien (camper-battery)')}
+   ${inp('prefixTank','Tanks (Wasser/Gas)')}${inp('prefixLevel','Ausrichtung (Levelsensor)')}
+   <div class="f2"><div><label>Heizung: Steuerung über</label><select id="heaterSrc"><option value="0">eigene Firmware (camper-heater)</option><option value="1">CampMatic-Box</option></select></div>${inp('prefixHeater','Heizung: Basis-Topic','text','camper/heater')}</div>
+   <p class="mu" style="margin-top:-4px">CampMatic: Basis-Topic <code>campmatic/&lt;Gerätenummer&gt;</code>, z. B. <code>campmatic/003</code>. Die Box muss per Bridge auf deinem Broker ankommen (siehe README). Freibrennen gibt es dort nicht.</p>${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (camper-temp)')}${inp('prefixBattery','Batterien (camper-battery)')}
    <div class="f2"><div><label>MaxxFan-Port</label><select id="fanPort"><option value="0">0 (RJ11)</option><option value="1">1 (RJ45)</option></select></div>${inp('prefixSelf','Eigenes Topic (Display)')}</div></details>
   <details id="dsd" ontoggle="if(this.open)renderSlots()"><summary>🖥 Display &amp; Seiten</summary>
    <label>Helligkeit</label><input type="range" id="brightness" min="5" max="100">
@@ -530,9 +554,12 @@ function pgSettings(){
    ${inp('displayName','Anzeigename (oben in der Mitte, z. B. Wohnraum)')}
    <label>Feste Seiten (Haken = anzeigen, Feld = Name)</label>${BUILTIN.map((b,i)=>`<div class="row" style="gap:8px;margin:4px 0"><input type="checkbox" id="bp${i}" style="width:auto"><input id="pn${i}" placeholder="${b[1]}" maxlength="24" style="flex:1;min-width:0"></div>`).join('')}
    <div class="row" style="gap:8px;margin:4px 0"><span style="width:20px"></span><input id="pn${BUILTIN.length}" placeholder="System" maxlength="24" style="flex:1;min-width:0"></div>
+   <label>Symbolleiste unten am Display: Home und System sind immer da, dazu bis zu ${NAV_FREE} Seiten (leer = die ersten ${NAV_FREE})</label>
+   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px" id="navsel"></div>
+   <p class="mu" style="margin-top:4px">Seiten ohne Symbol erreichst du über ihre Kachel auf Home oder durch Wischen.</p>
    <label>Kacheln der Übersicht (3 × 3, von links oben nach rechts unten)</label>
    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[0,1,2,3,4,5,6,7,8].map(i=>`<select id="ov${i}" style="padding:8px 4px;font-size:13px">${ovChoices().map(c=>`<option value="${c[0]}">${esc(c[1])}</option>`).join('')}</select>`).join('')}</div>
-   <label>Temperatur-Kachel: Sensoren und Symbole (leer = die ersten 3, Symbol automatisch nach Namen)</label><div id="slt"></div>
+   <label>Temperatur-Kachel: bis zu ${SLOTS_T} Sensoren mit Symbol (leer = alle). Mehr als 3 wechseln alle paar Sekunden.</label><div id="slt"></div>
    <label>Batterie-Kachel: Batterien und Symbole</label><div id="slb"></div></details>
   <details><summary>🧩 Seiten &amp; Kacheln</summary><div id="pged"></div></details>
   <details id="fd"><summary>🔎 Topic-Finder (z.B. Zigbee2MQTT)</summary>
@@ -550,9 +577,9 @@ function pgSettings(){
    <p class="mu" style="margin-top:-4px">Mit Topic folgt das Wetter dem Fahrzeug. Inhalt: JSON mit <code>lat</code>/<code>lon</code> (auch <code>latitude</code>/<code>longitude</code>, auch verschachtelt wie beim RUT956) oder <code>52.52,13.40</code>. Ohne Position gilt der feste Ort oben.</p>
    <div class="f2">${inp('wxGust','Warnung ab Böen (km/h, 0 = aus)','number')}<div><label>Aktualisieren</label><select id="wxEvery"><option value="15">alle 15 min</option><option value="30">alle 30 min</option><option value="60">stündlich</option><option value="120">alle 2 h</option></select></div></div></details>
   <details id="snd" ontoggle="if(this.open)loadSensors()"><summary>📡 Sensoren (Zigbee &amp; Bluetooth)</summary>
-   <p class="mu">Eigene Sensoren direkt per MQTT: Zigbee-Gateway mit Cluster-Topics (z. B. SMLIGHT: <code>&lt;Basis&gt;/&lt;Adresse&gt;/1/0006/0000</code>) und Bluetooth über OpenMQTTGateway (<code>&lt;Basis&gt;/&lt;MAC&gt;</code>, Govee, Ruuvi, Xiaomi …). Klima-Sensoren erscheinen bei den Temperaturen, Kontakte als Symbol in der Status-Kachel.</p>
+   <p class="mu">Eigene Sensoren direkt per MQTT: Zigbee-Gateway mit Cluster-Topics (z. B. SMLIGHT: <code>&lt;Basis&gt;/&lt;Adresse&gt;/1/0006/0000</code>) und Bluetooth über OpenMQTTGateway (<code>&lt;Basis&gt;/&lt;MAC&gt;</code>, Govee, Ruuvi, Xiaomi …). Je Sensor wählst du, auf welchen Seiten er erscheint. Kontakte auf „Aktoren“ werden auf Home in der Status-Kachel gezählt (z. B. 2 🚪).</p>
    <div class="f2">${inp('zbBase','Zigbee-Basis-Topic','text','camper/zigbee/data')}${inp('bleBase','Bluetooth-Basis-Topic (OMG)','text','camper/OMG/BTtoMQTT')}
-    <div><label>Zigbee-Temperatur geteilt durch</label><select id="tempDiv"><option value="10">10</option><option value="100">100 (ZCL-Standard)</option><option value="1">1</option></select></div>
+    <div><label>Zigbee-Temperatur geteilt durch (nur Rohwerte, „report_raw“)</label><select id="tempDiv"><option value="10">10</option><option value="100">100 (ZCL-Standard)</option><option value="1">1</option></select></div>
     <div><label>Zigbee-Luftfeuchte geteilt durch</label><select id="humDiv"><option value="1">1</option><option value="100">100 (ZCL-Standard)</option></select></div></div>
    <div id="snlist"></div>
    <div class="row"><button class="btn sm" type="button" id="snadd">+ Sensor</button><label class="btn sm" style="cursor:pointer">device.json einlesen<input type="file" id="snfile" accept=".json" hidden></label></div>
@@ -590,6 +617,7 @@ async function loadSettings(){
     const r=await fetch('/api/settings');if(!r.ok)throw 0;ST=await r.json();
     FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)e.value=ST[f]??''});
     $('#staticIp').checked=ST.staticIp;$('#fanPort').value=ST.fanPort;$('#brightness').value=ST.brightness;
+    $('#heaterSrc').value=String(ST.heaterSrc||0);renderNavSel();
     BUILTIN.forEach((b,i)=>$('#bp'+i).checked=ST.builtin[i]);
     for(let i=0;i<=BUILTIN.length;i++){const e=$('#pn'+i);if(e)e.value=(ST.pageNames||[])[i]||''}
     {const l=(ST.ovTiles||OV_DEFAULT).split(',');for(let i=0;i<9;i++){const e=$('#ov'+i);if(e)e.value=l[i]||'none'}}
@@ -638,29 +666,42 @@ function readLinks(){
 function renderSlots(){
   [['slt',true],['slb',false]].forEach(([id,temp])=>{
     const box=$('#'+id);if(!box)return;
-    let cur=slotsOf(ST&&(temp?ST.ovTempSel:ST.ovBatSel));
-    if(box.querySelector('[data-sn]'))cur=[0,1,2].map(i=>({n:box.querySelector(`[data-sn="${i}"]`).value,k:box.querySelector(`[data-sk="${i}"]`).value}));
-    const names=[...new Set([...(temp?allTemps():bats()).map(x=>x.name),...cur.map(x=>x.n)].filter(x=>x))];
-    box.innerHTML=[0,1,2].map(i=>{const c=cur[i]||{n:'',k:''};
+    const N=temp?SLOTS_T:SLOTS_B,rows=[...Array(N).keys()];
+    let cur=slotsOf(ST&&(temp?ST.ovTempSel:ST.ovBatSel),N);
+    if(box.querySelector('[data-sn]'))cur=rows.map(i=>({n:box.querySelector(`[data-sn="${i}"]`).value,k:box.querySelector(`[data-sk="${i}"]`).value}));
+    // temperatures: also own sensors that sent nothing yet
+    const live=temp?allTemps().map(x=>x.name).concat(sens().filter(x=>x.k===1&&((x.sh??1)&1)).map(x=>x.n)):bats().map(x=>x.name);
+    const names=[...new Set([...live,...cur.map(x=>x.n)].filter(x=>x))];
+    box.innerHTML=rows.map(i=>{const c=cur[i]||{n:'',k:''};
       return `<div class="row" style="gap:8px;margin:4px 0;flex-wrap:nowrap"><select data-sn="${i}" style="flex:1;min-width:0"><option value="">– leer –</option>${names.map(n=>`<option value="${esc(n)}"${n===c.n?' selected':''}>${esc(n)}</option>`).join('')}</select><select data-sk="${i}" style="flex:1;min-width:0"><option value="">Symbol automatisch</option>${ICONS.map(x=>`<option value="${x[0]}"${x[0]===c.k?' selected':''}>${x[1]} ${x[2]}</option>`).join('')}</select></div>`}).join('');
   });
 }
-function readSlots(id){const b=$('#'+id);if(!b)return'';const l=[];for(let i=0;i<3;i++){const n=b.querySelector(`[data-sn="${i}"]`).value;if(n)l.push(n+'='+b.querySelector(`[data-sk="${i}"]`).value)}return l.join('\n')}
+function readSlots(id,n){const b=$('#'+id);if(!b)return'';const l=[];for(let i=0;i<n;i++){const n=b.querySelector(`[data-sn="${i}"]`).value;if(n)l.push(n+'='+b.querySelector(`[data-sk="${i}"]`).value)}return l.join('\n')}
+// icon bar of the panel: NAV_FREE selects with all pages except Home (System is fixed)
+function renderNavSel(){
+  const b=$('#navsel');if(!b)return;
+  const opts=BUILTIN.map((x,i)=>[x[0],ptitle(i)]).slice(1).concat(((cfg&&cfg.pages)||[]).map((n,i)=>['p'+i,n]));
+  const cur=(ST.navSel||'').split(',').filter(x=>x);
+  b.innerHTML=[...Array(NAV_FREE).keys()].map(i=>`<select id="nv${i}" style="padding:8px 4px;font-size:13px"><option value="">–</option>${opts.map(o=>`<option value="${o[0]}"${cur[i]===o[0]?' selected':''}>${esc(o[1])}</option>`).join('')}</select>`).join('');
+}
 // ---- own sensors (/api/sensors)
 let SN={devices:[]};
 async function loadSensors(){
   try{const r=await fetch('/api/sensors');if(r.ok)SN=await r.json()}catch(e){}
   ['zbBase','bleBase'].forEach(k=>$('#'+k).value=SN[k]||'');$('#tempDiv').value=String(SN.tempDiv||10);$('#humDiv').value=String(SN.humDiv||1);
   renderSensors();loadUnknown();
-  $('#snadd').onclick=()=>{readSensors();SN.devices.push({name:'',bus:0,kind:1,addr:'',alt:'',icon:'door',warn:false,invert:false});renderSensors()};
+  $('#snadd').onclick=()=>{readSensors();SN.devices.push({name:'',bus:0,kind:1,addr:'',alt:'',icon:'door',warn:false,invert:false,show:1});renderSensors()};
   $('#snsave').onclick=async()=>{readSensors();if(await post('/api/sensors',SN))setTimeout(loadUnknown,1500)};
   $('#snfile').onchange=async e=>{const f=e.target.files[0];if(!f)return;let j;try{j=JSON.parse(await f.text())}catch(x){return toast('Keine gültige JSON-Datei')}
     readSensors();let n=0;
-    (j.zigbee_devices||[]).forEach(d=>{SN.devices.push({name:d.name||'',bus:0,kind:d.isWeatherSensor?1:0,addr:d.ieeeAddr||d.shortId||'',alt:d.ieeeAddr&&d.shortId?d.shortId:'',icon:'door',warn:false,invert:false});n++});
-    (j.ble_devices||[]).forEach(d=>{SN.devices.push({name:d.name||'',bus:1,kind:1,addr:d.mac||'',icon:'',warn:false});n++});
+    (j.zigbee_devices||[]).forEach(d=>{SN.devices.push({name:d.name||'',bus:0,kind:d.isWeatherSensor?1:0,addr:d.ieeeAddr||d.shortId||'',alt:d.ieeeAddr&&d.shortId?d.shortId:'',icon:'door',warn:false,invert:false,show:d.isWeatherSensor?1:4});n++});
+    (j.ble_devices||[]).forEach(d=>{SN.devices.push({name:d.name||'',bus:1,kind:1,addr:d.mac||'',icon:'',warn:false,show:1});n++});
     if(Array.isArray(j.devices))j.devices.forEach(d=>{SN.devices.push(d);n++});
     renderSensors();toast(n+' Sensoren übernommen – noch speichern');e.target.value=''};
 }
+// pages a sensor is shown on (bits as in sensors.h); third value: only for this kind (-1 = all)
+const SHOW=[[1,'🌡️ Temperatur',1],[2,'🔋 Batterie',-1],[4,'🚪 Aktoren',0],[8,'🌦 Wetter (Außen)',1]];
+const shOf=d=>d.show??(d.kind==0?4:1);
 function renderSensors(){
   const b=$('#snlist');if(!b)return;
   const live=sens();
@@ -672,7 +713,8 @@ function renderSensors(){
      <div><label>${d.bus==1?'MAC-Adresse':'Adresse (IEEE oder Short-ID)'}</label><input type="text" data-s="${i}" data-sf="addr" value="${esc(d.addr)}" placeholder="${d.bus==1?'A4C138AEF56D':'0x00158d… oder 9c68'}"></div>
      ${d.bus==0?`<div><label>Zweite Adresse (optional)</label><input type="text" data-s="${i}" data-sf="alt" value="${esc(d.alt||'')}" placeholder="Short-ID"></div>`:'<div></div>'}
      ${d.kind==0?`<div><label>Symbol, wenn offen</label><select data-s="${i}" data-sf="icon"><option value="">kein Symbol</option>${ICONS.map(x=>`<option value="${x[0]}"${d.icon===x[0]?' selected':''}>${x[1]} ${x[2]}</option>`).join('')}</select></div>
-     <div><label class="chk"><input type="checkbox" data-s="${i}" data-sf="warn" ${d.warn?'checked':''}> Warnung, wenn offen</label><label class="chk"><input type="checkbox" data-s="${i}" data-sf="invert" ${d.invert?'checked':''}> umgekehrt (1 = zu)</label></div>`:''}</div></div>`}).join('')||'<p class="mu">Noch keine Sensoren.</p>';
+     <div><label class="chk"><input type="checkbox" data-s="${i}" data-sf="warn" ${d.warn?'checked':''}> Warnung, wenn offen</label><label class="chk"><input type="checkbox" data-s="${i}" data-sf="invert" ${d.invert?'checked':''}> umgekehrt (1 = zu)</label></div>`:''}</div>
+    <label>Anzeigen auf</label><div class="row" style="gap:4px 14px">${SHOW.filter(x=>x[2]<0||x[2]===+d.kind).map(([bit,t])=>`<label class="chk" style="margin:2px 0"><input type="checkbox" data-s="${i}" data-sh="${bit}" ${(shOf(d)&bit)?'checked':''}> ${t}</label>`).join('')}</div></div>`}).join('')||'<p class="mu">Noch keine Sensoren.</p>';
   b.querySelectorAll('[data-sf="type"]').forEach(e=>e.onchange=()=>{readSensors();renderSensors()});
   b.querySelectorAll('[data-sd]').forEach(e=>e.onclick=()=>{readSensors();SN.devices.splice(+e.dataset.sd,1);renderSensors()});
 }
@@ -680,19 +722,23 @@ function readSensors(){
   ['zbBase','bleBase'].forEach(k=>{const e=$('#'+k);if(e)SN[k]=e.value.trim()});
   if($('#tempDiv'))SN.tempDiv=+$('#tempDiv').value;if($('#humDiv'))SN.humDiv=+$('#humDiv').value;
   document.querySelectorAll('[data-sf]').forEach(e=>{const d=SN.devices[+e.dataset.s];if(!d)return;const f=e.dataset.sf;
-    if(f==='type'){const [bus,kind]=e.value.split('-').map(Number);d.bus=bus;d.kind=kind}else d[f]=e.type==='checkbox'?e.checked:e.value.trim()});
+    if(f==='type'){const [bus,kind]=e.value.split('-').map(Number);if(d.kind!==kind)d.show=kind==0?4:1;d.bus=bus;d.kind=kind}else d[f]=e.type==='checkbox'?e.checked:e.value.trim()});
+  SN.devices.forEach((d,i)=>{const boxes=document.querySelectorAll(`[data-s="${i}"][data-sh]`);if(!boxes.length)return;
+    let m=0;boxes.forEach(b=>{if(b.checked)m|=+b.dataset.sh});d.show=m});
 }
 async function loadUnknown(){
   const b=$('#snnew');if(!b)return;
   let a=[];try{a=await (await fetch('/api/sensors/unknown')).json()}catch(e){}
   b.innerHTML=a.length?`<label>Gefunden, aber noch nicht eingetragen</label>${a.map(u=>`<div class="row" style="margin:4px 0"><span class="grow">${u.bus?'Bluetooth':'Zigbee'} · <code>${esc(u.addr)}</code> <span class="mu">vor ${u.ago<120?u.ago+' s':Math.round(u.ago/60)+' min'}</span></span><button class="btn sm" type="button" data-su="${u.bus}|${esc(u.addr)}">+ übernehmen</button></div>`).join('')}`:'';
-  b.querySelectorAll('[data-su]').forEach(e=>e.onclick=()=>{readSensors();const [bus,addr]=e.dataset.su.split('|');SN.devices.push({name:'',bus:+bus,kind:1,addr,alt:'',icon:'door',warn:false,invert:false});renderSensors()});
+  b.querySelectorAll('[data-su]').forEach(e=>e.onclick=()=>{readSensors();const [bus,addr]=e.dataset.su.split('|');SN.devices.push({name:'',bus:+bus,kind:1,addr,alt:'',icon:'door',warn:false,invert:false,show:1});renderSensors()});
 }
 function saveSettings(){
   const o={};FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)o[f]=e.value});
   ['mqttPort','dimBrightness','screenTimeout','wxGust'].forEach(f=>o[f]=parseInt(o[f])||0);
   o.warnWake=$('#warnWake').checked;o.wxOn=$('#wxOn').checked;o.wxEvery=+$('#wxEvery').value;
-  o.ovTempSel=readSlots('slt');o.ovBatSel=readSlots('slb');
+  o.ovTempSel=readSlots('slt',SLOTS_T);o.ovBatSel=readSlots('slb',SLOTS_B);
+  o.heaterSrc=+$('#heaterSrc').value;
+  o.navSel=[...Array(NAV_FREE).keys()].map(i=>$('#nv'+i).value).filter(x=>x).filter((x,i,a)=>a.indexOf(x)===i).join(',');
   o.staticIp=$('#staticIp').checked;o.fanPort=+$('#fanPort').value;o.brightness=+$('#brightness').value;
   o.builtin=BUILTIN.map((b,i)=>$('#bp'+i).checked);
   o.ovTiles=[0,1,2,3,4,5,6,7,8].map(i=>$('#ov'+i).value).join(',').replace(/(,none)+$/,'');

@@ -114,6 +114,8 @@ void buildCfg(JsonDocument& d) {
   d["ovTiles"] = settings.ovTiles.length() ? settings.ovTiles : String(DEFAULT_OV_TILES);
   d["ovTempSel"] = settings.ovTempSel;
   d["ovBatSel"] = settings.ovBatSel;
+  d["navSel"] = settings.navSel;
+  d["heaterSrc"] = settings.heaterSrc;
   JsonArray pn = d["pageNames"].to<JsonArray>();      // titles incl. defaults, last = system page
   for (int i = 0; i <= BP_COUNT; i++) pn.add(pageTitle(i));
   JsonArray p = d["pages"].to<JsonArray>();
@@ -142,6 +144,7 @@ void buildSys(JsonObject s) {
   JsonArray ind = s["ind"].to<JsonArray>();   // icons of true automation rules (door open ...)
   for (auto& k : rules::activeIcons()) ind.add(k);
   for (auto& k : sensors::activeIcons()) ind.add(k);
+  s["open"] = sensors::openCount();                // open windows / doors on the actuator page
   JsonDocument sv;   // own Zigbee/BLE sensors with their values
   deserializeJson(sv, sensors::valuesJson());
   s["sen"] = sv.as<JsonArray>();
@@ -280,6 +283,8 @@ void getSettings(AsyncWebServerRequest* r) {
   d["ovTiles"] = settings.ovTiles.length() ? settings.ovTiles : String(DEFAULT_OV_TILES);
   d["ovTempSel"] = settings.ovTempSel;
   d["ovBatSel"] = settings.ovBatSel;
+  d["navSel"] = settings.navSel;
+  d["heaterSrc"] = settings.heaterSrc;
   d["fw"] = FW_VERSION;
   d["mac"] = WiFi.macAddress();
   sendJson(r, d);
@@ -384,7 +389,7 @@ bool applySettings(JsonObject o, bool apply) {
   settings.wxTopic.trim();
   if (o["wxGust"].is<int>()) settings.wxGust = constrain(o["wxGust"].as<int>(), 0, 200);
   if (o["wxEvery"].is<int>()) settings.wxEvery = constrain(o["wxEvery"].as<int>(), 10, 180);
-  if (o["ovTempSel"].is<const char*>() && apply) settings.ovTempSel = icons::clean(o["ovTempSel"].as<const char*>());
+  if (o["ovTempSel"].is<const char*>() && apply) settings.ovTempSel = icons::clean(o["ovTempSel"].as<const char*>(), icons::MAX_TEMP_SLOTS);
   if (o["ovBatSel"].is<const char*>() && apply) settings.ovBatSel = icons::clean(o["ovBatSel"].as<const char*>());
   settings.prefixSelf = cleanPrefix(settings.prefixSelf);
   if (settings.prefixSelf.isEmpty()) settings.prefixSelf = DEFAULT_PREFIX_SELF;
@@ -400,9 +405,30 @@ bool applySettings(JsonObject o, bool apply) {
   if (o["dimBrightness"].is<int>()) settings.dimBrightness = constrain(o["dimBrightness"].as<int>(), 0, 100);
   if (o["warnWake"].is<bool>() && apply) settings.warnWake = o["warnWake"];
   if (o["screenTimeout"].is<int>()) settings.screenTimeout = constrain(o["screenTimeout"].as<int>(), 0, 3600);
-  if (o["builtin"].is<JsonArray>()) {
-    JsonArray b = o["builtin"];
+  if (o["builtin"].is<JsonArray>() && apply) {
+    JsonArray b = o["builtin"];   // shorter list from an older backup: newer pages keep their setting
     for (int i = 0; i < BP_COUNT && i < (int)b.size(); i++) settings.builtin[i] = b[i].as<bool>();
+  }
+  if (o["heaterSrc"].is<int>()) {
+    uint8_t hs = constrain(o["heaterSrc"].as<int>(), 0, (int)HEAT_SRC_CAMPMATIC);
+    if (apply) settings.heaterSrc = hs;   // topics are rebuilt after saving (reloadPrefix)
+  }
+  if (o["navSel"].is<const char*>()) {
+    // known page ids only, at most NAV_FREE, Home and System are always there
+    String in = o["navSel"].as<const char*>(), out;
+    int n = 0, start = 0;
+    while (start <= (int)in.length() && n < NAV_FREE) {
+      int c = in.indexOf(',', start);
+      String t = in.substring(start, c < 0 ? in.length() : c);
+      t.trim();
+      bool ok = false;
+      for (int i = 1; i < BP_COUNT; i++) if (t == PAGE_IDS[i]) ok = true;
+      if (t.length() > 1 && t[0] == 'p' && isdigit(t[1]) && t.substring(1).toInt() < (int)settings.pages.size()) ok = true;
+      if (ok && ("," + out + ",").indexOf("," + t + ",") < 0) { if (out.length()) out += ','; out += t; n++; }
+      if (c < 0) break;
+      start = c + 1;
+    }
+    if (apply) settings.navSel = out;
   }
   if (o["ovTiles"].is<const char*>()) {
     // keep only known tokens, at most 9
@@ -413,7 +439,7 @@ bool applySettings(JsonObject o, bool apply) {
       String t = in.substring(start, c < 0 ? in.length() : c);
       t.trim();
       static const char* const known[] = {"water", "grey", "gas", "heater", "level", "fan", "temp", "bat",
-                                          "status", "bat1", "bat2", "bat3", "clock", "weather", "none"};
+                                          "status", "bat1", "bat2", "bat3", "clock", "weather", "actors", "none"};
       bool ok = false;
       for (const char* k : known) if (t == k) ok = true;
       if (t.length() > 1 && t[0] == 't' && isdigit(t[1]) && t.substring(1).toInt() < (int)settings.tiles.size()) ok = true;
@@ -426,8 +452,12 @@ bool applySettings(JsonObject o, bool apply) {
   }
   if (o["pageNames"].is<JsonArray>()) {
     JsonArray pn = o["pageNames"];
-    for (int i = 0; i <= BP_COUNT && i < (int)pn.size(); i++) {
-      String v = pn[i] | "";
+    // last entry = system page; an older backup has fewer fixed pages before it
+    int n = pn.size();
+    for (int j = 0; j < n && j <= BP_COUNT; j++) {
+      int i = (j == n - 1) ? BP_COUNT : j;
+      if (i > BP_COUNT || (j < n - 1 && j >= BP_COUNT)) continue;
+      String v = pn[j] | "";
       v.trim();
       if (v.length() > 24) v = v.substring(0, 24);
       if (v == DEFAULT_PAGE_NAMES[i]) v = "";        // store only real changes

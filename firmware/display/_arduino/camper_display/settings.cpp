@@ -5,7 +5,9 @@
 #include <Preferences.h>
 #include <ArduinoJson.h>
 
-const char* const DEFAULT_PAGE_NAMES[BP_COUNT + 1] = {"Home", "Truma", "MaxxFan", "Level", "Temperatur", "Batterie", "Wetter", "System"};
+const char* const DEFAULT_PAGE_NAMES[BP_COUNT + 1] = {"Home", "Truma", "MaxxFan", "Level", "Temperatur", "Batterie", "Wetter",
+                                                       "Aktoren", "Warnungen", "System"};
+const char* const PAGE_IDS[BP_COUNT] = {"overview", "heater", "fan", "level", "temp", "bat", "weather", "actors", "warn"};
 
 String pageTitle(int idx) {
   if (idx < 0 || idx > BP_COUNT) return "";
@@ -20,7 +22,7 @@ const char* NS = "display";
 
 // Example page shown on first start so the extension mechanism is visible.
 const char* DEFAULT_PAGES =
-  "{\"pages\":[{\"name\":\"Zigbee\"}],\"tiles\":["
+  "{\"pages\":[{\"name\":\"Eigene\"}],\"tiles\":["
   "{\"name\":\"Beispiel Temperatur\",\"page\":0,\"type\":0,\"topic\":\"zigbee2mqtt/Sensor\",\"key\":\"temperature\",\"unit\":\"\xC2\xB0""C\",\"decimals\":1},"
   "{\"name\":\"Beispiel Licht\",\"page\":0,\"type\":1,\"topic\":\"zigbee2mqtt/Licht\",\"key\":\"state\","
   "\"payloadOn\":\"{\\\"state\\\":\\\"ON\\\"}\",\"payloadOff\":\"{\\\"state\\\":\\\"OFF\\\"}\",\"stateOn\":\"ON\"}"
@@ -68,10 +70,11 @@ void load() {
   settings.dimBrightness= prefs.getUChar ("dim",    DEFAULT_DIM_BRIGHTNESS);
   settings.screenTimeout= prefs.getUShort("sto",    DEFAULT_SCREEN_TIMEOUT);
   settings.warnWake     = prefs.getBool  ("wwake",  false);
-  uint8_t bmask         = prefs.getUChar ("bpages", 0xFF);
+  // 16 bit mask since 9 fixed pages; older versions stored 8 bits in "bpages"
+  uint16_t bmask        = prefs.isKey("bpmask") ? prefs.getUShort("bpmask", 0xFFFF) : prefs.getUChar("bpages", 0xFF);
   // Pages added in later versions start switched on (older masks do not have their bit)
   uint8_t bknown        = prefs.getUChar ("bpknown", BP_LEVEL + 1);
-  for (int i = bknown; i < BP_COUNT; i++) bmask |= (1 << i);
+  for (int i = bknown; i < BP_COUNT; i++) bmask |= (1u << i);
   for (int i = 0; i < BP_COUNT; i++) settings.builtin[i] = bmask & (1 << i);
   for (int i = 0; i <= BP_COUNT; i++) settings.pageName[i] = prefs.getString((String("pgn") + i).c_str(), "");
   // The system page title is stored after the fixed pages: move it when pages were added
@@ -89,6 +92,8 @@ void load() {
   settings.ovTempSel    = prefs.getString("ovtsel", "");
   settings.ovBatSel     = prefs.getString("ovbsel", "");
   settings.ovTiles      = prefs.getString("ovt",    DEFAULT_OV_TILES);
+  settings.navSel       = prefs.getString("navsel", "");
+  settings.heaterSrc    = prefs.getUChar ("hsrc",   HEAT_SRC_OWN);
 
   String pagesJson;
   size_t len = prefs.getBytesLength("pages");
@@ -105,6 +110,7 @@ void load() {
   if (settings.poPrio < -1 || settings.poPrio > 1) settings.poPrio = 0;
   if (settings.poTitle.isEmpty()) settings.poTitle = DEFAULT_PUSHOVER_TITLE;
   if (settings.wxEvery < 10 || settings.wxEvery > 180) settings.wxEvery = 60;
+  if (settings.heaterSrc > HEAT_SRC_CAMPMATIC) settings.heaterSrc = HEAT_SRC_OWN;
 
   String err;
   if (pagesJson.isEmpty() || !pagesFromJson(pagesJson, err)) {
@@ -152,11 +158,13 @@ void save() {
   prefs.putUChar ("dim",    settings.dimBrightness);
   prefs.putUShort("sto",    settings.screenTimeout);
   prefs.putBool  ("wwake",  settings.warnWake);
-  uint8_t bmask = 0;
-  for (int i = 0; i < BP_COUNT; i++) if (settings.builtin[i]) bmask |= (1 << i);
-  prefs.putUChar("bpages", bmask);
+  uint16_t bmask = 0;
+  for (int i = 0; i < BP_COUNT; i++) if (settings.builtin[i]) bmask |= (1u << i);
+  prefs.putUShort("bpmask", bmask);
   for (int i = 0; i <= BP_COUNT; i++) prefs.putString((String("pgn") + i).c_str(), settings.pageName[i]);
   prefs.putString("ovt",    settings.ovTiles);
+  prefs.putString("navsel", settings.navSel);
+  prefs.putUChar ("hsrc",   settings.heaterSrc);
   prefs.putBool  ("wxon",   settings.wxOn);
   prefs.putString("wxlat",  settings.wxLat);
   prefs.putString("wxlon",  settings.wxLon);

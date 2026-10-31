@@ -63,7 +63,8 @@ std::vector<Slot> slots(bool temp) {
   std::vector<Slot> out;
   const String& s = temp ? settings.ovTempSel : settings.ovBatSel;
   int pos = 0;
-  while (pos < (int)s.length() && out.size() < 3) {
+  const size_t maxN = temp ? MAX_TEMP_SLOTS : 3;
+  while (pos < (int)s.length() && out.size() < maxN) {
     int end = s.indexOf('\n', pos);
     if (end < 0) end = s.length();
     String line = s.substring(pos, end);
@@ -91,10 +92,10 @@ const char* glyph(const String& key) {
 
 const char* forName(const String& name, bool temp) { return glyph(keyFor(name, temp)); }
 
-String clean(const String& raw) {
+String clean(const String& raw, int maxN) {
   String out;
   int pos = 0, n = 0;
-  while (pos < (int)raw.length() && n < 3) {
+  while (pos < (int)raw.length() && n < maxN) {
     int end = raw.indexOf('\n', pos);
     if (end < 0) end = raw.length();
     String line = raw.substring(pos, end);

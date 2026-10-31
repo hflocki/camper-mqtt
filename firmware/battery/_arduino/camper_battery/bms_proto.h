@@ -48,6 +48,7 @@ struct BmsSample {
     float temp_c[BMS_MAX_TEMPS];
     bool problem;         // BMS reports an error / protection
     uint64_t problem_code;
+    uint8_t problem_fmt;  // layout of problem_code: 0 unknown, 1 Daly fault bytes (8 bytes, byte 0 = most significant)
     int8_t charge_fet;    // 1 on, 0 off, -1 unknown
     int8_t discharge_fet;
     int8_t bat_state;     // battery state reported by the monitor (BatState), -1 unknown
@@ -62,7 +63,11 @@ enum BatState : int8_t {
     BAT_STATE_CHARGING = 4,   // charging voltage (e.g. engine running)
     BAT_STATE_FLOATING = 8,   // float / maintenance charge
 };
-const char* batStateName(int8_t st);   // German text for UI and MQTT, nullptr if unknown
+const char* batStateName(int8_t st);
+
+// Readable German text of the BMS problem ("Zellspannung zu hoch (Stufe 1), ..."), at most n-1 characters.
+// Unknown bits / layouts are reported as "Fehlercode 0x...". Returns the length written.
+size_t bmsProblemText(const BmsSample& s, char* out, size_t n);   // German text for UI and MQTT, nullptr if unknown
 
 void bmsClear(BmsSample& s);
 
