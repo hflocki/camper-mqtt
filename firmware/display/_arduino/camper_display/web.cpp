@@ -440,7 +440,7 @@ bool applySettings(JsonObject o, bool apply) {
       String t = in.substring(start, c < 0 ? in.length() : c);
       t.trim();
       static const char* const known[] = {"water", "grey", "gas", "heater", "level", "fan", "temp", "bat",
-                                          "status", "bat1", "bat2", "bat3", "clock", "weather", "actors", "none"};
+                                          "status", "bat1", "bat2", "bat3", "clock", "weather", "actors", "lights", "none"};
       bool ok = false;
       for (const char* k : known) if (t == k) ok = true;
       if (t.length() > 1 && t[0] == 't' && isdigit(t[1]) && t.substring(1).toInt() < (int)settings.tiles.size()) ok = true;

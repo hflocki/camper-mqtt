@@ -6,8 +6,8 @@
 #include <ArduinoJson.h>
 
 const char* const DEFAULT_PAGE_NAMES[BP_COUNT + 1] = {"Home", "Truma", "MaxxFan", "Level", "Temperatur", "Batterie", "Wetter",
-                                                       "Aktoren", "Warnungen", "System"};
-const char* const PAGE_IDS[BP_COUNT] = {"overview", "heater", "fan", "level", "temp", "bat", "weather", "actors", "warn"};
+                                                       "Aktoren", "Warnungen", "Licht", "System"};
+const char* const PAGE_IDS[BP_COUNT] = {"overview", "heater", "fan", "level", "temp", "bat", "weather", "actors", "warn", "light"};
 
 String pageTitle(int idx) {
   if (idx < 0 || idx > BP_COUNT) return "";
@@ -21,12 +21,7 @@ Preferences prefs;
 const char* NS = "display";
 
 // Example page shown on first start so the extension mechanism is visible.
-const char* DEFAULT_PAGES =
-  "{\"pages\":[{\"name\":\"Eigene\"}],\"tiles\":["
-  "{\"name\":\"Beispiel Temperatur\",\"page\":0,\"type\":0,\"topic\":\"zigbee2mqtt/Sensor\",\"key\":\"temperature\",\"unit\":\"\xC2\xB0""C\",\"decimals\":1},"
-  "{\"name\":\"Beispiel Licht\",\"page\":0,\"type\":1,\"topic\":\"zigbee2mqtt/Licht\",\"key\":\"state\","
-  "\"payloadOn\":\"{\\\"state\\\":\\\"ON\\\"}\",\"payloadOff\":\"{\\\"state\\\":\\\"OFF\\\"}\",\"stateOn\":\"ON\"}"
-  "]}";
+const char* DEFAULT_PAGES = "{\"pages\":[],\"tiles\":[]}";
 }
 
 namespace cfg {

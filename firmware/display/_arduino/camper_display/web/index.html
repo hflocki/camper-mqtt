@@ -62,8 +62,12 @@ input[type=text],input[type=password],input[type=number],select,textarea{width:1
 .chk{display:flex;align-items:center;gap:8px;margin:8px 0;color:var(--tx);font-size:15px}
 .chk input{width:20px;height:20px}
 .actions{display:flex;gap:10px;flex-wrap:wrap;padding:14px 0}
+.sgroups{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.sgroups .btn.on{background:var(--ac);color:#fff}
+.savebar{position:sticky;bottom:0;display:flex;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:var(--bg);z-index:4}
 .tileed{border:1px solid var(--hi);border-radius:12px;padding:10px;margin:10px 0}
 .tileed .row b{flex:1}
+details.sn{background:none;margin:8px 0;padding:8px 10px}details.sn>summary{padding:4px 0;gap:8px;list-style:none;font-weight:400}details.sn>summary::-webkit-details-marker{display:none}details.sn[open]>summary{margin-bottom:6px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td{padding:6px 4px;border-top:1px solid var(--hi);vertical-align:top;word-break:break-all}
 code{font-size:12px;color:var(--mu)}
@@ -90,7 +94,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let ws,cfg=null,V={},S={},WX={},page=localStorage.getItem('page')||'',finder={on:false,l:{}};
 let pendingSet=null,setTimer=null,setHold=0;
-const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie'],['weather','Wetter'],['actors','Aktoren'],['warn','Warnungen']];
+const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie'],['weather','Wetter'],['actors','Aktoren'],['warn','Warnungen'],['light','Licht']];
 const NAV_FREE=6;   // icon bar on the panel: Home + 6 chosen pages + System
 // page title: name from the display settings, otherwise the default above
 const ptitle=i=>(cfg&&cfg.pageNames&&cfg.pageNames[i])||BUILTIN[i][1];
@@ -100,7 +104,7 @@ const ovList=()=>((cfg&&cfg.ovTiles)||OV_DEFAULT).split(',').map(x=>x.trim()).fi
 function ovChoices(){
   const c=[['water','Frischwasser'],['grey','Grauwasser'],['gas','Gas'],['heater',ptitle(1)],['level',ptitle(3)],['fan',ptitle(2)],
     ['temp',ptitle(4)],['bat',ptitle(5)+' (alle)'],['bat1','Batterie 1 (einzeln)'],['bat2','Batterie 2 (einzeln)'],['bat3','Batterie 3 (einzeln)'],
-    ['status','Status / Warnungen'],['weather',ptitle(6)],['actors',ptitle(7)+' (offene Fenster)'],['clock','Uhr / Datum'],['none','(leer)']];
+    ['status','Status / Warnungen'],['weather',ptitle(6)],['actors',ptitle(7)+' (offene Fenster)'],['lights',ptitle(9)+' (was an ist)'],['clock','Uhr / Datum'],['none','(leer)']];
   ((cfg&&cfg.tiles)||[]).forEach((t,i)=>c.push(['t'+i,'Kachel: '+t.n]));
   return c;
 }
@@ -155,6 +159,7 @@ function render(){
   else if(p.id==='bat'){m.innerHTML=pgBat();loadHist()}
   else if(p.id==='weather')m.innerHTML=pgWeather();
   else if(p.id==='actors')m.innerHTML=pgActors();
+  else if(p.id==='light')m.innerHTML=pgLight();
   else if(p.id==='warn')m.innerHTML=pgWarn();
   else if(p.id==='links')m.innerHTML=pgLinks();
   else if(p.id==='rules'){m.innerHTML=pgRules();loadRules()}
@@ -178,6 +183,7 @@ function pgOverview(){
     if(t==='bat')return `<div class="card wide click" data-go="bat"><h3>🔋 ${esc(ptitle(5))}</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
     if(/^bat[123]$/.test(t)){const n=t[3];return `<div class="card click" data-go="bat"><h3 id="ob${n}_t">🔋 Batterie ${n}</h3><div class="big" id="ob${n}_v">--</div><div class="mu" id="ob${n}_s"></div></div>`}
     if(/^t\d+$/.test(t)){const i=+t.slice(1),k=(cfg.tiles||[])[i];if(!k)return '';return `<div class="card"><h3>${esc(k.n)}</h3><div class="big" id="t${i}_v">--</div></div>`}
+    if(t==='lights')return `<div class="card click" data-go="light"><h3>💡 ${esc(ptitle(9))}</h3><div class="big" id="ol_v" style="font-size:20px">--</div><div class="mu" id="ol_s"></div></div>`;
     if(t==='actors')return `<div class="card click" data-go="actors"><h3>🚪 ${esc(ptitle(7))}</h3><div class="big" id="oa_v" style="font-size:20px">--</div><div class="mu" id="oa_s"></div></div>`;
     if(t==='status')return `<div class="card click" id="ost" data-go="warn"><h3>⚠ Status</h3><div class="big" id="ost_v" style="white-space:pre-line">OK</div><div id="ost_i" style="font-size:22px;margin-top:4px"></div></div>`;
     return '';   // clock (header), none
@@ -188,16 +194,18 @@ function pgOverview(){
 }
 // windows / doors (own Zigbee contacts marked for this page) and all warnings
 const contacts=()=>sens().filter(x=>x.k===0&&((x.sh??4)&4));
-const lightsOf=()=>sens().map((x,i)=>Object.assign({di:i},x)).filter(x=>x.k===2&&((x.sh??4)&4));
+// lights with one of the given Show bits (4 = Aktoren, 16 = Licht)
+const lightsOf=(bits)=>sens().map((x,i)=>Object.assign({di:i},x)).filter(x=>x.k===2&&((x.sh??16)&bits));
 // same quick colours as on the panel: [key, value, shown colour, text]
 const SWATCH=[['ct','370','#ffc27a','Warm'],['ct','153','#e6f0ff','Kalt'],['color','#ff0000','#ff2020',''],['color','#ff8000','#ff8a00',''],['color','#00ff00','#30d050',''],['color','#0040ff','#2f6bff',''],['color','#a000ff','#a040ff','']];
-let lSig='';
-function pgActors(){lSig='';return `<div class="grid" id="l_list"></div><div class="grid" id="a_list" style="margin-top:12px"></div><div class="mu" id="a_st" style="margin-top:12px"></div>`}
+const LSIG={};
+function pgLight(){LSIG.lp_list='';return `<div class="grid" id="lp_list"></div><div class="mu" id="lp_st" style="margin-top:12px"></div>`}
+function pgActors(){LSIG.l_list='';return `<div class="grid" id="l_list"></div><div class="grid" id="a_list" style="margin-top:12px"></div><div class="mu" id="a_st" style="margin-top:12px"></div>`}
 // light cards are built once per light list, then only their state is updated (sliders keep working)
-function updLights(){
-  const box=$('#l_list');if(!box)return;const ls=lightsOf();
+function updLights(id,bits){
+  const box=$('#'+id);if(!box)return;const ls=lightsOf(bits);
   const sig=ls.map(l=>l.di+l.n).join('|');
-  if(sig!==lSig){lSig=sig;
+  if(sig!==LSIG[id]){LSIG[id]=sig;
     box.innerHTML=ls.map(l=>`<div class="card wide" data-ld="${l.di}"><div class="row"><h3 class="grow" style="margin:0;font-size:17px;color:var(--tx)">💡 ${esc(l.n)}</h3><button class="btn" data-lon="${l.di}">⏻</button></div>
       <div class="row" style="margin-top:10px"><input type="range" min="1" max="254" class="grow" data-llv="${l.di}"><span class="mu" style="min-width:48px;text-align:right" data-llt="${l.di}"></span></div>
       <div class="row" style="gap:6px;margin-top:10px">${SWATCH.map(w=>`<button class="btn sm" data-lsw="${l.di}" data-k="${w[0]}" data-v="${w[1]}" style="background:${w[2]};color:#1a1f24;min-width:44px">${w[3]||'&nbsp;'}</button>`).join('')}
@@ -477,8 +485,12 @@ function update(){
    if($('#oa_v')){set('oa_v',!cs.length?'--':op.length?op.slice(0,3).map(x=>`<span class="err">${esc(x.n)}</span>`).join('<br>'):'<span class="okc">Alles zu</span>');
      set('oa_s',!cs.length?'keine Sensoren':op.length>3?'+'+(op.length-3)+' offen':op.length?op.length+' offen':'')}
    if($('#a_list')){set('a_list',cs.map(x=>`<div class="card wide${x.age<0||x.age>7200?' offline':''}"><div class="trow"><span class="n">🚪 ${esc(x.n)}${x.bat!=null?`<br><span class="mu">🔋 ${x.bat} %</span>`:''}</span><b class="big ${x.o===1?'err':x.o===0?'okc':'mu'}" style="font-size:24px">${x.o===1?'offen':x.o===0?'zu':'?'}</b></div></div>`).join(''));
-     set('a_st',cs.length||lightsOf().length?'':'Keine Fenster, Türen oder Lichter. Unter ⚙ Einstellungen → 📡 Sensoren anlegen und „Aktoren“ ankreuzen.')}
-   updLights()}
+     set('a_st',cs.length||lightsOf(4).length?'':'Keine Fenster, Türen oder Lichter. Unter ⚙ Einstellungen → 📡 Sensoren anlegen und „Aktoren“ ankreuzen.')}
+   updLights('l_list',4);updLights('lp_list',16);
+   set('lp_st',lightsOf(16).length?'':'Keine Lichter. Unter ⚙ Einstellungen → 📡 Sensoren ein Licht anlegen und „💡 Licht“ ankreuzen.');
+   if($('#ol_v')){const all=lightsOf(20),on=all.filter(x=>x.o===1);
+     set('ol_v',!all.length?'--':on.length?on.slice(0,3).map(x=>`<span style="color:var(--gas)">${esc(x.n)}</span>`).join('<br>'):'<span class="mu">Alle aus</span>');
+     set('ol_s',!all.length?'keine Lichter':on.length>3?'+'+(on.length-3)+' an':on.length?on.length+' an':'')}}
   const tl=allTemps(),tOn=online('temp')||tl.some(t=>t.own),tAl=tl.some(t=>t.alarm);
   if($('#ot_v')){
     {const sl=ovSlots(tl,true);set('ot_v',sl.length?sl.map(x=>`<span title="${esc(x.n)}">${x.e}</span> <span${x.it&&x.it.alarm?' class="err"':x.it?'':' class="mu"'}>${x.it?tval(x.it):'--'}</span>`).join(' &nbsp; '):'--')}
@@ -556,41 +568,62 @@ let ST={},PG={pages:[],tiles:[]};
 const TYPES=['Wert','Schalter','Taster','Regler'];
 function inp(id,lbl,type='text',ph=''){return `<div><label for="${id}">${lbl}</label><input type="${type}" id="${id}" placeholder="${esc(ph)}"></div>`}
 function pgSettings(){
-  return `${cfg&&cfg.setup?'<div class="banner">Ersteinrichtung: WLAN und MQTT-Broker eintragen und speichern.</div>':''}
-  <details ${cfg&&cfg.setup?'open':''}><summary>📶 WLAN</summary>
-   <div class="row"><div class="grow">${inp('wifiSsid','SSID')}</div><button class="btn sm" id="scan" style="margin-top:28px">Suchen</button></div>
-   <div id="nets"></div>${inp('wifiPass','Passwort','password')}
-   <label class="chk"><input type="checkbox" id="staticIp"> Feste IP-Adresse</label>
-   <div class="f2">${inp('ip','IP')}${inp('gateway','Gateway')}${inp('subnet','Subnetz')}${inp('dns','DNS')}</div></details>
-  <details ${cfg&&cfg.setup?'open':''}><summary>📡 MQTT-Broker</summary>
-   <div class="f2">${inp('mqttHost','Broker (IP/Name)','text','192.168.1.1')}${inp('mqttPort','Port','number')}${inp('mqttUser','Benutzer')}${inp('mqttPass','Passwort','password')}</div></details>
-  <details><summary>🏷 Topics der Geräte</summary>
-   <p class="mu">Basis-Topic je Gerät. Leer lassen, wenn das Gerät nicht vorhanden ist.</p>
-   ${inp('prefixTank','Tanks (Wasser/Gas)')}${inp('prefixLevel','Ausrichtung (Levelsensor)')}
-   <div class="f2"><div><label>Heizung: Steuerung über</label><select id="heaterSrc"><option value="0">eigene Firmware (camper-heater)</option><option value="1">CampMatic-Box</option></select></div>${inp('prefixHeater','Heizung: Basis-Topic','text','camper/heater')}</div>
-   <p class="mu" style="margin-top:-4px">CampMatic: Basis-Topic <code>campmatic/&lt;Gerätenummer&gt;</code>, z. B. <code>campmatic/003</code>. Die Box muss per Bridge auf deinem Broker ankommen (siehe README). Freibrennen gibt es dort nicht.</p>${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (camper-temp)')}${inp('prefixBattery','Batterien (camper-battery)')}
-   <div class="f2"><div><label>MaxxFan-Port</label><select id="fanPort"><option value="0">0 (RJ11)</option><option value="1">1 (RJ45)</option></select></div>${inp('prefixSelf','Eigenes Topic (Display)')}</div></details>
-  <details id="dsd" ontoggle="if(this.open)renderSlots()"><summary>🖥 Display &amp; Seiten</summary>
+  const g=SET_GROUPS.some(x=>x[0]===setGroup)?setGroup:'view';
+  return `${cfg&&cfg.setup?'<div class="banner">Ersteinrichtung: unter 🔌 Verbindung WLAN und MQTT-Broker eintragen und speichern.</div>':''}
+  <div class="sgroups">${SET_GROUPS.map(x=>`<button class="btn sm${x[0]===g?' on':''}" data-sg="${x[0]}">${x[1]}</button>`).join('')}</div>
+  <div id="sets" data-cur="${g}">
+  <details data-g="view" open><summary>🖥 Display</summary>
+
    <label>Helligkeit</label><input type="range" id="brightness" min="5" max="100">
    <div class="f2">${inp('dimBrightness','Helligkeit gedimmt (%, 0 = aus)','number')}${inp('screenTimeout','Dimmen nach (s, 0 = nie)','number')}</div>
    <label class="chk"><input type="checkbox" id="warnWake"> Neue Warnung schaltet das Display ein</label>
    <p class="mu" style="margin-top:-4px">Aus: Das Display geht immer nach der eingestellten Zeit aus und nur Berühren weckt es. Zum sofortigen Ausschalten: Kopfzeile am Display lange drücken, Knopf auf der Systemseite oder 💤 auf der Webseite.</p>
    ${inp('displayName','Anzeigename (oben in der Mitte, z. B. Wohnraum)')}
+</details>
+  <details data-g="view"><summary>📑 Seiten &amp; Symbolleiste</summary>
    <label>Feste Seiten (Haken = anzeigen, Feld = Name)</label>${BUILTIN.map((b,i)=>`<div class="row" style="gap:8px;margin:4px 0"><input type="checkbox" id="bp${i}" style="width:auto"><input id="pn${i}" placeholder="${b[1]}" maxlength="24" style="flex:1;min-width:0"></div>`).join('')}
    <div class="row" style="gap:8px;margin:4px 0"><span style="width:20px"></span><input id="pn${BUILTIN.length}" placeholder="System" maxlength="24" style="flex:1;min-width:0"></div>
    <label>Symbolleiste unten am Display: Home und System sind immer da, dazu bis zu ${NAV_FREE} Seiten (leer = die ersten ${NAV_FREE})</label>
    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px" id="navsel"></div>
    <p class="mu" style="margin-top:4px">Seiten ohne Symbol erreichst du über ihre Kachel auf Home oder durch Wischen.</p>
+</details>
+  <details data-g="view" id="dsd" ontoggle="if(this.open)renderSlots()"><summary>🏠 Kacheln auf Home</summary>
    <label>Kacheln der Übersicht (3 × 3, von links oben nach rechts unten)</label>
    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[0,1,2,3,4,5,6,7,8].map(i=>`<select id="ov${i}" style="padding:8px 4px;font-size:13px">${ovChoices().map(c=>`<option value="${c[0]}">${esc(c[1])}</option>`).join('')}</select>`).join('')}</div>
    <label>Temperatur-Kachel: bis zu ${SLOTS_T} Sensoren mit Symbol (leer = alle). Mehr als 3 wechseln alle paar Sekunden.</label><div id="slt"></div>
    <label>Batterie-Kachel: Batterien und Symbole</label><div id="slb"></div></details>
-  <details><summary>🧩 Seiten &amp; Kacheln</summary><div id="pged"></div></details>
-  <details id="fd"><summary>🔎 Topic-Finder (z.B. Zigbee2MQTT)</summary>
+  <details data-g="view"><summary>🧩 Eigene Seiten &amp; MQTT-Kacheln <span class="mu" style="font-weight:400">· eigener Speichern-Knopf</span></summary><p class="mu">Für Werte, die keine Sensoren sind, z. B. ein beliebiges MQTT-Topic, Landstrom-Messzange, Router-Daten.</p><div id="pged"></div></details>
+  <details data-g="dev" id="snd" ontoggle="if(this.open)loadSensors()"><summary>📡 Sensoren (Zigbee &amp; Bluetooth) <span class="mu" style="font-weight:400">· eigener Speichern-Knopf</span></summary>
+   <p class="mu">Eigene Sensoren direkt per MQTT: Zigbee-Gateway mit Cluster-Topics (z. B. SMLIGHT: <code>&lt;Basis&gt;/&lt;Adresse&gt;/1/0006/0000</code>) und Bluetooth über OpenMQTTGateway (<code>&lt;Basis&gt;/&lt;MAC&gt;</code>, Govee, Ruuvi, Xiaomi …). Je Sensor wählst du, auf welchen Seiten er erscheint. Kontakte auf „Aktoren“ werden auf Home in der Status-Kachel gezählt (z. B. 2 🚪).</p>
+   <div class="f2">${inp('zbBase','Zigbee-Basis-Topic','text','camper/zigbee/data')}${inp('bleBase','Bluetooth-Basis-Topic (OMG)','text','camper/OMG/BTtoMQTT')}
+    <div><label>Zigbee-Temperatur geteilt durch (nur Rohwerte, „report_raw“)</label><select id="tempDiv"><option value="10">10</option><option value="100">100 (ZCL-Standard)</option><option value="1">1</option></select></div>
+    <div><label>Zigbee-Luftfeuchte geteilt durch</label><select id="humDiv"><option value="1">1</option><option value="100">100 (ZCL-Standard)</option></select></div></div>
+   <div id="snlist"></div>
+   <div class="row"><button class="btn sm" type="button" id="snadd">+ Sensor</button><label class="btn sm" style="cursor:pointer">device.json einlesen<input type="file" id="snfile" accept=".json" hidden></label></div>
+   <div id="snnew" style="margin-top:10px"></div>
+   <div class="actions"><button class="btn pri" type="button" id="snsave" style="flex:1">Sensoren speichern</button></div></details>
+  <details data-g="dev"><summary>🏷 Topics der Geräte</summary>
+   <p class="mu">Basis-Topic je Gerät. Leer lassen, wenn das Gerät nicht vorhanden ist.</p>
+   ${inp('prefixTank','Tanks (Wasser/Gas)')}${inp('prefixLevel','Ausrichtung (Levelsensor)')}
+   <div class="f2"><div><label>Heizung: Steuerung über</label><select id="heaterSrc"><option value="0">eigene Firmware (camper-heater)</option><option value="1">CampMatic-Box</option></select></div>${inp('prefixHeater','Heizung: Basis-Topic','text','camper/heater')}</div>
+   <p class="mu" style="margin-top:-4px">CampMatic: Basis-Topic <code>campmatic/&lt;Gerätenummer&gt;</code>, z. B. <code>campmatic/003</code>. Die Box muss per Bridge auf deinem Broker ankommen (siehe README). Freibrennen gibt es dort nicht.</p>${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (camper-temp)')}${inp('prefixBattery','Batterien (camper-battery)')}
+   <div class="f2"><div><label>MaxxFan-Port</label><select id="fanPort"><option value="0">0 (RJ11)</option><option value="1">1 (RJ45)</option></select></div>${inp('prefixSelf','Eigenes Topic (Display)')}</div></details>
+  <details data-g="dev"><summary>🔗 Geräte-Links</summary>
+   <p class="mu" style="margin:4px 0 8px">Buttons auf der Seite „🔗 Geräte“, die die Web-Oberfläche des jeweiligen Geräts öffnen. Adresse z. B. <code>192.168.8.13</code> oder <code>camper-tanklevel.local</code>.</p>
+   <div id="lnk"></div>
+   <div class="row" style="gap:8px;margin-top:8px"><button class="btn" type="button" id="lnkadd">+ Link</button><button class="btn" type="button" id="lnksug">Camper-Geräte vorschlagen</button></div></details>
+  <details data-g="dev" id="fd"><summary>🔎 Topic-Finder</summary>
    <p class="mu">Hört kurz auf einem Topic-Filter mit und zeigt, was ankommt. Aus jedem Wert lässt sich direkt eine Kachel machen.</p>
-   <div class="row"><input type="text" id="ffilter" class="grow" value="zigbee2mqtt/#" style="flex:1"><button class="btn pri" id="fstart">Start</button></div>
+   <div class="row"><input type="text" id="ffilter" class="grow" value="camper/zigbee/data/#" style="flex:1"><button class="btn pri" id="fstart">Start</button></div>
    <div id="flist" style="margin:10px 0 14px"></div></details>
-  <details><summary>🌦 Wetter</summary>
+  <details data-g="net" ${cfg&&cfg.setup?'open':''}><summary>📶 WLAN</summary>
+   <div class="row"><div class="grow">${inp('wifiSsid','SSID')}</div><button class="btn sm" id="scan" style="margin-top:28px">Suchen</button></div>
+   <div id="nets"></div>${inp('wifiPass','Passwort','password')}
+   <label class="chk"><input type="checkbox" id="staticIp"> Feste IP-Adresse</label>
+   <div class="f2">${inp('ip','IP')}${inp('gateway','Gateway')}${inp('subnet','Subnetz')}${inp('dns','DNS')}</div></details>
+  <details data-g="net" ${cfg&&cfg.setup?'open':''}><summary>🛰 MQTT-Broker</summary>
+   <div class="f2">${inp('mqttHost','Broker (IP/Name)','text','192.168.1.1')}${inp('mqttPort','Port','number')}${inp('mqttUser','Benutzer')}${inp('mqttPass','Passwort','password')}</div></details>
+  <details data-g="svc"><summary>🌦 Wetter</summary>
    <p class="mu">Wetter von <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> (kostenlos, ohne Anmeldung). Das Display braucht dafür Internet über den Router. Warnungen (Böen, Gewitter) erscheinen oben im Display und gehen auch per Pushover raus.</p>
    <label class="chk"><input type="checkbox" id="wxOn"> Wetter abrufen</label>
    <label>Ort suchen</label><div class="row"><input type="text" id="wxq" class="grow" placeholder="z. B. Leipzig" style="flex:1"><button class="btn sm" type="button" id="wxsearch">Suchen</button></div>
@@ -600,16 +633,7 @@ function pgSettings(){
    ${inp('wxTopic','GPS per MQTT (optional, z. B. Topic des Routers)','text','router/gps')}
    <p class="mu" style="margin-top:-4px">Mit Topic folgt das Wetter dem Fahrzeug. Inhalt: JSON mit <code>lat</code>/<code>lon</code> (auch <code>latitude</code>/<code>longitude</code>, auch verschachtelt wie beim RUT956) oder <code>52.52,13.40</code>. Ohne Position gilt der feste Ort oben.</p>
    <div class="f2">${inp('wxGust','Warnung ab Böen (km/h, 0 = aus)','number')}<div><label>Aktualisieren</label><select id="wxEvery"><option value="15">alle 15 min</option><option value="30">alle 30 min</option><option value="60">stündlich</option><option value="120">alle 2 h</option></select></div></div></details>
-  <details id="snd" ontoggle="if(this.open)loadSensors()"><summary>📡 Sensoren (Zigbee &amp; Bluetooth)</summary>
-   <p class="mu">Eigene Sensoren direkt per MQTT: Zigbee-Gateway mit Cluster-Topics (z. B. SMLIGHT: <code>&lt;Basis&gt;/&lt;Adresse&gt;/1/0006/0000</code>) und Bluetooth über OpenMQTTGateway (<code>&lt;Basis&gt;/&lt;MAC&gt;</code>, Govee, Ruuvi, Xiaomi …). Je Sensor wählst du, auf welchen Seiten er erscheint. Kontakte auf „Aktoren“ werden auf Home in der Status-Kachel gezählt (z. B. 2 🚪).</p>
-   <div class="f2">${inp('zbBase','Zigbee-Basis-Topic','text','camper/zigbee/data')}${inp('bleBase','Bluetooth-Basis-Topic (OMG)','text','camper/OMG/BTtoMQTT')}
-    <div><label>Zigbee-Temperatur geteilt durch (nur Rohwerte, „report_raw“)</label><select id="tempDiv"><option value="10">10</option><option value="100">100 (ZCL-Standard)</option><option value="1">1</option></select></div>
-    <div><label>Zigbee-Luftfeuchte geteilt durch</label><select id="humDiv"><option value="1">1</option><option value="100">100 (ZCL-Standard)</option></select></div></div>
-   <div id="snlist"></div>
-   <div class="row"><button class="btn sm" type="button" id="snadd">+ Sensor</button><label class="btn sm" style="cursor:pointer">device.json einlesen<input type="file" id="snfile" accept=".json" hidden></label></div>
-   <div id="snnew" style="margin-top:10px"></div>
-   <div class="actions"><button class="btn pri" type="button" id="snsave" style="flex:1">Sensoren speichern</button></div></details>
-  <details><summary>📲 Pushover</summary>
+  <details data-g="svc"><summary>📲 Pushover</summary>
    <p class="mu">Schickt die Warnungen der Übersicht (Temperatur-Alarme, Heizungsfehler, Batterie, Wetter) als Push-Nachricht aufs Handy. Token einer eigenen Pushover-Anwendung und User-Key von <a href="https://pushover.net" target="_blank" rel="noopener">pushover.net</a>. Eine Warnung wird gesendet, wenn sie 30 s besteht.</p>
    <label class="chk"><input type="checkbox" id="poOn"> Warnungen senden</label>
    <label class="chk"><input type="checkbox" id="poClear"> Nachricht, wenn eine Warnung vorbei ist</label>
@@ -617,11 +641,7 @@ function pgSettings(){
    <div class="f2">${inp('poTitle','Titel der Nachricht')}<div><label>Priorität</label><select id="poPrio"><option value="0">Normal</option><option value="1">Hoch (auch in Ruhezeiten)</option><option value="-1">Leise</option></select></div></div>
    <div class="row"><button class="btn" id="potest">Testnachricht</button><span class="mu grow" id="postat"></span></div>
    <p class="mu">Erst speichern, dann testen.</p></details>
-  <details><summary>🔗 Geräte-Links</summary>
-   <p class="mu" style="margin:4px 0 8px">Buttons auf der Seite „🔗 Geräte“, die die Web-Oberfläche des jeweiligen Geräts öffnen. Adresse z. B. <code>192.168.8.13</code> oder <code>camper-tanklevel.local</code>.</p>
-   <div id="lnk"></div>
-   <div class="row" style="gap:8px;margin-top:8px"><button class="btn" type="button" id="lnkadd">+ Link</button><button class="btn" type="button" id="lnksug">Camper-Geräte vorschlagen</button></div></details>
-  <details><summary>🔧 System</summary>
+  <details data-g="sys"><summary>🔧 System</summary>
    ${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
    <div class="f2">${inp('webUser','Web-Benutzer')}${inp('webPass','Web-Passwort (leer = kein Schutz)','password')}</div>
    <div class="f2">${inp('ntpServer','Zeitserver')}${inp('tz','Zeitzone (POSIX)')}</div>
@@ -633,8 +653,16 @@ function pgSettings(){
    <label class="chk"><input type="checkbox" id="bknet"> Beim Einspielen auch WLAN, feste IP und Gerätename übernehmen</label>
    <p class="mu" id="sysinfo"></p>
    <div class="actions"><button class="btn" id="reboot">Neustart</button><button class="btn danger" id="factory">Werkseinstellungen</button></div></details>
-  <div class="actions"><button class="btn pri" id="save" style="flex:1">Einstellungen speichern</button></div>`;
+  </div>
+  <div class="savebar"><button class="btn pri" id="save" style="flex:1">Einstellungen speichern</button></div>`;
 }
+// settings groups: [id, label]; the chosen one is remembered in the browser
+const SET_GROUPS=[['view','🖥 Anzeige'],['dev','📡 Sensoren & Geräte'],['net','🔌 Verbindung'],['svc','🌦 Dienste'],['sys','🔧 System']];
+let setGroup=(()=>{try{return localStorage.getItem('setGroup')||'view'}catch(e){return'view'}})();
+function showGroup(g){setGroup=g;try{localStorage.setItem('setGroup',g)}catch(e){}
+  document.querySelectorAll('[data-sg]').forEach(b=>b.classList.toggle('on',b.dataset.sg===g));
+  document.querySelectorAll('#sets>details').forEach(d=>d.hidden=d.dataset.g!==g);
+  const sd=$('#snd');if(g==='dev'&&sd&&!sd.open){sd.open=true}}
 const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','wxGust'];
 async function loadSettings(){
   try{
@@ -654,6 +682,9 @@ async function loadSettings(){
     const p=await fetch('/api/pages');PG=await p.json();PG.pages=PG.pages||[];PG.tiles=PG.tiles||[];renderPages();
   }catch(e){toast('Einstellungen konnten nicht geladen werden')}
   $('#save').onclick=saveSettings;
+  document.querySelectorAll('[data-sg]').forEach(b=>b.onclick=()=>showGroup(b.dataset.sg));
+  if(cfg&&cfg.setup){let had=null;try{had=localStorage.getItem('setGroup')}catch(e){}if(!had)setGroup='net'}
+  showGroup(SET_GROUPS.some(x=>x[0]===setGroup)?setGroup:'view');
   $('#lnkadd').onclick=()=>{readLinks();LINKS.push({n:'',u:''});renderLinks()};
   $('#lnksug').onclick=()=>{readLinks();SUGGEST.forEach(([n,h])=>{if(!LINKS.some(x=>x.u.includes(h)||x.n.toLowerCase()===n.toLowerCase()))LINKS.push({n,u:'http://'+h+'.local/'})});renderLinks()};
   $('#brightness').oninput=e=>send({c:'bri',v:e.target.value});
@@ -724,29 +755,32 @@ async function loadSensors(){
     renderSensors();toast(n+' Sensoren übernommen – noch speichern');e.target.value=''};
 }
 // pages a sensor is shown on (bits as in sensors.h); third value: only for this kind (-1 = all)
-const SHOW=[[1,'🌡️ Temperatur',[1]],[2,'🔋 Batterie',[0,1]],[4,'🚪 Aktoren',[0,2]],[8,'🌦 Wetter (Außen)',[1]]];
-const shOf=d=>d.show??(d.kind==1?1:4);
+const SHOW=[[1,'🌡️ Temperatur',[1]],[2,'🔋 Batterie',[0,1]],[16,'💡 Licht',[2]],[4,'🚪 Aktoren',[0,2]],[8,'🌦 Wetter (Außen)',[1]]];
+const shOf=d=>d.show??(d.kind==1?1:d.kind==2?16:4);
+const SN_OPEN=new Set();   // sensors unfolded in the editor (kept while re-rendering)
 function renderSensors(){
   const b=$('#snlist');if(!b)return;
   const live=sens();
   b.innerHTML=SN.devices.map((d,i)=>{const v=live.find(x=>x.n===d.name);
     const val=!v?'':v.k===2?(v.o===1?'an':v.o===0?'aus':'–'):v.k===0?(v.o===1?'offen':v.o===0?'zu':'–'):(v.t!=null?String(v.t).replace('.',',')+' °C':'–')+(v.h!=null?' · '+v.h+' %':'');
-    return `<div class="tileed"><div class="row"><b class="grow">${esc(d.name||'Sensor')}</b><span class="mu">${esc(val)}${v&&v.age>=0?' · vor '+(v.age<120?v.age+' s':Math.round(v.age/60)+' min'):''}</span><button class="btn sm danger" data-sd="${i}">✕</button></div>
+    const ty=d.bus==1?'📶':d.kind==0?'🚪':d.kind==2?'💡':'🌡️';
+    return `<details class="tileed sn"${!d.name||!d.addr||SN_OPEN.has(i)?' open':''} data-si="${i}"><summary class="row"><span>${ty}</span><b class="grow">${esc(d.name||'Neuer Sensor')}</b><span class="mu">${esc(val)}${v&&v.age>=0?' · vor '+(v.age<120?v.age+' s':Math.round(v.age/60)+' min'):''}</span><button class="btn sm danger" data-sd="${i}" title="Entfernen">✕</button></summary>
     <div class="f2"><div><label>Name</label><input type="text" data-s="${i}" data-sf="name" value="${esc(d.name)}" placeholder="z. B. Heki"></div>
      <div><label>Funk / Typ</label><select data-s="${i}" data-sf="type"><option value="0-0"${d.bus==0&&d.kind==0?' selected':''}>Zigbee · Tür-/Fensterkontakt</option><option value="0-1"${d.bus==0&&d.kind==1?' selected':''}>Zigbee · Klima (Temp./Feuchte)</option><option value="0-2"${d.bus==0&&d.kind==2?' selected':''}>Zigbee · Licht / LED-Leiste</option><option value="1-1"${d.bus==1?' selected':''}>Bluetooth · Klima (Govee, Ruuvi …)</option></select></div>
      <div><label>${d.bus==1?'MAC-Adresse':d.kind==2?'IEEE-Adresse (zum Schalten nötig)':'Adresse (IEEE oder Short-ID)'}</label><input type="text" data-s="${i}" data-sf="addr" value="${esc(d.addr)}" placeholder="${d.bus==1?'A4C138AEF56D':'0x00158d… oder 9c68'}"></div>
      ${d.bus==0?`<div><label>Zweite Adresse (optional)</label><input type="text" data-s="${i}" data-sf="alt" value="${esc(d.alt||'')}" placeholder="Short-ID"></div>`:'<div></div>'}
      ${d.kind==0?`<div><label>Symbol, wenn offen</label><select data-s="${i}" data-sf="icon"><option value="">kein Symbol</option>${ICONS.map(x=>`<option value="${x[0]}"${d.icon===x[0]?' selected':''}>${x[1]} ${x[2]}</option>`).join('')}</select></div>
      <div><label class="chk"><input type="checkbox" data-s="${i}" data-sf="warn" ${d.warn?'checked':''}> Warnung, wenn offen</label><label class="chk"><input type="checkbox" data-s="${i}" data-sf="invert" ${d.invert?'checked':''}> umgekehrt (1 = zu)</label></div>`:''}</div>
-    <label>Anzeigen auf</label><div class="row" style="gap:4px 14px">${SHOW.filter(x=>x[2].includes(+d.kind)).map(([bit,t])=>`<label class="chk" style="margin:2px 0"><input type="checkbox" data-s="${i}" data-sh="${bit}" ${(shOf(d)&bit)?'checked':''}> ${t}</label>`).join('')}</div></div>`}).join('')||'<p class="mu">Noch keine Sensoren.</p>';
+    <label>Anzeigen auf</label><div class="row" style="gap:4px 14px">${SHOW.filter(x=>x[2].includes(+d.kind)).map(([bit,t])=>`<label class="chk" style="margin:2px 0"><input type="checkbox" data-s="${i}" data-sh="${bit}" ${(shOf(d)&bit)?'checked':''}> ${t}</label>`).join('')}</div></details>`}).join('')||'<p class="mu">Noch keine Sensoren.</p>';
+  b.querySelectorAll('details.sn').forEach(e=>e.ontoggle=()=>{const i=+e.dataset.si;if(e.open)SN_OPEN.add(i);else SN_OPEN.delete(i)});
   b.querySelectorAll('[data-sf="type"]').forEach(e=>e.onchange=()=>{readSensors();renderSensors()});
-  b.querySelectorAll('[data-sd]').forEach(e=>e.onclick=()=>{readSensors();SN.devices.splice(+e.dataset.sd,1);renderSensors()});
+  b.querySelectorAll('[data-sd]').forEach(e=>e.onclick=ev=>{ev.preventDefault();if(!confirm('Sensor entfernen?'))return;SN_OPEN.clear();readSensors();SN.devices.splice(+e.dataset.sd,1);renderSensors()});
 }
 function readSensors(){
   ['zbBase','bleBase'].forEach(k=>{const e=$('#'+k);if(e)SN[k]=e.value.trim()});
   if($('#tempDiv'))SN.tempDiv=+$('#tempDiv').value;if($('#humDiv'))SN.humDiv=+$('#humDiv').value;
   document.querySelectorAll('[data-sf]').forEach(e=>{const d=SN.devices[+e.dataset.s];if(!d)return;const f=e.dataset.sf;
-    if(f==='type'){const [bus,kind]=e.value.split('-').map(Number);if(d.kind!==kind)d.show=kind==1?1:4;d.bus=bus;d.kind=kind}else d[f]=e.type==='checkbox'?e.checked:e.value.trim()});
+    if(f==='type'){const [bus,kind]=e.value.split('-').map(Number);if(d.kind!==kind)d.show=kind==1?1:kind==2?16:4;d.bus=bus;d.kind=kind}else d[f]=e.type==='checkbox'?e.checked:e.value.trim()});
   SN.devices.forEach((d,i)=>{const boxes=document.querySelectorAll(`[data-s="${i}"][data-sh]`);if(!boxes.length)return;
     let m=0;boxes.forEach(b=>{if(b.checked)m|=+b.dataset.sh});d.show=m});
 }

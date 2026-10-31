@@ -262,7 +262,7 @@ bool fromJson(const String& json, String& err, bool apply) {
     if (d.bus > B_BLE) d.bus = B_ZIGBEE;
     if (d.kind > K_LIGHT) d.kind = K_CLIMATE;
     if (d.bus == B_BLE) d.kind = K_CLIMATE;
-    d.show = o["show"].is<int>() ? (uint8_t)(o["show"].as<int>() & 0x0F) : defaultShow(d.kind);
+    d.show = o["show"].is<int>() ? (uint8_t)(o["show"].as<int>() & 0x1F) : defaultShow(d.kind);
     if (!icons::known(d.icon)) d.icon = "";
     if (d.addr.isEmpty()) { err = (d.name.length() ? d.name : String("Sensor")) + ": Adresse fehlt"; return false; }
     if (d.name.isEmpty()) d.name = d.addr;
@@ -393,12 +393,12 @@ std::vector<BattOut> batteries() {
   return out;
 }
 
-std::vector<LightOut> lights() {
+std::vector<LightOut> lights(uint8_t pages) {
   Lock lock;
   std::vector<LightOut> out;
   uint32_t now = millis();
   for (size_t i = 0; i < devs.size(); i++) {
-    if (devs[i].kind != K_LIGHT || !(devs[i].show & SH_ACT)) continue;
+    if (devs[i].kind != K_LIGHT || !(devs[i].show & pages)) continue;
     out.push_back({i, devs[i].name, vals[i].open, vals[i].level, vals[i].color, !vals[i].at || now - vals[i].at > STALE_MS});
   }
   return out;

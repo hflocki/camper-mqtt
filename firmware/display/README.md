@@ -43,7 +43,7 @@ Passt zu den anderen Projekten:
 - **Geräte-Links (nur Webseite):** Unter *Einstellungen → 🔗 Geräte-Links* Name und Adresse der anderen Geräte eintragen (oder „Camper-Geräte vorschlagen“ für die `.local`-Namen). Die Seite **🔗 Geräte** zeigt sie als Buttons, die die jeweilige Konfigurationsseite in einem neuen Tab öffnen
 - **Anzeigename:** Unter *Einstellungen → Display & Seiten* lässt sich ein Name eintragen (z. B. „Wohnraum“), der oben in der Mitte neben dem Seitentitel steht – am Display und auf der Webseite. Leer = kein Name
 - **Übersicht ohne Scrollen:** 3 × 3 Kacheln, Standard: Frischwasser, Grauwasser, Gas, Truma, Level, MaxxFan, Temperatur (bis 3 Sensoren), Batterie (bis 3), jeweils mit Symbol statt Name (siehe *Symbole* unten) und Status (grün „OK“ oder die Warnungen auf Rot). Antippen öffnet die jeweilige Seite. **Welche Kachel wo steht, ist frei wählbar** (*Einstellungen → Display & Seiten → Kacheln der Übersicht*): zusätzlich einzelne Batterien (Batterie 1–3 groß), Uhr/Datum, eigene MQTT-Kacheln aus *Seiten & Kacheln* oder leer. Die Webseite übernimmt dieselbe Reihenfolge
-- **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie · **Wetter** · **Aktoren** (Fenster und Türen) · **Warnungen** (einzeln abschaltbar) und **System** (Netzwerk, IP, Signal, MQTT, Firmware, Laufzeit, Speicher als Liste, dazu QR-Code und Helligkeit). Die Namen lassen sich unter *Einstellungen → Display & Seiten* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
+- **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie · **Wetter** · **Aktoren** (Fenster und Türen) · **Warnungen** · **Licht** (einzeln abschaltbar) und **System** (Netzwerk, IP, Signal, MQTT, Firmware, Laufzeit, Speicher als Liste, dazu QR-Code und Helligkeit). Die Namen lassen sich unter *Einstellungen → Display & Seiten* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
 - **Kopfzeile:** Seitenname · Anzeigename · Datum · Uhr. Antippen springt zur Übersicht. Bei Verbindungsproblemen steht dort „WLAN“ bzw. „MQTT“
 - **Icon-Leiste unten:** 8 Knöpfe: **Home** und **System** sind immer da, dazu bis zu 6 frei wählbare Seiten (*Einstellungen → Display & Seiten → Symbolleiste*, leer = die ersten 6). Seiten ohne Knopf erreicht man über ihre Kachel auf Home oder durch Wischen. Die aktive Seite ist hervorgehoben
 - **Wetter** von [Open-Meteo](https://open-meteo.com) (kostenlos, ohne Konto): aktuelles Wetter, nächste Stunde, heute und 3 Tage Vorschau. Fester Ort oder GPS per MQTT (z. B. vom Router), siehe [Wetter](#wetter)
@@ -287,9 +287,25 @@ Die Wetterseite zeigt das aktuelle Wetter mit gefühlter Temperatur, Höchst- un
 
 Vorbelegen in `config_local.h`: `DEFAULT_WX_LAT`, `DEFAULT_WX_LON`, `DEFAULT_WX_NAME`, `DEFAULT_WX_TOPIC`, `DEFAULT_WX_GUST`.
 
+## Einstellungen (Webseite)
+
+Die Einstellungen sind in Gruppen geteilt, oben umschaltbar (die letzte Wahl merkt sich der Browser):
+
+| Gruppe | Inhalt |
+| --- | --- |
+| 🖥 Anzeige | Display (Helligkeit, Dimmen, Anzeigename) · Seiten & Symbolleiste · Kacheln auf Home · eigene Seiten & MQTT-Kacheln |
+| 📡 Sensoren & Geräte | Sensoren (Zigbee/Bluetooth) · Topics der Geräte (inkl. Heizung/CampMatic) · Geräte-Links · Topic-Finder |
+| 🔌 Verbindung | WLAN · MQTT-Broker |
+| 🌦 Dienste | Wetter · Pushover |
+| 🔧 System | Gerätename, Login, Zeit, Firmware-Update, Sichern/Wiederherstellen, Neustart |
+
+**Einstellungen speichern** steht immer unten am Bildschirmrand. Sensoren, eigene Seiten & Kacheln und Automationen haben jeweils einen eigenen Speichern-Knopf. In der Sensorliste ist jeder Sensor eine Zeile mit Typ, Name und aktuellem Wert; Antippen klappt ihn zum Bearbeiten auf.
+
+Neue Geräte starten ohne Beispielseite. Die frühere Beispielseite „Zigbee“ (Kacheln auf `zigbee2mqtt/…`) bleibt bei bestehenden Geräten erhalten und kann unter *Eigene Seiten & MQTT-Kacheln* gelöscht werden.
+
 ## Sensoren (Zigbee & Bluetooth)
 
-*Einstellungen → 📡 Sensoren*. Jeder Sensor hat Name, Funk und Typ (Zigbee-Kontakt, Zigbee-Klima, Bluetooth-Klima) und die Adresse.
+*Einstellungen → 📡 Sensoren & Geräte → Sensoren*. Jeder Sensor hat Name, Funk und Typ (Zigbee-Kontakt, Zigbee-Klima, Bluetooth-Klima) und die Adresse.
 
 **Zigbee** (Gateway, das ZCL-Attribute einzeln sendet, Topic `<Basis>/<Adresse>/1/<Cluster>/<Attribut>`, Basis Standard `camper/zigbee/data`). Der SMLIGHT-Hub sendet `{"data":{"val":…,"type_sm":"report","status":"SUCCESS"}}`; Werte mit `"type_sm":"report"` hat der Hub schon umgerechnet (°C, %, kPa) und werden so übernommen. Nur Rohwerte (`report_raw` oder eine nackte Zahl) laufen über die Teiler:
 
@@ -304,7 +320,7 @@ Vorbelegen in `config_local.h`: `DEFAULT_WX_LAT`, `DEFAULT_WX_LON`, `DEFAULT_WX_
 
 Textwerte wie `"ON"`/`"OFF"` (so meldet z. B. eine LED-Leiste ihren Zustand) gelten als 1/0.
 
-**Lichter / LED-Leisten** (Typ *Zigbee · Licht*): Auf der Seite *Aktoren* gibt es je Licht eine Karte mit Schalter, Helligkeit und Farbknöpfen (Warmweiß, Kaltweiß, Rot, Orange, Grün, Blau, Lila), auf der Webseite zusätzlich einen freien Farbwähler. Geschaltet wird über die Befehls-Topics des SMLIGHT-Hubs, Basis = Zigbee-Basis ohne `/data` (also `camper/zigbee/cmd/<IEEE>/1/…`). Dafür muss beim Licht die **16-stellige IEEE-Adresse** eingetragen sein (Short-ID reicht hier nicht):
+**Lichter / LED-Leisten** (Typ *Zigbee · Licht*): Auf der Seite *Licht* (und, wenn angehakt, auf *Aktoren*) gibt es je Licht eine Karte mit Schalter, Helligkeit und Farbknöpfen (Warmweiß, Kaltweiß, Rot, Orange, Grün, Blau, Lila), auf der Webseite zusätzlich einen freien Farbwähler. Geschaltet wird über die Befehls-Topics des SMLIGHT-Hubs, Basis = Zigbee-Basis ohne `/data` (also `camper/zigbee/cmd/<IEEE>/1/…`). Dafür muss beim Licht die **16-stellige IEEE-Adresse** eingetragen sein (Short-ID reicht hier nicht):
 
 | Aktion | Topic | Payload |
 | --- | --- | --- |
@@ -323,7 +339,8 @@ Die Adresse darf die IEEE-Adresse (`0x00158d…`) oder die Short-ID (`9c68`) sei
 - **device.json einlesen:** Liste im Format `{"zigbee_devices":[{"name":"Kueche","shortId":"9c68","ieeeAddr":"0x00158d…","isWeatherSensor":true}],"ble_devices":[{"name":"Govee Wohnen","mac":"A4C138…"}]}` übernimmt alle Geräte auf einmal (danach *Sensoren speichern*).
 - **Anzeigen auf:** je Sensor Haken für die Seiten, auf denen er erscheint:
   - **🌡️ Temperatur** (Klima-Sensoren, Standard): Temperaturseite mit Luftfeuchte und Batterie, in der Temperatur-Kachel wählbar, 24-h-Verlauf
-  - **🚪 Aktoren** (Kontakte und Lichter, Standard): Seite *Aktoren* mit den Lichtern zum Schalten und allen Fenstern und Türen (offen/zu, Batterie), die Kachel *Aktoren* auf Home listet die offenen mit Namen, und die Status-Kachel zählt sie, z. B. „2 🚪“
+  - **💡 Licht** (Lichter, Standard): Seite *Licht* mit einer Karte je Licht, die Home-Kachel *Licht* zeigt, welche an sind
+  - **🚪 Aktoren** (Kontakte, Standard; Lichter auf Wunsch zusätzlich): Seite *Aktoren* mit den Lichtern zum Schalten und allen Fenstern und Türen (offen/zu, Batterie), die Kachel *Aktoren* auf Home listet die offenen mit Namen, und die Status-Kachel zählt sie, z. B. „2 🚪“
   - **🔋 Batterie:** der Ladestand des Sensors steht auf der Batterieseite unter *Sensor-Batterien*
   - **🌦 Wetter (Außen):** der Sensor ist das Außenthermometer (z. B. ein Ruuvi-Tag draußen). Die gemessene Temperatur und Luftfeuchte stehen auf der Wetterseite unter der Vorhersage-Temperatur und unten in der Wetter-Kachel
 - Kontakte ohne Haken bei *Aktoren* erscheinen wie bisher nur als Symbol in der Status-Kachel, solange sie offen sind.

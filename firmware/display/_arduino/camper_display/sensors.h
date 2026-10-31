@@ -17,8 +17,8 @@ namespace sensors {
 enum Kind : uint8_t { K_CONTACT = 0, K_CLIMATE = 1, K_LIGHT = 2 };
 enum Bus : uint8_t { B_ZIGBEE = 0, B_BLE = 1 };
 // Pages a sensor is shown on (bit mask, "show" in the JSON)
-enum Show : uint8_t { SH_TEMP = 1, SH_BAT = 2, SH_ACT = 4, SH_WX = 8 };
-inline uint8_t defaultShow(uint8_t kind) { return kind == K_CLIMATE ? SH_TEMP : SH_ACT; }
+enum Show : uint8_t { SH_TEMP = 1, SH_BAT = 2, SH_ACT = 4, SH_WX = 8, SH_LIGHT = 16 };
+inline uint8_t defaultShow(uint8_t kind) { return kind == K_CLIMATE ? SH_TEMP : kind == K_LIGHT ? SH_LIGHT : SH_ACT; }
 
 struct Device {
   String  name;
@@ -62,7 +62,7 @@ struct BattOut { String name; float batt; bool stale; };
 std::vector<BattOut> batteries();      // sensors shown on the battery page with their battery level
 std::vector<String> activeIcons();     // open contacts with an icon (not shown on the actuator page)
 struct LightOut { size_t idx; String name; int8_t on; int16_t level; String color; bool stale; };
-std::vector<LightOut> lights();        // lights shown on the actuator page (idx = device index for lightCommand)
+std::vector<LightOut> lights(uint8_t pages);   // lights with one of these Show bits (idx = device index for lightCommand)
 // Topic and payload for a light command; key: on ("ON"/"OFF"/"TOGGLE"), level (1..254),
 // color ("#rrggbb"), ct (mireds). Updates the shown state at once. false = unknown light / no IEEE address.
 bool lightCommand(size_t idx, const String& key, const String& value, String& topic, String& payload);
