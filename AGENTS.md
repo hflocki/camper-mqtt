@@ -9,9 +9,11 @@ Monorepo für Camper-Elektronik: jedes Gerät ist ein ESP8266/ESP32 mit reiner *
 - **Zugangsdaten nie ins Repo:** Passwörter, WLAN, Broker, Tokens (z. B. Pushover) nur in `config_local.h` (per `.gitignore` ausgeschlossen, Vorlage `config_local.h.example`) oder auf dem Gerät. Beim Road Buddy ist `config.h` selbst die persönliche Datei (Vorlage `config.example.h`).
 - **Git macht der Besitzer selbst.** Änderungen als Patch liefern, nicht committen oder pushen. Patch erzeugen mit `git add -A && git diff --cached --binary > name.patch`, vorher mit `git apply --check` gegen den aktuellen `main` prüfen. Angewendet wird so:
   ```
-  git pull && git apply X.patch && rm X.patch && git add -A && git commit -m "..." && git push
+  git pull && git apply X.patch && rm X.patch && git add -A && git commit -m "..." && git push && git tag <gerät>-v<version> && git push origin <gerät>-v<version>
   ```
   Commit-Messages auf Englisch, Präfix mit dem Gerät (`display: …`, `heater: …`).
+- **Immer mit Release:** Der gelieferte Befehl endet mit Tag und Tag-Push für **jedes** im Patch geänderte Gerät (`git tag display-v2.9.1 && git tag battery-v1.3.2 && git push origin display-v2.9.1 battery-v1.3.2`). Der Tag löst in GitHub Actions das Release mit der `.bin` aus. Ein Tag gilt nur einmal: jeder Patch, der ein Gerät ändert, erhöht dessen `FW_VERSION`, auch bei Folge-Patches am selben Tag. Patches nur für Doku/Werkzeuge ohne Firmware-Änderung bekommen keinen Tag.
+- Folge-Patches setzen auf dem zuletzt gelieferten Stand auf (nicht auf `main`), wenn der Besitzer ihn schon angewendet hat; vorher mit `git apply --check` gegen genau diesen Stand prüfen.
 - **Python-Werkzeuge** laufen in einer venv und bringen eine `requirements.txt` mit (auch wenn nur die Standardbibliothek gebraucht wird – dann steht das als Kommentar drin).
 - **Keine Downloads im Repo-Hauptordner:** `.bin`, `.zip`, Bilder usw. gehören in `firmware/<gerät>/…` oder gar nicht ins Repo (`.gitignore` fängt Hauptordner-Dateien ab).
 - Bei jeder Änderung an einem Gerät `FW_VERSION` in dessen `config.h` erhöhen und die README des Geräts mitpflegen.
