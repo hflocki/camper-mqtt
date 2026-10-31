@@ -300,6 +300,20 @@ Vorbelegen in `config_local.h`: `DEFAULT_WX_LAT`, `DEFAULT_WX_LON`, `DEFAULT_WX_
 | `0402/0000` | °C (report) bzw. roh | roh ÷ 10 (einstellbar; der ZCL-Standard wäre ÷ 100) |
 | `0405/0000` | % (report) bzw. roh | roh ÷ 1 (einstellbar) |
 | `0403/0000` | kPa (report) bzw. roh in hPa | hPa |
+| `0008/0000` | 1…254 | Licht: Helligkeit |
+
+Textwerte wie `"ON"`/`"OFF"` (so meldet z. B. eine LED-Leiste ihren Zustand) gelten als 1/0.
+
+**Lichter / LED-Leisten** (Typ *Zigbee · Licht*): Auf der Seite *Aktoren* gibt es je Licht eine Karte mit Schalter, Helligkeit und Farbknöpfen (Warmweiß, Kaltweiß, Rot, Orange, Grün, Blau, Lila), auf der Webseite zusätzlich einen freien Farbwähler. Geschaltet wird über die Befehls-Topics des SMLIGHT-Hubs, Basis = Zigbee-Basis ohne `/data` (also `camper/zigbee/cmd/<IEEE>/1/…`). Dafür muss beim Licht die **16-stellige IEEE-Adresse** eingetragen sein (Short-ID reicht hier nicht):
+
+| Aktion | Topic | Payload |
+| --- | --- | --- |
+| An/Aus | `…/cmd/<IEEE>/1/0006` | `ON` / `OFF` |
+| Helligkeit | `…/cmd/<IEEE>/1/0008/0000` | `1`…`254` |
+| Farbe | `…/cmd/<IEEE>/1/0300/0007` | `#rrggbb` |
+| Farbtemperatur | `…/cmd/<IEEE>/1/0300/000a` | Mired, z. B. `370` warm, `153` kalt |
+
+Die Farbe meldet der Hub nicht zurück; angezeigt wird die zuletzt hier gewählte. **IN ENTWICKLUNG:** Helligkeit und Farbe sind nach der [SMLIGHT-MQTT-API](https://smlight.tech/support/manuals/books/slzb-os/page/mqtt-api) umgesetzt und noch nicht an der Leiste getestet; An/Aus-Rückmeldung ist aus dem Mitschnitt bestätigt.
 
 Die Adresse darf die IEEE-Adresse (`0x00158d…`) oder die Short-ID (`9c68`) sein, mit oder ohne `0x`, Groß-/Kleinschreibung egal. Wer nicht weiß, welche das Gateway ins Topic schreibt, trägt beide ein (*Zweite Adresse*).
 
@@ -309,11 +323,12 @@ Die Adresse darf die IEEE-Adresse (`0x00158d…`) oder die Short-ID (`9c68`) sei
 - **device.json einlesen:** Liste im Format `{"zigbee_devices":[{"name":"Kueche","shortId":"9c68","ieeeAddr":"0x00158d…","isWeatherSensor":true}],"ble_devices":[{"name":"Govee Wohnen","mac":"A4C138…"}]}` übernimmt alle Geräte auf einmal (danach *Sensoren speichern*).
 - **Anzeigen auf:** je Sensor Haken für die Seiten, auf denen er erscheint:
   - **🌡️ Temperatur** (Klima-Sensoren, Standard): Temperaturseite mit Luftfeuchte und Batterie, in der Temperatur-Kachel wählbar, 24-h-Verlauf
-  - **🚪 Aktoren** (Kontakte, Standard): Seite *Aktoren* mit allen Fenstern und Türen (offen/zu, Batterie), die Kachel *Aktoren* auf Home listet die offenen mit Namen, und die Status-Kachel zählt sie, z. B. „2 🚪“
+  - **🚪 Aktoren** (Kontakte und Lichter, Standard): Seite *Aktoren* mit den Lichtern zum Schalten und allen Fenstern und Türen (offen/zu, Batterie), die Kachel *Aktoren* auf Home listet die offenen mit Namen, und die Status-Kachel zählt sie, z. B. „2 🚪“
   - **🔋 Batterie:** der Ladestand des Sensors steht auf der Batterieseite unter *Sensor-Batterien*
   - **🌦 Wetter (Außen):** der Sensor ist das Außenthermometer (z. B. ein Ruuvi-Tag draußen). Die gemessene Temperatur und Luftfeuchte stehen auf der Wetterseite unter der Vorhersage-Temperatur und unten in der Wetter-Kachel
 - Kontakte ohne Haken bei *Aktoren* erscheinen wie bisher nur als Symbol in der Status-Kachel, solange sie offen sind.
 - Für Automationen mit einem Zigbee-Kontakt (SMLIGHT): *Wenn* Topic `camper/zigbee/data/<Adresse>/1/0006/0000`, Schlüssel `data.val`, = `1`.
+- Licht per Automation schalten (z. B. Eingangslicht): *Dann senden* an `camper/zigbee/cmd/<IEEE>/1/0006`, Payload `ON` bzw. `OFF`. Die Vorlage *Eingangslicht* trägt die IEEE des ersten angelegten Lichts schon ein, sofern die Sensorliste in dieser Sitzung geöffnet war.
 
 ## Heizung über CampMatic
 

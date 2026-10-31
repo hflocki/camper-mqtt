@@ -331,6 +331,12 @@ bool level(const String& key) {
   return publish(settings.prefixLevel + "/cmd/" + key + "/set", "PRESS");
 }
 
+bool light(size_t device, const String& key, const String& value) {
+  String topic, payload;
+  if (!sensors::lightCommand(device, key, value, topic, payload)) return false;
+  return publish(topic, payload);
+}
+
 bool tile(size_t i, const String& action) {
   if (i >= settings.tiles.size()) return false;
   const Tile& t = settings.tiles[i];

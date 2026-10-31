@@ -32,7 +32,8 @@ const M = {
     {name: 'Küche', bus: 0, kind: 1, addr: '0x00158d0000000001', alt: '1a01', icon: '', warn: false, show: 3},
     {name: 'Heki', bus: 0, kind: 0, addr: '0x00158d0000000002', alt: '1a02', icon: 'door', warn: false, show: 6},
     {name: 'Bullauge vorn', bus: 0, kind: 0, addr: '0x00158d0000000003', alt: '1a03', icon: 'door', warn: true, show: 6},
-    {name: 'Govee Außen', bus: 1, kind: 1, addr: 'A4C1380000AA', icon: '', warn: false, show: 8}]},
+    {name: 'Govee Außen', bus: 1, kind: 1, addr: 'A4C1380000AA', icon: '', warn: false, show: 8},
+    {name: 'LED Eingang', bus: 0, kind: 2, addr: '0xa4c1380000000004', icon: '', warn: false, show: 4}]},
   rules: {rules: [{name: 'Eingangslicht', on: true, inTopic: 'camper/door', inKey: 'Door.state', cond: 0, inVal: 'open',
     outTopic: 'camper/zigbee/led_eingang/set', onPayload: '{"state":"ON"}', offPayload: '{"state":"OFF"}', offDelay: 10,
     onlyOwn: true, when: 2, from: '19:00', to: '07:00', icon: 'door', warn: false}]},
@@ -87,7 +88,8 @@ const M = {
     const sen = [{n: 'Küche', k: 1, b: 0, t: 19.4, h: 54, bat: 87, age: 40, i: '', sh: 3},
       {n: 'Heki', k: 0, b: 0, o: door ? 1 : 0, bat: 92, age: 12, i: 'door', sh: 6},
       {n: 'Bullauge vorn', k: 0, b: 0, o: 1, bat: 65, age: 300, i: 'door', sh: 6},
-      {n: 'Govee Außen', k: 1, b: 1, t: 8.6, h: 81, bat: 100, age: 8, i: '', sh: 8}];
+      {n: 'Govee Außen', k: 1, b: 1, t: 8.6, h: 81, bat: 100, age: 8, i: '', sh: 8},
+      {n: 'LED Eingang', k: 2, b: 0, o: door ? 1 : 0, lv: 180, col: '#ff8000', age: 20, i: '', sh: 4}];
     return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake, ind: [], open: door ? 2 : 1, sen}};
   },
   wsCmd(o) {

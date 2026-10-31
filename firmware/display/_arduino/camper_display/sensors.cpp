@@ -3,6 +3,7 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 #include <map>
+#include <strings.h>
 #include <memory>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
@@ -67,9 +68,13 @@ void seen(const String& key) {
 // first number in a payload: "215", "21.5", {"value":215}, {"data":{"val":"13.11","type_sm":"report"}} ...
 // scaled = the gateway already converted the value into its unit (SMLIGHT "type_sm":"report")
 bool numberIn(JsonVariantConst v, float& out) {
+  if (v.is<bool>()) { out = v.as<bool>() ? 1 : 0; return true; }
   if (v.is<float>()) { out = v.as<float>(); return true; }
   if (v.is<const char*>()) {
     const char* c = v.as<const char*>();
+    // on/off clusters send text, e.g. a light strip: {"data":{"val":"ON"}}
+    if (!strcasecmp(c, "ON") || !strcasecmp(c, "true") || !strcasecmp(c, "open")) { out = 1; return true; }
+    if (!strcasecmp(c, "OFF") || !strcasecmp(c, "false") || !strcasecmp(c, "close") || !strcasecmp(c, "closed")) { out = 0; return true; }
     char* end;
     out = strtof(c, &end);
     return end != c;
@@ -174,9 +179,9 @@ bool onMessage(const char* topic, const char* payload, unsigned int len) {
     Value& x = vals[i];
     if (cluster == "0006" && attr == "0000") {
       bool open = v != 0;
-      if (devs[i].invert) open = !open;
+      if (devs[i].invert && devs[i].kind == K_CONTACT) open = !open;
       x.open = open ? 1 : 0;
-    } else if (cluster == "0001" && attr == "0021") x.batt = constrain(scaled ? v : v / 2, 0.0f, 100.0f);   // raw ZCL: 0..200
+    } else if (cluster == "0008" && attr == "0000") x.level = constrain((int)lroundf(v), 0, 254); else if (cluster == "0001" && attr == "0021") x.batt = constrain(scaled ? v : v / 2, 0.0f, 100.0f);   // raw ZCL: 0..200
     else if (cluster == "0402" && attr == "0000") x.temp = scaled ? v : v / (tempDiv > 0 ? tempDiv : 1);
     else if (cluster == "0405" && attr == "0000") x.hum = scaled ? v : v / (humDiv > 0 ? humDiv : 1);
     else if (cluster == "0403" && attr == "0000") x.pres = scaled ? v * 10 : v;   // scaled: kPa, raw: 0.1 kPa = hPa
@@ -255,7 +260,7 @@ bool fromJson(const String& json, String& err, bool apply) {
     d.invert = o["invert"] | false;
     d.name.trim(); d.addr.trim(); d.alt.trim();
     if (d.bus > B_BLE) d.bus = B_ZIGBEE;
-    if (d.kind > K_CLIMATE) d.kind = K_CLIMATE;
+    if (d.kind > K_LIGHT) d.kind = K_CLIMATE;
     if (d.bus == B_BLE) d.kind = K_CLIMATE;
     d.show = o["show"].is<int>() ? (uint8_t)(o["show"].as<int>() & 0x0F) : defaultShow(d.kind);
     if (!icons::known(d.icon)) d.icon = "";
@@ -309,6 +314,8 @@ String valuesJson() {
     if (!isnan(v.pres)) o["p"] = roundf(v.pres);
     if (!isnan(v.batt)) o["bat"] = roundf(v.batt);
     if (v.open >= 0) o["o"] = v.open;
+    if (v.level >= 0) o["lv"] = v.level;
+    if (v.color.length()) o["col"] = v.color;
     o["age"] = v.at ? (int32_t)((now - v.at) / 1000) : -1;
     o["i"] = devs[i].icon;
     o["sh"] = devs[i].show;
@@ -384,6 +391,62 @@ std::vector<BattOut> batteries() {
     out.push_back({devs[i].name, vals[i].batt, !vals[i].at || now - vals[i].at > STALE_MS});
   }
   return out;
+}
+
+std::vector<LightOut> lights() {
+  Lock lock;
+  std::vector<LightOut> out;
+  uint32_t now = millis();
+  for (size_t i = 0; i < devs.size(); i++) {
+    if (devs[i].kind != K_LIGHT || !(devs[i].show & SH_ACT)) continue;
+    out.push_back({i, devs[i].name, vals[i].open, vals[i].level, vals[i].color, !vals[i].at || now - vals[i].at > STALE_MS});
+  }
+  return out;
+}
+
+bool lightCommand(size_t idx, const String& key, const String& value, String& topic, String& payload) {
+  Lock lock;
+  if (idx >= devs.size() || devs[idx].kind != K_LIGHT || devs[idx].bus != B_ZIGBEE) return false;
+  // the hub's command topics need the 16 digit IEEE address
+  String ieee = normZb(devs[idx].addr);
+  if (ieee.length() != 16) ieee = normZb(devs[idx].alt);
+  if (ieee.length() != 16) return false;
+  String base = zbBase;
+  if (base.endsWith("/data")) base.remove(base.length() - 5);
+  String pre = base + "/cmd/" + ieee + "/1/";
+  Value& x = vals[idx];
+  if (key == "on") {
+    String v = value;
+    v.toUpperCase();
+    if (v == "TOGGLE") v = x.open == 1 ? "OFF" : "ON";
+    if (v != "ON" && v != "OFF") return false;
+    topic = pre + "0006";
+    payload = v;
+    x.open = v == "ON" ? 1 : 0;
+  } else if (key == "level") {
+    int l = constrain(value.toInt(), 1, 254);
+    topic = pre + "0008/0000";
+    payload = String(l);
+    x.level = l;
+  } else if (key == "color") {
+    String c = value;
+    c.trim();
+    c.toLowerCase();
+    if (c.length() != 7 || c[0] != '#') return false;
+    for (int k = 1; k < 7; k++) if (!isxdigit((unsigned char)c[k])) return false;
+    topic = pre + "0300/0007";
+    payload = c;
+    x.color = c;
+  } else if (key == "ct") {
+    int m = constrain(value.toInt(), 150, 500);
+    topic = pre + "0300/000a";
+    payload = String(m);
+    x.color = "ct:" + String(m);
+  } else {
+    return false;
+  }
+  dirty = true;
+  return true;
 }
 
 // Contacts on the actuator page are counted in the status tile instead (openCount)

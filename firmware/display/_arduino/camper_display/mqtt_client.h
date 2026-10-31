@@ -27,4 +27,5 @@ namespace cmd {
   bool fan(const String& key, const String& value = "");
   bool level(const String& key);
   bool tile(size_t index, const String& action);   // on / off / toggle / press / <number>
+  bool light(size_t device, const String& key, const String& value);   // own Zigbee light, see sensors::lightCommand
 }

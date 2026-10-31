@@ -195,6 +195,7 @@ void handleCmd(const Cmd& c) {
   else if (!strcmp(c.c, "fan"))    ok = cmd::fan(k, v);
   else if (!strcmp(c.c, "lvl"))    ok = cmd::level(k);
   else if (!strcmp(c.c, "tile"))   ok = c.i >= 0 && cmd::tile((size_t)c.i, v);
+  else if (!strcmp(c.c, "light"))  ok = c.i >= 0 && cmd::light((size_t)c.i, k, v);
   else if (!strcmp(c.c, "bri")) {
     disp::setBrightness(v.toInt());
     disp::wake();

@@ -192,7 +192,33 @@ function pgOverview(){
 }
 // windows / doors (own Zigbee contacts marked for this page) and all warnings
 const contacts=()=>sens().filter(x=>x.k===0&&((x.sh??4)&4));
-function pgActors(){return `<div class="grid" id="a_list"></div><div class="mu" id="a_st" style="margin-top:12px"></div>`}
+const lightsOf=()=>sens().map((x,i)=>Object.assign({di:i},x)).filter(x=>x.k===2&&((x.sh??4)&4));
+// same quick colours as on the panel: [key, value, shown colour, text]
+const SWATCH=[['ct','370','#ffc27a','Warm'],['ct','153','#e6f0ff','Kalt'],['color','#ff0000','#ff2020',''],['color','#ff8000','#ff8a00',''],['color','#00ff00','#30d050',''],['color','#0040ff','#2f6bff',''],['color','#a000ff','#a040ff','']];
+let lSig='';
+function pgActors(){lSig='';return `<div class="grid" id="l_list"></div><div class="grid" id="a_list" style="margin-top:12px"></div><div class="mu" id="a_st" style="margin-top:12px"></div>`}
+// light cards are built once per light list, then only their state is updated (sliders keep working)
+function updLights(){
+  const box=$('#l_list');if(!box)return;const ls=lightsOf();
+  const sig=ls.map(l=>l.di+l.n).join('|');
+  if(sig!==lSig){lSig=sig;
+    box.innerHTML=ls.map(l=>`<div class="card wide" data-ld="${l.di}"><div class="row"><h3 class="grow" style="margin:0;font-size:17px;color:var(--tx)">💡 ${esc(l.n)}</h3><button class="btn" data-lon="${l.di}">⏻</button></div>
+      <div class="row" style="margin-top:10px"><input type="range" min="1" max="254" class="grow" data-llv="${l.di}"><span class="mu" style="min-width:48px;text-align:right" data-llt="${l.di}"></span></div>
+      <div class="row" style="gap:6px;margin-top:10px">${SWATCH.map(w=>`<button class="btn sm" data-lsw="${l.di}" data-k="${w[0]}" data-v="${w[1]}" style="background:${w[2]};color:#1a1f24;min-width:44px">${w[3]||'&nbsp;'}</button>`).join('')}
+       <input type="color" data-lcol="${l.di}" value="#ffffff" title="Eigene Farbe" style="width:48px;height:36px;border:0;background:none;padding:0"></div></div>`).join('');
+    box.querySelectorAll('[data-lon]').forEach(e=>e.onclick=()=>send({c:'light',i:+e.dataset.lon,k:'on',v:'TOGGLE'}));
+    box.querySelectorAll('[data-llv]').forEach(e=>{e.oninput=()=>box.querySelector(`[data-llt="${e.dataset.llv}"]`).textContent=Math.round(e.value*100/254)+' %';
+      e.onchange=()=>send({c:'light',i:+e.dataset.llv,k:'level',v:e.value})});
+    box.querySelectorAll('[data-lsw]').forEach(e=>e.onclick=()=>send({c:'light',i:+e.dataset.lsw,k:e.dataset.k,v:e.dataset.v}));
+    box.querySelectorAll('[data-lcol]').forEach(e=>e.onchange=()=>send({c:'light',i:+e.dataset.lcol,k:'color',v:e.value}));
+  }
+  ls.forEach(l=>{const c=box.querySelector(`[data-ld="${l.di}"]`);if(!c)return;
+    const b=c.querySelector('[data-lon]');b.classList.toggle('on',l.o===1);b.textContent=l.o===1?'⏻ An':l.o===0?'⏻ Aus':'⏻ ?';
+    const r=c.querySelector('[data-llv]');if(l.lv!=null&&document.activeElement!==r){r.value=l.lv;c.querySelector('[data-llt]').textContent=Math.round(l.lv*100/254)+' %'}
+    r.style.opacity=l.o===1?1:.5;
+    const cp=c.querySelector('[data-lcol]');if(l.col&&l.col[0]==='#'&&document.activeElement!==cp)cp.value=l.col;
+    c.classList.toggle('offline',l.age<0||l.age>7200)});
+}
 function pgWarn(){return `<div class="card" id="wn_box"><div id="wn_l" style="white-space:pre-line;font-size:18px;font-weight:600">--</div></div>`}
 // Links to the web pages of the other devices (Einstellungen -> Geräte-Links)
 function pgLinks(){
@@ -270,7 +296,8 @@ async function loadRules(){
   try{const r=await fetch('/api/rules');if(!r.ok)throw 0;RULES=(await r.json()).rules||[]}catch(e){RULES=[]}
   renderRules();ruleState();
   $('#radd').onclick=()=>{readRules();RULES.push({name:'',on:true,inTopic:'',inKey:'',cond:0,inVal:'',outTopic:'',onPayload:'',offPayload:'',offDelay:10,onlyOwn:true,when:0,from:'19:00',to:'07:00',icon:'',warn:false});renderRules()};
-  $('#rtpl').onclick=()=>{readRules();RULES.push({name:'Eingangslicht',on:true,inTopic:'camper/door',inKey:'Door.state',cond:0,inVal:'open',outTopic:'camper/zigbee/led_eingang/set',onPayload:'{"state":"ON"}',offPayload:'{"state":"OFF"}',offDelay:10,onlyOwn:true,when:2,from:'19:00',to:'07:00',icon:'door',warn:false});renderRules()};
+  $('#rtpl').onclick=()=>{readRules();const l=(SN.devices||[]).find(d=>d.kind==2)||{};const ie=String(l.addr||'').toLowerCase().replace(/^0x/,'');
+    RULES.push({name:'Eingangslicht',on:true,inTopic:'camper/door',inKey:'Door.state',cond:0,inVal:'open',outTopic:'camper/zigbee/cmd/'+(ie.length===16?ie:'<IEEE>')+'/1/0006',onPayload:'ON',offPayload:'OFF',offDelay:10,onlyOwn:true,when:2,from:'19:00',to:'07:00',icon:'door',warn:false});renderRules()};
   $('#rsave').onclick=()=>{readRules();post('/api/rules',{rules:RULES})};
 }
 function rIn(i,f,label,ph,extra){return `<div><label>${label}</label><input type="text" data-r="${i}" data-rf="${f}" value="${esc(RULES[i][f]??'')}" placeholder="${ph||''}" ${extra||''}></div>`}
@@ -454,7 +481,8 @@ function update(){
    if($('#oa_v')){set('oa_v',!cs.length?'--':op.length?op.slice(0,3).map(x=>`<span class="err">${esc(x.n)}</span>`).join('<br>'):'<span class="okc">Alles zu</span>');
      set('oa_s',!cs.length?'keine Sensoren':op.length>3?'+'+(op.length-3)+' offen':op.length?op.length+' offen':'')}
    if($('#a_list')){set('a_list',cs.map(x=>`<div class="card wide${x.age<0||x.age>7200?' offline':''}"><div class="trow"><span class="n">🚪 ${esc(x.n)}${x.bat!=null?`<br><span class="mu">🔋 ${x.bat} %</span>`:''}</span><b class="big ${x.o===1?'err':x.o===0?'okc':'mu'}" style="font-size:24px">${x.o===1?'offen':x.o===0?'zu':'?'}</b></div></div>`).join(''));
-     set('a_st',cs.length?'':'Keine Fenster- oder Türkontakte. Unter ⚙ Einstellungen → 📡 Sensoren anlegen und „Aktoren“ ankreuzen.')}}
+     set('a_st',cs.length||lightsOf().length?'':'Keine Fenster, Türen oder Lichter. Unter ⚙ Einstellungen → 📡 Sensoren anlegen und „Aktoren“ ankreuzen.')}
+   updLights()}
   const tl=allTemps(),tOn=online('temp')||tl.some(t=>t.own),tAl=tl.some(t=>t.alarm);
   if($('#ot_v')){
     {const sl=ovSlots(tl,true);set('ot_v',sl.length?sl.map(x=>`<span title="${esc(x.n)}">${x.e}</span> <span${x.it&&x.it.alarm?' class="err"':x.it?'':' class="mu"'}>${x.it?tval(x.it):'--'}</span>`).join(' &nbsp; '):'--')}
@@ -700,21 +728,21 @@ async function loadSensors(){
     renderSensors();toast(n+' Sensoren übernommen – noch speichern');e.target.value=''};
 }
 // pages a sensor is shown on (bits as in sensors.h); third value: only for this kind (-1 = all)
-const SHOW=[[1,'🌡️ Temperatur',1],[2,'🔋 Batterie',-1],[4,'🚪 Aktoren',0],[8,'🌦 Wetter (Außen)',1]];
-const shOf=d=>d.show??(d.kind==0?4:1);
+const SHOW=[[1,'🌡️ Temperatur',[1]],[2,'🔋 Batterie',[0,1]],[4,'🚪 Aktoren',[0,2]],[8,'🌦 Wetter (Außen)',[1]]];
+const shOf=d=>d.show??(d.kind==1?1:4);
 function renderSensors(){
   const b=$('#snlist');if(!b)return;
   const live=sens();
   b.innerHTML=SN.devices.map((d,i)=>{const v=live.find(x=>x.n===d.name);
-    const val=!v?'':v.k===0?(v.o===1?'offen':v.o===0?'zu':'–'):(v.t!=null?String(v.t).replace('.',',')+' °C':'–')+(v.h!=null?' · '+v.h+' %':'');
+    const val=!v?'':v.k===2?(v.o===1?'an':v.o===0?'aus':'–'):v.k===0?(v.o===1?'offen':v.o===0?'zu':'–'):(v.t!=null?String(v.t).replace('.',',')+' °C':'–')+(v.h!=null?' · '+v.h+' %':'');
     return `<div class="tileed"><div class="row"><b class="grow">${esc(d.name||'Sensor')}</b><span class="mu">${esc(val)}${v&&v.age>=0?' · vor '+(v.age<120?v.age+' s':Math.round(v.age/60)+' min'):''}</span><button class="btn sm danger" data-sd="${i}">✕</button></div>
     <div class="f2"><div><label>Name</label><input type="text" data-s="${i}" data-sf="name" value="${esc(d.name)}" placeholder="z. B. Heki"></div>
-     <div><label>Funk / Typ</label><select data-s="${i}" data-sf="type"><option value="0-0"${d.bus==0&&d.kind==0?' selected':''}>Zigbee · Tür-/Fensterkontakt</option><option value="0-1"${d.bus==0&&d.kind==1?' selected':''}>Zigbee · Klima (Temp./Feuchte)</option><option value="1-1"${d.bus==1?' selected':''}>Bluetooth · Klima (Govee, Ruuvi …)</option></select></div>
-     <div><label>${d.bus==1?'MAC-Adresse':'Adresse (IEEE oder Short-ID)'}</label><input type="text" data-s="${i}" data-sf="addr" value="${esc(d.addr)}" placeholder="${d.bus==1?'A4C138AEF56D':'0x00158d… oder 9c68'}"></div>
+     <div><label>Funk / Typ</label><select data-s="${i}" data-sf="type"><option value="0-0"${d.bus==0&&d.kind==0?' selected':''}>Zigbee · Tür-/Fensterkontakt</option><option value="0-1"${d.bus==0&&d.kind==1?' selected':''}>Zigbee · Klima (Temp./Feuchte)</option><option value="0-2"${d.bus==0&&d.kind==2?' selected':''}>Zigbee · Licht / LED-Leiste</option><option value="1-1"${d.bus==1?' selected':''}>Bluetooth · Klima (Govee, Ruuvi …)</option></select></div>
+     <div><label>${d.bus==1?'MAC-Adresse':d.kind==2?'IEEE-Adresse (zum Schalten nötig)':'Adresse (IEEE oder Short-ID)'}</label><input type="text" data-s="${i}" data-sf="addr" value="${esc(d.addr)}" placeholder="${d.bus==1?'A4C138AEF56D':'0x00158d… oder 9c68'}"></div>
      ${d.bus==0?`<div><label>Zweite Adresse (optional)</label><input type="text" data-s="${i}" data-sf="alt" value="${esc(d.alt||'')}" placeholder="Short-ID"></div>`:'<div></div>'}
      ${d.kind==0?`<div><label>Symbol, wenn offen</label><select data-s="${i}" data-sf="icon"><option value="">kein Symbol</option>${ICONS.map(x=>`<option value="${x[0]}"${d.icon===x[0]?' selected':''}>${x[1]} ${x[2]}</option>`).join('')}</select></div>
      <div><label class="chk"><input type="checkbox" data-s="${i}" data-sf="warn" ${d.warn?'checked':''}> Warnung, wenn offen</label><label class="chk"><input type="checkbox" data-s="${i}" data-sf="invert" ${d.invert?'checked':''}> umgekehrt (1 = zu)</label></div>`:''}</div>
-    <label>Anzeigen auf</label><div class="row" style="gap:4px 14px">${SHOW.filter(x=>x[2]<0||x[2]===+d.kind).map(([bit,t])=>`<label class="chk" style="margin:2px 0"><input type="checkbox" data-s="${i}" data-sh="${bit}" ${(shOf(d)&bit)?'checked':''}> ${t}</label>`).join('')}</div></div>`}).join('')||'<p class="mu">Noch keine Sensoren.</p>';
+    <label>Anzeigen auf</label><div class="row" style="gap:4px 14px">${SHOW.filter(x=>x[2].includes(+d.kind)).map(([bit,t])=>`<label class="chk" style="margin:2px 0"><input type="checkbox" data-s="${i}" data-sh="${bit}" ${(shOf(d)&bit)?'checked':''}> ${t}</label>`).join('')}</div></div>`}).join('')||'<p class="mu">Noch keine Sensoren.</p>';
   b.querySelectorAll('[data-sf="type"]').forEach(e=>e.onchange=()=>{readSensors();renderSensors()});
   b.querySelectorAll('[data-sd]').forEach(e=>e.onclick=()=>{readSensors();SN.devices.splice(+e.dataset.sd,1);renderSensors()});
 }
@@ -722,7 +750,7 @@ function readSensors(){
   ['zbBase','bleBase'].forEach(k=>{const e=$('#'+k);if(e)SN[k]=e.value.trim()});
   if($('#tempDiv'))SN.tempDiv=+$('#tempDiv').value;if($('#humDiv'))SN.humDiv=+$('#humDiv').value;
   document.querySelectorAll('[data-sf]').forEach(e=>{const d=SN.devices[+e.dataset.s];if(!d)return;const f=e.dataset.sf;
-    if(f==='type'){const [bus,kind]=e.value.split('-').map(Number);if(d.kind!==kind)d.show=kind==0?4:1;d.bus=bus;d.kind=kind}else d[f]=e.type==='checkbox'?e.checked:e.value.trim()});
+    if(f==='type'){const [bus,kind]=e.value.split('-').map(Number);if(d.kind!==kind)d.show=kind==1?1:4;d.bus=bus;d.kind=kind}else d[f]=e.type==='checkbox'?e.checked:e.value.trim()});
   SN.devices.forEach((d,i)=>{const boxes=document.querySelectorAll(`[data-s="${i}"][data-sh]`);if(!boxes.length)return;
     let m=0;boxes.forEach(b=>{if(b.checked)m|=+b.dataset.sh});d.show=m});
 }
