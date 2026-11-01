@@ -55,6 +55,13 @@ arduino-cli compile --fqbn <fqbn> firmware/<gerät>/_arduino/<sketch>
 - Module: `ui.*` Oberfläche, `datastore.*` Werte, `mqtt_client.*`, `web.*`, `settings.*` (NVS), `notify.*` Pushover, `weather.*` Open-Meteo (eigener Task, Mutex wird beim ersten Zugriff angelegt), `icons.*` Symbole der Temperatur-/Batterie-Kachel, `otaprog.*` Fortschritt des Datei-Updates, `history.*` 24-h-Verlauf im RAM (`/api/history`), `rules.*` Automationen (`/api/rules`, NVS-Namespace `rules`), `router.*` Mobilfunk-Signal des Routers per MQTT (Balken in der Kopfzeile).
 - Alles, was die UI beim Start abfragt, muss vor `ui::begin()` initialisiert sein (sonst Boot-Schleife).
 
+### Road Buddy (`firmware/roadbuddy`)
+
+- Zeichnet mit M5GFX (kein LVGL), übernimmt aber Optik und Logik vom Display: Farben `COL_*` und `SEG_COL` sind die `C_*`-Werte aus `display/.../ui.cpp`. Beim Ändern der Palette oder der Schwellen (Tanks, Segmentleiste) beide Geräte anpassen.
+- Bleibt reiner Empfänger und Kurzblick fürs Ankommen (Level, Wasser, Gas, Temperatur, Batterie, System), keine Steuerung.
+- Arduino-Präprozessor: Typen, die in Funktionsparametern vorkommen (z. B. `enum Glyph`), vor der ersten Funktion deklarieren; keine Default-Argumente.
+- `config.h` darf nur von `roadbuddy.ino` eingebunden werden (definiert Variablen). Zugangsdaten landen zusätzlich im NVS, damit die CI-`.bin` per Update-Seite (`webota.cpp`) installiert werden kann.
+
 ### Bluetooth-Gateway (`firmware/omg`)
 
 OpenMQTTGateway wird nicht ins Repo kopiert: `firmware/omg/setup.py` klont es (Tag `OMG_REF`) nach `firmware/omg/OpenMQTTGateway/` (gitignored) und legt `camper_env.ini` daneben. Eigene Anpassungen nur dort bzw. als Build-Flags, nie im Upstream-Code. Bauen mit PlatformIO: `python3 setup.py build camper-ble`.

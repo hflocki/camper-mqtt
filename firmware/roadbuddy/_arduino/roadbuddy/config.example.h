@@ -14,8 +14,19 @@ const int mqtt_port = 1883;
 const char* mqtt_user = "YOUR_MQTT_USER";
 const char* mqtt_pass = "YOUR_MQTT_PASSWORD";
 
-// Level sensor topic (pitch / roll). Water and gas topics are defined at the top of roadbuddy.ino
+// Level sensor topic (pitch, roll, is_level, tolerance, status). Water and gas topics are defined at the top of roadbuddy.ino
 const char* mqtt_topic = "camper/level/#";
+
+// Mobile signal of the router for the signal bars in the header ("" = WiFi bars of this device only)
+#define ROUTER_TOPIC "camper/router/mobile"
+
+// Login for the update page (http://roadbuddy.local). Empty user = no login
+#define WEB_USER ""
+#define WEB_PASS ""
+
+// Note: a build with real values here stores WiFi, MQTT and the web login in flash.
+// Firmware from GitHub Actions (built with this example file) reads them back from there,
+// so it can be installed over the update page. Flash once over USB with your own config.h first.
 
 // ---------- Sensors ----------
 // Choose which sensors RoadBuddy shows (1 = enabled, 0 = disabled).

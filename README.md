@@ -48,7 +48,7 @@ Zum Ansehen den Ordner herunterladen und `index.html` im Browser öffnen. Nach �
 python3 tools/mockups/make_mockups.py
 ```
 
-Die Beispieldaten und das simulierte Verhalten stehen je Gerät in `tools/mockups/mock/<gerät>.js`, der gemeinsame Teil (fetch, WebSocket, Upload) in `core.js`. Bei einem neuen Gerät dort eine Datei anlegen und es in `make_mockups.py` eintragen. Der Road Buddy hat keine Weboberfläche und fehlt deshalb.
+Die Beispieldaten und das simulierte Verhalten stehen je Gerät in `tools/mockups/mock/<gerät>.js`, der gemeinsame Teil (fetch, WebSocket, Upload) in `core.js`. Bei einem neuen Gerät dort eine Datei anlegen und es in `make_mockups.py` eintragen. Der Road Buddy hat nur eine kleine Update-Seite und fehlt deshalb.
 
 ## Neues Gerät
 
@@ -95,7 +95,7 @@ Außerdem lässt sich jeder andere Wert aus `config.h` überschreiben (Pins, Pre
 
 Wichtig: WLAN, MQTT und Login ab Werk wirken nur, solange auf dem Gerät noch nichts gespeichert ist. Ein normales Update über bestehende Einstellungen ändert sie nicht. Neu übernommen werden sie nach **Werkseinstellungen** im Web-UI, nach dem Flashen mit **Erase All Flash Before Sketch Upload: Enabled** (Arduino IDE, Menü Werkzeuge) bzw. bei temp, tanklevel, level und battery nach dem Hochladen des LittleFS-Images. Die Passwörter für Access Point und OTA gelten dagegen immer sofort.
 
-Der Road Buddy hat keine Web-Oberfläche; dort ist die ganze `config.h` schon die persönliche Datei (Vorlage `config.example.h`).
+Der Road Buddy hat keine Einstellungsseite, nur eine Update-Seite; dort ist die ganze `config.h` die persönliche Datei (Vorlage `config.example.h`). Eine Firmware mit eigener `config.h` speichert die Zugangsdaten im Flash, damit die Actions-Firmware danach per Update-Seite installiert werden kann.
 
 ## Warnungen
 
