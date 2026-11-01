@@ -92,7 +92,11 @@ struct TankW { lv_obj_t* pct = nullptr; lv_obj_t* sub = nullptr; lv_obj_t* fill 
 TankW ovWater, ovGrey, ovGas;
 lv_obj_t *ovHeatVal, *ovHeatSub, *ovLvlVal, *ovLvlSub, *ovFanVal, *ovFanSub;
 lv_obj_t *ovLvlRing = nullptr, *ovLvlDot = nullptr;   // small spirit level on the overview tile
-const int LVL_RING = 40, LVL_DOT = 12;
+lv_obj_t *ovHeatIcon = nullptr, *ovFanIcon = nullptr, *ovOkBadge = nullptr;   // icons in the right badge
+// Overview tiles share one layout: value on the left, sub line at the bottom, graphic on the right.
+// The graphic is a circle of BADGE px (icon, spirit level) or the tank drawing.
+const int BADGE = 36, VAL_Y = -2;
+const int LVL_RING = BADGE, LVL_DOT = 10;
 
 lv_obj_t *hRoom, *hWater, *hSet, *hPower, *hPowerLbl, *hFanBm, *hWaterBm, *hStatus, *hDecoke, *hDecokeLbl;
 lv_obj_t *fStatus, *fSpeed, *fSpeedLbl;
@@ -600,6 +604,19 @@ lv_obj_t* shape(lv_obj_t* parent, int w, int h, int radius) {
   return o;
 }
 
+// Round badge on the right of a tile with an icon inside; returns the icon label
+lv_obj_t* badge(lv_obj_t* parent, const char* icon, lv_color_t col, lv_obj_t** ring = nullptr) {
+  lv_obj_t* b = shape(parent, BADGE, BADGE, LV_RADIUS_CIRCLE);
+  lv_obj_set_style_bg_color(b, C_BG, 0);
+  lv_obj_set_style_border_width(b, 1, 0);
+  lv_obj_set_style_border_color(b, C_LINE, 0);
+  lv_obj_align(b, LV_ALIGN_RIGHT_MID, 0, VAL_Y);
+  lv_obj_t* l = label(b, &font_de_22, col, icon);
+  lv_obj_center(l);
+  if (ring) *ring = b;
+  return l;
+}
+
 // Tank tile: percent and litres on the left, on the right a gas bottle or a water tank
 // that fills up from the bottom (gas: bottle with neck and collar, water: tank with filler cap and scale)
 lv_obj_t* tankCard(lv_obj_t* parent, const char* icon, const char* title, lv_color_t col, uint8_t kind, TankW& w) {
@@ -607,9 +624,9 @@ lv_obj_t* tankCard(lv_obj_t* parent, const char* icon, const char* title, lv_col
   w.kind = kind;
   w.base = col;
   w.pct = label(c, &font_de_28, C_TEXT, "--");
-  lv_obj_align(w.pct, LV_ALIGN_LEFT_MID, 0, -2);
+  lv_obj_align(w.pct, LV_ALIGN_LEFT_MID, 0, VAL_Y);
   w.sub = label(c, &font_de_14, C_MUTED, "");
-  lv_obj_align(w.sub, LV_ALIGN_LEFT_MID, 0, 26);
+  lv_obj_align(w.sub, LV_ALIGN_BOTTOM_LEFT, 0, 0);
 
   const int BORDER = 2;
   bool gas = kind == TK_GAS;
@@ -650,7 +667,7 @@ lv_obj_t* tankCard(lv_obj_t* parent, const char* icon, const char* title, lv_col
 lv_obj_t* infoCard(lv_obj_t* parent, const char* icon, const char* title, lv_obj_t*& val, lv_obj_t*& sub, int bp) {
   lv_obj_t* c = tile(parent, icon, title, bp);
   val = label(c, &font_de_28, C_TEXT, "--");
-  lv_obj_align(val, LV_ALIGN_LEFT_MID, 0, 0);
+  lv_obj_align(val, LV_ALIGN_LEFT_MID, 0, VAL_Y);
   sub = label(c, &font_de_14, C_MUTED, "");
   lv_obj_set_size(sub, TILE_IN, lv_font_get_line_height(&font_de_14));
   lv_label_set_long_mode(sub, LV_LABEL_LONG_DOT);
@@ -704,21 +721,14 @@ void buildOverview(lv_obj_t* tab) {
     if (t == "water")       tankCard(tab, ICON_TINT, "Frischwasser", C_WATER, TK_WATER, ovWater);
     else if (t == "grey")   tankCard(tab, ICON_DRIP, "Grauwasser", C_GREY, TK_GREY, ovGrey);
     else if (t == "gas")    tankCard(tab, ICON_GAS, "Gas", C_GAS, TK_GAS, ovGas);
-    else if (t == "heater") infoCard(tab, ICON_FIRE, pageTitle(BP_HEATER).c_str(), ovHeatVal, ovHeatSub, BP_HEATER);
+    else if (t == "heater") {
+      lv_obj_t* c = infoCard(tab, ICON_FIRE, pageTitle(BP_HEATER).c_str(), ovHeatVal, ovHeatSub, BP_HEATER);
+      ovHeatIcon = badge(c, ICON_FIRE, C_MUTED);
+    }
     else if (t == "level") {
       lv_obj_t* c = infoCard(tab, ICON_BALANCE, pageTitle(BP_LEVEL).c_str(), ovLvlVal, ovLvlSub, BP_LEVEL);
       // small spirit level right of "Eben": the dot moves with pitch and roll
-      ovLvlRing = lv_obj_create(c);
-      lv_obj_set_size(ovLvlRing, LVL_RING, LVL_RING);
-      lv_obj_set_style_radius(ovLvlRing, LV_RADIUS_CIRCLE, 0);
-      lv_obj_set_style_bg_color(ovLvlRing, C_BG, 0);
-      lv_obj_set_style_border_width(ovLvlRing, 1, 0);
-      lv_obj_set_style_border_color(ovLvlRing, C_LINE, 0);
-      lv_obj_set_style_pad_all(ovLvlRing, 0, 0);
-      lv_obj_remove_flag(ovLvlRing, LV_OBJ_FLAG_SCROLLABLE);
-      lv_obj_remove_flag(ovLvlRing, LV_OBJ_FLAG_CLICKABLE);
-      lv_obj_add_flag(ovLvlRing, LV_OBJ_FLAG_EVENT_BUBBLE);
-      lv_obj_align(ovLvlRing, LV_ALIGN_RIGHT_MID, 0, 0);
+      lv_obj_delete(badge(c, "", C_MUTED, &ovLvlRing));   // empty badge, the dot goes inside
       ovLvlDot = lv_obj_create(ovLvlRing);
       lv_obj_set_size(ovLvlDot, LVL_DOT, LVL_DOT);
       lv_obj_set_style_radius(ovLvlDot, LV_RADIUS_CIRCLE, 0);
@@ -728,7 +738,10 @@ void buildOverview(lv_obj_t* tab) {
       lv_obj_remove_flag(ovLvlDot, LV_OBJ_FLAG_SCROLLABLE);
       lv_obj_center(ovLvlDot);
     }
-    else if (t == "fan")    infoCard(tab, ICON_FAN, pageTitle(BP_FAN).c_str(), ovFanVal, ovFanSub, BP_FAN);
+    else if (t == "fan") {
+      lv_obj_t* c = infoCard(tab, ICON_FAN, pageTitle(BP_FAN).c_str(), ovFanVal, ovFanSub, BP_FAN);
+      ovFanIcon = badge(c, ICON_FAN, C_MUTED);
+    }
     else if (t == "temp")   listCard(tab, ICON_THERMOMETER, pageTitle(BP_TEMP).c_str(), ovTemp, BP_TEMP);
     else if (t == "bat")    listCard(tab, LV_SYMBOL_BATTERY_FULL, pageTitle(BP_BATTERY).c_str(), ovBat, BP_BATTERY);
     else if (t == "actors")   listCard(tab, builtinIcon(BP_ACTORS), pageTitle(BP_ACTORS).c_str(), ovAct, BP_ACTORS);
@@ -741,6 +754,7 @@ void buildOverview(lv_obj_t* tab) {
       lv_obj_set_width(ovWarnLbl, TILE_IN);
       lv_label_set_long_mode(ovWarnLbl, LV_LABEL_LONG_WRAP);
       lv_obj_align(ovWarnLbl, LV_ALIGN_TOP_LEFT, 0, 20);
+      badge(ovWarn, LV_SYMBOL_OK, C_OK, &ovOkBadge);
       // number of open windows and icons of true automation rules, e.g. an open door
       ovInd = label(ovWarn, &font_de_22, C_ACCENT, "");
       lv_obj_align(ovInd, LV_ALIGN_BOTTOM_LEFT, 0, 0);
@@ -752,10 +766,9 @@ void buildOverview(lv_obj_t* tab) {
       ovOneBat.push_back(w);
     } else if (t == "weather") {
       lv_obj_t* c = tile(tab, ICON_CLOUD_SUN, pageTitle(BP_WEATHER).c_str(), BP_WEATHER);
-      ovWxIcon = label(c, &font_de_28, C_GAS, "");
-      lv_obj_align(ovWxIcon, LV_ALIGN_LEFT_MID, 0, 0);
       ovWxVal = label(c, &font_de_28, C_TEXT, "--");
-      lv_obj_align(ovWxVal, LV_ALIGN_LEFT_MID, 44, 0);
+      lv_obj_align(ovWxVal, LV_ALIGN_LEFT_MID, 0, VAL_Y);
+      ovWxIcon = badge(c, "", C_GAS);
       ovWxSub = label(c, &font_de_14, C_MUTED, "");
       lv_obj_set_size(ovWxSub, TILE_IN, lv_font_get_line_height(&font_de_14));
       lv_label_set_long_mode(ovWxSub, LV_LABEL_LONG_DOT);
@@ -1469,7 +1482,9 @@ void refreshValues() {
   setTank(ovGrey, DP_GREY_PCT, DP_GREY_L, tankOn);
   setTank(ovGas, DP_GAS_PCT, DP_GAS_L, tankOn);
   if (ovHeatVal) {
-    lv_label_set_text(ovHeatVal, fmt(store::get(DP_HEAT_ROOM), 1, "\xC2\xB0""C").c_str());
+    String rt = store::get(DP_HEAT_ROOM);
+    lv_label_set_text(ovHeatVal, rt.length() ? (commaNum(rt.toFloat(), 1) + "\xC2\xB0").c_str() : "--");
+    if (ovHeatIcon) lv_obj_set_style_text_color(ovHeatIcon, heatOn && store::get(DP_HEAT_HVAC) == "heat" ? C_HEAT : C_MUTED, 0);
     String hs = !heatOn ? "offline"
               : (store::get(DP_HEAT_HVAC) == "heat" ? "An, Soll " + fmt(store::get(DP_HEAT_SETPOINT), 0, "\xC2\xB0""C") : "Aus");
     lv_label_set_text(ovHeatSub, hs.c_str());
@@ -1493,6 +1508,7 @@ void refreshValues() {
   if (ovFanVal) {
     lv_label_set_text(ovFanVal, fanOn ? "Bereit" : "--");
     lv_obj_set_style_text_color(ovFanVal, fanOn ? C_TEXT : C_MUTED, 0);
+    if (ovFanIcon) lv_obj_set_style_text_color(ovFanIcon, fanOn ? C_ACCENT : C_MUTED, 0);
     lv_label_set_text(ovFanSub, fanOn ? (store::get(DP_FAN_HOLD) == "ON" ? "Auto-Hold aktiv" : "Tippen zum Steuern") : "offline");
   }
 
@@ -1554,7 +1570,14 @@ void refreshValues() {
     lv_obj_set_style_bg_color(ovWarn, any ? C_WARN : C_CARD_HI, LV_STATE_PRESSED);
     lv_obj_set_style_text_font(ovWarnLbl, any ? &font_de_14 : &font_de_28, 0);
     lv_obj_set_style_text_color(ovWarnLbl, any ? C_TEXT : C_OK, 0);
-    lv_label_set_text(ovWarnLbl, any ? dispText(warn).c_str() : LV_SYMBOL_OK "  OK");
+    lv_label_set_text(ovWarnLbl, any ? dispText(warn).c_str() : "OK");
+    lv_obj_set_width(ovWarnLbl, any ? TILE_IN : LV_SIZE_CONTENT);
+    if (any) lv_obj_align(ovWarnLbl, LV_ALIGN_TOP_LEFT, 0, 20);
+    else     lv_obj_align(ovWarnLbl, LV_ALIGN_LEFT_MID, 0, VAL_Y);
+    if (ovOkBadge) {
+      if (any) lv_obj_add_flag(ovOkBadge, LV_OBJ_FLAG_HIDDEN);
+      else     lv_obj_remove_flag(ovOkBadge, LV_OBJ_FLAG_HIDDEN);
+    }
     if (ovInd) {
       String ic;
       int open = sensors::openCount();
@@ -2017,6 +2040,7 @@ void clearHandles() {
   ovWater = ovGrey = ovGas = TankW();
   ovHeatVal = ovHeatSub = ovLvlVal = ovLvlSub = ovFanVal = ovFanSub = nullptr;
   ovLvlRing = ovLvlDot = nullptr;
+  ovHeatIcon = ovFanIcon = ovOkBadge = nullptr;
   hRoom = hWater = hSet = hPower = hPowerLbl = hFanBm = hWaterBm = hStatus = hDecoke = hDecokeLbl = nullptr;
   fStatus = fSpeed = fSpeedLbl = nullptr;
   lvArea = lvBubble = lvZone = lvPitch = lvRoll = lvState = nullptr;
