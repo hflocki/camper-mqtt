@@ -40,7 +40,6 @@ namespace {
 // ---- colours ---------------------------------------------------------------
 const lv_color_t C_BG      = lv_color_hex(0x0B1015);
 const lv_color_t C_CARD    = lv_color_hex(0x1A232D);
-const lv_color_t C_CARD_LO = lv_color_hex(0x141B23);   // lower end of the tile gradient
 const lv_color_t C_CARD_HI = lv_color_hex(0x27323E);
 const lv_color_t C_LINE    = lv_color_hex(0x263241);   // hairline border of cards
 const lv_color_t C_TEXT    = lv_color_hex(0xE8EDF2);
@@ -56,6 +55,7 @@ const lv_color_t C_BANNER  = lv_color_hex(0xF2C94C);   // warning banner (yellow
 const lv_color_t C_ONBANNER = lv_color_hex(0x1A1F24);  // ... and its text
 const lv_color_t C_NAV     = lv_color_hex(0x10161D);
 const lv_color_t C_YELLOW  = lv_color_hex(0xF2C94C);   // "getting low" state
+const lv_color_t C_OUTLINE = lv_color_hex(0x55657A);   // outline of the tank / gas bottle drawings
 
 const int HDR_H = 40;                   // header: page title left, date + clock right
 const int NAV_H = 56;                   // icon bar at the bottom, one button per page
@@ -87,7 +87,7 @@ uint32_t lastValues = 0;
 
 // ---- widget handles ------------------------------------------------------
 enum TankKind : uint8_t { TK_WATER, TK_GREY, TK_GAS };
-struct TankW { lv_obj_t* pct = nullptr; lv_obj_t* sub = nullptr; lv_obj_t* bar = nullptr;
+struct TankW { lv_obj_t* pct = nullptr; lv_obj_t* sub = nullptr; lv_obj_t* fill = nullptr; int fillH = 0;
                uint8_t kind = TK_WATER; lv_color_t base = lv_color_hex(0x3BA3E8); };
 TankW ovWater, ovGrey, ovGas;
 lv_obj_t *ovHeatVal, *ovHeatSub, *ovLvlVal, *ovLvlSub, *ovFanVal, *ovFanSub;
@@ -575,8 +575,6 @@ lv_obj_t* tile(lv_obj_t* parent, const char* icon, const char* title, int bp) {
   lv_obj_t* c = card(parent, TILE_W, TILE_H);
   lv_obj_set_style_pad_all(c, TILE_PAD, 0);
   lv_obj_set_style_radius(c, 14, 0);
-  lv_obj_set_style_bg_grad_color(c, C_CARD_LO, 0);
-  lv_obj_set_style_bg_grad_dir(c, LV_GRAD_DIR_VER, 0);
   if (bp >= 0) {
     lv_obj_add_flag(c, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(c, onOverviewCard, LV_EVENT_CLICKED, (void*)(intptr_t)bp);
@@ -588,22 +586,64 @@ lv_obj_t* tile(lv_obj_t* parent, const char* icon, const char* title, int bp) {
   return c;
 }
 
+// Plain shape for the tank drawings: not clickable (taps go to the tile), no scrolling
+lv_obj_t* shape(lv_obj_t* parent, int w, int h, int radius) {
+  lv_obj_t* o = lv_obj_create(parent);
+  lv_obj_set_size(o, w, h);
+  lv_obj_set_style_radius(o, radius, 0);
+  lv_obj_set_style_pad_all(o, 0, 0);
+  lv_obj_set_style_border_width(o, 0, 0);
+  lv_obj_set_style_bg_color(o, C_OUTLINE, 0);
+  lv_obj_remove_flag(o, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_remove_flag(o, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_flag(o, LV_OBJ_FLAG_EVENT_BUBBLE);
+  return o;
+}
+
+// Tank tile: percent and litres on the left, on the right a gas bottle or a water tank
+// that fills up from the bottom (gas: bottle with neck and collar, water: tank with filler cap and scale)
 lv_obj_t* tankCard(lv_obj_t* parent, const char* icon, const char* title, lv_color_t col, uint8_t kind, TankW& w) {
   lv_obj_t* c = tile(parent, icon, title, -1);
   w.kind = kind;
   w.base = col;
   w.pct = label(c, &font_de_28, C_TEXT, "--");
-  lv_obj_align(w.pct, LV_ALIGN_LEFT_MID, 0, -4);
+  lv_obj_align(w.pct, LV_ALIGN_LEFT_MID, 0, -2);
   w.sub = label(c, &font_de_14, C_MUTED, "");
-  lv_obj_align(w.sub, LV_ALIGN_BOTTOM_RIGHT, 0, -16);
-  w.bar = lv_bar_create(c);
-  lv_obj_set_size(w.bar, TILE_IN, 8);
-  lv_obj_align(w.bar, LV_ALIGN_BOTTOM_MID, 0, 0);
-  lv_bar_set_range(w.bar, 0, 100);
-  lv_obj_set_style_radius(w.bar, LV_RADIUS_CIRCLE, LV_PART_MAIN);
-  lv_obj_set_style_radius(w.bar, LV_RADIUS_CIRCLE, LV_PART_INDICATOR);
-  lv_obj_set_style_bg_color(w.bar, C_CARD_HI, LV_PART_MAIN);
-  lv_obj_set_style_bg_color(w.bar, col, LV_PART_INDICATOR);
+  lv_obj_align(w.sub, LV_ALIGN_LEFT_MID, 0, 26);
+
+  const int BORDER = 2;
+  bool gas = kind == TK_GAS;
+  int bw = gas ? 36 : 50, bh = gas ? 62 : 62;
+  lv_obj_t* body = shape(c, bw, bh, gas ? 14 : 6);
+  lv_obj_set_style_bg_color(body, C_BG, 0);
+  lv_obj_set_style_border_width(body, BORDER, 0);
+  lv_obj_set_style_border_color(body, C_OUTLINE, 0);
+  lv_obj_set_style_clip_corner(body, true, 0);   // the fill follows the rounded corners
+  lv_obj_align(body, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+
+  w.fillH = bh - 2 * BORDER;
+  w.fill = shape(body, LV_PCT(100), 0, 0);
+  lv_obj_set_style_bg_color(w.fill, col, 0);
+  lv_obj_align(w.fill, LV_ALIGN_BOTTOM_MID, 0, 0);
+
+  if (gas) {
+    // neck and protective collar on top of the bottle
+    lv_obj_t* neck = shape(c, 12, 7, 2);
+    lv_obj_align(neck, LV_ALIGN_BOTTOM_RIGHT, -(bw - 12) / 2, -bh + 1);
+    lv_obj_t* collar = shape(c, 22, 9, 3);
+    lv_obj_set_style_bg_opa(collar, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(collar, BORDER, 0);
+    lv_obj_set_style_border_color(collar, C_OUTLINE, 0);
+    lv_obj_align(collar, LV_ALIGN_BOTTOM_RIGHT, -(bw - 22) / 2, -bh - 5);
+  } else {
+    // filler cap and a scale at 25 / 50 / 75 %
+    lv_obj_t* cap = shape(c, 12, 5, 2);
+    lv_obj_align(cap, LV_ALIGN_BOTTOM_RIGHT, -(bw - 12 - 8), -bh + 1);
+    for (int q = 1; q <= 3; q++) {
+      lv_obj_t* tick = shape(body, q == 2 ? 10 : 6, 2, 0);
+      lv_obj_align(tick, LV_ALIGN_BOTTOM_LEFT, 0, -(w.fillH * q / 4) + 1);
+    }
+  }
   return c;
 }
 
@@ -1348,7 +1388,6 @@ void setTank(TankW& w, DpId pct, DpId liters, bool online) {
   String p = store::get(pct);
   lv_label_set_text(w.pct, fmt(p, 0, "%").c_str());
   lv_label_set_text(w.sub, store::has(liters) ? fmt(store::get(liters), 0, "L").c_str() : "");
-  lv_bar_set_value(w.bar, p.length() ? constrain((int)p.toFloat(), 0, 100) : 0, LV_ANIM_ON);
   // state colours: fresh water and gas get critical when low, grey water when full
   lv_color_t col = w.base;
   bool crit = false;
@@ -1358,7 +1397,9 @@ void setTank(TankW& w, DpId pct, DpId liters, bool online) {
     else if (w.kind == TK_GAS) { if (v < 15) { col = C_WARN; crit = true; } }
     else                       { if (v < 10) { col = C_WARN; crit = true; } else if (v < 25) col = C_YELLOW; }
   }
-  lv_obj_set_style_bg_color(w.bar, online ? col : C_MUTED, LV_PART_INDICATOR);
+  int pv = p.length() ? constrain((int)lroundf(p.toFloat()), 0, 100) : 0;
+  lv_obj_set_height(w.fill, w.fillH * pv / 100);
+  lv_obj_set_style_bg_color(w.fill, online ? col : C_MUTED, 0);
   lv_obj_set_style_text_color(w.pct, !online ? C_MUTED : (crit ? C_WARN : C_TEXT), 0);
 }
 
@@ -1438,7 +1479,7 @@ void refreshValues() {
     bool level = store::get(DP_LVL_OK) == "ON";
     lv_label_set_text(ovLvlVal, !store::has(DP_LVL_OK) ? "--" : (level ? "Eben" : "Schief"));
     lv_obj_set_style_text_color(ovLvlVal, !store::has(DP_LVL_OK) ? C_TEXT : (level ? C_OK : C_WARN), 0);
-    lv_label_set_text(ovLvlSub, lvlOn ? ("N " + fmt(store::get(DP_LVL_PITCH), 1, "\xC2\xB0") +
+    lv_label_set_text(ovLvlSub, lvlOn ? ("P " + fmt(store::get(DP_LVL_PITCH), 1, "\xC2\xB0") +
                                          "   R " + fmt(store::get(DP_LVL_ROLL), 1, "\xC2\xB0")).c_str() : "offline");
     if (ovLvlDot) {
       const float range = 5.0f;   // degrees at the edge of the ring
@@ -1509,7 +1550,6 @@ void refreshValues() {
   if (ovWarn) {
     bool any = warn.length() > 0;
     lv_obj_set_style_bg_color(ovWarn, any ? C_WARN : C_CARD, 0);
-    lv_obj_set_style_bg_grad_color(ovWarn, any ? lv_color_hex(0xB8363A) : C_CARD_LO, 0);
     lv_obj_set_style_border_color(ovWarn, any ? C_WARN : C_LINE, 0);
     lv_obj_set_style_bg_color(ovWarn, any ? C_WARN : C_CARD_HI, LV_STATE_PRESSED);
     lv_obj_set_style_text_font(ovWarnLbl, any ? &font_de_14 : &font_de_28, 0);

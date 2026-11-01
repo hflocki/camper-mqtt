@@ -193,7 +193,7 @@ Kacheln vom Typ *Wert* und *Schalter* können eine Warnung auslösen. Sie ersche
 
 ### Farben in der Übersicht
 
-Füllstände färben sich nach Zustand: Frischwasser gelb unter 25 %, rot unter 10 %; Gas rot unter 15 %; Grauwasser gelb ab 70 %, rot ab 85 %. Die Prozentzahl wird nur im kritischen Bereich rot. Die Level-Kachel zeigt neben „Eben“/„Schief“ eine kleine Libelle, deren Punkt mit Nick und Roll wandert (Rand = 5°). Zahlen stehen überall mit Dezimalkomma. Ist ein Gerät offline, erscheinen seine Werte grau.
+Gas wird als Gasflasche, Frisch- und Grauwasser als Tank mit Skala (25/50/75 %) gezeichnet, die sich von unten füllen. Die Füllung färbt sich nach Zustand: Frischwasser gelb unter 25 %, rot unter 10 %; Gas rot unter 15 %; Grauwasser gelb ab 70 %, rot ab 85 %. Die Prozentzahl wird nur im kritischen Bereich rot. Die Level-Kachel zeigt neben „Eben“/„Schief“ eine kleine Libelle, deren Punkt mit Nick und Roll wandert (Rand = 5°); darunter stehen P (Pitch/Nick) und R (Roll). Zahlen stehen überall mit Dezimalkomma. Ist ein Gerät offline, erscheinen seine Werte grau.
 
 ## MQTT
 
