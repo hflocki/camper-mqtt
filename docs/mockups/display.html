@@ -330,6 +330,8 @@ input[type=text],input[type=password],input[type=number],select,textarea{width:1
 .actions{display:flex;gap:10px;flex-wrap:wrap;padding:14px 0}
 .sgroups{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .sgroups .btn.on{background:var(--ac);color:#fff}
+details.fixed>summary{pointer-events:none;list-style:none}
+details.fixed>summary::-webkit-details-marker{display:none}
 .savebar{position:sticky;bottom:0;display:flex;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:var(--bg);z-index:4}
 .tileed{border:1px solid var(--hi);border-radius:12px;padding:10px;margin:10px 0}
 .tileed .row b{flex:1}
@@ -393,7 +395,7 @@ function connect(){
   ws.onclose=()=>{$('#dot').classList.remove('ok');setTimeout(connect,2000)};
   ws.onmessage=e=>{
     const m=JSON.parse(e.data);
-    if(m.t==='cfg'){cfg=m;buildNav();if(!pages().some(p=>p.id===page))page=cfg.setup?'settings':pages()[0].id;render()}
+    if(m.t==='cfg'){cfg=m;buildNav();if(page==='rules'){page='settings';setGroup='rules'}if(!pages().some(p=>p.id===page))page=cfg.setup?'settings':pages()[0].id;render()}
     else if(m.t==='v'){Object.assign(V,m.d||{});if(m.s)Object.assign(S,m.s);update()}
     else if(m.t==='f'){if(!m.add)finder.l={};if('on' in m)finder.on=!!m.on;else finder.on=true;finder.filter=m.filter;(m.l||[]).forEach(x=>finder.l[x[0]]=x[1]);renderFinder()}
     else if(m.t==='err')toast(m.msg);
@@ -406,7 +408,6 @@ function pages(){
   const p=[];if(!cfg)return p;
   BUILTIN.forEach((b,i)=>{if(cfg.builtin[i])p.push({id:b[0],title:ptitle(i),icon:picon(i)})});
   cfg.pages.forEach((n,i)=>p.push({id:'p'+i,title:n,custom:i}));
-  p.push({id:'rules',title:'⚡ Automationen'});
   p.push({id:'links',title:'🔗 Geräte'});
   p.push({id:'settings',title:'⚙ Einstellungen'});
   return p;
@@ -432,7 +433,6 @@ function render(){
   else if(p.id in DEVPAGE)m.innerHTML=pgDev(p.id);
   else if(p.id==='warn')m.innerHTML=pgWarn();
   else if(p.id==='links')m.innerHTML=pgLinks();
-  else if(p.id==='rules'){m.innerHTML=pgRules();loadRules()}
   else if(p.id==='settings'){m.innerHTML=pgSettings();loadSettings()}
   else m.innerHTML=pgCustom(p.custom);
   bind();update();
@@ -569,7 +569,7 @@ function batBad(b){return b.ok&&(b.p||b.st==='Kritisch'||b.st==='Schwach'||(!b.s
 let RULES=[],ruleTimer=null;
 const CONDS=[['=','gleich'],['≠','ungleich'],['<','kleiner als'],['>','größer als']];
 const WHENS=['immer','nur von … bis … Uhr','nur wenn dunkel (Sonnenuntergang bis -aufgang)'];
-function pgRules(){return `<p class="mu" style="margin-top:0">Eine Regel reagiert nur, wenn sich der Zustand ändert. Licht lässt sich daher weiter von Hand schalten. Mit „nur ausschalten, was diese Regel eingeschaltet hat“ bleibt ein von Hand eingeschaltetes Licht an. Topics und Schlüssel findest du im 🔎 Topic-Finder unter Einstellungen.</p>
+function pgRules(){return `<p class="mu" style="margin-top:0">Eine Regel reagiert nur, wenn sich der Zustand ändert. Licht lässt sich daher weiter von Hand schalten. Mit „nur ausschalten, was diese Regel eingeschaltet hat“ bleibt ein von Hand eingeschaltetes Licht an. Topics und Schlüssel findest du im 🔎 Topic-Finder unter 📡 Sensoren &amp; Geräte.</p>
   <div id="rlist"></div>
   <div class="row" style="margin-top:12px"><button class="btn" id="radd">+ Regel</button><button class="btn" id="rtpl">+ Vorlage Eingangslicht (Tür)</button></div>
   <div class="actions"><button class="btn pri" id="rsave" style="flex:1">Automationen speichern</button></div>`}
@@ -618,7 +618,7 @@ function readRules(){
     r[f]=e.type==='checkbox'?e.checked:['cond','when','offDelay'].includes(f)?(parseInt(e.value)||0):e.value.trim()});
 }
 async function ruleState(){
-  clearTimeout(ruleTimer);if(page!=='rules')return;ruleTimer=setTimeout(ruleState,2000);
+  clearTimeout(ruleTimer);if(page!=='settings'||setGroup!=='rules'||!$('#rlist'))return;ruleTimer=setTimeout(ruleState,2000);
   let a;try{a=await (await fetch('/api/rules/state')).json()}catch(e){return}
   a.forEach((s,i)=>{const e=$('#rst'+i);if(!e)return;
     e.innerHTML=!s.known?'Noch kein Wert empfangen':(s.active?'<b class="okc">● erfüllt</b>':'○ nicht erfüllt')+(s.offIn!=null?` · aus in ${s.offIn} s`:'')+(s.owned?' · hat eingeschaltet':'')+(s.last?' · zuletzt: '+esc(s.last):'')+(s.allowed?'':' · außerhalb des Zeitraums')});
@@ -917,7 +917,8 @@ function pgSettings(){
    <div class="f2">${inp('poTitle','Titel der Nachricht')}<div><label>Priorität</label><select id="poPrio"><option value="0">Normal</option><option value="1">Hoch (auch in Ruhezeiten)</option><option value="-1">Leise</option></select></div></div>
    <div class="row"><button class="btn" id="potest">Testnachricht</button><span class="mu grow" id="postat"></span></div>
    <p class="mu">Erst speichern, dann testen.</p></details>
-  <details data-g="sys"><summary>🔧 System</summary>
+  <section data-g="rules">${pgRules()}</section>
+  <details data-g="sys" class="fixed" open><summary>🔧 System</summary>
    ${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
    <div class="f2">${inp('webUser','Web-Benutzer')}${inp('webPass','Web-Passwort (leer = kein Schutz)','password')}</div>
    <div class="f2">${inp('ntpServer','Zeitserver')}${inp('tz','Zeitzone (POSIX)')}</div>
@@ -933,14 +934,18 @@ function pgSettings(){
   <div class="savebar"><button class="btn pri" id="save" style="flex:1">Einstellungen speichern</button></div>`;
 }
 // settings groups: [id, label]; the chosen one is remembered in the browser
-const SET_GROUPS=[['view','🖥 Anzeige'],['dev','📡 Sensoren & Geräte'],['net','🔌 Verbindung'],['svc','🌦 Dienste'],['sys','🔧 System']];
+const SET_GROUPS=[['view','🖥 Anzeige'],['dev','📡 Sensoren & Geräte'],['rules','⚡ Automationen'],['net','🔌 Verbindung'],['svc','🌦 Dienste'],['sys','🔧 System']];
+let rulesLoaded=false;   // the automations tab loads its rules on first show (own save button)
 let setGroup=(()=>{try{return localStorage.getItem('setGroup')||'view'}catch(e){return'view'}})();
 function showGroup(g){setGroup=g;try{localStorage.setItem('setGroup',g)}catch(e){}
   document.querySelectorAll('[data-sg]').forEach(b=>b.classList.toggle('on',b.dataset.sg===g));
-  document.querySelectorAll('#sets>details').forEach(d=>d.hidden=d.dataset.g!==g);
+  document.querySelectorAll('#sets>[data-g]').forEach(d=>d.hidden=d.dataset.g!==g);
+  const sb=$('.savebar');if(sb)sb.style.display=g==='rules'?'none':'';   // automations have their own save button
+  if(g==='rules'){if(!rulesLoaded){rulesLoaded=true;loadRules()}else ruleState()}
   const sd=$('#snd');if(g==='dev'&&sd&&!sd.open){sd.open=true}}
 const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','rtTopic','wxGust'];
 async function loadSettings(){
+  rulesLoaded=false;
   try{
     const r=await fetch('/api/settings');if(!r.ok)throw 0;ST=await r.json();
     FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)e.value=ST[f]??''});

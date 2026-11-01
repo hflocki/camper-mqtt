@@ -305,9 +305,10 @@ Die Einstellungen sind in Gruppen geteilt, oben umschaltbar (die letzte Wahl mer
 | --- | --- |
 | 🖥 Anzeige | Display (Helligkeit, Dimmen, Anzeigename) · Seiten & Symbolleiste · Kacheln auf Home · eigene Seiten & MQTT-Kacheln |
 | 📡 Sensoren & Geräte | Sensoren (Zigbee/Bluetooth) · Topics der Geräte (inkl. Heizung/CampMatic) · Geräte-Links · Topic-Finder |
+| ⚡ Automationen | Regeln mit eigenem Speichern-Knopf, siehe [Automationen](#automationen) |
 | 🔌 Verbindung | WLAN · MQTT-Broker |
 | 🌦 Dienste | Wetter · Pushover |
-| 🔧 System | Gerätename, Login, Zeit, Firmware-Update, Sichern/Wiederherstellen, Neustart |
+| 🔧 System | Gerätename, Login, Zeit, Firmware-Update, Sichern/Wiederherstellen, Neustart (immer aufgeklappt) |
 
 **Einstellungen speichern** steht immer unten am Bildschirmrand. Sensoren, eigene Seiten & Kacheln und Automationen haben jeweils einen eigenen Speichern-Knopf. In der Sensorliste ist jeder Sensor eine Zeile mit Typ, Name und aktuellem Wert; Antippen klappt ihn zum Bearbeiten auf.
 
@@ -394,7 +395,7 @@ Einschalten schickt nur die Solltemperatur (die zuletzt gesehene, sonst 20 °C):
 
 ## Automationen
 
-Webseite → **⚡ Automationen**. Jede Regel hat:
+Webseite → *Einstellungen* → **⚡ Automationen**. Jede Regel hat:
 
 | Teil | Felder | Beispiel Eingangslicht |
 | --- | --- | --- |
