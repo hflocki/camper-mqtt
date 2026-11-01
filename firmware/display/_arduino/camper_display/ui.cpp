@@ -137,7 +137,8 @@ lv_obj_t *ovWarn, *ovWarnLbl, *ovInd = nullptr;
 struct ListW { lv_obj_t* line[3] = {nullptr, nullptr, nullptr}; lv_obj_t* sub = nullptr; };
 // coloured circle with a white glyph (title icons, small value icons)
 struct DotW { lv_obj_t* dot = nullptr; lv_obj_t* glyph = nullptr; };
-struct SegW { lv_obj_t* box = nullptr; lv_obj_t* s[SEG_N] = {}; };
+// one object that draws all segments itself (13 child objects per bar cost too much internal RAM)
+struct SegW { lv_obj_t* box = nullptr; };
 // battery / temperature tile: one large value, the others small with their icon below
 struct PairW { DotW d; lv_obj_t* val = nullptr; };
 const int PAIR_N = 4;
@@ -649,16 +650,37 @@ lv_color_t keyColor(const String& k) {
   return C_ACCENT;
 }
 
+// Segment bar state lives in the object's user data (vectors of widgets may move, the object not):
+// bits 0-7 lit segments, bit 8 live (coloured), bits 16-23 gap in px
+void segDraw(lv_event_t* e) {
+  lv_obj_t* o = (lv_obj_t*)lv_event_get_target(e);
+  lv_layer_t* layer = lv_event_get_layer(e);
+  uint32_t st = (uint32_t)(uintptr_t)lv_obj_get_user_data(o);
+  int lit = st & 0xFF, gap = (st >> 16) & 0xFF;
+  bool live = (st >> 8) & 1;
+  lv_area_t a;
+  lv_obj_get_coords(o, &a);
+  int w = lv_area_get_width(&a);
+  int sw = (w - gap * (SEG_N - 1)) / SEG_N;
+  lv_draw_rect_dsc_t dsc;
+  lv_draw_rect_dsc_init(&dsc);
+  dsc.radius = 2;
+  dsc.bg_opa = LV_OPA_COVER;
+  for (int i = 0; i < SEG_N; i++) {
+    lv_area_t r = a;
+    r.x1 = a.x1 + i * (sw + gap);
+    r.x2 = r.x1 + sw - 1;
+    dsc.bg_color = i < lit ? (live ? lv_color_hex(SEG_COL[i]) : C_MUTED) : C_CARD_HI;
+    lv_draw_rect(layer, &dsc, &r);
+  }
+}
+
 // Row of SEG_N segments, `w` wide
 void segBuild(lv_obj_t* parent, SegW& g, int w, int h, int gap) {
   g.box = shape(parent, w, h, 0);
   lv_obj_set_style_bg_opa(g.box, LV_OPA_TRANSP, 0);
-  int sw = (w - gap * (SEG_N - 1)) / SEG_N;
-  for (int i = 0; i < SEG_N; i++) {
-    g.s[i] = shape(g.box, sw, h, 2);
-    lv_obj_set_pos(g.s[i], i * (sw + gap), 0);
-    lv_obj_set_style_bg_color(g.s[i], C_CARD_HI, 0);
-  }
+  lv_obj_set_user_data(g.box, (void*)(uintptr_t)((uint32_t)(gap & 0xFF) << 16));
+  lv_obj_add_event_cb(g.box, segDraw, LV_EVENT_DRAW_MAIN, nullptr);
 }
 
 // f = 0..1 (NAN = unknown): that many segments lit in their colour, grey while offline
@@ -669,8 +691,11 @@ void segSet(SegW& g, float f, bool live) {
     lit = (int)lroundf(constrain(f, 0.0f, 1.0f) * SEG_N);
     if (lit == 0 && f > 0.01f) lit = 1;
   }
-  for (int i = 0; i < SEG_N; i++)
-    lv_obj_set_style_bg_color(g.s[i], i < lit ? (live ? lv_color_hex(SEG_COL[i]) : C_MUTED) : C_CARD_HI, 0);
+  uint32_t old = (uint32_t)(uintptr_t)lv_obj_get_user_data(g.box);
+  uint32_t st = (old & 0xFF0000) | (live ? 0x100 : 0) | (uint32_t)lit;
+  if (st == old) return;
+  lv_obj_set_user_data(g.box, (void*)(uintptr_t)st);
+  lv_obj_invalidate(g.box);
 }
 
 // Title row of a tile: coloured icon circle, then the title. Child 0 = title label, child 1 = circle.

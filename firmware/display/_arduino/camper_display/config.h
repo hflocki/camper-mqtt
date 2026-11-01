@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "2.9.7"
+#define FW_VERSION              "2.9.8"
 
 // ---- Device / access point ------------------------------------------
 #ifndef STATIC_IP_FALLBACK_MS

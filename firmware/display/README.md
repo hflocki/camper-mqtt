@@ -440,6 +440,8 @@ Wird im Haupt-Repo per GitHub Actions gebaut, siehe [Fertige Firmware](../../REA
 
 ## Hinweise
 
+- **Speicher:** LVGL legt alle Bildschirm-Objekte im PSRAM an (`lv_mem_psram.cpp`, in `lv_conf.h` `LV_USE_STDLIB_MALLOC = LV_STDLIB_CUSTOM`). Der interne RAM bleibt so für WLAN und verschlüsselte Verbindungen (Wetter, Pushover) frei; diese brauchen rund 40–50 kB am Stück. Die Zeile *Speicher* auf der Systemseite zeigt den freien internen RAM zuerst – liegt er unter etwa 50 kB, schlagen Wetterabfragen mit „Fehler -1“ fehl.
+
 - Der MaxxFan meldet keine Drehzahl zurück. Die Lüfterseite zeigt deshalb nur Online-Status und Auto-Hold; die Stufe wird gesetzt, nicht gelesen.
 - PubSubClient verwirft Nachrichten über 4 KB (`MQTT_BUFFER_SIZE`). Große Zigbee-Geräte-JSONs bitte in Zigbee2MQTT nicht unnötig aufblähen.
 - Bubble-Richtung: Neigt sich der Punkt falsch herum, im Levelsensor die Montagerichtung prüfen.
