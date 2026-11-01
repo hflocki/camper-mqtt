@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "2.9.6"
+#define FW_VERSION              "2.9.7"
 
 // ---- Device / access point ------------------------------------------
 #ifndef STATIC_IP_FALLBACK_MS
@@ -83,6 +83,9 @@
 #endif
 #ifndef DEFAULT_WX_NAME
 #define DEFAULT_WX_NAME         ""
+#endif
+#ifndef DEFAULT_RT_TOPIC
+#define DEFAULT_RT_TOPIC        "camper/router/mobile"   // mobile signal of the router (RUT956 Data to Server, GSM)
 #endif
 #ifndef DEFAULT_WX_TOPIC
 #define DEFAULT_WX_TOPIC        ""      // MQTT topic with the GPS position, e.g. from the router

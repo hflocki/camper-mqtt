@@ -272,6 +272,7 @@ void getSettings(AsyncWebServerRequest* r) {
   d["wxLon"] = settings.wxLon;
   d["wxName"] = settings.wxName;
   d["wxTopic"] = settings.wxTopic;
+  d["rtTopic"] = settings.rtTopic;
   d["wxGust"] = settings.wxGust;
   d["wxEvery"] = settings.wxEvery;
   d["poStatus"] = notify::status();
@@ -392,6 +393,8 @@ bool applySettings(JsonObject o, bool apply) {
   if (settings.wxName.length() > 32) settings.wxName = settings.wxName.substring(0, 32);
   str("wxTopic", settings.wxTopic, false);
   settings.wxTopic.trim();
+  str("rtTopic", settings.rtTopic, false);
+  settings.rtTopic.trim();
   if (o["wxGust"].is<int>()) settings.wxGust = constrain(o["wxGust"].as<int>(), 0, 200);
   if (o["wxEvery"].is<int>()) settings.wxEvery = constrain(o["wxEvery"].as<int>(), 10, 180);
   if (o["ovTempSel"].is<const char*>() && apply) settings.ovTempSel = icons::clean(o["ovTempSel"].as<const char*>(), icons::MAX_TEMP_SLOTS);

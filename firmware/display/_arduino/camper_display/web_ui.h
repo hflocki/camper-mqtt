@@ -603,8 +603,8 @@ function pgSettings(){
   <details data-g="view" id="dsd" ontoggle="if(this.open)renderSlots()"><summary>🏠 Kacheln auf Home</summary>
    <label>Kacheln der Übersicht (3 × 3, von links oben nach rechts unten)</label>
    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[0,1,2,3,4,5,6,7,8].map(i=>`<select id="ov${i}" style="padding:8px 4px;font-size:13px">${ovChoices().map(c=>`<option value="${c[0]}">${esc(c[1])}</option>`).join('')}</select>`).join('')}</div>
-   <label>Temperatur-Kachel: bis zu ${SLOTS_T} Sensoren mit Symbol (leer = alle). Mehr als 3 wechseln alle paar Sekunden.</label><div id="slt"></div>
-   <label>Batterie-Kachel: Batterien und Symbole</label><div id="slb"></div></details>
+   <label>Temperatur-Kachel: bis zu ${SLOTS_T} Sensoren mit Symbol (leer = alle). Der erste wird groß angezeigt, bis zu 4 weitere klein darunter. Alle stehen auf der Seite Temperatur.</label><div id="slt"></div>
+   <label>Batterie-Kachel: Die erste Batterie wird groß mit Segmentanzeige gezeigt, die anderen klein darunter.</label><div id="slb"></div></details>
   <details data-g="view"><summary>🧩 Eigene Seiten &amp; MQTT-Kacheln <span class="mu" style="font-weight:400">· eigener Speichern-Knopf</span></summary><p class="mu">Für Werte, die keine Sensoren sind, z. B. ein beliebiges MQTT-Topic, Landstrom-Messzange, Router-Daten.</p><div id="pged"></div></details>
   <details data-g="dev" id="snd" ontoggle="if(this.open)loadSensors()"><summary>📡 Sensoren (Zigbee &amp; Bluetooth) <span class="mu" style="font-weight:400">· eigener Speichern-Knopf</span></summary>
    <p class="mu">Eigene Sensoren direkt per MQTT: Zigbee-Gateway mit Cluster-Topics (z. B. SMLIGHT: <code>&lt;Basis&gt;/&lt;Adresse&gt;/1/0006/0000</code>) und Bluetooth über OpenMQTTGateway (<code>&lt;Basis&gt;/&lt;MAC&gt;</code>, Govee, Ruuvi, Xiaomi …). Je Sensor wählst du, auf welchen Seiten er erscheint. Offene Kontakte auf den Geräteseiten werden auf Home in der Status-Kachel gezählt (z. B. 2 🚪).</p>
@@ -644,6 +644,7 @@ function pgSettings(){
    <div class="f2">${inp('wxLat','Breitengrad','text','52.52')}${inp('wxLon','Längengrad','text','13.40')}</div>
    ${inp('wxName','Ortsname (Anzeige)')}
    ${inp('wxTopic','GPS per MQTT (optional, z. B. Topic des Routers)','text','router/gps')}
+   ${inp('rtTopic','Mobilfunk-Signal per MQTT (Balken in der Kopfzeile, leer = WLAN-Signal)','text','camper/router/mobile')}
    <p class="mu" style="margin-top:-4px">Mit Topic folgt das Wetter dem Fahrzeug. Inhalt: JSON mit <code>lat</code>/<code>lon</code> (auch <code>latitude</code>/<code>longitude</code>, auch verschachtelt wie beim RUT956) oder <code>52.52,13.40</code>. Ohne Position gilt der feste Ort oben.</p>
    <div class="f2">${inp('wxGust','Warnung ab Böen (km/h, 0 = aus)','number')}<div><label>Aktualisieren</label><select id="wxEvery"><option value="15">alle 15 min</option><option value="30">alle 30 min</option><option value="60">stündlich</option><option value="120">alle 2 h</option></select></div></div></details>
   <details data-g="svc"><summary>📲 Pushover</summary>
@@ -676,7 +677,7 @@ function showGroup(g){setGroup=g;try{localStorage.setItem('setGroup',g)}catch(e)
   document.querySelectorAll('[data-sg]').forEach(b=>b.classList.toggle('on',b.dataset.sg===g));
   document.querySelectorAll('#sets>details').forEach(d=>d.hidden=d.dataset.g!==g);
   const sd=$('#snd');if(g==='dev'&&sd&&!sd.open){sd.open=true}}
-const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','wxGust'];
+const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','rtTopic','wxGust'];
 async function loadSettings(){
   try{
     const r=await fetch('/api/settings');if(!r.ok)throw 0;ST=await r.json();
@@ -741,7 +742,7 @@ function renderSlots(){
     const live=temp?allTemps().map(x=>x.name).concat(sens().filter(x=>x.k===1&&((x.sh??1)&1)).map(x=>x.n)):bats().map(x=>x.name);
     const names=[...new Set([...live,...cur.map(x=>x.n)].filter(x=>x))];
     box.innerHTML=rows.map(i=>{const c=cur[i]||{n:'',k:''};
-      return `<div class="row" style="gap:8px;margin:4px 0;flex-wrap:nowrap"><select data-sn="${i}" style="flex:1;min-width:0"><option value="">– leer –</option>${names.map(n=>`<option value="${esc(n)}"${n===c.n?' selected':''}>${esc(n)}</option>`).join('')}</select><select data-sk="${i}" style="flex:1;min-width:0"><option value="">Symbol automatisch</option>${ICONS.map(x=>`<option value="${x[0]}"${x[0]===c.k?' selected':''}>${x[1]} ${x[2]}</option>`).join('')}</select></div>`}).join('');
+      return `<div class="row" style="gap:8px;margin:4px 0;flex-wrap:nowrap"><span class="mu" style="min-width:38px;font-size:13px">${i?'klein':'groß'}</span><select data-sn="${i}" style="flex:1;min-width:0"><option value="">– leer –</option>${names.map(n=>`<option value="${esc(n)}"${n===c.n?' selected':''}>${esc(n)}</option>`).join('')}</select><select data-sk="${i}" style="flex:1;min-width:0"><option value="">Symbol automatisch</option>${ICONS.map(x=>`<option value="${x[0]}"${x[0]===c.k?' selected':''}>${x[1]} ${x[2]}</option>`).join('')}</select></div>`}).join('');
   });
 }
 function readSlots(id,n){const b=$('#'+id);if(!b)return'';const l=[];for(let i=0;i<n;i++){const n=b.querySelector(`[data-sn="${i}"]`).value;if(n)l.push(n+'='+b.querySelector(`[data-sk="${i}"]`).value)}return l.join('\n')}

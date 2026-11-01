@@ -193,7 +193,9 @@ Kacheln vom Typ *Wert* und *Schalter* können eine Warnung auslösen. Sie ersche
 
 ### Farben in der Übersicht
 
-Alle Kacheln folgen demselben Aufbau: oben Symbol und Titel, links groß der Wert, unten eine Zeile mit Details, rechts eine Grafik – ein runder Kreis mit Symbol (Heizung, MaxxFan, Status), die Libelle (Level), ein großes Wettersymbol oder die Tank-/Gasflaschen-Zeichnung. Die Flamme leuchtet beim Heizen, der Lüfter blau, wenn der MaxxFan online ist. Temperaturen auf Kacheln stehen kurz als „19,7°“.
+Alle Kacheln folgen demselben Aufbau: oben ein farbiger Kreis mit Symbol und der Titel, links groß der Wert, unten eine Zeile mit Details, rechts eine Grafik – ein Farbkreis mit Symbol (Heizung, MaxxFan, Status), die Libelle (Level), ein großes Wettersymbol oder die Tank-/Gasflaschen-Zeichnung. Ist ein Gerät offline oder aus (Heizung), wird sein Kreis grau. Temperaturen auf Kacheln stehen kurz als „19,7°“.
+
+**Batterie- und Temperatur-Kachel:** Unter *Einstellungen → Kacheln auf Home* bestimmt die erste Zeile („groß“), welche Batterie bzw. welcher Sensor groß angezeigt wird; die weiteren erscheinen klein mit ihrem Symbol darunter (Batterie: 2, Temperatur: 4). Alle stehen auf den Seiten Batterie und Temperatur. Die Batterie zeigt eine Segmentanzeige aus 13 Feldern von Rot nach Grün – nach Ladezustand, bei Batterien ohne Ladezustand (z. B. BM2 an der Starterbatterie) nach Spannung von 11,8 V (leer) bis 12,8 V (voll). Die Segmentanzeige steht auch auf der Seite Batterie. Die Restlaufzeit steht mit Uhr-Symbol (statt „noch …“) auf Kachel und Batterieseite. Die Symbolfarbe richtet sich nach dem gewählten Symbol (z. B. Schneeflocke hellblau, Auto grau, Haus grün, Sonne gelb).
 
 Gas wird als Gasflasche, Frisch- und Grauwasser als Tank mit Skala (25/50/75 %) gezeichnet, die sich von unten füllen. Die Füllung färbt sich nach Zustand: Frischwasser gelb unter 25 %, rot unter 10 %; Gas rot unter 15 %; Grauwasser gelb ab 70 %, rot ab 85 %. Die Prozentzahl wird nur im kritischen Bereich rot. Die Level-Kachel zeigt neben „Eben“/„Schief“ eine kleine Libelle, deren Punkt mit Nick und Roll wandert (Rand = 5°); darunter stehen P (Pitch/Nick) und R (Roll). Zahlen stehen überall mit Dezimalkomma. Ist ein Gerät offline, erscheinen seine Werte grau.
 
@@ -270,6 +272,8 @@ Das Display kann jede Warnung zusätzlich aufs Handy schicken, auch wenn niemand
 Eine Warnung wird pro Ereignis nur einmal gesendet. Ändert sich nur der Wert („9,2 °C“ → „9,8 °C“), kommt keine neue Nachricht. Geht ein Gerät offline, gilt seine Warnung nicht als erledigt. Ohne WLAN oder bei einem Serverfehler versucht das Display es bis zu 5-mal im Minutenabstand. Token und User-Key lassen sich auch in `config_local.h` vorbelegen (`DEFAULT_PUSHOVER_TOKEN`, `DEFAULT_PUSHOVER_USER`).
 
 ## Wetter
+
+Die Wetterseite zeigt unter dem aktuellen Wetter Sonnenaufgang, Sonnenuntergang und die Tageslichtdauer für heute (aus derselben Open-Meteo-Abfrage).
 
 Unter *Einstellungen → 🌦 Wetter*:
 
@@ -417,6 +421,8 @@ Der RUT956 kann GPS und Mobilfunkwerte selbst per MQTT senden, ganz ohne zusätz
 3. Datensammlung **Type: GPS** (Breite, Länge, Geschwindigkeit, Satelliten …). Eine zweite Instanz mit **Type: GSM** und Topic `camper/router/mobile` liefert Signal (RSSI, RSRP, SINR), Netzbetreiber und Modemtemperatur.
 
 Das GPS-Topic kann man auch direkt unter *Einstellungen → 🌦 Wetter → GPS per MQTT* eintragen, dann folgt das Wetter dem Fahrzeug.
+
+Das GSM-Topic ist am Display unter *Einstellungen → 🌦 Wetter → Mobilfunk-Signal per MQTT* eingetragen (Vorgabe `camper/router/mobile`). Daraus zeigt die Kopfzeile links neben dem Datum fünf Signalbalken mit dem Netz („LTE“, „5G“ …). Gezählt wird nach RSRP (≥ −80 dBm = 5 Balken, je 10 dB weniger einer weniger), ohne RSRP nach RSSI; die Schlüssel werden automatisch gesucht (`rsrp`, `rssi`, `signal`, `conntype`, `network_type` …). Kommt 5 Minuten nichts vom Router oder ist das Feld leer, zeigen die Balken die WLAN-Stärke des Displays mit WLAN-Symbol.
 
 Am Display dann im **Topic-Finder** `camper/router/#` starten und die gewünschten Werte per Klick als Kacheln anlegen. Die genauen JSON-Schlüssel hängen von der Router-Firmware ab; der Finder zeigt sie an.
 

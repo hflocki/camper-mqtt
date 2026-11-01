@@ -70,6 +70,7 @@ struct Settings {
   String   wxLat, wxLon;        // fixed position, decimal degrees
   String   wxName;              // shown on the weather page, e.g. the place
   String   wxTopic;             // MQTT topic with the position (GPS); empty = fixed position
+  String   rtTopic;             // MQTT topic with the mobile signal of the router; empty = off
   uint8_t  wxGust = 60;         // warn from these gusts in km/h, 0 = off
   uint8_t  wxEvery = 60;        // update interval in minutes
   // overview tiles temperature / battery: "name=icon" lines (see icons.cpp), "" = all / first 3

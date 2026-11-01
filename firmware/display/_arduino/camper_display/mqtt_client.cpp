@@ -1,5 +1,6 @@
 #include "mqtt_client.h"
 #include "weather.h"
+#include "router.h"
 #include "rules.h"
 #include "sensors.h"
 #include "config.h"
@@ -92,6 +93,7 @@ void onMessage(char* topic, byte* payload, unsigned int len) {
   store::onMessage(topic, (const char*)payload, len);
   rules::onMessage(topic, (const char*)payload, len);
   sensors::onMessage(topic, (const char*)payload, len);
+  rt::onMessage(topic, (const char*)payload, len);
   if (wx::onMessage(topic, (const char*)payload, len)) return;
 
   if (finderOn && matchesFilter(finderSub, topic)) {
@@ -135,6 +137,7 @@ void subscribeAll() {
   }
   if (finderOn) mqtt.subscribe(finderSub.c_str());
   if (settings.wxTopic.length()) mqtt.subscribe(settings.wxTopic.c_str());
+  if (settings.rtTopic.length() && settings.rtTopic != settings.wxTopic) mqtt.subscribe(settings.rtTopic.c_str());
   for (auto& t : sensors::topics()) mqtt.subscribe(t.c_str());
   for (auto& t : rules::topics()) {
     bool dup = false;

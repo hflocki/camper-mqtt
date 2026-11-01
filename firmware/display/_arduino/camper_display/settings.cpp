@@ -88,6 +88,7 @@ void load() {
   settings.wxLon        = prefs.getString("wxlon",  DEFAULT_WX_LON);
   settings.wxName       = prefs.getString("wxname", DEFAULT_WX_NAME);
   settings.wxTopic      = prefs.getString("wxtop",  DEFAULT_WX_TOPIC);
+  settings.rtTopic      = prefs.getString("rttop",  DEFAULT_RT_TOPIC);
   settings.wxGust       = prefs.getUChar ("wxgust", DEFAULT_WX_GUST);
   settings.wxEvery      = prefs.getUChar ("wxevery", 60);
   settings.ovTempSel    = prefs.getString("ovtsel", "");
@@ -173,6 +174,7 @@ void save() {
   prefs.putString("wxlon",  settings.wxLon);
   prefs.putString("wxname", settings.wxName);
   prefs.putString("wxtop",  settings.wxTopic);
+  prefs.putString("rttop",  settings.rtTopic);
   prefs.putUChar ("wxgust", settings.wxGust);
   prefs.putUChar ("wxevery", settings.wxEvery);
   prefs.putString("ovtsel", settings.ovTempSel);
