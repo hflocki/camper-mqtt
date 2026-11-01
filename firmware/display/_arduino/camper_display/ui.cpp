@@ -768,7 +768,9 @@ void buildOverview(lv_obj_t* tab) {
       lv_obj_t* c = tile(tab, ICON_CLOUD_SUN, pageTitle(BP_WEATHER).c_str(), BP_WEATHER);
       ovWxVal = label(c, &font_de_28, C_TEXT, "--");
       lv_obj_align(ovWxVal, LV_ALIGN_LEFT_MID, 0, VAL_Y);
-      ovWxIcon = badge(c, "", C_GAS);
+      // large weather icon without a circle, about the size of the tank drawings
+      ovWxIcon = label(c, &font_de_56, C_GAS, "");
+      lv_obj_align(ovWxIcon, LV_ALIGN_RIGHT_MID, 0, VAL_Y - 4);
       ovWxSub = label(c, &font_de_14, C_MUTED, "");
       lv_obj_set_size(ovWxSub, TILE_IN, lv_font_get_line_height(&font_de_14));
       lv_label_set_long_mode(ovWxSub, LV_LABEL_LONG_DOT);
