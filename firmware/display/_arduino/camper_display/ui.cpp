@@ -38,9 +38,11 @@ LV_FONT_DECLARE(font_de_56);
 namespace {
 
 // ---- colours ---------------------------------------------------------------
-const lv_color_t C_BG      = lv_color_hex(0x0F1419);
-const lv_color_t C_CARD    = lv_color_hex(0x1B232B);
-const lv_color_t C_CARD_HI = lv_color_hex(0x26313B);
+const lv_color_t C_BG      = lv_color_hex(0x0B1015);
+const lv_color_t C_CARD    = lv_color_hex(0x1A232D);
+const lv_color_t C_CARD_LO = lv_color_hex(0x141B23);   // lower end of the tile gradient
+const lv_color_t C_CARD_HI = lv_color_hex(0x27323E);
+const lv_color_t C_LINE    = lv_color_hex(0x263241);   // hairline border of cards
 const lv_color_t C_TEXT    = lv_color_hex(0xE8EDF2);
 const lv_color_t C_MUTED   = lv_color_hex(0x8696A6);
 const lv_color_t C_WATER   = lv_color_hex(0x3BA3E8);
@@ -52,7 +54,8 @@ const lv_color_t C_WARN    = lv_color_hex(0xE5484D);
 const lv_color_t C_ACCENT  = lv_color_hex(0x5AB0F0);
 const lv_color_t C_BANNER  = lv_color_hex(0xF2C94C);   // warning banner (yellow) ...
 const lv_color_t C_ONBANNER = lv_color_hex(0x1A1F24);  // ... and its text
-const lv_color_t C_NAV     = lv_color_hex(0x161D24);
+const lv_color_t C_NAV     = lv_color_hex(0x10161D);
+const lv_color_t C_YELLOW  = lv_color_hex(0xF2C94C);   // "getting low" state
 
 const int HDR_H = 40;                   // header: page title left, date + clock right
 const int NAV_H = 56;                   // icon bar at the bottom, one button per page
@@ -83,9 +86,13 @@ uint32_t lastHeader = 0;
 uint32_t lastValues = 0;
 
 // ---- widget handles ------------------------------------------------------
-struct TankW { lv_obj_t* pct = nullptr; lv_obj_t* sub = nullptr; lv_obj_t* bar = nullptr; };
+enum TankKind : uint8_t { TK_WATER, TK_GREY, TK_GAS };
+struct TankW { lv_obj_t* pct = nullptr; lv_obj_t* sub = nullptr; lv_obj_t* bar = nullptr;
+               uint8_t kind = TK_WATER; lv_color_t base = lv_color_hex(0x3BA3E8); };
 TankW ovWater, ovGrey, ovGas;
 lv_obj_t *ovHeatVal, *ovHeatSub, *ovLvlVal, *ovLvlSub, *ovFanVal, *ovFanSub;
+lv_obj_t *ovLvlRing = nullptr, *ovLvlDot = nullptr;   // small spirit level on the overview tile
+const int LVL_RING = 40, LVL_DOT = 12;
 
 lv_obj_t *hRoom, *hWater, *hSet, *hPower, *hPowerLbl, *hFanBm, *hWaterBm, *hStatus, *hDecoke, *hDecokeLbl;
 lv_obj_t *fStatus, *fSpeed, *fSpeedLbl;
@@ -200,7 +207,8 @@ lv_obj_t* card(lv_obj_t* parent, int w, int h) {
   lv_obj_set_size(c, w, h);
   lv_obj_set_style_bg_color(c, C_CARD, 0);
   lv_obj_set_style_bg_color(c, C_CARD_HI, LV_STATE_PRESSED);
-  lv_obj_set_style_border_width(c, 0, 0);
+  lv_obj_set_style_border_width(c, 1, 0);
+  lv_obj_set_style_border_color(c, C_LINE, 0);
   lv_obj_set_style_radius(c, 16, 0);
   lv_obj_set_style_pad_all(c, 12, 0);
   lv_obj_remove_flag(c, LV_OBJ_FLAG_SCROLLABLE);
@@ -260,13 +268,15 @@ String dispText(const String& s) {
   return out;
 }
 
+String commaNum(float v, int dec);   // "12,3", defined below
+
 String fmt(const String& v, int decimals, const char* unit) {
   if (v.isEmpty()) return "--";
   String s = v;
   if (decimals >= 0) {
     char* end;
     float f = strtof(v.c_str(), &end);
-    if (end != v.c_str()) s = String(f, (unsigned)decimals);
+    if (end != v.c_str()) { s = String(f, (unsigned)decimals); s.replace('.', ','); }
   }
   if (unit && *unit) { s += " "; s += unit; }
   return s;
@@ -308,7 +318,6 @@ void updateHeaderTitle() {
     bool on = navTabs[p] == (int)i;
     lv_obj_set_style_bg_color(navBtns[p], on ? C_CARD_HI : C_NAV, 0);
     lv_obj_set_style_text_color(lv_obj_get_child(navBtns[p], 0), on ? C_ACCENT : C_MUTED, 0);
-    lv_obj_set_style_border_width(navBtns[p], on ? 3 : 0, 0);
   }
 }
 
@@ -432,7 +441,7 @@ std::vector<TempItem> tempItems() {
   for (JsonObject o : doc.as<JsonArray>()) {
     TempItem it;
     it.name = (const char*)(o["name"] | "?");
-    it.val = o["t"].isNull() ? String("--") : String(o["t"].as<float>(), 1) + " \xC2\xB0""C";
+    it.val = o["t"].isNull() ? String("--") : commaNum(o["t"].as<float>(), 1) + " \xC2\xB0""C";
     it.alarm = o["alarm"] | 0;
     out.push_back(it);
   }
@@ -445,7 +454,7 @@ std::vector<TempItem> allTempItems() {
   for (auto& c : sensors::climate()) {
     TempItem it;
     it.name = c.name;
-    it.val = String(c.temp, 1) + " \xC2\xB0""C";
+    it.val = commaNum(c.temp, 1) + " \xC2\xB0""C";
     it.alarm = 0;
     out.push_back(it);
   }
@@ -566,6 +575,8 @@ lv_obj_t* tile(lv_obj_t* parent, const char* icon, const char* title, int bp) {
   lv_obj_t* c = card(parent, TILE_W, TILE_H);
   lv_obj_set_style_pad_all(c, TILE_PAD, 0);
   lv_obj_set_style_radius(c, 14, 0);
+  lv_obj_set_style_bg_grad_color(c, C_CARD_LO, 0);
+  lv_obj_set_style_bg_grad_dir(c, LV_GRAD_DIR_VER, 0);
   if (bp >= 0) {
     lv_obj_add_flag(c, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(c, onOverviewCard, LV_EVENT_CLICKED, (void*)(intptr_t)bp);
@@ -577,16 +588,20 @@ lv_obj_t* tile(lv_obj_t* parent, const char* icon, const char* title, int bp) {
   return c;
 }
 
-lv_obj_t* tankCard(lv_obj_t* parent, const char* icon, const char* title, lv_color_t col, TankW& w) {
+lv_obj_t* tankCard(lv_obj_t* parent, const char* icon, const char* title, lv_color_t col, uint8_t kind, TankW& w) {
   lv_obj_t* c = tile(parent, icon, title, -1);
+  w.kind = kind;
+  w.base = col;
   w.pct = label(c, &font_de_28, C_TEXT, "--");
   lv_obj_align(w.pct, LV_ALIGN_LEFT_MID, 0, -4);
   w.sub = label(c, &font_de_14, C_MUTED, "");
   lv_obj_align(w.sub, LV_ALIGN_BOTTOM_RIGHT, 0, -16);
   w.bar = lv_bar_create(c);
-  lv_obj_set_size(w.bar, TILE_IN, 10);
+  lv_obj_set_size(w.bar, TILE_IN, 8);
   lv_obj_align(w.bar, LV_ALIGN_BOTTOM_MID, 0, 0);
   lv_bar_set_range(w.bar, 0, 100);
+  lv_obj_set_style_radius(w.bar, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+  lv_obj_set_style_radius(w.bar, LV_RADIUS_CIRCLE, LV_PART_INDICATOR);
   lv_obj_set_style_bg_color(w.bar, C_CARD_HI, LV_PART_MAIN);
   lv_obj_set_style_bg_color(w.bar, col, LV_PART_INDICATOR);
   return c;
@@ -646,11 +661,33 @@ void buildOverview(lv_obj_t* tab) {
     t.trim();
     start = (c < 0) ? list.length() + 1 : c + 1;
     count++;
-    if (t == "water")       tankCard(tab, ICON_TINT, "Frischwasser", C_WATER, ovWater);
-    else if (t == "grey")   tankCard(tab, ICON_DRIP, "Grauwasser", C_GREY, ovGrey);
-    else if (t == "gas")    tankCard(tab, ICON_GAS, "Gas", C_GAS, ovGas);
+    if (t == "water")       tankCard(tab, ICON_TINT, "Frischwasser", C_WATER, TK_WATER, ovWater);
+    else if (t == "grey")   tankCard(tab, ICON_DRIP, "Grauwasser", C_GREY, TK_GREY, ovGrey);
+    else if (t == "gas")    tankCard(tab, ICON_GAS, "Gas", C_GAS, TK_GAS, ovGas);
     else if (t == "heater") infoCard(tab, ICON_FIRE, pageTitle(BP_HEATER).c_str(), ovHeatVal, ovHeatSub, BP_HEATER);
-    else if (t == "level")  infoCard(tab, ICON_BALANCE, pageTitle(BP_LEVEL).c_str(), ovLvlVal, ovLvlSub, BP_LEVEL);
+    else if (t == "level") {
+      lv_obj_t* c = infoCard(tab, ICON_BALANCE, pageTitle(BP_LEVEL).c_str(), ovLvlVal, ovLvlSub, BP_LEVEL);
+      // small spirit level right of "Eben": the dot moves with pitch and roll
+      ovLvlRing = lv_obj_create(c);
+      lv_obj_set_size(ovLvlRing, LVL_RING, LVL_RING);
+      lv_obj_set_style_radius(ovLvlRing, LV_RADIUS_CIRCLE, 0);
+      lv_obj_set_style_bg_color(ovLvlRing, C_BG, 0);
+      lv_obj_set_style_border_width(ovLvlRing, 1, 0);
+      lv_obj_set_style_border_color(ovLvlRing, C_LINE, 0);
+      lv_obj_set_style_pad_all(ovLvlRing, 0, 0);
+      lv_obj_remove_flag(ovLvlRing, LV_OBJ_FLAG_SCROLLABLE);
+      lv_obj_remove_flag(ovLvlRing, LV_OBJ_FLAG_CLICKABLE);
+      lv_obj_add_flag(ovLvlRing, LV_OBJ_FLAG_EVENT_BUBBLE);
+      lv_obj_align(ovLvlRing, LV_ALIGN_RIGHT_MID, 0, 0);
+      ovLvlDot = lv_obj_create(ovLvlRing);
+      lv_obj_set_size(ovLvlDot, LVL_DOT, LVL_DOT);
+      lv_obj_set_style_radius(ovLvlDot, LV_RADIUS_CIRCLE, 0);
+      lv_obj_set_style_border_width(ovLvlDot, 0, 0);
+      lv_obj_set_style_bg_color(ovLvlDot, C_MUTED, 0);
+      lv_obj_remove_flag(ovLvlDot, LV_OBJ_FLAG_CLICKABLE);
+      lv_obj_remove_flag(ovLvlDot, LV_OBJ_FLAG_SCROLLABLE);
+      lv_obj_center(ovLvlDot);
+    }
     else if (t == "fan")    infoCard(tab, ICON_FAN, pageTitle(BP_FAN).c_str(), ovFanVal, ovFanSub, BP_FAN);
     else if (t == "temp")   listCard(tab, ICON_THERMOMETER, pageTitle(BP_TEMP).c_str(), ovTemp, BP_TEMP);
     else if (t == "bat")    listCard(tab, LV_SYMBOL_BATTERY_FULL, pageTitle(BP_BATTERY).c_str(), ovBat, BP_BATTERY);
@@ -698,6 +735,7 @@ void buildOverview(lv_obj_t* tab) {
       // "none" or unknown: empty slot, keeps the grid position
       lv_obj_t* c = card(tab, TILE_W, TILE_H);
       lv_obj_set_style_bg_opa(c, LV_OPA_TRANSP, 0);
+      lv_obj_set_style_border_width(c, 0, 0);
     }
   }
 }
@@ -1311,7 +1349,17 @@ void setTank(TankW& w, DpId pct, DpId liters, bool online) {
   lv_label_set_text(w.pct, fmt(p, 0, "%").c_str());
   lv_label_set_text(w.sub, store::has(liters) ? fmt(store::get(liters), 0, "L").c_str() : "");
   lv_bar_set_value(w.bar, p.length() ? constrain((int)p.toFloat(), 0, 100) : 0, LV_ANIM_ON);
-  lv_obj_set_style_text_color(w.pct, online ? C_TEXT : C_MUTED, 0);
+  // state colours: fresh water and gas get critical when low, grey water when full
+  lv_color_t col = w.base;
+  bool crit = false;
+  if (p.length()) {
+    float v = p.toFloat();
+    if (w.kind == TK_GREY)     { if (v >= 85) { col = C_WARN; crit = true; } else if (v >= 70) col = C_YELLOW; }
+    else if (w.kind == TK_GAS) { if (v < 15) { col = C_WARN; crit = true; } }
+    else                       { if (v < 10) { col = C_WARN; crit = true; } else if (v < 25) col = C_YELLOW; }
+  }
+  lv_obj_set_style_bg_color(w.bar, online ? col : C_MUTED, LV_PART_INDICATOR);
+  lv_obj_set_style_text_color(w.pct, !online ? C_MUTED : (crit ? C_WARN : C_TEXT), 0);
 }
 
 void setMatrix(lv_obj_t* bm, int checked) {
@@ -1323,7 +1371,7 @@ String wedgeText(DpId id) {
   if (!store::has(id)) return "--";
   float v = store::getf(id, 0);
   if (fabsf(v) < 0.05f) return "OK";
-  return String(v, 1) + " cm";
+  return commaNum(v, 1) + " cm";
 }
 
 // Weather tile, bottom line: measured outside temperature if there is a sensor, else the forecast text
@@ -1384,17 +1432,26 @@ void refreshValues() {
     String hs = !heatOn ? "offline"
               : (store::get(DP_HEAT_HVAC) == "heat" ? "An, Soll " + fmt(store::get(DP_HEAT_SETPOINT), 0, "\xC2\xB0""C") : "Aus");
     lv_label_set_text(ovHeatSub, hs.c_str());
-    lv_obj_set_style_text_color(ovHeatVal, store::get(DP_HEAT_HVAC) == "heat" ? C_HEAT : C_TEXT, 0);
+    lv_obj_set_style_text_color(ovHeatVal, !heatOn ? C_MUTED : (store::get(DP_HEAT_HVAC) == "heat" ? C_HEAT : C_TEXT), 0);
   }
   if (ovLvlVal) {
     bool level = store::get(DP_LVL_OK) == "ON";
     lv_label_set_text(ovLvlVal, !store::has(DP_LVL_OK) ? "--" : (level ? "Eben" : "Schief"));
     lv_obj_set_style_text_color(ovLvlVal, !store::has(DP_LVL_OK) ? C_TEXT : (level ? C_OK : C_WARN), 0);
-    lv_label_set_text(ovLvlSub, lvlOn ? ("Nick " + fmt(store::get(DP_LVL_PITCH), 1, "\xC2\xB0") +
-                                         "  Roll " + fmt(store::get(DP_LVL_ROLL), 1, "\xC2\xB0")).c_str() : "offline");
+    lv_label_set_text(ovLvlSub, lvlOn ? ("N " + fmt(store::get(DP_LVL_PITCH), 1, "\xC2\xB0") +
+                                         "   R " + fmt(store::get(DP_LVL_ROLL), 1, "\xC2\xB0")).c_str() : "offline");
+    if (ovLvlDot) {
+      const float range = 5.0f;   // degrees at the edge of the ring
+      const int r = (LVL_RING - LVL_DOT) / 2 - 2;
+      float pitch = store::getf(DP_LVL_PITCH, 0), roll = store::getf(DP_LVL_ROLL, 0);
+      lv_obj_align(ovLvlDot, LV_ALIGN_CENTER, (int)(constrain(roll / range, -1.0f, 1.0f) * r),
+                   (int)(constrain(-pitch / range, -1.0f, 1.0f) * r));
+      lv_obj_set_style_bg_color(ovLvlDot, !lvlOn || !store::has(DP_LVL_OK) ? C_MUTED : (level ? C_OK : C_YELLOW), 0);
+    }
   }
   if (ovFanVal) {
     lv_label_set_text(ovFanVal, fanOn ? "Bereit" : "--");
+    lv_obj_set_style_text_color(ovFanVal, fanOn ? C_TEXT : C_MUTED, 0);
     lv_label_set_text(ovFanSub, fanOn ? (store::get(DP_FAN_HOLD) == "ON" ? "Auto-Hold aktiv" : "Tippen zum Steuern") : "offline");
   }
 
@@ -1452,10 +1509,12 @@ void refreshValues() {
   if (ovWarn) {
     bool any = warn.length() > 0;
     lv_obj_set_style_bg_color(ovWarn, any ? C_WARN : C_CARD, 0);
+    lv_obj_set_style_bg_grad_color(ovWarn, any ? lv_color_hex(0xB8363A) : C_CARD_LO, 0);
+    lv_obj_set_style_border_color(ovWarn, any ? C_WARN : C_LINE, 0);
     lv_obj_set_style_bg_color(ovWarn, any ? C_WARN : C_CARD_HI, LV_STATE_PRESSED);
     lv_obj_set_style_text_font(ovWarnLbl, any ? &font_de_14 : &font_de_28, 0);
     lv_obj_set_style_text_color(ovWarnLbl, any ? C_TEXT : C_OK, 0);
-    lv_label_set_text(ovWarnLbl, any ? dispText(warn).c_str() : "OK");
+    lv_label_set_text(ovWarnLbl, any ? dispText(warn).c_str() : LV_SYMBOL_OK "  OK");
     if (ovInd) {
       String ic;
       int open = sensors::openCount();
@@ -1917,6 +1976,7 @@ void refreshHeader() {
 void clearHandles() {
   ovWater = ovGrey = ovGas = TankW();
   ovHeatVal = ovHeatSub = ovLvlVal = ovLvlSub = ovFanVal = ovFanSub = nullptr;
+  ovLvlRing = ovLvlDot = nullptr;
   hRoom = hWater = hSet = hPower = hPowerLbl = hFanBm = hWaterBm = hStatus = hDecoke = hDecokeLbl = nullptr;
   fStatus = fSpeed = fSpeedLbl = nullptr;
   lvArea = lvBubble = lvZone = lvPitch = lvRoll = lvState = nullptr;
@@ -2014,25 +2074,28 @@ void buildNav() {
   nav = lv_obj_create(scr);
   lv_obj_set_size(nav, LCD_WIDTH, NAV_H);
   lv_obj_align(nav, LV_ALIGN_BOTTOM_MID, 0, 0);
+  const int NAV_PAD = 6;
   lv_obj_set_style_bg_color(nav, C_NAV, 0);
-  lv_obj_set_style_border_width(nav, 0, 0);
+  lv_obj_set_style_border_side(nav, LV_BORDER_SIDE_TOP, 0);
+  lv_obj_set_style_border_color(nav, C_LINE, 0);
+  lv_obj_set_style_border_width(nav, 1, 0);
   lv_obj_set_style_radius(nav, 0, 0);
-  lv_obj_set_style_pad_all(nav, 0, 0);
-  lv_obj_set_style_pad_gap(nav, 0, 0);
+  lv_obj_set_style_pad_all(nav, NAV_PAD, 0);
+  lv_obj_set_style_pad_gap(nav, NAV_PAD, 0);
   lv_obj_set_flex_flow(nav, LV_FLEX_FLOW_ROW);
+  lv_obj_set_flex_align(nav, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_remove_flag(nav, LV_OBJ_FLAG_SCROLLABLE);
   int n = navTabs.size();
-  int w = LCD_WIDTH / n;
+  int inner = LCD_WIDTH - 2 * NAV_PAD - 2 - NAV_PAD * (n - 1);   // 2: border, counted on both sides
+  int w = inner / n;
   for (int i = 0; i < n; i++) {
     lv_obj_t* b = lv_button_create(nav);
-    lv_obj_set_size(b, i == n - 1 ? LCD_WIDTH - w * (n - 1) : w, NAV_H);
-    lv_obj_set_style_radius(b, 0, 0);
+    lv_obj_set_size(b, i == n - 1 ? inner - w * (n - 1) : w, NAV_H - 2 * NAV_PAD - 2);
+    lv_obj_set_style_radius(b, 14, 0);
     lv_obj_set_style_shadow_width(b, 0, 0);
+    lv_obj_set_style_border_width(b, 0, 0);
     lv_obj_set_style_bg_color(b, C_NAV, 0);
     lv_obj_set_style_bg_color(b, C_CARD_HI, LV_STATE_PRESSED);
-    lv_obj_set_style_border_side(b, LV_BORDER_SIDE_TOP, 0);
-    lv_obj_set_style_border_color(b, C_ACCENT, 0);
-    lv_obj_set_style_border_width(b, 0, 0);
     lv_obj_t* l = label(b, &font_de_28, C_MUTED, pageIcon(pages[navTabs[i]]));
     lv_obj_center(l);
     lv_obj_add_event_cb(b, onNav, LV_EVENT_CLICKED, (void*)(intptr_t)navTabs[i]);

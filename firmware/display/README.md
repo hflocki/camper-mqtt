@@ -191,6 +191,10 @@ Kacheln vom Typ *Wert* und *Schalter* können eine Warnung auslösen. Sie ersche
 
 **Landstrom mit einer Tuya-Zigbee-Messzange** (über Zigbee2MQTT): Kachel *Wert* mit Status-Topic `zigbee2mqtt/<Name der Zange>`, Schlüssel `voltage`, Einheit `V`. Warnung *wenn Wert unter* `180`, Warntext `Landstrom weg`. Viele dieser Zangen hängen selbst am 230-V-Netz und schweigen, wenn der Landstrom fehlt. Deshalb zusätzlich *Warnen, wenn keine Daten seit* `10` Minuten eintragen; im Topic-Finder sieht man, wie oft die Zange sendet. Wer nur die Leistung hat, nimmt den Schlüssel `power` und warnt z. B. unter `1` W.
 
+### Farben in der Übersicht
+
+Füllstände färben sich nach Zustand: Frischwasser gelb unter 25 %, rot unter 10 %; Gas rot unter 15 %; Grauwasser gelb ab 70 %, rot ab 85 %. Die Prozentzahl wird nur im kritischen Bereich rot. Die Level-Kachel zeigt neben „Eben“/„Schief“ eine kleine Libelle, deren Punkt mit Nick und Roll wandert (Rand = 5°). Zahlen stehen überall mit Dezimalkomma. Ist ein Gerät offline, erscheinen seine Werte grau.
+
 ## MQTT
 
 Das Display abonniert `<Basis-Topic>/#` jedes Geräts und die Topics der Kacheln. Befehle werden nicht retained gesendet.
