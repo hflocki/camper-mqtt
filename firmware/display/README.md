@@ -434,10 +434,11 @@ Webseite → *Einstellungen* → **⚡ Automationen**. Jede Regel hat:
 Der RUT956 kann GPS und Mobilfunkwerte selbst per MQTT senden, ganz ohne zusätzliche Firmware. Im Router unter **Services → Data to Server**:
 
 1. Neue Instanz, **Server type: MQTT**, Server `127.0.0.1` (der Broker läuft auf dem Router), Port `1883`, ggf. Benutzer/Passwort.
-2. Topic z. B. `camper/router/gps`, Format **Json**, Timer **Period** 60 s.
-3. Datensammlung **Type: GPS** (Breite, Länge, Geschwindigkeit, Satelliten …). Eine zweite Instanz mit **Type: GSM** und Topic `camper/router/mobile` liefert Signal (RSSI, RSRP, SINR), Netzbetreiber und Modemtemperatur.
+2. Topic `camper/rut`, Format **Json**, Timer **Period** z. B. 10–60 s (kürzer = Abfahrtscheck reagiert schneller).
+3. Datensammlung **Type: GPS** (Breite, Länge, Höhe, Geschwindigkeit in km/h, Genauigkeit, Satelliten, `fix_status`). Der Router packt es als `{"TIME":…,"GPS":{…}}`. Eine zweite Instanz mit **Type: GSM** und Topic `camper/router/mobile` liefert Signal (RSSI, RSRP, SINR), Netzbetreiber und Modemtemperatur.
+4. Für die Tür eine Instanz mit dem Digitaleingang (z. B. `din2`, eigener Name „Door“) und Topic `camper/door`: `{"Door":{"name":"din2","type":"Digital In","state":"open"|"close","custom_name":"Door"}}`.
 
-Das GPS-Topic kann man auch direkt unter *Einstellungen → 🌦 Wetter → GPS per MQTT* eintragen, dann folgt das Wetter dem Fahrzeug.
+`camper/rut` und `camper/door` nutzt der [Abfahrtscheck](#warnungen) ab Werk. Das GPS-Topic kann man zusätzlich unter *Einstellungen → 🌦 Wetter → GPS per MQTT* eintragen, dann folgt das Wetter dem Fahrzeug. Alle Topics: [docs/TOPICS.md](../../docs/TOPICS.md).
 
 Das GSM-Topic ist am Display unter *Einstellungen → 🌦 Wetter → Mobilfunk-Signal per MQTT* eingetragen (Vorgabe `camper/router/mobile`). Daraus zeigt die Kopfzeile links neben dem Datum fünf Signalbalken mit dem Netz („LTE“, „5G“ …). Gezählt wird nach RSRP (≥ −80 dBm = 5 Balken, je 10 dB weniger einer weniger), ohne RSRP nach RSSI; die Schlüssel werden automatisch gesucht (`rsrp`, `rssi`, `signal`, `conntype`, `network_type` …). Kommt 5 Minuten nichts vom Router oder ist das Feld leer, zeigen die Balken die WLAN-Stärke des Displays mit WLAN-Symbol.
 

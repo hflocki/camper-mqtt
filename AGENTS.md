@@ -12,7 +12,7 @@ Monorepo für Camper-Elektronik: jedes Gerät ist ein ESP8266/ESP32 mit reiner *
   git pull && git apply X.patch && rm X.patch && git add -A && git commit -m "..." && git push && git tag <gerät>-v<version> && git push origin <gerät>-v<version>
   ```
   Commit-Messages auf Englisch, Präfix mit dem Gerät (`display: …`, `heater: …`).
-- **Immer mit Release:** Der gelieferte Befehl endet mit Tag und Tag-Push für **jedes** im Patch geänderte Gerät (`git tag display-v2.9.1 && git tag battery-v1.3.2 && git push origin display-v2.9.1 battery-v1.3.2`). Der Tag löst in GitHub Actions das Release mit der `.bin` aus. Ein Tag gilt nur einmal: jeder Patch, der ein Gerät ändert, erhöht dessen `FW_VERSION`, auch bei Folge-Patches am selben Tag. Patches nur für Doku/Werkzeuge ohne Firmware-Änderung bekommen keinen Tag.
+- **Immer mit Release:** Der gelieferte Befehl endet mit Tag und Tag-Push für **jedes** im Patch geänderte Gerät (`git tag display-v2.9.1 && git tag battery-v1.3.2 && git push origin display-v2.9.1 && git push origin battery-v1.3.2`). **Jeden Tag einzeln pushen:** Kommen mehr als drei Tags in einem Push, startet GitHub für keinen davon einen Workflow, dann fehlen die Releases.. Der Tag löst in GitHub Actions das Release mit der `.bin` aus. Ein Tag gilt nur einmal: jeder Patch, der ein Gerät ändert, erhöht dessen `FW_VERSION`, auch bei Folge-Patches am selben Tag. Patches nur für Doku/Werkzeuge ohne Firmware-Änderung bekommen keinen Tag.
 - Folge-Patches setzen auf dem zuletzt gelieferten Stand auf (nicht auf `main`), wenn der Besitzer ihn schon angewendet hat; vorher mit `git apply --check` gegen genau diesen Stand prüfen.
 - **Python-Werkzeuge** laufen in einer venv und bringen eine `requirements.txt` mit (auch wenn nur die Standardbibliothek gebraucht wird – dann steht das als Kommentar drin).
 - **Keine Downloads im Repo-Hauptordner:** `.bin`, `.zip`, Bilder usw. gehören in `firmware/<gerät>/…` oder gar nicht ins Repo (`.gitignore` fängt Hauptordner-Dateien ab).
@@ -30,7 +30,7 @@ Monorepo für Camper-Elektronik: jedes Gerät ist ein ESP8266/ESP32 mit reiner *
 | `tools/mockups/` | Generator der Mockups: `python3 tools/mockups/make_mockups.py`, Beispieldaten je Gerät in `mock/<gerät>.js` |
 | `.github/workflows/build.yml` | baut bei jedem Push alle Geräte; Tag `<gerät>-v<version>` erzeugt ein Release mit `.bin` |
 
-Gemeinsames MQTT-Schema: `camper/<gerät>/…` retained, `…/status` = `online`/`offline` als Last Will, `…/info` = Diagnose-JSON (`devinfo.*` aus `firmware/_common`), Befehle unter `…/cmd/…` bzw. `…/set/…` nicht retained.
+Gemeinsames MQTT-Schema: `camper/<gerät>/…` retained, `…/status` = `online`/`offline` als Last Will, `…/info` = Diagnose-JSON (`devinfo.*` aus `firmware/_common`), Befehle unter `…/cmd/…` bzw. `…/set/…` nicht retained. Alle Topics stehen in [`docs/TOPICS.md`](docs/TOPICS.md); neue oder geänderte Topics dort mitpflegen.
 
 ## Bauen und prüfen
 

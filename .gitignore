@@ -9,6 +9,9 @@ build/
 # Patch files dropped into the repo for applying
 *.patch
 
+STATUS.md
+ROADMAP.md
+
 # Personal settings of each device (see config_local.h.example)
 config_local.h
 
