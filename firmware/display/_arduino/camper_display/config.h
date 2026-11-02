@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "2.9.14"
+#define FW_VERSION              "2.9.15"
 
 // ---- Device / access point ------------------------------------------
 #ifndef STATIC_IP_FALLBACK_MS
@@ -99,6 +99,10 @@
 #endif
 #ifndef DEFAULT_WARN_FROST
 #define DEFAULT_WARN_FROST      3       // frost warning below this outside temperature in °C (off by default)
+#endif
+
+#ifndef DEFAULT_AWNING_GUST
+#define DEFAULT_AWNING_GUST     40      // awning out: warn from these gusts (km/h), 0 = off
 #endif
 
 #ifndef DEFAULT_WX_GUST

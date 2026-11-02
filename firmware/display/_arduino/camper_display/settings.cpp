@@ -100,6 +100,10 @@ void load() {
   settings.wnFrost      = prefs.getChar  ("wnfros", DEFAULT_WARN_FROST);
   settings.wnHystT      = prefs.getUChar ("wnhyst", 10);
   settings.poQuiet      = prefs.getUShort("pquiet", 30);
+  settings.outName      = prefs.getString("outnam", "");
+  settings.awnSrc       = prefs.getString("awnsrc", "");
+  settings.awnGust      = prefs.getUChar ("awngst", DEFAULT_AWNING_GUST);
+  settings.awnOut       = prefs.getBool  ("awnout", false);
   settings.ovTempSel    = prefs.getString("ovtsel", "");
   settings.ovBatSel     = prefs.getString("ovbsel", "");
   settings.ovTiles      = prefs.getString("ovt",    DEFAULT_OV_TILES);
@@ -128,6 +132,13 @@ void load() {
     if (!pagesJson.isEmpty()) Serial.printf("[cfg] stored pages invalid (%s), using defaults\n", err.c_str());
     pagesFromJson(DEFAULT_PAGES, err);
   }
+}
+
+// Only the awning switch: it changes often, the full save writes every key
+void saveAwning() {
+  prefs.begin(NS, false);
+  prefs.putBool("awnout", settings.awnOut);
+  prefs.end();
 }
 
 void save() {
@@ -195,6 +206,10 @@ void save() {
   prefs.putChar  ("wnfros", settings.wnFrost);
   prefs.putUChar ("wnhyst", settings.wnHystT);
   prefs.putUShort("pquiet", settings.poQuiet);
+  prefs.putString("outnam", settings.outName);
+  prefs.putString("awnsrc", settings.awnSrc);
+  prefs.putUChar ("awngst", settings.awnGust);
+  prefs.putBool  ("awnout", settings.awnOut);
   prefs.putString("ovtsel", settings.ovTempSel);
   prefs.putString("ovbsel", settings.ovBatSel);
   prefs.putUChar("bpknown", BP_COUNT);

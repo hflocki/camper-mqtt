@@ -1,5 +1,6 @@
 #include "web.h"
 #include "netdev.h"
+#include "alerts.h"
 #include "weather.h"
 #include "icons.h"
 #include "config.h"
@@ -148,6 +149,18 @@ void buildSys(JsonObject s) {
   for (auto& k : rules::activeIcons()) ind.add(k);
   for (auto& k : sensors::activeIcons()) ind.add(k);
   s["open"] = sensors::openCount();                // open windows / doors on the actuator page
+  s["awn"] = alerts::awning();                     // awning: -1 unknown, 0 in, 1 out
+  s["awnSw"] = alerts::awningIsSwitch();           // switchable from the web page
+  {
+    sensors::TempOut o{};                          // outside temperature (chosen sensor)
+    if (sensors::outdoor(o)) {
+      JsonObject od = s["outd"].to<JsonObject>();
+      od["n"] = o.name;
+      od["t"] = o.temp;
+      if (!isnan(o.hum)) od["h"] = o.hum;
+      od["st"] = o.stale;
+    }
+  }
   JsonDocument sv;   // own Zigbee/BLE sensors with their values
   deserializeJson(sv, sensors::valuesJson());
   s["sen"] = sv.as<JsonArray>();
@@ -208,6 +221,9 @@ void handleCmd(const Cmd& c) {
     Serial.printf("[disp] screen %s via web page\n", v.c_str());
     if (v == "off") disp::sleep(); else disp::wake();
     mqttc::publishSelfState();
+  } else if (!strcmp(c.c, "awning")) {
+    if (!alerts::awningIsSwitch()) ok = false;
+    else alerts::setAwning(v == "toggle" ? alerts::awning() != 1 : v == "on");
   } else if (!strcmp(c.c, "finder")) {
     if (k == "on") mqttc::finderStart(v); else mqttc::finderStop();
     JsonDocument f;
@@ -285,6 +301,9 @@ void getSettings(AsyncWebServerRequest* r) {
   d["wnFrost"] = settings.wnFrost;
   d["wnHystT"] = settings.wnHystT / 10.0f;
   d["poQuiet"] = settings.poQuiet;
+  d["outName"] = settings.outName;
+  d["awnSrc"] = settings.awnSrc;
+  d["awnGust"] = settings.awnGust;
   d["poStatus"] = notify::status();
   d["brightness"] = settings.brightness;
   d["dimBrightness"] = settings.dimBrightness;
@@ -417,6 +436,11 @@ bool applySettings(JsonObject o, bool apply) {
   if (o["wnFrost"].is<int>()) settings.wnFrost = constrain(o["wnFrost"].as<int>(), -20, 15);
   if (o["wnHystT"].is<float>()) settings.wnHystT = constrain((int)lroundf(o["wnHystT"].as<float>() * 10), 0, 50);
   if (o["poQuiet"].is<int>()) settings.poQuiet = constrain(o["poQuiet"].as<int>(), 0, 1440);
+  str("outName", settings.outName, false);
+  settings.outName.trim();
+  str("awnSrc", settings.awnSrc, false);
+  settings.awnSrc.trim();
+  if (o["awnGust"].is<int>()) settings.awnGust = constrain(o["awnGust"].as<int>(), 0, 150);
   if (o["ovTempSel"].is<const char*>() && apply) settings.ovTempSel = icons::clean(o["ovTempSel"].as<const char*>(), icons::MAX_TEMP_SLOTS);
   if (o["ovBatSel"].is<const char*>() && apply) settings.ovBatSel = icons::clean(o["ovBatSel"].as<const char*>());
   settings.prefixSelf = cleanPrefix(settings.prefixSelf);

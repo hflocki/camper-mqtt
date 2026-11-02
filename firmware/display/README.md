@@ -240,6 +240,8 @@ Das Display abonniert `<Basis-Topic>/#` jedes Geräts und die Topics der Kacheln
 | `camper/display/cmd/brightness` | `5` … `100` |
 | `camper/display/cmd/screen` | `ON` / `OFF` |
 | `camper/display/cmd/page` | Seitenname (`Heizung`) oder Nummer (`0` = erste) |
+| `camper/display/awning` | Markise `ON` (ausgefahren) / `OFF` / `unknown` (retained) |
+| `camper/display/cmd/awning` | `ON` / `OFF` / `TOGGLE` (nur ohne Kontakt-Sensor) |
 | `camper/display/cmd/reboot` | beliebig |
 
 Beispiel: `mosquitto_pub -h <broker> -t camper/display/cmd/screen -m OFF`
@@ -254,13 +256,18 @@ Die Status-Kachel der Übersicht wird rot und zeigt die Warnungen, solange etwas
 | camper-heater | `control_status/heater_error` = `ON`, mit Fehlercode |
 | Wetter | Böen ab dem eingestellten Wert (Standard 60 km/h) oder Gewitter, siehe [Wetter](#wetter) |
 | camper-tanklevel | Frischwasser unter 10 %, Gas unter 15 % (einstellbar) |
-| Frost | Außentemperatur unter 3 °C (ab Werk aus): eigener Außensensor, sonst das Wetter |
+| Frost | Außentemperatur unter 3 °C (ab Werk aus): gewählter Außensensor, sonst das Wetter |
+| Markise | Markise ausgefahren und Böen ab 40 km/h (einstellbar, eigene Grenze unter der normalen Wind-Warnung) |
 | Eigene Klimasensoren | Temperatur über „Warnung über °C“ des Sensors, z. B. Zigbee-Sensor im Kühlschrank |
 | camper-battery | Ladestand unter 20 % (einstellbar, Vorgabe `BAT_WARN_SOC` in `config.h`, mit Restlaufzeit), BM2-Zustand „Schwach“ oder „Kritisch“ (Starterbatterie), BMS meldet einen Fehler – ab camper-battery 1.3.1 mit Text, z. B. „Bordbatterie BMS: Zellspannung zu hoch (Stufe 1)“, auch auf der Batterieseite. Batterien ohne Verbindung lösen keine Warnung aus |
 
 Warnungen von Geräten, die `offline` sind, werden nicht gezeigt (alte retained Werte sollen keinen Fehlalarm auslösen). Grenzwerte und Verzögerung der camper-temp-Sensoren stellt man direkt in camper-temp ein, nicht am Display.
 
 **Grenzwerte und Hysterese** stehen unter *Einstellungen → 🌦 Dienste → ⚠️ Warnungen*: Frischwasser, Gas, Batterie (0 = aus), Frost (an/aus, Grenze in °C), dazu die Hysterese für Füllstände/Batterie (Standard 3 %), Temperaturen (1,0 °C) und Böen (10 km/h). Eine Warnung endet erst, wenn der Wert die Grenze um die Hysterese überschritten hat – so kommt und geht sie nicht bei jedem Messwert knapp an der Grenze.
+
+**Außentemperatur:** Im selben Abschnitt wählst du den Sensor für die Außentemperatur – einen eigenen Zigbee-/Bluetooth-Klimasensor oder einen Sensor von camper-temp. Er gilt für die Wetter-Seite, die Wetter-Kachel und die Frostwarnung. „automatisch“ nimmt wie bisher den ersten eigenen Sensor mit dem Haken „Wetter“.
+
+**Markise:** Ohne Kontakt an der Markise setzt du den Zustand von Hand – Knopf auf der Wetter-Seite (Display und Webseite) oder per MQTT `camper/display/cmd/awning` = `ON`/`OFF`/`TOGGLE`. Der Zustand bleibt über einen Neustart erhalten. Gibt es später einen Kontakt (Zigbee-Tür-/Fensterkontakt an der Markise, offen = ausgefahren), wählst du ihn unter „Zustand kommt von“, dann verschwindet der Knopf. Die Böen kommen von Open-Meteo, also so aktuell wie das eingestellte Abrufintervall des Wetters.
 
 ### Push-Nachrichten (Pushover)
 

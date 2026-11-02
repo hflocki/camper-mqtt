@@ -1,6 +1,7 @@
 #include "sensors.h"
 #include "alerts.h"
 #include "settings.h"
+#include "datastore.h"
 #include "icons.h"
 #include <ArduinoJson.h>
 #include <Preferences.h>
@@ -358,6 +359,27 @@ std::vector<TempOut> climate() {
 }
 
 bool outdoor(TempOut& out) {
+  // chosen sensor (Einstellungen > Warnungen): own climate sensor or a camper-temp sensor by name
+  if (settings.outName.length()) {
+    {
+      Lock lock;
+      uint32_t now = millis();
+      for (size_t i = 0; i < devs.size(); i++) {
+        if (devs[i].kind != K_CLIMATE || devs[i].name != settings.outName || isnan(vals[i].temp)) continue;
+        out = {devs[i].name, vals[i].temp, vals[i].hum, !vals[i].at || now - vals[i].at > STALE_MS};
+        return true;
+      }
+    }
+    JsonDocument doc;
+    const String& list = store::get(DP_TEMP_LIST);
+    if (list.isEmpty() || deserializeJson(doc, list)) return false;
+    for (JsonObjectConst o : doc.as<JsonArrayConst>()) {
+      if (settings.outName != (o["name"] | "") || !o["t"].is<float>()) continue;
+      out = {settings.outName, o["t"].as<float>(), NAN, !store::devOnline(DEV_TEMP)};
+      return true;
+    }
+    return false;
+  }
   Lock lock;
   uint32_t now = millis();
   for (size_t i = 0; i < devs.size(); i++) {
@@ -366,6 +388,18 @@ bool outdoor(TempOut& out) {
     return true;
   }
   return false;
+}
+
+int8_t contactState(const String& name, bool& stale) {
+  Lock lock;
+  uint32_t now = millis();
+  for (size_t i = 0; i < devs.size(); i++) {
+    if (devs[i].kind != K_CONTACT || devs[i].name != name) continue;
+    stale = !vals[i].at || now - vals[i].at > STALE_MS;
+    return vals[i].open;
+  }
+  stale = true;
+  return -1;
 }
 
 std::vector<ContactOut> contacts() {

@@ -338,14 +338,19 @@ function pgWeather(){
    <div class="card wide" id="x_o" hidden><div class="row"><span class="mu grow" id="x_o_n">🌡️ Außen (Sensor)</span><span class="big" id="x_o_v">--</span><span class="mu" id="x_o_h"></span></div></div>
    ${sm('x_w','💨 Wind')}${sm('x_h','💧 Luftfeuchte')}${sm('x_n','☂️ Nächste Stunde')}${sm('x_r','☂️ Regen heute')}
    ${[1,2,3].map(i=>`<div class="card"><h3 id="x_d${i}">--</h3><div class="row"><span style="font-size:30px" id="x_di${i}"></span><span class="big grow" style="text-align:right;font-size:20px" id="x_dt${i}"></span></div><div class="mu" style="text-align:right" id="x_dr${i}"></div></div>`).join('')}
+   <div class="card wide" id="x_aw"><div class="row"><span class="grow">⛱️ Markise <b id="x_aw_v">--</b></span><button class="btn" id="x_aw_b" hidden>umschalten</button></div><div class="mu" id="x_aw_s"></div></div>
    </div><div class="mu" id="x_st" style="margin-top:12px"></div>`;
 }
 // first own sensor marked for the weather page: measured outside temperature
-function outdoor(){return sens().find(x=>x.k===1&&((x.sh??1)&8)&&x.t!=null)}
+function outdoor(){const o=S.outd;if(o&&o.t!=null)return {n:o.n,t:o.t,h:o.h,age:o.st?99999:0};return null}
 function updWeather(){
   const ok=WX.on&&WX.t!=null,od=outdoor(),odTxt=od?'Außen '+cnum(od.t,1)+'°'+(od.h!=null?' · '+od.h+' %':''):'';
   if($('#owx_v')){set('owx_v',ok?WXI(WX.c,WX.day)+' '+n0(WX.t)+'°':'--');set('owx_s',od&&od.age<7200?esc(odTxt):!WX.on?'aus':ok?esc(WX.txt||''):esc(WX.status||''))}
   if($('#x_o')){$('#x_o').hidden=!od;if(od){set('x_o_n','🌡️ Außen · '+esc(od.n));set('x_o_v',cnum(od.t,1)+' °C');set('x_o_h',od.h!=null?'💧 '+od.h+' %':'');$('#x_o').classList.toggle('offline',od.age>7200)}}
+  if($('#x_aw')){const a=S.awn;set('x_aw_v',a===1?'ausgefahren':a===0?'eingefahren':'unbekannt');
+    const b=$('#x_aw_b');b.hidden=!S.awnSw;b.textContent=a===1?'Eingefahren':'Ausgefahren';
+    if(!b.onclick)b.onclick=()=>send({c:'awning',v:'toggle'});
+    set('x_aw_s',S.awnSw?'Von Hand setzen, solange es keinen Kontakt gibt. Bei Böen über der Grenze kommt eine Warnung.':'Zustand vom Kontakt-Sensor.')}
   if(!$('#x_t'))return;
   set('x_i',ok?WXI(WX.c,WX.day):'');set('x_t',ok?n0(WX.t)+'°':'--');set('x_txt',ok?esc(WX.txt):(WX.on?'Keine Daten':'Wetter aus'));
   set('x_f',ok&&WX.d?`Gefühlt ${n0(WX.f)}° · ${n0(WX.d[0].hi)}° / ${n0(WX.d[0].lo)}°`:(WX.on?'':'Unter ⚙ Einstellungen → 🌦 Wetter einrichten'));
@@ -763,10 +768,14 @@ function pgSettings(){
    <p class="mu">Grenzwerte für die eingebauten Warnungen. Sie erscheinen oben im Display und gehen per Pushover raus. 0 schaltet eine Warnung ab. Die Hysterese verhindert, dass eine Warnung bei einem Wert knapp an der Grenze ständig kommt und geht. Kühl- und Gefrierschrank stellst du beim jeweiligen Sensor ein (📡 Sensoren, „Warnung über °C“) bzw. im camper-temp.</p>
    <div class="f2">${inp('wnWater','Frischwasser unter (%)','number')}${inp('wnGas','Gas unter (%)','number')}</div>
    <div class="f2">${inp('wnBat','Batterie unter (% Ladung)','number')}${inp('wnHystPct','Hysterese Füllstände/Batterie (%)','number')}</div>
+   <div><label for="outName">Sensor für die Außentemperatur (Wetter-Seite, Frost)</label><select id="outName"></select></div>
    <label class="chk"><input type="checkbox" id="wnFrostOn"> Frostwarnung (Außensensor, sonst Wetter)</label>
    <div class="f2">${inp('wnFrost','Frost unter (°C)','number')}${inp('wnHystT','Hysterese Temperaturen (°C)','text','1,0')}</div>
    <div class="f2">${inp('wxGustHyst','Hysterese Böen (km/h)','number')}${inp('poQuiet','Ruhezeit Pushover (min)','number')}</div>
-   <p class="mu" style="margin-top:-4px">Ruhezeit: Kommt eine Warnung innerhalb dieser Zeit wieder, wird sie nicht noch einmal gesendet. Die Böen-Grenze selbst steht unter 🌦 Wetter.</p></details>
+   <p class="mu" style="margin-top:-4px">Ruhezeit: Kommt eine Warnung innerhalb dieser Zeit wieder, wird sie nicht noch einmal gesendet. Die Böen-Grenze selbst steht unter 🌦 Wetter.</p>
+   <label style="margin-top:12px"><b>⛱️ Markise</b></label>
+   <div class="f2"><div><label for="awnSrc">Zustand kommt von</label><select id="awnSrc"></select></div>${inp('awnGust','Warnung bei ausgefahrener Markise ab Böen (km/h, 0 = aus)','number')}</div>
+   <p class="mu" style="margin-top:-4px">Ohne Kontakt setzt du den Zustand von Hand auf der Wetter-Seite (Display und Webseite) oder per MQTT <code>&lt;display&gt;/cmd/awning</code> = <code>ON</code>/<code>OFF</code>/<code>TOGGLE</code>. Braucht das Wetter (Böen von Open-Meteo).</p></details>
   <section data-g="rules">${pgRules()}</section>
   <details data-g="sys" class="fixed" open><summary>🔧 System</summary>
    ${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
@@ -793,7 +802,7 @@ function showGroup(g){setGroup=g;try{localStorage.setItem('setGroup',g)}catch(e)
   const sb=$('.savebar');if(sb)sb.style.display=g==='rules'?'none':'';   // automations have their own save button
   if(g==='rules'){if(!rulesLoaded){rulesLoaded=true;loadRules()}else ruleState()}
   const sd=$('#snd');if(g==='dev'&&sd&&!sd.open){sd.open=true}}
-const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','rtTopic','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet'];
+const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','rtTopic','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet','awnGust'];
 async function loadSettings(){
   rulesLoaded=false;
   try{
@@ -807,7 +816,7 @@ async function loadSettings(){
     LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
     $('#warnWake').checked=!!ST.warnWake;$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||60);
     $('#slt').innerHTML=$('#slb').innerHTML='';renderSlots();
-    $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#wnFrostOn').checked=!!ST.wnFrostOn;$('#wnHystT').value=cnum(ST.wnHystT??1,1);$('#poPrio').value=String(ST.poPrio||0);
+    $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#wnFrostOn').checked=!!ST.wnFrostOn;fillOutAwn();$('#wnHystT').value=cnum(ST.wnHystT??1,1);$('#poPrio').value=String(ST.poPrio||0);
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
     $('#sysinfo').textContent=`Firmware ${ST.fw} · MAC ${ST.mac} · IP ${S.ip||''}`;
     const p=await fetch('/api/pages');PG=await p.json();PG.pages=PG.pages||[];PG.tiles=PG.tiles||[];renderPages();
@@ -925,10 +934,21 @@ async function loadUnknown(){
   b.innerHTML=a.length?`<label>Gefunden, aber noch nicht eingetragen</label>${a.map(u=>`<div class="row" style="margin:4px 0"><span class="grow">${u.bus?'Bluetooth':'Zigbee'} · <code>${esc(u.addr)}</code> <span class="mu">vor ${u.ago<120?u.ago+' s':Math.round(u.ago/60)+' min'}</span></span><button class="btn sm" type="button" data-su="${u.bus}|${esc(u.addr)}">+ übernehmen</button></div>`).join('')}`:'';
   b.querySelectorAll('[data-su]').forEach(e=>e.onclick=()=>{readSensors();const [bus,addr]=e.dataset.su.split('|');SN.devices.push({name:'',bus:+bus,kind:1,addr,alt:'',icon:'door',warn:false,invert:false,show:1});renderSensors()});
 }
+// selections for the outside temperature (own climate sensors + camper-temp) and the awning (contacts)
+function fillOutAwn(){
+  const opt=(v,t,sel)=>`<option value="${esc(v)}"${v===sel?' selected':''}>${esc(t)}</option>`;
+  const own=sens().filter(x=>x.k===1).map(x=>x.n),ct=temps().map(x=>x.name).filter(Boolean);
+  const names=[...new Set([...own,...ct])],cur=ST.outName||'';
+  if(cur&&!names.includes(cur))names.push(cur);
+  $('#outName').innerHTML=opt('','automatisch (erster Sensor mit Haken „Wetter“)',cur)+names.map(n=>opt(n,n+(ct.includes(n)&&!own.includes(n)?' (camper-temp)':''),cur)).join('');
+  const con=sens().filter(x=>x.k===0).map(x=>x.n),ac=ST.awnSrc||'';
+  if(ac&&!con.includes(ac))con.push(ac);
+  $('#awnSrc').innerHTML=opt('','Schalter von Hand',ac)+con.map(n=>opt(n,'Kontakt: '+n,ac)).join('');
+}
 function saveSettings(){
   const o={};FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)o[f]=e.value});
-  ['mqttPort','dimBrightness','screenTimeout','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet'].forEach(f=>o[f]=parseInt(o[f])||0);
-  o.wnFrostOn=$('#wnFrostOn').checked;o.wnHystT=parseFloat(String($('#wnHystT').value).replace(',','.'))||0;
+  ['mqttPort','dimBrightness','screenTimeout','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet','awnGust'].forEach(f=>o[f]=parseInt(o[f])||0);
+  o.wnFrostOn=$('#wnFrostOn').checked;o.outName=$('#outName').value;o.awnSrc=$('#awnSrc').value;o.wnHystT=parseFloat(String($('#wnHystT').value).replace(',','.'))||0;
   o.warnWake=$('#warnWake').checked;o.wxOn=$('#wxOn').checked;o.wxEvery=+$('#wxEvery').value;
   o.ovTempSel=readSlots('slt',SLOTS_T);o.ovBatSel=readSlots('slb',SLOTS_B);
   o.heaterSrc=+$('#heaterSrc').value;

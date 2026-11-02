@@ -81,6 +81,13 @@ struct Settings {
   int8_t   wnFrost = 3;         // warn below this temperature in °C
   uint8_t  wnHystT = 10;        // temperature warnings end this far past the limit, in 0.1 °C
   uint16_t poQuiet = 30;        // minutes: a warning that ended is not sent again within this time
+  // outside temperature (weather page, frost): name of an own climate sensor or a camper-temp sensor,
+  // "" = the first own sensor marked for the weather page
+  String   outName;
+  // awning: "" = switch on the display / web page / MQTT, otherwise the name of an own contact sensor (open = out)
+  String   awnSrc;
+  uint8_t  awnGust = 40;        // warn while the awning is out from these gusts in km/h, 0 = off
+  bool     awnOut = false;      // state of the switch (stored, survives a restart)
   // overview tiles temperature / battery: "name=icon" lines (see icons.cpp), "" = all / first 3
   String   ovTempSel, ovBatSel;
   // heater source: own camper-heater firmware or a CampMatic box (topics <prefixHeater>/climate/truma_*/...)
@@ -115,6 +122,7 @@ namespace cfg {
   void load();
   void save();                 // device / wifi / mqtt / display
   void savePages();            // pages + tiles
+  void saveAwning();           // awning switch only
   void factoryReset();
   // pages + tiles <-> JSON (shared by web API and storage)
   String pagesToJson();

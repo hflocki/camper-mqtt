@@ -11,7 +11,7 @@ const M = {
     ntpServer: 'pool.ntp.org', tz: 'CET-1CEST,M3.5.0,M10.5.0/3',
     poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
     brightness: 80, dimBrightness: 10, screenTimeout: 120, warnWake: false,
-    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, wxGustHyst: 10, wnWater: 10, wnGas: 15, wnBat: 20, wnHystPct: 3, wnFrostOn: false, wnFrost: 3, wnHystT: 1, poQuiet: 30, ovTempSel: '', ovBatSel: '',
+    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, wxGustHyst: 10, wnWater: 10, wnGas: 15, wnBat: 20, wnHystPct: 3, wnFrostOn: false, wnFrost: 3, wnHystT: 1, poQuiet: 30, outName: '', awnSrc: '', awnGust: 40, ovTempSel: '', ovBatSel: '',
     builtin: [true, true, true, true, true, true, true, true, true, true, true, false, false],
     pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'Sensoren', 'Warnungen', 'Licht', 'Schalter', 'Energie', 'Extra', 'System'],
     pageIcons: ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
@@ -28,7 +28,7 @@ const M = {
                   {name: 'Landstrom', page: 0, type: 0, topic: 'zigbee2mqtt/steckdose', key: 'power', unit: 'W', decimals: 0}]},
   H: {hvac: 'heat', set: 21, fan: 'eco', wmode: 'eco', room: 18.6, decoke: false, drem: 0},
   T: {t0: 'ON', t1: '180', t2: '0'},
-  awake: true, bri: 80, finderOn: false,
+  awake: true, bri: 80, finderOn: false, awn: 0,
   sensors: {zbBase: 'camper/zigbee/data', bleBase: 'camper/OMG/BTtoMQTT', tempDiv: 10, humDiv: 1, devices: [
     {name: 'Küche', bus: 0, kind: 1, addr: '0x00158d0000000001', alt: '1a01', icon: '', warn: false, show: 3},
     {name: 'Heki', bus: 0, kind: 0, addr: '0x00158d0000000002', alt: '1a02', icon: 'door', warn: false, show: 6},
@@ -93,7 +93,7 @@ const M = {
       {n: 'Govee Außen', k: 1, b: 1, t: 8.6, h: 81, bat: 100, age: 8, i: '', sh: 8},
       {n: 'LED Eingang', k: 2, b: 0, o: door ? 1 : 0, lv: 180, col: '#ff8000', age: 20, i: '', sh: 16},
       {n: 'Steckdose Kühlbox', k: 3, b: 0, o: 1, age: 30, i: '', sh: 32}];
-    return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake, ind: [], open: door ? 2 : 1, sen}};
+    return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake, ind: [], open: door ? 2 : 1, sen, awn: M.awn, awnSw: true, outd: {n: 'Außen', t: 6.4, h: 81, st: false}}};
   },
   wsCmd(o) {
     const H = M.H;
@@ -108,6 +108,7 @@ const M = {
       else if (o.i === 1) M.T.t1 = String(o.v);
     } else if (o.c === 'bri') M.bri = +o.v;
     else if (o.c === 'screen') M.awake = o.v !== 'off';
+    else if (o.c === 'awning') M.awn = M.awn === 1 ? 0 : 1;
     else if (o.c === 'finder') {
       M.finderOn = !!o.on;
       return {t: 'f', on: M.finderOn, filter: o.f || '', l: M.finderOn ? [

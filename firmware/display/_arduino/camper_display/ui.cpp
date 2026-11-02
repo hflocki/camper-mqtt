@@ -191,6 +191,7 @@ const Swatch SWATCHES[] = {
 const int SWATCH_N = sizeof(SWATCHES) / sizeof(SWATCHES[0]);
 lv_obj_t *wnCard = nullptr, *wnLbl = nullptr;
 lv_obj_t* wOut = nullptr;               // weather page: outside sensor
+lv_obj_t *wAwn = nullptr, *wAwnBtn = nullptr, *wAwnBtnLbl = nullptr;   // weather page: awning state / switch
 String bSig;
 String tSig;          // sensor names the rows were built for
 String lastWarn;      // to wake the screen when a new warning appears
@@ -394,6 +395,7 @@ void onScreenOff(lv_event_t*) {
   Serial.println("[disp] screen off: button");
   disp::sleep();
 }
+void onAwning(lv_event_t*) { alerts::setAwning(alerts::awning() != 1); }
 void onOverviewCard(lv_event_t* e) { gotoTab(tabIndexOfBuiltin((int)(intptr_t)lv_event_get_user_data(e))); }
 
 void onSetpoint(lv_event_t* e) {
@@ -1648,6 +1650,14 @@ void buildWeather(lv_obj_t* tab) {
     wDays[i].rain = label(c, &font_de_14, C_MUTED, "");
     lv_obj_align(wDays[i].rain, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
   }
+  // awning: state, and a switch while there is no contact sensor for it
+  lv_obj_t* ac = card(tab, PAGE_W - 20, 60);
+  lv_obj_set_style_pad_ver(ac, 8, 0);
+  wAwn = label(ac, &font_de_18, C_TEXT, "Markise --");
+  lv_obj_align(wAwn, LV_ALIGN_LEFT_MID, 0, 0);
+  wAwnBtn = button(ac, "Ausgefahren", 150, 44, onAwning, nullptr, C_CARD_HI, &font_de_18);
+  lv_obj_align(wAwnBtn, LV_ALIGN_RIGHT_MID, 0, 0);
+  wAwnBtnLbl = lv_obj_get_child(wAwnBtn, 0);
   wStatus = label(tab, &font_de_14, C_MUTED, "");
   lv_obj_set_width(wStatus, PAGE_W - 20);
   wShown = -1;
@@ -1921,6 +1931,19 @@ void refreshValues() {
     }
     lv_label_set_text(wOut, dispText(t).c_str());
     lv_obj_set_style_text_color(wOut, o.stale ? C_MUTED : C_ACCENT, 0);
+  }
+  if (wAwn) {
+    int8_t a = alerts::awning();
+    const char* st = a == 1 ? "ausgefahren" : a == 0 ? "eingefahren" : "unbekannt";
+    String t = String("Markise ") + st;
+    if (t != String(lv_label_get_text(wAwn))) lv_label_set_text(wAwn, t.c_str());
+    lv_obj_set_style_text_color(wAwn, a == 1 ? C_GAS : C_TEXT, 0);
+    if (alerts::awningIsSwitch()) {
+      lv_obj_remove_flag(wAwnBtn, LV_OBJ_FLAG_HIDDEN);
+      if (wAwnBtnLbl) lv_label_set_text(wAwnBtnLbl, a == 1 ? "Eingefahren" : "Ausgefahren");
+    } else {
+      lv_obj_add_flag(wAwnBtn, LV_OBJ_FLAG_HIDDEN);
+    }
   }
   setWxTileSub();
 
@@ -2454,6 +2477,7 @@ void clearHandles() {
   bSensCard = bSensLbl = nullptr;
   wnCard = wnLbl = nullptr;
   wOut = nullptr;
+  wAwn = wAwnBtn = wAwnBtnLbl = nullptr;
   wxTileBase = "";
   ovOneBat.clear();
   ovCustom.clear();

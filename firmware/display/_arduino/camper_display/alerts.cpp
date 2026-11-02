@@ -3,6 +3,7 @@
 #include "datastore.h"
 #include "sensors.h"
 #include "weather.h"
+#include "mqtt_client.h"
 #include <map>
 #include <time.h>
 #include <freertos/FreeRTOS.h>
@@ -82,7 +83,33 @@ String warnings() {
   else if (latch("frost", !isnan(out) && out < settings.wnFrost,
                  isnan(out) || out >= settings.wnFrost + settings.wnHystT / 10.0f))
     add("Frostgefahr: " + (isnan(out) ? String("--") : comma1(out)) + " \xC2\xB0" "C " + src);
+
+  // awning out and gusts above its own (lower) limit
+  float gust = NAN;
+  if (settings.wxOn && settings.awnGust > 0 && awning() == 1) {
+    wx::Data d = wx::get();
+    if (d.valid && time(nullptr) - d.at < 3 * 3600) gust = d.gust;
+  }
+  if (latch("awning", !isnan(gust) && gust >= settings.awnGust,
+            isnan(gust) || gust < settings.awnGust - settings.wxGustHyst))
+    add("Markise einfahren: B\xC3\xB6" "en bis " + (isnan(gust) ? String("--") : String((int)lroundf(gust))) + " km/h");
   return w;
+}
+
+bool awningIsSwitch() { return settings.awnSrc.isEmpty(); }
+
+int8_t awning() {
+  if (awningIsSwitch()) return settings.awnOut ? 1 : 0;
+  bool stale;
+  int8_t s = sensors::contactState(settings.awnSrc, stale);
+  return stale ? -1 : s;
+}
+
+void setAwning(bool out) {
+  if (!awningIsSwitch() || settings.awnOut == out) return;
+  settings.awnOut = out;
+  cfg::saveAwning();
+  mqttc::publishSelfState();
 }
 
 }  // namespace alerts

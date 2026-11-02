@@ -1,6 +1,7 @@
 #include "mqtt_client.h"
 #include "devinfo.h"
 #include "netdev.h"
+#include "alerts.h"
 #include "weather.h"
 #include "router.h"
 #include "rules.h"
@@ -58,6 +59,10 @@ void handleSelfCommand(const String& sub, const String& msg) {
   } else if (sub == "page") {
     ui::showPageByName(msg);
     disp::wake();
+  } else if (sub == "awning") {
+    // switch mode only; with a contact sensor the sensor decides
+    bool out = msg.equalsIgnoreCase("TOGGLE") ? alerts::awning() != 1 : msg.equalsIgnoreCase("ON");
+    alerts::setAwning(out);
   } else if (sub == "reboot") {
     delay(200);
     ESP.restart();
@@ -223,6 +228,8 @@ void publishSelfState() {
   publish(self("ip"), wifimgr::ipString(), true);
   publish(self("brightness"), String(settings.brightness), true);
   publish(self("screen"), disp::isAwake() ? "ON" : "OFF", true);
+  int8_t awn = alerts::awning();
+  publish(self("awning"), awn == 1 ? "ON" : awn == 0 ? "OFF" : "unknown", true);
 }
 
 void finderStart(const String& filter) {

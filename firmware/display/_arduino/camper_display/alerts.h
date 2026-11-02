@@ -18,4 +18,9 @@ bool above(const String& key, float value, float limit, float hyst);
 
 String warnings();   // one line per active warning, "Frischwasser niedrig: 8 %" ...
 
+// Awning: a switch on the display / web page / MQTT, or an own contact sensor (settings.awnSrc)
+bool   awningIsSwitch();      // true = switch, false = contact sensor
+int8_t awning();              // -1 unknown, 0 in, 1 out
+void   setAwning(bool out);   // switch mode only: stores the state and publishes it
+
 }  // namespace alerts
