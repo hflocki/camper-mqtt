@@ -17,7 +17,7 @@ Nachgebildet werden:
 | Router | `camper/rut` (GPS-JSON wie der RUT956), `camper/door`, `camper/router/mobile` | – |
 | Zigbee | `camper/zigbee/data/<ieee>/1/…`: 3 Tür-/Fensterkontakte, 2 Klimasensoren, LED-Leiste | LED an/aus, Helligkeit, Farbe |
 
-Die Formate sind dieselben wie bei der echten Firmware bzw. beim Router und SMLIGHT-Gateway (siehe [`docs/TOPICS.md`](../../docs/TOPICS.md)). Jedes Gerät hat eine eigene Broker-Verbindung mit eigenem Last Will, `…/status` und `…/info` (Version `emu-1.0.0`), daher erscheint es in der Geräteliste des Displays wie das echte. Home-Assistant-Discovery sendet der Emulator nicht, damit keine doppelten Entitäten entstehen.
+Die Formate sind dieselben wie bei der echten Firmware bzw. beim Router und SMLIGHT-Gateway (siehe [`docs/TOPICS.md`](../../docs/TOPICS.md)). Jedes Gerät hat eine eigene Broker-Verbindung mit eigenem Last Will, `…/status` und `…/info` (Version `emu-<Firmware-Version>`), daher erscheint es in der Geräteliste des Displays wie das echte. Home-Assistant-Discovery sendet der Emulator nicht, damit keine doppelten Entitäten entstehen.
 
 ## Bedienung
 
@@ -121,6 +121,7 @@ Er sucht ArduinoJson im Bibliotheksordner der Arduino IDE, sonst `ARDUINOJSON=<�
 
 | Version | Änderungen |
 |---|---|
+| 1.0.1 | Geräteliste lädt wieder: Schema wird stückweise gesendet statt als ein großer Block (der C3 hatte bei allen Broker-Verbindungen nicht mehr genug zusammenhängenden Speicher); Seite zeigt den Fehlergrund und versucht es erneut |
 | 1.0.0 | Erste Version: 8 Geräte, Web-Oberfläche mit Werten, Zuständen und Szenarien, Befehle vom Display |
 
 ## Lizenz

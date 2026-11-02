@@ -571,15 +571,24 @@ function updateLiveData(d) {
     $('wifi-reason').textContent = d.wifi_reason || '--';
 }
 
+let schemaTries = 0;
 async function loadSchema() {
     try {
-        const r = await fetch('/api/emu/schema');
+        const r = await fetch('/api/emu/schema', {cache: 'no-store'});
         if (!r.ok) throw new Error('HTTP ' + r.status);
-        schema = await r.json();
+        const txt = await r.text();
+        try { schema = JSON.parse(txt); }
+        catch (e) { throw new Error('unvollständige Antwort (' + txt.length + ' Bytes)'); }
         buildDevices();
         if (lastState) applyState(lastState);
     } catch (e) {
-        $('dev-list').innerHTML = '<div class="empty">Fehler beim Laden – Seite neu laden</div>';
+        schema = null;
+        schemaTries++;
+        // The device may be busy connecting to the broker right after boot: try again
+        const again = schemaTries < 10;
+        $('dev-list').innerHTML = '<div class="empty">Fehler beim Laden der Geräte: ' + esc(e.message) +
+            (again ? ' – neuer Versuch …' : ' – Seite neu laden') + '</div>';
+        if (again) setTimeout(loadSchema, 3000);
     }
 }
 

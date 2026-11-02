@@ -976,38 +976,76 @@ void emuCommand(const char* topic, const char* payload, unsigned int len) {
 // Web UI
 // ============================================================
 
+static void schemaDev(JsonObject o, int d) {
+    o["id"] = EMU_DEVS[d].id;
+    o["name"] = EMU_DEVS[d].name;
+    o["own"] = EMU_DEVS[d].own;
+}
+
+static void schemaField(JsonObject o, int i) {
+    const FieldDef& f = FIELDS[i];
+    o["k"] = f.key;
+    o["d"] = f.dev;
+    if (f.group[0]) o["g"] = f.group;
+    o["t"] = f.type == T_NUM ? "num" : f.type == T_BOOL ? "bool" : f.type == T_ENUM ? "enum" : "text";
+    o["l"] = f.label;
+    if (f.unit[0]) o["u"] = f.unit;
+    if (f.type == T_NUM) { o["min"] = f.min; o["max"] = f.max; o["step"] = f.step; }
+    if (f.opts[0]) o["o"] = f.opts;
+    if (f.flags & FL_SET) o["set"] = true;
+    if (f.flags & FL_ADV) o["adv"] = true;
+    if (f.flags & FL_OPT) o["opt"] = true;
+    o["def"] = f.def;
+}
+
+static void schemaScenario(JsonObject o, int i) {
+    o["id"] = SCENARIOS[i].id;
+    o["name"] = SCENARIOS[i].name;
+    o["desc"] = SCENARIOS[i].desc;
+}
+
 void emuSchemaJson(JsonDocument& doc) {
     JsonArray devs = doc["devices"].to<JsonArray>();
-    for (int d = 0; d < D_COUNT; d++) {
-        JsonObject o = devs.add<JsonObject>();
-        o["id"] = EMU_DEVS[d].id;
-        o["name"] = EMU_DEVS[d].name;
-        o["own"] = EMU_DEVS[d].own;
-    }
+    for (int d = 0; d < D_COUNT; d++) schemaDev(devs.add<JsonObject>(), d);
     JsonArray fs = doc["fields"].to<JsonArray>();
-    for (int i = 0; i < FIELD_COUNT; i++) {
-        const FieldDef& f = FIELDS[i];
-        JsonObject o = fs.add<JsonObject>();
-        o["k"] = f.key;
-        o["d"] = f.dev;
-        if (f.group[0]) o["g"] = f.group;
-        o["t"] = f.type == T_NUM ? "num" : f.type == T_BOOL ? "bool" : f.type == T_ENUM ? "enum" : "text";
-        o["l"] = f.label;
-        if (f.unit[0]) o["u"] = f.unit;
-        if (f.type == T_NUM) { o["min"] = f.min; o["max"] = f.max; o["step"] = f.step; }
-        if (f.opts[0]) o["o"] = f.opts;
-        if (f.flags & FL_SET) o["set"] = true;
-        if (f.flags & FL_ADV) o["adv"] = true;
-        if (f.flags & FL_OPT) o["opt"] = true;
-        o["def"] = f.def;
-    }
+    for (int i = 0; i < FIELD_COUNT; i++) schemaField(fs.add<JsonObject>(), i);
     JsonArray sc = doc["scenarios"].to<JsonArray>();
-    for (int i = 0; i < SCENARIO_COUNT; i++) {
-        JsonObject o = sc.add<JsonObject>();
-        o["id"] = SCENARIOS[i].id;
-        o["name"] = SCENARIOS[i].name;
-        o["desc"] = SCENARIOS[i].desc;
+    for (int i = 0; i < SCENARIO_COUNT; i++) schemaScenario(sc.add<JsonObject>(), i);
+}
+
+// The same JSON as emuSchemaJson, one entry at a time. The whole document needs
+// tens of kB in one piece, which the C3 often no longer has once all broker
+// connections are up; the web server streams these pieces in a chunked response.
+bool emuSchemaPiece(int n, String& out) {
+    out = "";
+    if (n == 0) { out = "{\"devices\":["; return true; }
+    n--;
+    JsonDocument doc;
+    if (n < D_COUNT) {
+        if (n) out = ",";
+        schemaDev(doc.to<JsonObject>(), n);
+    } else if ((n -= D_COUNT) == 0) {
+        out = "],\"fields\":[";
+        return true;
+    } else if (--n < FIELD_COUNT) {
+        if (n) out = ",";
+        schemaField(doc.to<JsonObject>(), n);
+    } else if ((n -= FIELD_COUNT) == 0) {
+        out = "],\"scenarios\":[";
+        return true;
+    } else if (--n < SCENARIO_COUNT) {
+        if (n) out = ",";
+        schemaScenario(doc.to<JsonObject>(), n);
+    } else if (n == SCENARIO_COUNT) {
+        out = "]}";
+        return true;
+    } else {
+        return false;
     }
+    String json;   // serializeJson replaces the String's content, so append afterwards
+    serializeJson(doc, json);
+    out += json;
+    return true;
 }
 
 void emuStateJson(JsonObject obj) {

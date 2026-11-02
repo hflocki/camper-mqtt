@@ -54,6 +54,7 @@ void emuCommand(const char* topic, const char* payload, unsigned int len);
 
 // ---- web UI (async web task, guarded by a mutex inside) ----
 void emuSchemaJson(JsonDocument& doc);                 // field and device definitions, once per page load
+bool emuSchemaPiece(int n, String& out);               // same JSON in small pieces (n = 0, 1, ...); false after the last
 void emuStateJson(JsonObject obj);                     // values, modes, scenario, command log
 bool emuSetValue(const char* key, const char* value, String& err);
 bool emuSetModeReq(uint8_t dev, uint8_t mode);

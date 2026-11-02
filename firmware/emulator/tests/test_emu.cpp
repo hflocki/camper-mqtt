@@ -45,6 +45,16 @@ int main(int argc, char** argv) {
     if (verbose) for (int d = 0; d < D_COUNT; d++) { printf("== %s\n", EMU_DEVS[d].id); dump(d); }
 
     // ---- example data in the real formats ----
+    {   // the chunked schema pieces give exactly the same JSON as the whole document
+        JsonDocument whole;
+        emuSchemaJson(whole);
+        String a, b, piece;
+        serializeJson(whole, a);
+        int n = 0;
+        while (emuSchemaPiece(n++, piece)) b += piece;
+        CHECK(a == b);
+        CHECK(a.length() > 1000);
+    }
     CHECK(get(D_TANK, "camper/tanklevel/water/percent") == "62");
     CHECK(get(D_TANK, "camper/tanklevel/gas/content") == "7.81");
     CHECK(get(D_LEVEL, "camper/level/is_level") == "ON");

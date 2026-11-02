@@ -8,6 +8,7 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <Update.h>
+#include <memory>
 
 // Routes:
 //   GET  /               web UI (LittleFS /index.html.gz), upload form if missing
@@ -188,12 +189,28 @@ void webserverInit() {
             }
         });
 
+    // Chunked: the schema is ~17 kB, built piece by piece so no large buffer is needed
     server.on("/api/emu/schema", HTTP_GET, [](AsyncWebServerRequest* request) {
         if (!auth(request)) return;
-        JsonDocument doc;
-        emuSchemaJson(doc);
-        AsyncResponseStream* resp = request->beginResponseStream("application/json");
-        serializeJson(doc, *resp);
+        struct Gen { int n = 0; String pend; size_t off = 0; bool done = false; };
+        auto g = std::make_shared<Gen>();
+        AsyncWebServerResponse* resp = request->beginChunkedResponse("application/json",
+            [g](uint8_t* buf, size_t maxLen, size_t) -> size_t {
+                size_t len = 0;
+                while (len < maxLen) {
+                    if (g->off >= g->pend.length()) {
+                        if (g->done || !emuSchemaPiece(g->n++, g->pend)) { g->done = true; break; }
+                        g->off = 0;
+                        continue;
+                    }
+                    size_t k = std::min(maxLen - len, (size_t)g->pend.length() - g->off);
+                    memcpy(buf + len, g->pend.c_str() + g->off, k);
+                    len += k;
+                    g->off += k;
+                }
+                return len;   // 0 ends the response
+            });
+        resp->addHeader("Cache-Control", "no-cache");
         request->send(resp);
     });
 
