@@ -8,7 +8,7 @@
 #include "config.h"
 #include "webota.h"
 
-#define FW_VERSION "1.1.0"
+#define FW_VERSION "1.2.0"
 
 // ---------- Sensor selection ----------
 // Choose in config.h which sensors are used (1 = enabled, 0 = disabled).
@@ -117,6 +117,7 @@ RTC_DATA_ATTR float pitch = 0, roll = 0;
 RTC_DATA_ATTR bool havePitch = false, haveRoll = false;
 RTC_DATA_ATTR float levelTol = 0.5f;   // tolerance of the level sensor in degrees (topic "tolerance")
 RTC_DATA_ATTR int8_t isLevelState = -1; // topic "is_level": 1 = ON, 0 = OFF, -1 = unknown
+RTC_DATA_ATTR float wedge[4] = {NAN, NAN, NAN, NAN};   // wedge height in cm: front left, front right, rear left, rear right
 unsigned long lastPitchMs = 0, lastRollMs = 0;   // time of the last update (0 = none since boot)
 bool levelOnline = false;
 bool levelStatusKnown = false;
@@ -177,13 +178,11 @@ const unsigned long MQTT_RETRY_MS = 5000;
 unsigned long lastRedraw = 0;
 
 // Flip these if the bubble / icons move in the wrong direction for your mounting
+// The dot sits on the LOW side of the van (where the wedges go): right when the right side is low,
+// down when the rear is low. Same as the wall display and its web page.
 const float BUBBLE_SIGN_X = 1.0f;
 const float BUBBLE_SIGN_Y = 1.0f;
-const float BUBBLE_FULL_SCALE_DEG = 5.0f;   // deflection at the circle edge (same as the wall display)
-const float ICON_SIGN_PITCH = -1.0f;
-const float ICON_SIGN_ROLL  = 1.0f;
-const float ICON_GAIN = 3.0f;               // exaggerates the tilt so small angles are visible
-const float ICON_MAX_DEG = 25.0f;
+const float BUBBLE_FULL_SCALE_DEG = 3.0f;   // tilt at which the dot reaches the edge of the van
 
 // ---------- Colors ----------
 // Same palette as the wall display (firmware/display/.../ui.cpp, C_*). Keep in sync.
@@ -208,7 +207,9 @@ static const uint16_t COL_GAS     = rgb(0xF0A030);
 static const uint16_t COL_GAS_HI  = rgb(0xF7C977);
 static const uint16_t COL_STEEL   = rgb(0x6F7F94);
 static const uint16_t COL_LEVEL   = rgb(0x2BA58A);
-static const uint16_t COL_ZONE    = rgb(0x215752);   // target zone of the level circle (C_LEVEL on a card)
+static const uint16_t COL_VAN     = rgb(0x6F8FBF);   // outline of the van on the level page
+static const uint16_t COL_VAN_IN  = rgb(0x1A2638);   // inside of the van
+static const uint16_t COL_LVL_HI  = rgb(0xF0A030);   // wheels that need a wedge and the dot while not level
 
 // Battery segment bar: 13 fields from red (empty) to green (full), as on the wall display
 const int SEG_N = 13;
@@ -234,14 +235,6 @@ String num(float v, int decimals) {
   s.replace('.', ',');
   if (s == "-0" || s == "-0,0" || s == "-0,00") s.remove(0, 1);
   return s;
-}
-
-// Color of a single tilt value: within the tolerance green, up to 3 degrees yellow, above red
-uint16_t levelColor(float v) {
-  float a = fabsf(v);
-  if (a <= levelTol) return COL_OK;
-  if (a <= 3.0f) return COL_WARN;
-  return COL_BAD;
 }
 
 // Is the van level? The sensor's own decision (is_level) wins, otherwise the tolerance
@@ -556,122 +549,133 @@ void drawDegrees(int x, int cy, float t, uint16_t col, const lgfx::IFont* font, 
 }
 
 // ---------- Level page ----------
-// Fills a rotated rectangle given in local coordinates (relative to the icon center)
-static void fillRotRect(int cx, int cy, float ca, float sa,
-                        float x0, float y0, float x1, float y1, uint16_t col) {
-  auto T = [&](float x, float y, int &ox, int &oy) {
-    ox = cx + (int)lroundf(x * ca - y * sa);
-    oy = cy + (int)lroundf(x * sa + y * ca);
-  };
-  int ax, ay, bx, by, px, py, qx, qy;
-  T(x0, y0, ax, ay);
-  T(x1, y0, bx, by);
-  T(x1, y1, px, py);
-  T(x0, y1, qx, qy);
-  canvas.fillTriangle(ax, ay, bx, by, px, py, col);
-  canvas.fillTriangle(ax, ay, px, py, qx, qy, col);
+// Top view of the van: wedge height at each wheel, the dot in the middle moves to the low side.
+// Right: state and the tilt across / along in words.
+
+bool haveWedges() {
+  for (int i = 0; i < 4; i++) if (isnan(wedge[i])) return false;
+  return true;
 }
 
-// Small vehicle icon that tilts: side view (pitch, front on the right) or rear view (roll)
-void drawTiltIcon(int cx, int cy, float angDeg, bool sideView, uint16_t bodyCol) {
-  float a = angDeg * (float)M_PI / 180.0f;
-  float ca = cosf(a), sa = sinf(a);
-  float hw = sideView ? 26.0f : 16.0f;  // half width
-  float hh = sideView ? 9.0f : 12.0f;   // half height
+int wedgeCm(int i) { return isnan(wedge[i]) ? -1 : (int)lroundf(fmaxf(wedge[i], 0.0f)); }
 
-  fillRotRect(cx, cy, ca, sa, -hw, -hh, hw, hh, bodyCol);
-
-  // Windows
-  if (sideView) {
-    fillRotRect(cx, cy, ca, sa, hw - 16, -hh + 3, hw - 4, -1, COL_PANEL);
-    fillRotRect(cx, cy, ca, sa, -hw + 6, -hh + 3, -hw + 16, -1, COL_PANEL);
-  } else {
-    fillRotRect(cx, cy, ca, sa, -hw + 4, -hh + 3, hw - 4, -2, COL_PANEL);
+// "0,9" + degree ring + " rechts tief", left aligned at (x, cy)
+void drawTiltText(int x, int cy, float v, bool positiveIsFirst, const char* first, const char* second,
+                  uint16_t col) {
+  canvas.setFont(&fonts::FreeSansBold9pt7b);
+  canvas.setTextDatum(middle_left);
+  canvas.setTextColor(col);
+  if (fabsf(v) <= levelTol) {
+    canvas.drawString("eben", x, cy);
+    return;
   }
-
-  // Wheels
-  float wxs[2] = { sideView ? -15.0f : -hw + 3, sideView ? 15.0f : hw - 3 };
-  for (int i = 0; i < 2; i++) {
-    int px = cx + (int)lroundf(wxs[i] * ca - (hh + 1) * sa);
-    int py = cy + (int)lroundf(wxs[i] * sa + (hh + 1) * ca);
-    canvas.fillCircle(px, py, 4, COL_TEXT);
-  }
+  String n = num(fabsf(v), 1);
+  canvas.drawString(n, x, cy);
+  int w = canvas.textWidth(n);
+  canvas.drawCircle(x + w + 4, cy - 5, 2, col);
+  canvas.drawString(String((v > 0) == positiveIsFirst ? first : second) + " tief", x + w + 10, cy);
 }
 
-void drawTiltValue(int cx, int iconY, int numY, float v, bool have, bool live,
-                   bool sideView, float iconSign) {
-  uint16_t col = !have ? COL_GRID : (live ? levelColor(v) : COL_DIM);
-  float ang = have ? v * ICON_GAIN * iconSign : 0.0f;
-  ang = fmaxf(-ICON_MAX_DEG, fminf(ICON_MAX_DEG, ang));
-  drawTiltIcon(cx, iconY, ang, sideView, col);
+void drawVan(int cx, int top, int w, int h, bool live) {
+  bool level = vanIsLevel();
+  bool have = havePitch && haveRoll;
+  bool wedges = haveWedges();
 
-  if (have) drawDegrees(cx, numY, v, col, &fonts::FreeSansBold18pt7b, 3, false);
-  else {
-    canvas.setFont(&fonts::FreeSansBold18pt7b);
-    canvas.setTextDatum(middle_center);
-    canvas.setTextColor(COL_DIM);
-    canvas.drawString("--", cx, numY);
+  // "vorne" above the van
+  canvas.setFont(&fonts::FreeSans9pt7b);
+  canvas.setTextDatum(bottom_center);
+  canvas.setTextColor(COL_DIM);
+  canvas.drawString("vorne", cx, top - 2);
+
+  // Body
+  int x = cx - w / 2;
+  canvas.fillRoundRect(x, top, w, h, 20, COL_VAN_IN);
+  canvas.drawRoundRect(x, top, w, h, 20, COL_VAN);
+  canvas.drawRoundRect(x + 1, top + 1, w - 2, h - 2, 19, COL_VAN);
+
+  // Wheels with the wedge height next to them
+  const int ww = 8, wh = 24;
+  int wy[2] = {top + 22, top + h - 22 - wh};
+  for (int i = 0; i < 4; i++) {
+    bool right = i & 1;
+    int y = wy[i >> 1];
+    int cm = wedgeCm(i);
+    bool hi = live && have && !level && cm >= 1;
+    uint16_t col = hi ? COL_LVL_HI : COL_OUTLINE;
+    int wx = right ? x + w - ww / 2 : x - ww / 2;
+    canvas.fillRoundRect(wx, y, ww, wh, 3, col);
+
+    canvas.setFont(&fonts::FreeSans9pt7b);
+    canvas.setTextDatum(right ? middle_left : middle_right);
+    canvas.setTextColor(hi ? COL_LVL_HI : COL_DIM);
+    String t = wedges ? String(cm) + " cm" : String("--");
+    canvas.drawString(t, right ? wx + ww + 5 : wx - 5, y + wh / 2);
   }
-}
 
-// Spirit level: target ring sized by the sensor tolerance, the dot moves with pitch / roll
-void drawBubble(int cx, int cy, int r, bool live) {
-  int maxR = r - 12;
-  int zone = constrain((int)lroundf(levelTol / BUBBLE_FULL_SCALE_DEG * maxR), 10, maxR);
-
-  canvas.fillCircle(cx, cy, r, COL_BG);
-  canvas.fillCircle(cx, cy, zone, live ? COL_ZONE : COL_GRID);
-  canvas.drawCircle(cx, cy, zone, live ? COL_LEVEL : COL_OUTLINE);
-  canvas.drawCircle(cx, cy, maxR / 2 + zone / 2, COL_GRID);
-  canvas.drawFastHLine(cx - r + 4, cy, 2 * r - 8, COL_GRID);
-  canvas.drawFastVLine(cx, cy - r + 4, 2 * r - 8, COL_GRID);
-  canvas.drawCircle(cx, cy, r, COL_OUTLINE);
-  canvas.drawCircle(cx, cy, r - 1, COL_OUTLINE);
-
-  if (!(havePitch && haveRoll)) return;
-
+  // Target ring and dot in the middle
+  int cy = top + h / 2;
+  int maxR = w / 2 - 10;
+  canvas.drawCircle(cx, cy, 15, COL_OUTLINE);
+  canvas.drawCircle(cx, cy, 14, COL_OUTLINE);
+  if (!have) return;
   float dx = BUBBLE_SIGN_X * roll  / BUBBLE_FULL_SCALE_DEG * maxR;
   float dy = BUBBLE_SIGN_Y * pitch / BUBBLE_FULL_SCALE_DEG * maxR;
   float len = sqrtf(dx * dx + dy * dy);
-  if (len > maxR) {
-    dx *= maxR / len;
-    dy *= maxR / len;
-  }
-
-  float worst = fmaxf(fabsf(pitch), fabsf(roll));
-  uint16_t col = !live ? COL_DIM : (vanIsLevel() ? COL_OK : (worst <= 3.0f ? COL_WARN : COL_BAD));
-  canvas.fillCircle(cx + (int)dx, cy + (int)dy, 10, col);
-  canvas.drawCircle(cx + (int)dx, cy + (int)dy, 10, COL_TEXT);
+  if (len > maxR) { dx *= maxR / len; dy *= maxR / len; }
+  uint16_t col = !live ? COL_DIM : (level ? COL_OK : COL_LVL_HI);
+  canvas.fillCircle(cx + (int)dx, cy + (int)dy, 8, col);
 }
 
 void drawPageLevel() {
   drawHeader();
   bool offline = levelStatusKnown && !levelOnline;
   bool live = !offline && isFresh(lastPitchMs) && isFresh(lastRollMs);
+  bool have = havePitch && haveRoll;
 
-  // Left: spirit level
+  // Left: van seen from above
   card(8, TOP, 164, BOTTOM - TOP, COL_LINE);
-  drawBubble(90, (TOP + BOTTOM) / 2, 76, live);
+  drawVan(90, TOP + 22, 58, BOTTOM - TOP - 30, live);
 
-  // Right: state on top, pitch (side view) and roll (rear view) below
-  const int rx = 178, rw = 312 - rx, rcx = rx + rw / 2;
+  // Right: state, then across (roll) and along (pitch)
+  const int rx = 178, rw = 312 - rx, lx = rx + 10;
   card(rx, TOP, rw, BOTTOM - TOP, COL_LINE);
 
   String state;
   uint16_t stateCol;
   if (offline) { state = "offline"; stateCol = COL_BAD; }
-  else if (!(havePitch && haveRoll)) { state = "--"; stateCol = COL_DIM; }
-  else if (!live) { state = vanIsLevel() ? "Eben" : "Nicht eben"; stateCol = COL_DIM; }
-  else if (vanIsLevel()) { state = "Eben"; stateCol = COL_OK; }
-  else { state = "Nicht eben"; stateCol = COL_WARN; }
+  else if (!have) { state = "--"; stateCol = COL_DIM; }
+  else if (vanIsLevel()) { state = "Eben"; stateCol = live ? COL_OK : COL_DIM; }
+  else { state = "Nicht eben"; stateCol = live ? COL_LVL_HI : COL_DIM; }
   canvas.setFont(&fonts::FreeSansBold12pt7b);
-  canvas.setTextDatum(middle_center);
+  canvas.setTextDatum(middle_left);
   canvas.setTextColor(stateCol);
-  canvas.drawString(state, rcx, TOP + 18);
-  canvas.drawFastHLine(rx + 12, TOP + 34, rw - 24, COL_LINE);
+  canvas.drawString(state, lx, TOP + 20);
+  canvas.drawFastHLine(rx + 10, TOP + 38, rw - 20, COL_LINE);
 
-  drawTiltValue(rcx, 92, 124, pitch, havePitch, live, true,  ICON_SIGN_PITCH);
-  drawTiltValue(rcx, 160, 194, roll, haveRoll,  live, false, ICON_SIGN_ROLL);
+  uint16_t valCol = live ? COL_TEXT : COL_DIM;
+  canvas.setFont(&fonts::FreeSans9pt7b);
+  canvas.setTextDatum(middle_left);
+  canvas.setTextColor(COL_DIM);
+  canvas.drawString("LINKS/RECHTS", lx, TOP + 56);
+  canvas.drawString("VORNE/HINTEN", lx, TOP + 110);
+  if (have) {
+    drawTiltText(lx, TOP + 78, roll, true, "rechts", "links", valCol);    // roll > 0: left higher, right low
+    drawTiltText(lx, TOP + 132, pitch, true, "hinten", "vorne", valCol);  // pitch > 0: front higher, rear low
+  } else {
+    canvas.setFont(&fonts::FreeSansBold9pt7b);
+    canvas.setTextColor(COL_DIM);
+    canvas.drawString("--", lx, TOP + 78);
+    canvas.drawString("--", lx, TOP + 132);
+  }
+
+  // Bottom: largest wedge as a short hint (the full list is on the van)
+  if (have && live && !vanIsLevel() && haveWedges()) {
+    int best = -1;
+    for (int i = 0; i < 4; i++) if (wedgeCm(i) >= 1 && (best < 0 || wedgeCm(i) > wedgeCm(best))) best = i;
+    canvas.setFont(&fonts::FreeSans9pt7b);
+    canvas.setTextColor(COL_LVL_HI);
+    canvas.drawString(best >= 0 ? String("max. ") + wedgeCm(best) + " cm" : String("fast eben"), lx, BOTTOM - 16);
+  }
 }
 
 // ---------- Tank pages (fresh water, gas) ----------
@@ -1224,6 +1228,9 @@ void handleLevel(const String& sub, const String& message) {
     roll = message.toFloat();
     haveRoll = true;
     lastRollMs = millis();
+  } else if (sub.startsWith("wedge_")) {
+    static const char* const KEYS[4] = {"wedge_fl", "wedge_fr", "wedge_rl", "wedge_rr"};
+    for (int i = 0; i < 4; i++) if (sub == KEYS[i]) wedge[i] = message.toFloat();
   } else if (sub == "is_level") {
     isLevelState = message == "ON" ? 1 : 0;
   } else if (sub == "tolerance") {

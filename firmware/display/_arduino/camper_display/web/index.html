@@ -66,6 +66,14 @@ input[type=text],input[type=password],input[type=number],select,textarea{width:1
 .sgroups .btn.on{background:var(--ac);color:#fff}
 details.fixed>summary{pointer-events:none;list-style:none}
 details.fixed>summary::-webkit-details-marker{display:none}
+.lvrow{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.lvsvg{width:100%;max-width:240px;flex:0 1 240px}
+.lvt{fill:var(--mu);font:15px ui-monospace,SFMono-Regular,Menlo,monospace}
+.lvinfo{flex:1;min-width:170px}
+.lvstate{font-size:24px;font-weight:700;margin-bottom:12px}
+.lvk{color:var(--mu);font-size:13px;letter-spacing:.06em;margin-top:10px}
+.lvv{font:600 20px ui-monospace,SFMono-Regular,Menlo,monospace}
+.lvhint{font-size:18px;font-weight:600;margin-top:10px}
 .savebar{position:sticky;bottom:0;display:flex;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:var(--bg);z-index:4}
 .tileed{border:1px solid var(--hi);border-radius:12px;padding:10px;margin:10px 0}
 .tileed .row b{flex:1}
@@ -428,16 +436,22 @@ function pgFan(){
   <div class="fanbtns">${b('auto','Auto')}${b('direction','⇅ Richtung')}${b('sync_off','Sync AUS')}</div>`;
 }
 function pgLevel(){
-  return `<div class="grid"><div class="card" style="text-align:center"><svg viewBox="0 0 200 200" width="100%" style="max-width:260px">
-   <circle cx="100" cy="100" r="96" fill="none" stroke="var(--mu)" stroke-width="2"/>
-   <line x1="100" y1="6" x2="100" y2="194" stroke="var(--hi)"/><line x1="6" y1="100" x2="194" y2="100" stroke="var(--hi)"/>
-   <circle id="l_zone" cx="100" cy="100" r="10" fill="none" stroke="var(--ok)" stroke-width="2"/>
-   <circle id="l_bub" cx="100" cy="100" r="14" fill="var(--mu)"/></svg><div style="font-size:22px;font-weight:600" id="l_state">--</div></div>
-  <div class="card"><svg viewBox="0 0 200 230" width="100%" style="max-width:260px">
-   <text x="100" y="14" text-anchor="middle">▲ Front</text><rect x="70" y="40" width="60" height="150" rx="10" fill="var(--hi)"/>
-   <text id="l_fl" x="62" y="60" text-anchor="end">--</text><text id="l_fr" x="138" y="60">--</text>
-   <text id="l_rl" x="62" y="180" text-anchor="end">--</text><text id="l_rr" x="138" y="180">--</text></svg></div>
-  <div class="card wide"><div class="row"><span class="grow" id="l_vals" style="font-size:20px;font-weight:600">--</span><button class="btn" data-lvl="tare">Tara setzen</button></div></div></div>`;
+  // van from above: wedge per wheel, dot in the middle moves to the low side (same as panel and Road Buddy)
+  const wy=[66,170],wh=40;
+  const wheels=[0,1,2,3].map(i=>{const r=i&1,x=r?144:64,y=wy[i>>1];
+    return `<rect id="lw${i}" x="${x}" y="${y}" width="12" height="${wh}" rx="6" fill="#55657a"/>
+    <text id="lt${i}" x="${r?164:56}" y="${y+wh/2+6}" text-anchor="${r?'start':'end'}" class="lvt">--</text>`}).join('');
+  return `<div class="grid"><div class="card wide lvcard"><h3 style="margin:0 0 6px">Neigung</h3>
+   <div class="lvrow"><svg viewBox="0 0 220 262" class="lvsvg">
+    <text x="110" y="16" text-anchor="middle" class="lvt" style="font-size:14px">vorne</text>
+    <rect x="70" y="24" width="80" height="232" rx="30" fill="#1a2638" stroke="#6f8fbf" stroke-width="2.5"/>${wheels}
+    <circle cx="110" cy="140" r="19" fill="none" stroke="#55657a" stroke-width="2.5"/>
+    <circle id="l_bub" cx="110" cy="140" r="10" fill="var(--mu)"/></svg>
+   <div class="lvinfo"><div id="l_state" class="lvstate">--</div>
+    <div class="lvk">QUER</div><div class="lvv" id="l_roll">--</div>
+    <div class="lvk">LÄNGS</div><div class="lvv" id="l_pitch">--</div></div></div>
+   <div id="l_hint" class="lvhint">--</div></div>
+  <div class="card wide"><div class="row"><span class="grow mu" id="l_vals">--</span><button class="btn" data-lvl="tare">Tara setzen</button></div></div></div>`;
 }
 function pgCustom(pi){
   let h='';
@@ -556,13 +570,25 @@ function update(){
   }
   if($('#f_st'))set('f_st','🌀 '+(online('fan')?'Online':'Offline')+(V.fan_hold==='ON'?' · Auto-Hold':''));
   if($('#l_bub')){
-    const pitch=num(V.lvl_pitch)??0,roll=num(V.lvl_roll)??0,tol=num(V.lvl_tol)??0.5,R=82,rg=5,cl=x=>Math.max(-1,Math.min(1,x));
-    $('#l_bub').setAttribute('cx',100+cl(roll/rg)*R);$('#l_bub').setAttribute('cy',100+cl(-pitch/rg)*R);
-    $('#l_zone').setAttribute('r',Math.max(8,tol/rg*96));
-    $('#l_bub').setAttribute('fill',!V.lvl_ok?'var(--mu)':lvOk?'var(--ok)':'var(--gas)');
-    set('l_state',!online('lvl')?'offline':lvOk?'Eben':'Nicht eben');
-    set('l_vals',`Nick ${fmt(V.lvl_pitch,1,'°')} · Roll ${fmt(V.lvl_roll,1,'°')}`);
-    ['fl','fr','rl','rr'].forEach(k=>{const v=num(V['lvl_'+k]);document.getElementById('l_'+k).textContent=v===null?'--':Math.abs(v)<0.05?'OK':v.toFixed(1)+' cm'});
+    const pitch=num(V.lvl_pitch),roll=num(V.lvl_roll),tol=num(V.lvl_tol)??0.5,have=pitch!==null&&roll!==null,on=online('lvl');
+    const lvl=V.lvl_ok?V.lvl_ok==='ON':(have&&Math.abs(pitch)<=tol&&Math.abs(roll)<=tol),live=on&&have;
+    const HI='var(--gas)',R=26,rg=3,cl=x=>Math.max(-1,Math.min(1,x));
+    // right when the right side is low (roll > 0 = left higher), down when the rear is low (pitch > 0 = front higher)
+    $('#l_bub').setAttribute('cx',110+cl((roll??0)/rg)*R);$('#l_bub').setAttribute('cy',140+cl((pitch??0)/rg)*R);
+    $('#l_bub').setAttribute('fill',!live?'var(--mu)':lvl?'var(--ok)':HI);
+    const st=$('#l_state');st.textContent=!on?'offline':!have?'--':lvl?'Eben':'Nicht eben';
+    st.style.color=!on?'var(--warn)':!live?'var(--mu)':lvl?'var(--ok)':HI;
+    const tilt=(v,p,n)=>!have?'--':Math.abs(v)<=tol?'eben':cnum(Math.abs(v),1)+'° '+(v>0?p:n)+' tief';
+    set('l_roll',tilt(roll,'rechts','links'));set('l_pitch',tilt(pitch,'hinten','vorne'));
+    const NAME=['links vorne','rechts vorne','links hinten','rechts hinten'],parts=[];let all=true;
+    ['fl','fr','rl','rr'].forEach((k,i)=>{const v=num(V['lvl_'+k]);if(v===null)all=false;
+      const cm=v===null?null:Math.max(0,Math.round(v)),hi=live&&!lvl&&cm>=1;
+      const t=$('#lt'+i);t.textContent=cm===null?'--':cm+' cm';t.style.fill=hi?HI:'';
+      $('#lw'+i).setAttribute('fill',hi?'#f0a030':'#55657a');if(hi)parts.push(NAME[i]+' '+cm+' cm')});
+    let h=!on?'Levelsensor offline':!have?'Noch keine Werte vom Levelsensor':lvl?'Steht eben, nichts unterlegen':
+      !all?'Keine Keilwerte vom Levelsensor':!parts.length?'Fast eben, kein Keil nötig':parts.join(', ')+' unterlegen';
+    set('l_hint',h.charAt(0).toUpperCase()+h.slice(1));
+    set('l_vals',`Nick ${fmt(V.lvl_pitch,1,'°')} · Roll ${fmt(V.lvl_roll,1,'°')} · Toleranz ${fmt(V.lvl_tol,1,'°')}`);
   }
   if(cfg)cfg.tiles.forEach((t,i)=>{
     const v=V['t'+i];if(v===undefined)return;

@@ -25,7 +25,7 @@ Die Seiten werden mit den beiden äußeren Touch-Tasten (links/rechts) umgeschal
 
 | Seite | Inhalt |
 | ----- | ------ |
-| Level | Libelle mit Zielring (Größe = Toleranz des Levelsensors), der Punkt bewegt sich mit Pitch/Roll. Rechts groß „Eben“ (grün) oder „Nicht eben“ (gelb), darunter zwei kippende Fahrzeug-Icons für Pitch (Seitenansicht) und Roll (Heckansicht). Werte: grün innerhalb der Toleranz, gelb bis 3°, rot darüber |
+| Level | Fahrzeug von oben mit „vorne“ oben: an jedem Rad die Keilhöhe in cm, Räder mit Keil orange. In der Mitte ein Zielring, der Punkt wandert zur tiefen Seite (grün, wenn eben). Rechts „Eben“ oder „Nicht eben“, darunter quer („0,9° rechts tief“) und längs („eben“) und der größte Keil. Gleiche Darstellung wie am Wandpanel |
 | Wassertank | Füllstand groß in %, Liter darunter, Sensor-Status; rechts ein Tank mit animierter Oberfläche. Unter 25 % gelb, unter 10 % rot (Tank und Zahl) |
 | Gas | Füllstand groß in %, Restmenge darunter, Status und Akku des Gassensors; rechts die Gasflasche. Unter 15 % rot |
 | Temperaturen | Sensoren von camper-temp mit Namen und Wert. 1–2 Sensoren als große Zeilen, 3–4 als 2×2-Kacheln. Bei 5–8 Sensoren kommt automatisch eine zweite Temperaturseite dazu. Alarm (zu warm/zu kalt) = roter Rahmen. Farbe: blau unter 10 °C, grün bis 28 °C, gelb bis 45 °C, rot darüber |
@@ -61,6 +61,7 @@ Das Display ist reiner Empfänger und fragt nichts ab, die Aktualisierungsrate b
 | ----- | --------- |
 | `camper/level/pitch` | Neigung vorne/hinten in Grad |
 | `camper/level/roll` | Neigung links/rechts in Grad |
+| `camper/level/wedge_fl`, `_fr`, `_rl`, `_rr` | Keilhöhe in cm unter jedem Rad (vorne links, vorne rechts, hinten links, hinten rechts) |
 | `camper/level/is_level` | `ON` / `OFF`: steht das Fahrzeug innerhalb der Toleranz |
 | `camper/level/tolerance` | Toleranz in Grad (Größe des Zielrings) |
 | `camper/level/status` | `online` / `offline` von camper-level |
@@ -77,7 +78,7 @@ Das Display ist reiner Empfänger und fragt nichts ab, die Aktualisierungsrate b
 | `camper/battery/status` | `online` / `offline` von camper-battery |
 | `camper/router/mobile` | Mobilfunkdaten des Routers als JSON (`rsrp`, `rssi`, Netztyp), für die Signalbalken. Einstellbar mit `ROUTER_TOPIC` in `config.h`, `""` schaltet es ab |
 
-Weitere Topics unter diesen Präfixen (z. B. `rssi`, `voltage`, `raw_level`, `wedge_*`, Grauwasser) werden ignoriert. Die Topics für Wasser und Gas stehen als Konstanten am Anfang des Sketches, das Level-Topic in `config.h`. Die früheren getrennten Geräte (`camper/waterlevel`, `camper/gaslevel`) werden nicht mehr unterstützt.
+Weitere Topics unter diesen Präfixen (z. B. `rssi`, `voltage`, `raw_level`, `tare_*`, Grauwasser) werden ignoriert. Die Topics für Wasser und Gas stehen als Konstanten am Anfang des Sketches, das Level-Topic in `config.h`. Die früheren getrennten Geräte (`camper/waterlevel`, `camper/gaslevel`) werden nicht mehr unterstützt.
 
 Die Sensoren dazu:
 
@@ -114,10 +115,8 @@ Alle Einstellungen stehen am Anfang von `roadbuddy.ino`:
 | `DISPLAY_TIMEOUT_MS` | Zeit bis das Display ausgeht (Standard 60 s) |
 | `SLEEP_DELAY_MS` | Zeit von Display-aus bis Deep Sleep (Standard 5 min) |
 | `STALE_MS` | Ab wann Level-Werte als veraltet gelten (Standard 30 s) |
-| `BUBBLE_SIGN_X` / `BUBBLE_SIGN_Y` | Auf `-1.0f` setzen, wenn die Blase in die falsche Richtung wandert |
-| `BUBBLE_FULL_SCALE_DEG` | Winkel, bei dem die Blase den Rand erreicht (Standard 5°, wie am Wandpanel) |
-| `ICON_SIGN_PITCH` / `ICON_SIGN_ROLL` | Kipprichtung der Fahrzeug-Icons umdrehen |
-| `ICON_GAIN` | Übertreibung des Kippwinkels, damit kleine Winkel sichtbar sind |
+| `BUBBLE_SIGN_X` / `BUBBLE_SIGN_Y` | Auf `-1.0f` setzen, wenn der Punkt nicht zur tiefen Seite wandert |
+| `BUBBLE_FULL_SCALE_DEG` | Neigung, bei der der Punkt den Rand des Fahrzeugs erreicht (Standard 3°) |
 | `TOPIC_TANK_*` | MQTT-Topics für Wasser und Gas |
 | `TOPIC_TEMP_*` | MQTT-Topics von camper-temp |
 | `UPDATE_AWAKE_MS` | Wie lange die System-Seite den RoadBuddy wach hält (Standard 15 min) |

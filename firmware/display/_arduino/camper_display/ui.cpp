@@ -116,7 +116,13 @@ const int LVL_RING = BADGE, LVL_DOT = 10;
 
 lv_obj_t *hRoom, *hWater, *hSet, *hPower, *hPowerLbl, *hFanBm, *hWaterBm, *hStatus, *hDecoke, *hDecokeLbl;
 lv_obj_t *fStatus, *fSpeed, *fSpeedLbl;
-lv_obj_t *lvArea, *lvBubble, *lvZone, *lvPitch, *lvRoll, *lvState, *lvWedge[4];
+// level page: van seen from above, wedge per wheel, dot in the middle moves to the low side
+lv_obj_t *lvVan, *lvDot, *lvRoll, *lvPitch, *lvState, *lvHint, *lvWheel[4], *lvWedge[4];
+const lv_color_t C_VAN    = lv_color_hex(0x6F8FBF);   // outline of the van (same on Road Buddy and web page)
+const lv_color_t C_VAN_IN = lv_color_hex(0x1A2638);   // inside of the van
+const lv_color_t C_LVL_HI = lv_color_hex(0xF0A030);   // wheels that need a wedge, dot while not level
+const int LV_VAN_W = 96, LV_VAN_H = 214, LV_DOT = 20;
+const float LV_RANGE = 3.0f;                         // tilt at which the dot reaches the edge of the van
 lv_obj_t *sIp, *sNet, *sQr, *sQrLbl, *sBri, *sInfo;
 std::vector<lv_obj_t*> sVals;           // system page: value column, order of SYS_ROWS
 
@@ -1341,60 +1347,71 @@ void buildFan(lv_obj_t* tab) {
 
 void buildLevel(lv_obj_t* tab) {
   pageContainer(tab);
-  // bubble
-  lv_obj_t* bc = card(tab, 224, 250);
-  lvArea = lv_obj_create(bc);
-  lv_obj_set_size(lvArea, 196, 196);
-  lv_obj_align(lvArea, LV_ALIGN_TOP_MID, 0, 0);
-  lv_obj_set_style_radius(lvArea, LV_RADIUS_CIRCLE, 0);
-  lv_obj_set_style_bg_color(lvArea, C_BG, 0);
-  lv_obj_set_style_border_color(lvArea, C_MUTED, 0);
-  lv_obj_set_style_border_width(lvArea, 2, 0);
-  lv_obj_set_style_pad_all(lvArea, 0, 0);
-  lv_obj_remove_flag(lvArea, LV_OBJ_FLAG_SCROLLABLE);
-  lvZone = lv_obj_create(lvArea);
-  lv_obj_set_size(lvZone, 40, 40);
-  lv_obj_center(lvZone);
-  lv_obj_set_style_radius(lvZone, LV_RADIUS_CIRCLE, 0);
-  lv_obj_set_style_bg_opa(lvZone, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_border_color(lvZone, C_OK, 0);
-  lv_obj_set_style_border_width(lvZone, 2, 0);
-  lv_obj_remove_flag(lvZone, LV_OBJ_FLAG_CLICKABLE);
-  lvBubble = lv_obj_create(lvArea);
-  lv_obj_set_size(lvBubble, 30, 30);
-  lv_obj_center(lvBubble);
-  lv_obj_set_style_radius(lvBubble, LV_RADIUS_CIRCLE, 0);
-  lv_obj_set_style_bg_color(lvBubble, C_MUTED, 0);
-  lv_obj_set_style_border_width(lvBubble, 0, 0);
-  lv_obj_remove_flag(lvBubble, LV_OBJ_FLAG_CLICKABLE);
-  lvState = label(bc, &font_de_18, C_MUTED, "--");
-  lv_obj_align(lvState, LV_ALIGN_BOTTOM_MID, 0, 0);
+  const int CW = PAGE_W - 20;
+  lv_obj_t* c = card(tab, CW, 270);
 
-  // vehicle with wedge heights
-  lv_obj_t* vc = card(tab, 224, 250);
-  lv_obj_t* car = lv_obj_create(vc);
-  lv_obj_set_size(car, 70, 140);
-  lv_obj_align(car, LV_ALIGN_CENTER, 0, 6);
-  lv_obj_set_style_bg_color(car, C_CARD_HI, 0);
-  lv_obj_set_style_border_width(car, 0, 0);
-  lv_obj_set_style_radius(car, 10, 0);
-  lv_obj_t* front = label(vc, &font_de_14, C_MUTED, LV_SYMBOL_UP " Front");
-  lv_obj_align(front, LV_ALIGN_TOP_MID, 0, 0);
-  const lv_align_t al[4] = {LV_ALIGN_LEFT_MID, LV_ALIGN_RIGHT_MID, LV_ALIGN_LEFT_MID, LV_ALIGN_RIGHT_MID};
-  const int yo[4] = {-44, -44, 56, 56};
+  // left: van from above, "vorne" on top
+  const int vx = 72, vy = 22, vcx = vx + LV_VAN_W / 2;
+  lv_obj_t* front = label(c, &font_de_14, C_MUTED, "vorne");
+  lv_obj_set_width(front, 120);
+  lv_obj_set_style_text_align(front, LV_TEXT_ALIGN_CENTER, 0);
+  lv_obj_set_pos(front, vcx - 60, 0);
+
+  lvVan = shape(c, LV_VAN_W, LV_VAN_H, 34);
+  lv_obj_set_pos(lvVan, vx, vy);
+  lv_obj_set_style_bg_color(lvVan, C_VAN_IN, 0);
+  lv_obj_set_style_border_color(lvVan, C_VAN, 0);
+  lv_obj_set_style_border_width(lvVan, 2, 0);
+
+  // wheels on the outline, wedge height next to them (FL, FR, RL, RR)
+  const int ww = 12, wh = 38;
+  const int wy[2] = {vy + 40, vy + LV_VAN_H - 40 - wh};
   for (int i = 0; i < 4; i++) {
-    lvWedge[i] = label(vc, &font_de_18, C_TEXT, "--");
-    lv_obj_align(lvWedge[i], al[i], 0, yo[i]);
+    bool right = i & 1;
+    int x = right ? vx + LV_VAN_W - ww / 2 : vx - ww / 2;
+    int y = wy[i >> 1];
+    lvWheel[i] = shape(c, ww, wh, 6);
+    lv_obj_set_pos(lvWheel[i], x, y);
+    lvWedge[i] = label(c, &font_de_18, C_MUTED, "--");
+    lv_obj_set_width(lvWedge[i], 56);
+    lv_obj_set_style_text_align(lvWedge[i], right ? LV_TEXT_ALIGN_LEFT : LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_pos(lvWedge[i], right ? x + ww + 8 : x - 8 - 56, y + wh / 2 - 11);
   }
 
-  lv_obj_t* vals = card(tab, PAGE_W - 20, 76);
-  lvPitch = label(vals, &font_de_22, C_TEXT, "Nick --");
-  lv_obj_align(lvPitch, LV_ALIGN_LEFT_MID, 0, 0);
-  lvRoll = label(vals, &font_de_22, C_TEXT, "Roll --");
-  lv_obj_align(lvRoll, LV_ALIGN_LEFT_MID, 140, 0);
-  lv_obj_t* tare = button(vals, "Tara", 110, 52, nullptr, nullptr, C_CARD_HI, &font_de_18);
+  // target ring and dot in the middle of the van
+  lv_obj_t* ring = shape(lvVan, 46, 46, LV_RADIUS_CIRCLE);
+  lv_obj_set_style_bg_opa(ring, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_border_color(ring, C_OUTLINE, 0);
+  lv_obj_set_style_border_width(ring, 2, 0);
+  lv_obj_center(ring);
+  lvDot = shape(lvVan, LV_DOT, LV_DOT, LV_RADIUS_CIRCLE);
+  lv_obj_set_style_bg_color(lvDot, C_MUTED, 0);
+  lv_obj_center(lvDot);
+
+  // right: state, across (roll) and along (pitch), tare
+  const int rx = 250, rw = CW - 24 - rx;
+  lvState = label(c, &font_de_28, C_MUTED, "--");
+  lv_obj_set_pos(lvState, rx, 4);
+  lv_obj_t* q = label(c, &font_de_14, C_MUTED, "QUER");
+  lv_obj_set_pos(q, rx, 60);
+  lvRoll = label(c, &font_de_22, C_TEXT, "--");
+  lv_obj_set_width(lvRoll, rw);
+  lv_obj_set_pos(lvRoll, rx, 80);
+  lv_obj_t* l = label(c, &font_de_14, C_MUTED, "L\xC3\x84NGS");
+  lv_obj_set_pos(l, rx, 122);
+  lvPitch = label(c, &font_de_22, C_TEXT, "--");
+  lv_obj_set_width(lvPitch, rw);
+  lv_obj_set_pos(lvPitch, rx, 142);
+  lv_obj_t* tare = button(c, "Tara", 110, 48, nullptr, nullptr, C_CARD_HI, &font_de_18);
   lv_obj_add_event_cb(tare, onTare, LV_EVENT_LONG_PRESSED, nullptr);
-  lv_obj_align(tare, LV_ALIGN_RIGHT_MID, 0, 0);
+  lv_obj_align(tare, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+
+  // bottom: what to put under which wheel
+  lv_obj_t* hc = card(tab, CW, 84);
+  lvHint = label(hc, &font_de_18, C_TEXT, "--");
+  lv_obj_set_width(lvHint, CW - 24);
+  lv_label_set_long_mode(lvHint, LV_LABEL_LONG_WRAP);
+  lv_obj_align(lvHint, LV_ALIGN_LEFT_MID, 0, 0);
 }
 
 void buildCustom(lv_obj_t* tab, int pageIdx) {
@@ -1624,13 +1641,6 @@ void setTank(TankW& w, DpId pct, DpId liters, bool online) {
 void setMatrix(lv_obj_t* bm, int checked) {
   lv_buttonmatrix_clear_button_ctrl_all(bm, LV_BUTTONMATRIX_CTRL_CHECKED);
   if (checked >= 0) lv_buttonmatrix_set_button_ctrl(bm, checked, LV_BUTTONMATRIX_CTRL_CHECKED);
-}
-
-String wedgeText(DpId id) {
-  if (!store::has(id)) return "--";
-  float v = store::getf(id, 0);
-  if (fabsf(v) < 0.05f) return "OK";
-  return commaNum(v, 1) + " cm";
 }
 
 // Weather tile, bottom line: measured outside temperature if there is a sensor, else the forecast text
@@ -2081,24 +2091,52 @@ void refreshValues() {
   }
 
   // level
-  if (lvArea) {
+  if (lvVan) {
+    bool have = store::has(DP_LVL_PITCH) && store::has(DP_LVL_ROLL);
     float pitch = store::getf(DP_LVL_PITCH, 0), roll = store::getf(DP_LVL_ROLL, 0);
     float tol = store::getf(DP_LVL_TOL, 0.5f);
-    const float range = 5.0f;   // degrees at the edge of the circle
-    const int r = (196 - 30) / 2;
-    int x = (int)(constrain(roll / range, -1.0f, 1.0f) * r);
-    int y = (int)(constrain(-pitch / range, -1.0f, 1.0f) * r);
-    lv_obj_align(lvBubble, LV_ALIGN_CENTER, x, y);
-    int z = constrain((int)(tol / range * 196), 16, 196);
-    lv_obj_set_size(lvZone, z, z);
-    lv_obj_center(lvZone);
-    bool level = store::get(DP_LVL_OK) == "ON";
-    lv_obj_set_style_bg_color(lvBubble, !store::has(DP_LVL_OK) ? C_MUTED : (level ? C_OK : C_GAS), 0);
-    lv_label_set_text(lvState, !lvlOn ? "offline" : (level ? "Eben" : "Nicht eben"));
-    lv_label_set_text(lvPitch, ("Nick " + fmt(store::get(DP_LVL_PITCH), 1, "\xC2\xB0")).c_str());
-    lv_label_set_text(lvRoll, ("Roll " + fmt(store::get(DP_LVL_ROLL), 1, "\xC2\xB0")).c_str());
+    bool level = store::has(DP_LVL_OK) ? store::get(DP_LVL_OK) == "ON" : (fabsf(pitch) <= tol && fabsf(roll) <= tol);
+    bool live = lvlOn && have;
+
+    // dot: right when the right side is low, down when the rear is low (pitch > 0 = front higher)
+    const int r = LV_VAN_W / 2 - LV_DOT / 2 - 6;
+    float dx = constrain(roll / LV_RANGE, -1.0f, 1.0f) * r, dy = constrain(pitch / LV_RANGE, -1.0f, 1.0f) * r;
+    lv_obj_align(lvDot, LV_ALIGN_CENTER, (int)dx, (int)dy);
+    lv_obj_set_style_bg_color(lvDot, !live ? C_MUTED : (level ? C_OK : C_LVL_HI), 0);
+
+    lv_label_set_text(lvState, !lvlOn ? "offline" : !have ? "--" : (level ? "Eben" : "Nicht eben"));
+    lv_obj_set_style_text_color(lvState, !lvlOn ? C_WARN : !live ? C_MUTED : (level ? C_OK : C_LVL_HI), 0);
+
+    // "0,9° rechts tief" / "eben"
+    auto tilt = [&](float v, const char* pos, const char* neg) -> String {
+      if (!have) return "--";
+      if (fabsf(v) <= tol) return "eben";
+      return commaNum(fabsf(v), 1) + "\xC2\xB0 " + (v > 0 ? pos : neg) + " tief";
+    };
+    lv_label_set_text(lvRoll, tilt(roll, "rechts", "links").c_str());     // roll > 0: left side higher
+    lv_label_set_text(lvPitch, tilt(pitch, "hinten", "vorne").c_str());   // pitch > 0: front higher
+
+    static const char* const NAME[4] = {"links vorne", "rechts vorne", "links hinten", "rechts hinten"};
     const DpId w[4] = {DP_LVL_FL, DP_LVL_FR, DP_LVL_RL, DP_LVL_RR};
-    for (int i = 0; i < 4; i++) lv_label_set_text(lvWedge[i], wedgeText(w[i]).c_str());
+    String hint;
+    bool allWedges = true;
+    for (int i = 0; i < 4; i++) {
+      bool known = store::has(w[i]);
+      if (!known) allWedges = false;
+      int cm = known ? (int)lroundf(fmaxf(store::getf(w[i], 0), 0.0f)) : -1;
+      bool hi = live && !level && cm >= 1;
+      lv_label_set_text(lvWedge[i], known ? (String(cm) + " cm").c_str() : "--");
+      lv_obj_set_style_text_color(lvWedge[i], hi ? C_LVL_HI : C_MUTED, 0);
+      lv_obj_set_style_bg_color(lvWheel[i], hi ? C_LVL_HI : C_OUTLINE, 0);
+      if (hi) hint += String(hint.length() ? ", " : "") + NAME[i] + " " + cm + " cm";
+    }
+    if (!lvlOn) hint = "Levelsensor offline";
+    else if (!have) hint = "Noch keine Werte vom Levelsensor";
+    else if (level) hint = "Steht eben, nichts unterlegen";
+    else if (!allWedges) hint = "Keine Keilwerte vom Levelsensor";
+    else if (hint.isEmpty()) hint = "Fast eben, kein Keil n\xC3\xB6tig";
+    else { hint.setCharAt(0, toupper(hint[0])); hint += " unterlegen"; }
+    lv_label_set_text(lvHint, hint.c_str());
   }
 
   // user tiles
@@ -2319,8 +2357,9 @@ void clearHandles() {
   ovHeatIcon = ovFanIcon = ovOkBadge = nullptr;
   hRoom = hWater = hSet = hPower = hPowerLbl = hFanBm = hWaterBm = hStatus = hDecoke = hDecokeLbl = nullptr;
   fStatus = fSpeed = fSpeedLbl = nullptr;
-  lvArea = lvBubble = lvZone = lvPitch = lvRoll = lvState = nullptr;
+  lvVan = lvDot = lvRoll = lvPitch = lvState = lvHint = nullptr;
   for (auto& w : lvWedge) w = nullptr;
+  for (auto& w : lvWheel) w = nullptr;
   sIp = sNet = sQr = sQrLbl = sBri = sInfo = nullptr;
   sVals.clear();
   wIcon = wTemp = wText = wFeels = wPlace = wStatus = nullptr;
