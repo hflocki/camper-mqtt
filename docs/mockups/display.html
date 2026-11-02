@@ -282,14 +282,23 @@ header{position:sticky;top:0;z-index:5;background:var(--card);padding:10px 14px 
 #clock{font-variant-numeric:tabular-nums;font-weight:600}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--warn);display:inline-block}
 .dot.ok{background:var(--ok)}
-nav{display:flex;gap:6px;overflow-x:auto;padding:10px 0;scrollbar-width:none}
+header{padding-bottom:10px}
+/* icon bar at the bottom: Home, the pages chosen for the panel, System (same as on the display) */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;justify-content:center;gap:2px;background:var(--card);
+ padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -1px 0 #0003;overflow-x:auto;scrollbar-width:none}
 nav::-webkit-scrollbar{display:none}
-nav button{flex:none;border:0;border-radius:999px;padding:8px 14px;background:var(--hi);color:var(--tx);font:inherit;font-size:15px;cursor:pointer}
-nav button.on{background:var(--ac);color:#fff}
-#menu{display:none;border:0;background:var(--hi);color:var(--tx);border-radius:10px;font-size:20px;line-height:1;padding:6px 10px;cursor:pointer}
-@media (max-width:640px){#menu{display:block}nav{display:none;flex-direction:column;gap:4px;padding:8px 0 12px;max-height:70vh;overflow-y:auto}
- header.open nav{display:flex}nav button{text-align:left;border-radius:12px;padding:12px 14px}#dname{display:none}}
-main{padding:14px;max-width:820px;margin:0 auto}
+nav button{flex:1 1 0;min-width:0;max-width:112px;border:0;background:none;color:var(--mu);display:flex;flex-direction:column;
+ align-items:center;gap:3px;font:inherit;font-size:12px;padding:2px 1px;cursor:pointer}
+nav .ic{font-size:22px;line-height:1;padding:6px 14px;border-radius:999px}
+nav .lb{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+nav button.on{color:var(--tx);font-weight:600}
+nav button.on .ic{background:rgba(90,176,240,.22)}
+@media (max-width:420px){nav .ic{padding:5px 10px;font-size:20px}nav button{font-size:11px}#dname{display:none}}
+main{padding:14px 14px calc(84px + env(safe-area-inset-bottom));max-width:820px;margin:0 auto}
+.syslist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.syslist .btn{justify-content:flex-start;text-align:left;padding:14px;font-size:16px}
+.sysrow{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--hi)}
+.sysrow:last-child{border-bottom:0}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
 .card{background:var(--card);border-radius:16px;padding:14px;position:relative}
 .card.wide{grid-column:1/-1}
@@ -340,7 +349,7 @@ details.fixed>summary::-webkit-details-marker{display:none}
 .lvk{color:var(--mu);font-size:13px;letter-spacing:.06em;margin-top:10px}
 .lvv{font:600 20px ui-monospace,SFMono-Regular,Menlo,monospace}
 .lvhint{font-size:18px;font-weight:600;margin-top:10px}
-.savebar{position:sticky;bottom:0;display:flex;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:var(--bg);z-index:4}
+.savebar{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));display:flex;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:var(--bg);z-index:4}
 .tileed{border:1px solid var(--hi);border-radius:12px;padding:10px;margin:10px 0}
 .tileed .row b{flex:1}
 details.sn{background:none;margin:8px 0;padding:8px 10px}details.sn>summary{padding:4px 0;gap:8px;list-style:none;font-weight:400}details.sn>summary::-webkit-details-marker{display:none}details.sn[open]>summary{margin-bottom:6px}
@@ -348,7 +357,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 td{padding:6px 4px;border-top:1px solid var(--hi);vertical-align:top;word-break:break-all}
 code{font-size:12px;color:var(--mu)}
 .chip{display:inline-block;margin:2px;padding:3px 8px;border-radius:8px;background:var(--hi);cursor:pointer;font-size:12px}
-#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9}
+#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9}
 #toast.show{opacity:1}
 .banner{background:var(--gas);color:#000;border-radius:12px;padding:10px 14px;margin-bottom:12px}
 .warnbox{background:var(--warn);color:#fff;border-radius:16px;padding:12px 14px;margin-bottom:12px;font-weight:600;white-space:pre-line}
@@ -359,10 +368,10 @@ code{font-size:12px;color:var(--mu)}
 </head>
 <body>
 <header>
-  <div class="top"><button id="menu" aria-label="Menü" title="Menü">☰</button><span class="dot" id="dot" title="Verbindung"></span><h1 id="title">Camper</h1><span class="mu" id="dname" style="position:absolute;left:50%;transform:translateX(-50%);font-weight:600;pointer-events:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn" id="wake" hidden title="Display ist dunkel" style="padding:6px 12px;font-size:14px">💡 Display an</button><button class="btn" id="sleep" hidden title="Display ausschalten" style="padding:6px 10px;font-size:14px">💤</button><span id="clock"></span></div>
-  <nav id="nav"></nav>
+  <div class="top"><span class="dot" id="dot" title="Verbindung"></span><h1 id="title">Camper</h1><span class="mu" id="dname" style="position:absolute;left:50%;transform:translateX(-50%);font-weight:600;pointer-events:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn" id="wake" hidden title="Display ist dunkel" style="padding:6px 12px;font-size:14px">💡 Display an</button><button class="btn" id="sleep" hidden title="Display ausschalten" style="padding:6px 10px;font-size:14px">💤</button><span id="clock"></span></div>
 </header>
 <main id="main"></main>
+<nav id="nav"></nav>
 <div id="toast"></div>
 <script>
 'use strict';
@@ -416,17 +425,38 @@ function pages(){
   const p=[];if(!cfg)return p;
   BUILTIN.forEach((b,i)=>{if(cfg.builtin[i])p.push({id:b[0],title:ptitle(i),icon:picon(i)})});
   cfg.pages.forEach((n,i)=>p.push({id:'p'+i,title:n,custom:i}));
+  p.push({id:'system',title:sysTitle(),icon:picon(BUILTIN.length)});
   p.push({id:'links',title:'🔗 Geräte'});
   p.push({id:'settings',title:'⚙ Einstellungen'});
   return p;
 }
+const sysTitle=()=>(cfg&&cfg.pageNames&&cfg.pageNames[BUILTIN.length])||'System';
+// icon bar like on the panel: Home and System always, in between as many of the pages chosen there
+// (cfg.navSel, else the first NAV_FREE) as fit; the rest is on the System page under "Weitere Seiten"
+const NAV_MIN_W=68;   // px per button so that icon and name stay readable
+function navRoom(){return Math.max(0,Math.min(NAV_FREE,Math.floor(Math.min(window.innerWidth,900)/NAV_MIN_W)-2))}
+function navItems(){
+  const all=pages().filter(p=>!['system','links','settings'].includes(p.id));
+  const home=all.find(p=>p.id==='overview'),rest=all.filter(p=>p.id!=='overview');
+  const sel=((cfg&&cfg.navSel)||'').split(',').map(x=>x.trim()).filter(x=>x);
+  let mid=sel.length?sel.map(id=>rest.find(p=>p.id===id)).filter(x=>x):rest;
+  mid=mid.slice(0,navRoom());
+  return [...(home?[home]:[]),...mid,pages().find(p=>p.id==='system')];
+}
+// rebuild the bar when the width changes (phone turned, window resized)
+let navW=-1;
+window.addEventListener('resize',()=>{clearTimeout(window._nvT);window._nvT=setTimeout(()=>{
+  const n=navRoom();if(n===navW||!cfg)return;buildNav();render()},150)});
+function go(id){page=id;try{localStorage.setItem('page',page)}catch(e){}window.scrollTo(0,0);render()}
 function buildNav(){
-  $('#nav').innerHTML=pages().map(p=>`<button data-p="${p.id}">${p.icon?p.icon+' ':''}${esc(p.title)}</button>`).join('');
-  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{page=b.dataset.p;localStorage.setItem('page',page);document.querySelector('header').classList.remove('open');render()});
+  navW=navRoom();
+  $('#nav').innerHTML=navItems().map(p=>`<button data-p="${p.id}" title="${esc(p.title)}"><span class="ic">${p.icon||'📄'}</span><span class="lb">${esc(p.title)}</span></button>`).join('');
+  $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.p));
 }
 function render(){
-  $('#nav').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.p===page));
-  if($('#menu'))$('#menu').textContent='☰';
+  // pages that are not in the bar (settings, devices, the rest) are reached from System, so System lights up
+  const inBar=navItems().some(x=>x.id===page);
+  $('#nav').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.p===page||(!inBar&&b.dataset.p==='system')));
   const p=pages().find(x=>x.id===page);if(!p)return;
   $('#title').textContent=p.title.replace('⚙ ','');
   $('#dname').textContent=cfg.name||'';document.title=cfg.name?cfg.name+' · Camper Display':'Camper Display';
@@ -441,6 +471,7 @@ function render(){
   else if(p.id in DEVPAGE)m.innerHTML=pgDev(p.id);
   else if(p.id==='warn')m.innerHTML=pgWarn();
   else if(p.id==='links')m.innerHTML=pgLinks();
+  else if(p.id==='system'){m.innerHTML=pgSystem();bindSystem()}
   else if(p.id==='settings'){m.innerHTML=pgSettings();loadSettings()}
   else m.innerHTML=pgCustom(p.custom);
   bind();update();
@@ -510,6 +541,31 @@ function updDev(){
 }
 function pgWarn(){return `<div class="card" id="wn_box"><div id="wn_l" style="white-space:pre-line;font-size:18px;font-weight:600">--</div></div>`}
 // Links to the web pages of the other devices (Einstellungen -> Geräte-Links)
+// System page: connection, display brightness, and everything that is not in the icon bar
+function pgSystem(){
+  const bar=navItems().map(x=>x.id);
+  const more=pages().filter(p=>!bar.includes(p.id)&&!['system','links','settings'].includes(p.id));
+  const b=(id,ic,t)=>`<button class="btn" data-go="${id}">${ic} ${esc(t)}</button>`;
+  return `<div class="grid">
+  <div class="card wide"><h3>Verbindung</h3>
+   <div class="sysrow"><span class="mu">WLAN</span><b id="sy_wifi">--</b></div>
+   <div class="sysrow"><span class="mu">IP</span><b id="sy_ip">--</b></div>
+   <div class="sysrow"><span class="mu">MQTT</span><b id="sy_mqtt">--</b></div>
+   <div class="sysrow"><span class="mu">Firmware</span><b>${esc(cfg.fw||'--')}</b></div></div>
+  <div class="card wide"><h3>Display</h3><div class="row"><span class="mu">Helligkeit</span>
+   <input type="range" id="sy_bri" min="5" max="100" class="grow"><button class="btn" id="sy_scr">💤 Aus</button></div></div>
+  <div class="card wide"><h3>Einstellungen &amp; Geräte</h3><div class="syslist">
+   ${b('settings','⚙','Einstellungen')}<button class="btn" id="sy_rules">⚡ Automationen</button>${b('links','🔗','Geräte')}</div></div>
+  ${more.length?`<div class="card wide"><h3>Weitere Seiten</h3><div class="syslist">${more.map(p=>b(p.id,p.icon||'📄',p.title)).join('')}</div></div>`:''}
+  </div>`;
+}
+function bindSystem(){
+  document.querySelectorAll('#main [data-go]').forEach(e=>e.onclick=()=>go(e.dataset.go));
+  $('#sy_rules').onclick=()=>{setGroup='rules';try{localStorage.setItem('setGroup','rules')}catch(e){}go('settings')};
+  const br=$('#sy_bri');if(S.bri!==undefined)br.value=S.bri;br.oninput=e=>send({c:'bri',v:e.target.value});
+  $('#sy_scr').onclick=()=>{const on=S.awake===false;send({c:'screen',v:on?'on':'off'});S.awake=on;update()};
+  update();
+}
 function pgLinks(){
   const l=(cfg&&cfg.links)||[];
   if(!l.length)return `<div class="card mu">Noch keine Geräte-Links. Unter ⚙ Einstellungen → 🔗 Geräte-Links eintragen.</div>`;
@@ -731,7 +787,7 @@ function pgCustom(pi){
 }
 
 function bind(){
-  document.querySelectorAll('[data-go]').forEach(e=>e.onclick=()=>{if(pages().some(p=>p.id===e.dataset.go)){page=e.dataset.go;render()}});
+  document.querySelectorAll('[data-go]').forEach(e=>e.onclick=()=>{if(pages().some(p=>p.id===e.dataset.go))go(e.dataset.go)});
   document.querySelectorAll('[data-hk]').forEach(e=>e.onclick=()=>send({c:'heat',k:e.dataset.hk,v:e.dataset.hv}));
   const pow=$('#h_pow');if(pow)pow.onclick=()=>send({c:'heat',k:'hvac_mode',v:V.heat_hvac==='heat'?'off':'heat'});
   const dec=$('#h_dec');if(dec)dec.onclick=()=>{const on=V.heat_decoke==='ON';if(on||confirm('Freibrennen starten?'))send({c:'heat',k:'decoke',v:on?'OFF':'ON'})};
@@ -757,6 +813,12 @@ function setTank(p,pk,lk,dev){
 function update(){
   updWeather();
   if(S.awake!==undefined){$('#wake').hidden=!!S.awake;$('#sleep').hidden=!S.awake}
+  if($('#sy_ip')){
+    set('sy_wifi',S.wifi?`verbunden${S.rssi!==undefined?' · '+S.rssi+' dBm':''}`:'getrennt');
+    set('sy_ip',esc(S.ip||'--'));set('sy_mqtt',S.mqtt?'verbunden':'getrennt');
+    $('#sy_scr').textContent=S.awake===false?'💡 An':'💤 Aus';
+    const br=$('#sy_bri');if(S.bri!==undefined&&document.activeElement!==br)br.value=S.bri;
+  }
   if(S.ip!==undefined){$('#dot').classList.toggle('ok',ws&&ws.readyState==1&&S.mqtt);$('#dot').title=S.mqtt?'MQTT verbunden':'MQTT getrennt'}
   const d=new Date();$('#clock').textContent=d.toTimeString().slice(0,5);
   // overview
@@ -1256,7 +1318,6 @@ function addFromFinder(topic,key){
   PG.tiles.push(t);renderPages();toast('Kachel hinzugefügt – unter „Seiten & Kacheln“ prüfen und speichern');
 }
 
-$('#menu').onclick=()=>{const h=document.querySelector('header');h.classList.toggle('open');$('#menu').textContent=h.classList.contains('open')?'✕':'☰'};
 $('#wake').onclick=()=>{send({c:'screen',v:'on'});S.awake=true;$('#wake').hidden=true;$('#sleep').hidden=false};
 $('#sleep').onclick=()=>{send({c:'screen',v:'off'});S.awake=false;$('#sleep').hidden=true;$('#wake').hidden=false};
 setInterval(()=>{const d=new Date();$('#clock').textContent=d.toTimeString().slice(0,5)},10000);

@@ -25,7 +25,7 @@ Die Seiten werden mit den beiden äußeren Touch-Tasten (links/rechts) umgeschal
 
 | Seite | Inhalt |
 | ----- | ------ |
-| Level | Fahrzeug von oben mit „vorne“ oben: an jedem Rad die Keilhöhe in cm, Räder mit Keil orange. In der Mitte ein Zielring, der Punkt wandert zur tiefen Seite (grün, wenn eben). Rechts „Eben“ oder „Nicht eben“, darunter quer („0,9° rechts tief“) und längs („eben“) und der größte Keil. Gleiche Darstellung wie am Wandpanel |
+| Level | Fahrzeug von oben mit „vorne“ oben: an jedem Rad die Keilhöhe in cm, Räder mit Keil orange. In der Mitte ein Zielring, der Punkt wandert zur tiefen Seite (grün, wenn eben). Rechts „Eben“ oder „Nicht eben“, darunter Li/Re („0,9° rechts tief“) und Vo/Hi („eben“) und der größte Keil. Gleiche Darstellung wie am Wandpanel |
 | Wassertank | Füllstand groß in %, Liter darunter, Sensor-Status; rechts ein Tank mit animierter Oberfläche. Unter 25 % gelb, unter 10 % rot (Tank und Zahl) |
 | Gas | Füllstand groß in %, Restmenge darunter, Status und Akku des Gassensors; rechts die Gasflasche. Unter 15 % rot |
 | Temperaturen | Sensoren von camper-temp mit Namen und Wert. 1–2 Sensoren als große Zeilen, 3–4 als 2×2-Kacheln. Bei 5–8 Sensoren kommt automatisch eine zweite Temperaturseite dazu. Alarm (zu warm/zu kalt) = roter Rahmen. Farbe: blau unter 10 °C, grün bis 28 °C, gelb bis 45 °C, rot darüber |

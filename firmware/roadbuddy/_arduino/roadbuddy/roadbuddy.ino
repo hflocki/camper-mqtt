@@ -8,7 +8,7 @@
 #include "config.h"
 #include "webota.h"
 
-#define FW_VERSION "1.2.0"
+#define FW_VERSION "1.2.1"
 
 // ---------- Sensor selection ----------
 // Choose in config.h which sensors are used (1 = enabled, 0 = disabled).
@@ -633,11 +633,11 @@ void drawPageLevel() {
   bool have = havePitch && haveRoll;
 
   // Left: van seen from above
-  card(8, TOP, 164, BOTTOM - TOP, COL_LINE);
-  drawVan(90, TOP + 22, 58, BOTTOM - TOP - 30, live);
+  card(8, TOP, 148, BOTTOM - TOP, COL_LINE);
+  drawVan(82, TOP + 22, 50, BOTTOM - TOP - 30, live);
 
   // Right: state, then across (roll) and along (pitch)
-  const int rx = 178, rw = 312 - rx, lx = rx + 10;
+  const int rx = 162, rw = 312 - rx, lx = rx + 10, maxW = rw - 18;
   card(rx, TOP, rw, BOTTOM - TOP, COL_LINE);
 
   String state;
@@ -647,6 +647,7 @@ void drawPageLevel() {
   else if (vanIsLevel()) { state = "Eben"; stateCol = live ? COL_OK : COL_DIM; }
   else { state = "Nicht eben"; stateCol = live ? COL_LVL_HI : COL_DIM; }
   canvas.setFont(&fonts::FreeSansBold12pt7b);
+  if (canvas.textWidth(state) > maxW) canvas.setFont(&fonts::FreeSansBold9pt7b);   // keep it inside the card
   canvas.setTextDatum(middle_left);
   canvas.setTextColor(stateCol);
   canvas.drawString(state, lx, TOP + 20);
@@ -656,8 +657,8 @@ void drawPageLevel() {
   canvas.setFont(&fonts::FreeSans9pt7b);
   canvas.setTextDatum(middle_left);
   canvas.setTextColor(COL_DIM);
-  canvas.drawString("LINKS/RECHTS", lx, TOP + 56);
-  canvas.drawString("VORNE/HINTEN", lx, TOP + 110);
+  canvas.drawString("Li/Re", lx, TOP + 56);
+  canvas.drawString("Vo/Hi", lx, TOP + 110);
   if (have) {
     drawTiltText(lx, TOP + 78, roll, true, "rechts", "links", valCol);    // roll > 0: left higher, right low
     drawTiltText(lx, TOP + 132, pitch, true, "hinten", "vorne", valCol);  // pitch > 0: front higher, rear low
