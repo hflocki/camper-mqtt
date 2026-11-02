@@ -15,7 +15,7 @@ const M = {
     ntpServer: 'pool.ntp.org', tz: 'CET-1CEST,M3.5.0,M10.5.0/3',
     poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
     brightness: 80, dimBrightness: 10, screenTimeout: 120, warnWake: false,
-    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, ovTempSel: '', ovBatSel: '',
+    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, wxGustHyst: 10, wnWater: 10, wnGas: 15, wnBat: 20, wnHystPct: 3, wnFrostOn: false, wnFrost: 3, wnHystT: 1, poQuiet: 30, ovTempSel: '', ovBatSel: '',
     builtin: [true, true, true, true, true, true, true, true, true, true, true, false, false],
     pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'Sensoren', 'Warnungen', 'Licht', 'Schalter', 'Energie', 'Extra', 'System'],
     pageIcons: ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
@@ -132,6 +132,13 @@ const M = {
     if (path === '/api/pages' && method === 'GET') return M.pages;
     if (path === '/api/sensors' && method === 'GET') return M.sensors;
     if (path === '/api/sensors') { M.sensors = body; return {ok: true, msg: 'Sensoren gespeichert'}; }
+    if (path === '/api/devices') {
+      const up = Math.floor((Date.now() - M.t0) / 1000);
+      const D = (id, n, v, rssi, base) => ({id, n, on: 1, v, ip: '192.168.8.' + (20 + id.length), rssi, up: base + up, rst: 'power on', age: 20});
+      return [D('display', 'Display', '2.9.13', -52, 86400), D('heater', 'Heizung', '1.3.1', -63, 7200), D('level', 'Level', '2.1.1', -58, 3600),
+              D('maxxfan', 'Dachlüfter', '1.5.1', -66, 7100), D('tanklevel', 'Tanks', '1.6.1', -61, 90000), D('temp', 'Temperatur', '1.2.1', -70, 4000),
+              {id: 'battery', n: 'Batterie', on: 1}, {id: 'roadbuddy', n: 'Road Buddy', on: 0, v: '1.2.3', ip: '192.168.8.40', rssi: -71, up: 600, rst: 'deep sleep', age: 900}];
+    }
     if (path === '/api/sensors/unknown') return [{bus: 0, addr: '00158d0000000009', ago: 25}, {bus: 1, addr: 'A4C1380000BB', ago: 70}];
     if (path === '/api/rules' && method === 'GET') return M.rules;
     if (path === '/api/rules') { M.rules = body; return {ok: true, msg: 'Automationen gespeichert'}; }
@@ -554,6 +561,7 @@ function pgSystem(){
    <div class="sysrow"><span class="mu">Firmware</span><b>${esc(cfg.fw||'--')}</b></div></div>
   <div class="card wide"><h3>Display</h3><div class="row"><span class="mu">Helligkeit</span>
    <input type="range" id="sy_bri" min="5" max="100" class="grow"><button class="btn" id="sy_scr">💤 Aus</button></div></div>
+  <div class="card wide"><h3>📡 Geräte im Netz</h3><div id="sy_dev" class="mu">Lade …</div></div>
   <div class="card wide"><h3>Einstellungen &amp; Geräte</h3><div class="syslist">
    ${b('settings','⚙','Einstellungen')}<button class="btn" id="sy_rules">⚡ Automationen</button>${b('links','🔗','Geräte')}</div></div>
   ${more.length?`<div class="card wide"><h3>Weitere Seiten</h3><div class="syslist">${more.map(p=>b(p.id,p.icon||'📄',p.title)).join('')}</div></div>`:''}
@@ -565,6 +573,21 @@ function bindSystem(){
   const br=$('#sy_bri');if(S.bri!==undefined)br.value=S.bri;br.oninput=e=>send({c:'bri',v:e.target.value});
   $('#sy_scr').onclick=()=>{const on=S.awake===false;send({c:'screen',v:on?'on':'off'});S.awake=on;update()};
   update();
+  loadDevices();clearInterval(devTimer);devTimer=setInterval(()=>{if($('#sy_dev'))loadDevices();else clearInterval(devTimer)},10000);
+}
+// devices in the network: <root>/+/status and <root>/+/info, collected by the display
+let devTimer=0;
+const upTxt=s=>s<3600?Math.floor(s/60)+' min':s<86400?Math.floor(s/3600)+' h '+Math.floor(s%3600/60)+' min':Math.floor(s/86400)+' d '+Math.floor(s%86400/3600)+' h';
+async function loadDevices(){
+  const b=$('#sy_dev');if(!b)return;
+  let l;try{const r=await fetch('/api/devices');if(!r.ok)throw 0;l=await r.json()}catch(e){b.textContent='Geräteliste nicht erreichbar';return}
+  if(!$('#sy_dev'))return;
+  if(!l.length){b.textContent='Noch keine Meldung. Geräte ab dieser Firmware-Version senden <prefix>/info.';return}
+  b.classList.remove('mu');
+  b.innerHTML=l.map(d=>{const dot=d.on===1?'🟢':d.on===0?'🔴':'⚪',old=d.age==null||d.age>180;
+    const v=d.on===0?'offline':d.v==null?'keine Info':`v${esc(d.v)}${d.rssi?' · '+d.rssi+' dBm':''}${!old?' · '+upTxt(d.up):' · keine Info'}`;
+    const t=d.v!=null?`IP ${d.ip||'?'} · letzter Neustart: ${d.rst||'?'}`:'';
+    return `<div class="sysrow" title="${esc(t)}"><span>${dot} ${esc(d.n)}</span><b class="${d.on===0?'':'mu'}" style="font-weight:400${d.on===0?';color:var(--warn,#e5484d)':''}">${v}</b></div>`}).join('');
 }
 function pgLinks(){
   const l=(cfg&&cfg.links)||[];
@@ -998,13 +1021,21 @@ function pgSettings(){
    <p class="mu" style="margin-top:-4px">Mit Topic folgt das Wetter dem Fahrzeug. Inhalt: JSON mit <code>lat</code>/<code>lon</code> (auch <code>latitude</code>/<code>longitude</code>, auch verschachtelt wie beim RUT956) oder <code>52.52,13.40</code>. Ohne Position gilt der feste Ort oben.</p>
    <div class="f2">${inp('wxGust','Warnung ab Böen (km/h, 0 = aus)','number')}<div><label>Aktualisieren</label><select id="wxEvery"><option value="15">alle 15 min</option><option value="30">alle 30 min</option><option value="60">stündlich</option><option value="120">alle 2 h</option></select></div></div></details>
   <details data-g="svc"><summary>📲 Pushover</summary>
-   <p class="mu">Schickt die Warnungen der Übersicht (Temperatur-Alarme, Heizungsfehler, Batterie, Wetter) als Push-Nachricht aufs Handy. Token einer eigenen Pushover-Anwendung und User-Key von <a href="https://pushover.net" target="_blank" rel="noopener">pushover.net</a>. Eine Warnung wird gesendet, wenn sie 30 s besteht.</p>
+   <p class="mu">Schickt die Warnungen der Übersicht (Temperatur-Alarme, Heizungsfehler, Batterie, Tanks, Frost, Wetter) als Push-Nachricht aufs Handy. Token einer eigenen Pushover-Anwendung und User-Key von <a href="https://pushover.net" target="_blank" rel="noopener">pushover.net</a>. Eine Warnung wird gesendet, wenn sie 30 s besteht.</p>
    <label class="chk"><input type="checkbox" id="poOn"> Warnungen senden</label>
    <label class="chk"><input type="checkbox" id="poClear"> Nachricht, wenn eine Warnung vorbei ist</label>
    <div class="f2">${inp('poToken','API-Token (Anwendung)','password')}${inp('poUser','User-Key','password')}</div>
    <div class="f2">${inp('poTitle','Titel der Nachricht')}<div><label>Priorität</label><select id="poPrio"><option value="0">Normal</option><option value="1">Hoch (auch in Ruhezeiten)</option><option value="-1">Leise</option></select></div></div>
    <div class="row"><button class="btn" id="potest">Testnachricht</button><span class="mu grow" id="postat"></span></div>
    <p class="mu">Erst speichern, dann testen.</p></details>
+  <details data-g="svc"><summary>⚠️ Warnungen</summary>
+   <p class="mu">Grenzwerte für die eingebauten Warnungen. Sie erscheinen oben im Display und gehen per Pushover raus. 0 schaltet eine Warnung ab. Die Hysterese verhindert, dass eine Warnung bei einem Wert knapp an der Grenze ständig kommt und geht. Kühl- und Gefrierschrank stellst du beim jeweiligen Sensor ein (📡 Sensoren, „Warnung über °C“) bzw. im camper-temp.</p>
+   <div class="f2">${inp('wnWater','Frischwasser unter (%)','number')}${inp('wnGas','Gas unter (%)','number')}</div>
+   <div class="f2">${inp('wnBat','Batterie unter (% Ladung)','number')}${inp('wnHystPct','Hysterese Füllstände/Batterie (%)','number')}</div>
+   <label class="chk"><input type="checkbox" id="wnFrostOn"> Frostwarnung (Außensensor, sonst Wetter)</label>
+   <div class="f2">${inp('wnFrost','Frost unter (°C)','number')}${inp('wnHystT','Hysterese Temperaturen (°C)','text','1,0')}</div>
+   <div class="f2">${inp('wxGustHyst','Hysterese Böen (km/h)','number')}${inp('poQuiet','Ruhezeit Pushover (min)','number')}</div>
+   <p class="mu" style="margin-top:-4px">Ruhezeit: Kommt eine Warnung innerhalb dieser Zeit wieder, wird sie nicht noch einmal gesendet. Die Böen-Grenze selbst steht unter 🌦 Wetter.</p></details>
   <section data-g="rules">${pgRules()}</section>
   <details data-g="sys" class="fixed" open><summary>🔧 System</summary>
    ${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
@@ -1031,7 +1062,7 @@ function showGroup(g){setGroup=g;try{localStorage.setItem('setGroup',g)}catch(e)
   const sb=$('.savebar');if(sb)sb.style.display=g==='rules'?'none':'';   // automations have their own save button
   if(g==='rules'){if(!rulesLoaded){rulesLoaded=true;loadRules()}else ruleState()}
   const sd=$('#snd');if(g==='dev'&&sd&&!sd.open){sd.open=true}}
-const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','rtTopic','wxGust'];
+const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','rtTopic','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet'];
 async function loadSettings(){
   rulesLoaded=false;
   try{
@@ -1045,7 +1076,7 @@ async function loadSettings(){
     LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
     $('#warnWake').checked=!!ST.warnWake;$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||60);
     $('#slt').innerHTML=$('#slb').innerHTML='';renderSlots();
-    $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#poPrio').value=String(ST.poPrio||0);
+    $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#wnFrostOn').checked=!!ST.wnFrostOn;$('#wnHystT').value=cnum(ST.wnHystT??1,1);$('#poPrio').value=String(ST.poPrio||0);
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
     $('#sysinfo').textContent=`Firmware ${ST.fw} · MAC ${ST.mac} · IP ${S.ip||''}`;
     const p=await fetch('/api/pages');PG=await p.json();PG.pages=PG.pages||[];PG.tiles=PG.tiles||[];renderPages();
@@ -1141,7 +1172,8 @@ function renderSensors(){
      <div><label>${d.bus==1?'MAC-Adresse':d.kind>=2?'IEEE-Adresse (zum Schalten nötig)':'Adresse (IEEE oder Short-ID)'}</label><input type="text" data-s="${i}" data-sf="addr" value="${esc(d.addr)}" placeholder="${d.bus==1?'A4C138AEF56D':'0x00158d… oder 9c68'}"></div>
      ${d.bus==0?`<div><label>Zweite Adresse (optional)</label><input type="text" data-s="${i}" data-sf="alt" value="${esc(d.alt||'')}" placeholder="Short-ID"></div>`:'<div></div>'}
      ${d.kind==0?`<div><label>Symbol, wenn offen</label><select data-s="${i}" data-sf="icon"><option value="">kein Symbol</option>${ICONS.map(x=>`<option value="${x[0]}"${d.icon===x[0]?' selected':''}>${x[1]} ${x[2]}</option>`).join('')}</select></div>
-     <div><label class="chk"><input type="checkbox" data-s="${i}" data-sf="warn" ${d.warn?'checked':''}> Warnung, wenn offen</label><label class="chk"><input type="checkbox" data-s="${i}" data-sf="invert" ${d.invert?'checked':''}> umgekehrt (1 = zu)</label></div>`:''}</div>
+     <div><label class="chk"><input type="checkbox" data-s="${i}" data-sf="warn" ${d.warn?'checked':''}> Warnung, wenn offen</label><label class="chk"><input type="checkbox" data-s="${i}" data-sf="invert" ${d.invert?'checked':''}> umgekehrt (1 = zu)</label></div>`:''}
+     ${d.kind==1?`<div><label>Warnung über °C (leer = aus)</label><input type="text" inputmode="decimal" data-s="${i}" data-sf="tmax" value="${d.tmax!=null?cnum(d.tmax,1):''}" placeholder="z. B. 8 beim Kühlschrank"></div><div></div>`:''}</div>
     <label>Anzeigen auf</label><div class="row" style="gap:4px 14px">${SHOW.filter(x=>x[2].includes(+d.kind)).map(([bit,pi])=>`<label class="chk" style="margin:2px 0"><input type="checkbox" data-s="${i}" data-sh="${bit}" ${(shOf(d)&bit)?'checked':''}> ${showLabel(bit,pi)}</label>`).join('')}</div></details>`}).join('')||'<p class="mu">Noch keine Sensoren.</p>';
   b.querySelectorAll('details.sn').forEach(e=>e.ontoggle=()=>{const i=+e.dataset.si;if(e.open)SN_OPEN.add(i);else SN_OPEN.delete(i)});
   b.querySelectorAll('[data-sf="type"]').forEach(e=>e.onchange=()=>{readSensors();renderSensors()});
@@ -1151,7 +1183,8 @@ function readSensors(){
   ['zbBase','bleBase'].forEach(k=>{const e=$('#'+k);if(e)SN[k]=e.value.trim()});
   if($('#tempDiv'))SN.tempDiv=+$('#tempDiv').value;if($('#humDiv'))SN.humDiv=+$('#humDiv').value;
   document.querySelectorAll('[data-sf]').forEach(e=>{const d=SN.devices[+e.dataset.s];if(!d)return;const f=e.dataset.sf;
-    if(f==='type'){const [bus,kind]=e.value.split('-').map(Number);if(d.kind!==kind)d.show=shDef(kind);d.bus=bus;d.kind=kind}else d[f]=e.type==='checkbox'?e.checked:e.value.trim()});
+    if(f==='type'){const [bus,kind]=e.value.split('-').map(Number);if(d.kind!==kind)d.show=shDef(kind);d.bus=bus;d.kind=kind}else if(f==='tmax'){const v=parseFloat(e.value.replace(',','.'));if(isNaN(v))delete d.tmax;else d.tmax=v}
+    else d[f]=e.type==='checkbox'?e.checked:e.value.trim()});
   SN.devices.forEach((d,i)=>{const boxes=document.querySelectorAll(`[data-s="${i}"][data-sh]`);if(!boxes.length)return;
     let m=0;boxes.forEach(b=>{if(b.checked)m|=+b.dataset.sh});d.show=m});
 }
@@ -1163,7 +1196,8 @@ async function loadUnknown(){
 }
 function saveSettings(){
   const o={};FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)o[f]=e.value});
-  ['mqttPort','dimBrightness','screenTimeout','wxGust'].forEach(f=>o[f]=parseInt(o[f])||0);
+  ['mqttPort','dimBrightness','screenTimeout','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet'].forEach(f=>o[f]=parseInt(o[f])||0);
+  o.wnFrostOn=$('#wnFrostOn').checked;o.wnHystT=parseFloat(String($('#wnHystT').value).replace(',','.'))||0;
   o.warnWake=$('#warnWake').checked;o.wxOn=$('#wxOn').checked;o.wxEvery=+$('#wxEvery').value;
   o.ovTempSel=readSlots('slt',SLOTS_T);o.ovBatSel=readSlots('slb',SLOTS_B);
   o.heaterSrc=+$('#heaterSrc').value;

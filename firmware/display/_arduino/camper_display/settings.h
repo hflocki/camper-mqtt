@@ -73,6 +73,14 @@ struct Settings {
   String   rtTopic;             // MQTT topic with the mobile signal of the router; empty = off
   uint8_t  wxGust = 60;         // warn from these gusts in km/h, 0 = off
   uint8_t  wxEvery = 60;        // update interval in minutes
+  uint8_t  wxGustHyst = 10;     // gust warning ends below wxGust - this (km/h)
+  // limits of the built-in warnings, 0 = off (water, gas, battery in %)
+  uint8_t  wnWater = 10, wnGas = 15, wnBat = 20;
+  uint8_t  wnHystPct = 3;       // a % warning ends above limit + this
+  bool     wnFrostOn = false;   // frost warning from the outside temperature (sensor or weather)
+  int8_t   wnFrost = 3;         // warn below this temperature in °C
+  uint8_t  wnHystT = 10;        // temperature warnings end this far past the limit, in 0.1 °C
+  uint16_t poQuiet = 30;        // minutes: a warning that ended is not sent again within this time
   // overview tiles temperature / battery: "name=icon" lines (see icons.cpp), "" = all / first 3
   String   ovTempSel, ovBatSel;
   // heater source: own camper-heater firmware or a CampMatic box (topics <prefixHeater>/climate/truma_*/...)

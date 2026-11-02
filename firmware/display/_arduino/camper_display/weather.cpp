@@ -1,4 +1,5 @@
 #include "weather.h"
+#include "alerts.h"
 #include "config.h"
 #include "settings.h"
 #include "wifi_manager.h"
@@ -346,8 +347,12 @@ String warning() {
   Data d = get();
   if (!d.valid || time(nullptr) - d.at > 3 * 3600) return "";   // old data: no warnings
   String w;
-  if (settings.wxGust > 0 && !isnan(d.gust) && d.gust >= settings.wxGust)
+  // ends only when the gusts drop wxGustHyst below the limit (no on/off at every update)
+  float lim = settings.wxGust;
+  if (settings.wxGust > 0 && alerts::latch("gust", !isnan(d.gust) && d.gust >= lim,
+                                           isnan(d.gust) || d.gust < lim - settings.wxGustHyst))
     w = "Wind: B\xC3\xB6" "en bis " + String((int)lroundf(d.gust)) + " km/h";
+  else if (settings.wxGust == 0) alerts::latch("gust", false, true);
   if (d.code >= 95) {
     if (w.length()) w += "\n";
     w += text(d.code);   // "Gewitter" / "Gewitter mit Hagel"

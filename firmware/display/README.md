@@ -35,7 +35,7 @@ Passt zu den anderen Projekten:
 ## Funktionen
 
 - **Wandpanel** mit LVGL-Oberfläche: Icon-Leiste unten zum Wechseln der Seiten (oder wischen), deutsche Umlaute und Icons
-- **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert, hell/dunkel automatisch. Unten eine Icon-Leiste wie am Display: Home und System immer, dazwischen so viele der gewählten Seiten, wie in die Breite passen (am Handy hochkant meist 3). Die Seite **System** zeigt Verbindung, Firmware und Helligkeit und führt zu ⚙ Einstellungen, ⚡ Automationen, 🔗 Geräte und allen Seiten, die keinen Knopf in der Leiste haben
+- **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert, hell/dunkel automatisch. Unten eine Icon-Leiste wie am Display: Home und System immer, dazwischen so viele der gewählten Seiten, wie in die Breite passen (am Handy hochkant meist 3). Die Seite **System** zeigt Verbindung, Firmware, Helligkeit und alle **📡 Geräte im Netz** (aus `camper/+/status` und `camper/+/info`: online/offline, Version, Signal, Laufzeit; am Display ebenfalls auf der Systemseite) und führt zu ⚙ Einstellungen, ⚡ Automationen, 🔗 Geräte und allen Seiten, die keinen Knopf in der Leiste haben
 - **📡 Eigene Sensoren:** Zigbee-Kontakte und -Klimasensoren direkt vom Gateway (Cluster-Topics, z. B. SMLIGHT) und Bluetooth-Thermometer über OpenMQTTGateway (Govee, Ruuvi, Xiaomi …), siehe [Sensoren](#sensoren-zigbee--bluetooth)
 - **⚡ Automationen:** Regeln wie „Tür auf → Eingangslicht an, Tür zu → nach 10 s aus, nur wenn dunkel“, siehe [Automationen](#automationen)
 - **Display aufwecken:** Ist der Bildschirm gedimmt oder aus, zeigt die Webseite oben den Knopf **💡 Display an**.
@@ -253,9 +253,14 @@ Die Status-Kachel der Übersicht wird rot und zeigt die Warnungen, solange etwas
 | camper-temp | `alarm_text` ist nicht leer (Grenzwert eines Sensors länger als die eingestellte Verzögerung verletzt) |
 | camper-heater | `control_status/heater_error` = `ON`, mit Fehlercode |
 | Wetter | Böen ab dem eingestellten Wert (Standard 60 km/h) oder Gewitter, siehe [Wetter](#wetter) |
-| camper-battery | Ladestand unter 20 % (`BAT_WARN_SOC` in `config.h`, mit Restlaufzeit), BM2-Zustand „Schwach“ oder „Kritisch“ (Starterbatterie), BMS meldet einen Fehler – ab camper-battery 1.3.1 mit Text, z. B. „Bordbatterie BMS: Zellspannung zu hoch (Stufe 1)“, auch auf der Batterieseite. Batterien ohne Verbindung lösen keine Warnung aus |
+| camper-tanklevel | Frischwasser unter 10 %, Gas unter 15 % (einstellbar) |
+| Frost | Außentemperatur unter 3 °C (ab Werk aus): eigener Außensensor, sonst das Wetter |
+| Eigene Klimasensoren | Temperatur über „Warnung über °C“ des Sensors, z. B. Zigbee-Sensor im Kühlschrank |
+| camper-battery | Ladestand unter 20 % (einstellbar, Vorgabe `BAT_WARN_SOC` in `config.h`, mit Restlaufzeit), BM2-Zustand „Schwach“ oder „Kritisch“ (Starterbatterie), BMS meldet einen Fehler – ab camper-battery 1.3.1 mit Text, z. B. „Bordbatterie BMS: Zellspannung zu hoch (Stufe 1)“, auch auf der Batterieseite. Batterien ohne Verbindung lösen keine Warnung aus |
 
-Warnungen von Geräten, die `offline` sind, werden nicht gezeigt (alte retained Werte sollen keinen Fehlalarm auslösen). Grenzwerte und Verzögerung stellt man direkt in camper-temp ein, nicht am Display.
+Warnungen von Geräten, die `offline` sind, werden nicht gezeigt (alte retained Werte sollen keinen Fehlalarm auslösen). Grenzwerte und Verzögerung der camper-temp-Sensoren stellt man direkt in camper-temp ein, nicht am Display.
+
+**Grenzwerte und Hysterese** stehen unter *Einstellungen → 🌦 Dienste → ⚠️ Warnungen*: Frischwasser, Gas, Batterie (0 = aus), Frost (an/aus, Grenze in °C), dazu die Hysterese für Füllstände/Batterie (Standard 3 %), Temperaturen (1,0 °C) und Böen (10 km/h). Eine Warnung endet erst, wenn der Wert die Grenze um die Hysterese überschritten hat – so kommt und geht sie nicht bei jedem Messwert knapp an der Grenze.
 
 ### Push-Nachrichten (Pushover)
 
@@ -271,6 +276,7 @@ Das Display kann jede Warnung zusätzlich aufs Handy schicken, auch wenn niemand
 | Nachricht, wenn eine Warnung vorbei ist | „✓ Erledigt: Kühlschrank zu warm“, leise (Priorität −1) |
 | Priorität | Normal, Hoch (klingelt auch in den Pushover-Ruhezeiten) oder Leise |
 | Titel | Überschrift der Nachricht, Standard „Camper“ |
+| Ruhezeit (unter ⚠️ Warnungen) | Kommt eine Warnung innerhalb dieser Zeit wieder (Standard 30 min), wird sie nicht noch einmal gesendet – auch kein „Erledigt“ |
 
 Eine Warnung wird pro Ereignis nur einmal gesendet. Ändert sich nur der Wert („9,2 °C“ → „9,8 °C“), kommt keine neue Nachricht. Geht ein Gerät offline, gilt seine Warnung nicht als erledigt. Ohne WLAN oder bei einem Serverfehler versucht das Display es bis zu 5-mal im Minutenabstand. Token und User-Key lassen sich auch in `config_local.h` vorbelegen (`DEFAULT_PUSHOVER_TOKEN`, `DEFAULT_PUSHOVER_USER`).
 

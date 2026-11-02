@@ -11,6 +11,8 @@
 #include "rules.h"
 #include "sensors.h"
 #include "router.h"
+#include "alerts.h"
+#include "netdev.h"
 #include <lvgl.h>
 #include <vector>
 #include <algorithm>
@@ -125,6 +127,14 @@ const int LV_VAN_W = 96, LV_VAN_H = 214, LV_DOT = 20;
 const float LV_RANGE = 3.0f;                         // tilt at which the dot reaches the edge of the van
 lv_obj_t *sIp, *sNet, *sQr, *sQrLbl, *sBri, *sInfo;
 std::vector<lv_obj_t*> sVals;           // system page: value column, order of SYS_ROWS
+// system page: devices in the network (netdev), fixed number of rows
+const int NET_ROWS = 10;
+const int NET_ROW_H = 26;
+struct NetRowW { lv_obj_t *dot = nullptr, *name = nullptr, *val = nullptr; };
+lv_obj_t* sNetCard = nullptr;
+lv_obj_t* sNetEmpty = nullptr;
+NetRowW sNetRows[NET_ROWS];
+uint32_t sNetAt = 0;
 
 // weather page
 lv_obj_t *wIcon, *wTemp, *wText, *wFeels, *wPlace, *wStatus;
@@ -558,7 +568,7 @@ String warnings() {
       if (b.problem) add(b.name + " BMS: " + (b.ptext.length() ? b.ptext : String("Fehler, bitte pr\xC3\xBC" "fen")));
       if (b.state == "Kritisch" || b.state == "Schwach")
         add(b.name + " " + (b.state == "Kritisch" ? "kritisch" : "schwach") + ": " + commaNum(b.v, 2) + " V");
-      else if (b.state.isEmpty() && !isnan(b.soc) && b.soc < BAT_WARN_SOC)
+      else if (b.state.isEmpty() && alerts::below("bat:" + b.name, b.soc, settings.wnBat, settings.wnHystPct))
         add(b.name + " niedrig: " + String((int)lroundf(b.soc)) + " %" +
             (b.rt >= 0 ? ", noch " + runtimeText(b.rt) : String("")));
     }
@@ -588,6 +598,8 @@ String warnings() {
     if (!t.warnText.length()) head = t.name + (t.warnMode == WARN_BELOW ? " zu niedrig" : " zu hoch");
     add(head + ": " + raw + (t.unit.length() ? " " + t.unit : String("")));
   }
+  // water, gas, frost (limits in the settings)
+  add(alerts::warnings());
   // automation rules marked as warning, open Zigbee contacts
   add(rules::warnings());
   add(sensors::warnings());
@@ -1526,6 +1538,30 @@ void buildSystem(lv_obj_t* tab) {
   lv_label_set_long_mode(sNet, LV_LABEL_LONG_WRAP);
   lv_obj_align(sNet, LV_ALIGN_BOTTOM_LEFT, 0, 0);
 
+  // devices in the network: <root>/+/status and <root>/+/info
+  sNetCard = card(tab, PAGE_W - 20, 2 * NET_ROW_H + 20);
+  lv_obj_t* nh = label(sNetCard, &font_de_18, C_MUTED, LV_SYMBOL_WIFI "  Ger\xC3\xA4te");
+  lv_obj_align(nh, LV_ALIGN_TOP_LEFT, 0, 0);
+  sNetEmpty = label(sNetCard, &font_de_14, C_MUTED, "Noch keine Meldung");
+  lv_obj_align(sNetEmpty, LV_ALIGN_TOP_LEFT, 0, NET_ROW_H);
+  for (int i = 0; i < NET_ROWS; i++) {
+    NetRowW& w = sNetRows[i];
+    int y = (i + 1) * NET_ROW_H;
+    w.dot = shape(sNetCard, 10, 10, LV_RADIUS_CIRCLE);
+    lv_obj_align(w.dot, LV_ALIGN_TOP_LEFT, 0, y + 6);
+    w.name = label(sNetCard, &font_de_18, C_TEXT, "");
+    lv_obj_align(w.name, LV_ALIGN_TOP_LEFT, 18, y);
+    w.val = label(sNetCard, &font_de_14, C_MUTED, "");
+    lv_obj_set_width(w.val, PAGE_W - 20 - 24 - 170);
+    lv_obj_set_style_text_align(w.val, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_label_set_long_mode(w.val, LV_LABEL_LONG_DOT);
+    lv_obj_align(w.val, LV_ALIGN_TOP_RIGHT, 0, y + 3);
+    lv_obj_add_flag(w.dot, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(w.name, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(w.val, LV_OBJ_FLAG_HIDDEN);
+  }
+  sNetAt = 0;
+
   // Rescue: switch a static IP back to DHCP (long press, then restart)
   if (settings.staticIp) {
     lv_obj_t* b = button(tab, "Feste IP aus (DHCP) \xE2\x80\x93 lange dr\xC3\xBC" "cken", PAGE_W - 20, 56, nullptr, nullptr,
@@ -1764,7 +1800,7 @@ void refreshValues() {
       String v = !b.ok ? String("--") : bm2 ? commaNum(b.v, 1) + " V"
                : isnan(b.soc) ? String("--") : String((int)lroundf(b.soc)) + " %";
       bool bad = b.ok && (b.problem || b.state == "Kritisch" || b.state == "Schwach" ||
-                          (!bm2 && !isnan(b.soc) && b.soc < BAT_WARN_SOC));
+                          (!bm2 && !isnan(b.soc) && settings.wnBat && b.soc < settings.wnBat));
       lv_label_set_text(w.val, v.c_str());
       lv_obj_set_style_text_color(w.val, !batOn || !b.ok ? C_MUTED : (bad ? C_WARN : C_TEXT), 0);
       String sub = !batOn ? String("offline") : !b.ok ? String("keine Verbindung")
@@ -1930,7 +1966,7 @@ void refreshValues() {
     };
     auto isBad = [](const BatItem& b) {
       return b.ok && (b.problem || b.state == "Kritisch" || b.state == "Schwach" ||
-                      (b.state.isEmpty() && !isnan(b.soc) && b.soc < BAT_WARN_SOC));
+                      (b.state.isEmpty() && !isnan(b.soc) && settings.wnBat && b.soc < settings.wnBat));
     };
     String sub;
     if (sel.empty()) {
@@ -1980,7 +2016,7 @@ void refreshValues() {
       bool live = b.ok && batOn;
       bool bm2 = b.state.length() > 0;
       bool stateBad = b.state == "Kritisch" || b.state == "Schwach";
-      bool low = !bm2 && !isnan(b.soc) && b.soc < BAT_WARN_SOC;
+      bool low = !bm2 && !isnan(b.soc) && settings.wnBat && b.soc < settings.wnBat;
       lv_color_t socCol = !live || isnan(b.soc) ? C_MUTED
                         : (b.soc < 20 ? C_WARN : (b.soc < 40 ? C_GAS : C_OK));
 
@@ -2247,6 +2283,44 @@ String uptimeText(uint32_t sec) {
   return String(m) + " min";
 }
 
+// System page: one row per device, green = online, red = offline, grey = no status.
+// Uptime and age change every second, so the rows are rewritten every 2 s at most.
+void refreshNetDevices() {
+  if (!sNetCard) return;
+  if (!netdev::changed() && sNetAt && millis() - sNetAt < 2000) return;
+  sNetAt = millis();
+  std::vector<netdev::Entry> l = netdev::list();
+  int n = (int)l.size() < NET_ROWS ? (int)l.size() : NET_ROWS;
+  for (int i = 0; i < NET_ROWS; i++) {
+    NetRowW& w = sNetRows[i];
+    if (i >= n) {
+      lv_obj_add_flag(w.dot, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(w.name, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(w.val, LV_OBJ_FLAG_HIDDEN);
+      continue;
+    }
+    const netdev::Entry& e = l[i];
+    lv_obj_set_style_bg_color(w.dot, e.online == 1 ? C_OK : e.online == 0 ? C_WARN : C_MUTED, 0);
+    String v;
+    if (e.online == 0) v = "offline";
+    else if (netdev::infoStale(e)) v = e.hasInfo ? "v" + e.version + "  \xE2\x80\xA2  keine Info" : "keine Info";
+    else {
+      v = "v" + e.version;
+      if (e.rssi) v += "  \xE2\x80\xA2  " + String(e.rssi) + " dBm";
+      v += "  \xE2\x80\xA2  " + uptimeText(e.uptime);
+    }
+    lv_label_set_text(w.name, dispText(netdev::name(e.id)).c_str());
+    lv_label_set_text(w.val, dispText(v).c_str());
+    lv_obj_set_style_text_color(w.val, e.online == 0 ? C_WARN : C_MUTED, 0);
+    lv_obj_remove_flag(w.dot, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(w.name, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(w.val, LV_OBJ_FLAG_HIDDEN);
+  }
+  if (n) lv_obj_add_flag(sNetEmpty, LV_OBJ_FLAG_HIDDEN);
+  else   lv_obj_remove_flag(sNetEmpty, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_set_height(sNetCard, (n ? n + 1 : 2) * NET_ROW_H + 20);
+}
+
 const char* signalText(int rssi) {
   if (rssi >= -55) return "sehr gut";
   if (rssi >= -67) return "gut";
@@ -2348,6 +2422,7 @@ void refreshHeader() {
     for (int i = 0; i < SYS_N && i < (int)sVals.size(); i++) lv_label_set_text(sVals[i], dispText(vals[i]).c_str());
     lv_obj_set_style_text_color(sVals[3], mqttc::connected() ? C_TEXT : C_WARN, 0);
   }
+  refreshNetDevices();
 }
 
 void clearHandles() {
@@ -2362,6 +2437,8 @@ void clearHandles() {
   for (auto& w : lvWheel) w = nullptr;
   sIp = sNet = sQr = sQrLbl = sBri = sInfo = nullptr;
   sVals.clear();
+  sNetCard = sNetEmpty = nullptr;
+  for (auto& w : sNetRows) w = NetRowW();
   wIcon = wTemp = wText = wFeels = wPlace = wStatus = nullptr;
   wSunRise = wSunSet = wDayLen = nullptr;
   wWind = wHum = wNext = wToday = SmallW();

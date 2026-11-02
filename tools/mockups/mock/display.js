@@ -11,7 +11,7 @@ const M = {
     ntpServer: 'pool.ntp.org', tz: 'CET-1CEST,M3.5.0,M10.5.0/3',
     poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
     brightness: 80, dimBrightness: 10, screenTimeout: 120, warnWake: false,
-    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, ovTempSel: '', ovBatSel: '',
+    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, wxGustHyst: 10, wnWater: 10, wnGas: 15, wnBat: 20, wnHystPct: 3, wnFrostOn: false, wnFrost: 3, wnHystT: 1, poQuiet: 30, ovTempSel: '', ovBatSel: '',
     builtin: [true, true, true, true, true, true, true, true, true, true, true, false, false],
     pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'Sensoren', 'Warnungen', 'Licht', 'Schalter', 'Energie', 'Extra', 'System'],
     pageIcons: ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
@@ -128,6 +128,13 @@ const M = {
     if (path === '/api/pages' && method === 'GET') return M.pages;
     if (path === '/api/sensors' && method === 'GET') return M.sensors;
     if (path === '/api/sensors') { M.sensors = body; return {ok: true, msg: 'Sensoren gespeichert'}; }
+    if (path === '/api/devices') {
+      const up = Math.floor((Date.now() - M.t0) / 1000);
+      const D = (id, n, v, rssi, base) => ({id, n, on: 1, v, ip: '192.168.8.' + (20 + id.length), rssi, up: base + up, rst: 'power on', age: 20});
+      return [D('display', 'Display', '2.9.13', -52, 86400), D('heater', 'Heizung', '1.3.1', -63, 7200), D('level', 'Level', '2.1.1', -58, 3600),
+              D('maxxfan', 'Dachlüfter', '1.5.1', -66, 7100), D('tanklevel', 'Tanks', '1.6.1', -61, 90000), D('temp', 'Temperatur', '1.2.1', -70, 4000),
+              {id: 'battery', n: 'Batterie', on: 1}, {id: 'roadbuddy', n: 'Road Buddy', on: 0, v: '1.2.3', ip: '192.168.8.40', rssi: -71, up: 600, rst: 'deep sleep', age: 900}];
+    }
     if (path === '/api/sensors/unknown') return [{bus: 0, addr: '00158d0000000009', ago: 25}, {bus: 1, addr: 'A4C1380000BB', ago: 70}];
     if (path === '/api/rules' && method === 'GET') return M.rules;
     if (path === '/api/rules') { M.rules = body; return {ok: true, msg: 'Automationen gespeichert'}; }

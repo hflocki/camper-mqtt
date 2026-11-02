@@ -1,5 +1,6 @@
 #include "mqtt_client.h"
 #include "devinfo.h"
+#include "netdev.h"
 #include "weather.h"
 #include "router.h"
 #include "rules.h"
@@ -95,6 +96,7 @@ void onMessage(char* topic, byte* payload, unsigned int len) {
   rules::onMessage(topic, (const char*)payload, len);
   sensors::onMessage(topic, (const char*)payload, len);
   rt::onMessage(topic, (const char*)payload, len);
+  netdev::onMessage(topic, (const char*)payload, len);
   if (wx::onMessage(topic, (const char*)payload, len)) return;
 
   if (finderOn && matchesFilter(finderSub, topic)) {
@@ -140,6 +142,7 @@ void subscribeAll() {
   if (settings.wxTopic.length()) mqtt.subscribe(settings.wxTopic.c_str());
   if (settings.rtTopic.length() && settings.rtTopic != settings.wxTopic) mqtt.subscribe(settings.rtTopic.c_str());
   for (auto& t : sensors::topics()) mqtt.subscribe(t.c_str());
+  for (auto& t : netdev::topics()) mqtt.subscribe(t.c_str());   // device list on the system page
   for (auto& t : rules::topics()) {
     bool dup = false;
     for (auto& s : tileSubs) if (s == t) { dup = true; break; }

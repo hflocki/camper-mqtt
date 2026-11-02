@@ -7,6 +7,7 @@
 #include <HTTPClient.h>
 #include <NetworkClientSecure.h>
 #include <vector>
+#include <map>
 #include <time.h>
 #include <esp_heap_caps.h>
 
@@ -38,8 +39,11 @@ struct Active {
   unsigned long since;
   unsigned long goneSince;   // 0 = still reported
   bool sent;
+  bool quiet;                // came back within the quiet time: neither warning nor "done" message
 };
 std::vector<Active> active;
+// key -> millis() of the last message for it, for the quiet time (settings.poQuiet)
+std::map<String, unsigned long> lastSent;
 unsigned long lastCheck = 0;
 
 void setStatus(const char* s) {
@@ -186,7 +190,7 @@ void loop() {
     for (auto& a : active) {
       if (a.key == k) { a.text = l; a.goneSince = 0; found = true; break; }
     }
-    if (!found) active.push_back({k, l, now, 0, false});
+    if (!found) active.push_back({k, l, now, 0, false, false});
   }
   // Gone warnings, and warnings that stayed long enough to be sent
   for (size_t i = 0; i < active.size();) {
@@ -205,12 +209,17 @@ void loop() {
       }
       if (a.goneSince == 0) a.goneSince = now;
       if (now - a.goneSince < PUSHOVER_STABLE_MS) { i++; continue; }
-      if (a.sent && settings.poClear) enqueue(settings.poTitle, "\xE2\x9C\x93 Erledigt: " + a.key, -1);
+      if (a.sent && !a.quiet && settings.poClear) enqueue(settings.poTitle, "\xE2\x9C\x93 Erledigt: " + a.key, -1);
       active.erase(active.begin() + i);
       continue;
     }
     if (!a.sent && now - a.since >= PUSHOVER_STABLE_MS) {
-      enqueue(settings.poTitle, "\xE2\x9A\xA0 " + a.text, settings.poPrio);
+      auto it = lastSent.find(a.key);
+      a.quiet = it != lastSent.end() && now - it->second < (unsigned long)settings.poQuiet * 60000UL;
+      if (!a.quiet) {
+        enqueue(settings.poTitle, "\xE2\x9A\xA0 " + a.text, settings.poPrio);
+        lastSent[a.key] = now;
+      }
       a.sent = true;
     }
     i++;

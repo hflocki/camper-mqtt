@@ -1,4 +1,5 @@
 #include "web.h"
+#include "netdev.h"
 #include "weather.h"
 #include "icons.h"
 #include "config.h"
@@ -275,6 +276,15 @@ void getSettings(AsyncWebServerRequest* r) {
   d["rtTopic"] = settings.rtTopic;
   d["wxGust"] = settings.wxGust;
   d["wxEvery"] = settings.wxEvery;
+  d["wxGustHyst"] = settings.wxGustHyst;
+  d["wnWater"] = settings.wnWater;
+  d["wnGas"] = settings.wnGas;
+  d["wnBat"] = settings.wnBat;
+  d["wnHystPct"] = settings.wnHystPct;
+  d["wnFrostOn"] = settings.wnFrostOn;
+  d["wnFrost"] = settings.wnFrost;
+  d["wnHystT"] = settings.wnHystT / 10.0f;
+  d["poQuiet"] = settings.poQuiet;
   d["poStatus"] = notify::status();
   d["brightness"] = settings.brightness;
   d["dimBrightness"] = settings.dimBrightness;
@@ -397,6 +407,16 @@ bool applySettings(JsonObject o, bool apply) {
   settings.rtTopic.trim();
   if (o["wxGust"].is<int>()) settings.wxGust = constrain(o["wxGust"].as<int>(), 0, 200);
   if (o["wxEvery"].is<int>()) settings.wxEvery = constrain(o["wxEvery"].as<int>(), 10, 180);
+  // built-in warnings
+  if (o["wxGustHyst"].is<int>()) settings.wxGustHyst = constrain(o["wxGustHyst"].as<int>(), 0, 50);
+  if (o["wnWater"].is<int>()) settings.wnWater = constrain(o["wnWater"].as<int>(), 0, 90);
+  if (o["wnGas"].is<int>()) settings.wnGas = constrain(o["wnGas"].as<int>(), 0, 90);
+  if (o["wnBat"].is<int>()) settings.wnBat = constrain(o["wnBat"].as<int>(), 0, 90);
+  if (o["wnHystPct"].is<int>()) settings.wnHystPct = constrain(o["wnHystPct"].as<int>(), 0, 20);
+  if (o["wnFrostOn"].is<bool>()) settings.wnFrostOn = o["wnFrostOn"];
+  if (o["wnFrost"].is<int>()) settings.wnFrost = constrain(o["wnFrost"].as<int>(), -20, 15);
+  if (o["wnHystT"].is<float>()) settings.wnHystT = constrain((int)lroundf(o["wnHystT"].as<float>() * 10), 0, 50);
+  if (o["poQuiet"].is<int>()) settings.poQuiet = constrain(o["poQuiet"].as<int>(), 0, 1440);
   if (o["ovTempSel"].is<const char*>() && apply) settings.ovTempSel = icons::clean(o["ovTempSel"].as<const char*>(), icons::MAX_TEMP_SLOTS);
   if (o["ovBatSel"].is<const char*>() && apply) settings.ovBatSel = icons::clean(o["ovBatSel"].as<const char*>());
   settings.prefixSelf = cleanPrefix(settings.prefixSelf);
@@ -689,6 +709,10 @@ void begin() {
   server.on("/api/rules", HTTP_GET, getRules);
   server.on("/api/rules/state", HTTP_GET, [](AsyncWebServerRequest* r) {
     r->send(200, "application/json", rules::statusJson());
+  });
+  server.on("/api/devices", HTTP_GET, [](AsyncWebServerRequest* r) {
+    if (!auth(r)) return;
+    r->send(200, "application/json", netdev::json());
   });
   server.on("/api/history", HTTP_GET, [](AsyncWebServerRequest* r) {
     AsyncResponseStream* res = r->beginResponseStream("application/json");

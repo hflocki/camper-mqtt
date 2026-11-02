@@ -26,6 +26,7 @@ Monorepo für Camper-Elektronik: jedes Gerät ist ein ESP8266/ESP32 mit reiner *
 | `firmware/_common/` | Original der gemeinsamen Quelldateien (z. B. `wifi_manager.*`); nur dort ändern, dann `python3 tools/common/sync_common.py` kopiert sie in die Sketches (Liste in `manifest.json`), CI prüft mit `--check` |
 | `firmware/_template/` | Muster-Gerät; neues Gerät mit `python firmware/_template/tools/new_device.py <id> "<Name>"` |
 | `docs/mockups/` | klickbare Mockups aller Web-Oberflächen (erzeugt, nicht von Hand ändern) |
+| `tools/mqtt/` | Simulator `sim.py` (Szenarien für alle Geräte, Wiedergabe von Mitschnitten) und Recorder `record.py`, Python mit venv |
 | `tools/mockups/` | Generator der Mockups: `python3 tools/mockups/make_mockups.py`, Beispieldaten je Gerät in `mock/<gerät>.js` |
 | `.github/workflows/build.yml` | baut bei jedem Push alle Geräte; Tag `<gerät>-v<version>` erzeugt ein Release mit `.bin` |
 
@@ -53,7 +54,7 @@ arduino-cli compile --fqbn <fqbn> firmware/<gerät>/_arduino/<sketch>
 - LVGL 9.2.x. `firmware/display/_arduino/lv_conf.h` muss **neben** den `lvgl`-Ordner in `Arduino/libraries/` (CI kopiert sie dorthin). Nicht in den Sketch-Ordner verschieben.
 - Web-Oberfläche: `web/index.html` bearbeiten, danach `python3 firmware/display/tools/embed_web.py` (erzeugt `web_ui.h`). Danach Mockups neu erzeugen.
 - Schriften `font_de_*.c`: nur über `python3 firmware/display/tools/make_fonts.py` erzeugen (braucht Node/npx, lv_font_conv 1.5.3). Neue Font-Awesome-Icons dort eintragen, sonst erscheinen am Display Kästchen.
-- Module: `ui.*` Oberfläche, `datastore.*` Werte, `mqtt_client.*`, `web.*`, `settings.*` (NVS), `notify.*` Pushover, `weather.*` Open-Meteo (eigener Task, Mutex wird beim ersten Zugriff angelegt), `icons.*` Symbole der Temperatur-/Batterie-Kachel, `otaprog.*` Fortschritt des Datei-Updates, `history.*` 24-h-Verlauf im RAM (`/api/history`), `rules.*` Automationen (`/api/rules`, NVS-Namespace `rules`), `router.*` Mobilfunk-Signal des Routers per MQTT (Balken in der Kopfzeile).
+- Module: `ui.*` Oberfläche, `datastore.*` Werte, `mqtt_client.*`, `web.*`, `settings.*` (NVS), `notify.*` Pushover, `weather.*` Open-Meteo (eigener Task, Mutex wird beim ersten Zugriff angelegt), `icons.*` Symbole der Temperatur-/Batterie-Kachel, `otaprog.*` Fortschritt des Datei-Updates, `history.*` 24-h-Verlauf im RAM (`/api/history`), `rules.*` Automationen (`/api/rules`, NVS-Namespace `rules`), `router.*` Mobilfunk-Signal des Routers per MQTT (Balken in der Kopfzeile), `alerts.*` eingebaute Grenzwert-Warnungen (Wasser, Gas, Frost) und Hysterese-Helfer `alerts::below/above/latch` für alle Schwellen-Warnungen, `netdev.*` Geräteliste aus `<root>/+/status` und `<root>/+/info` (`/api/devices`, Systemseite).
 - Alles, was die UI beim Start abfragt, muss vor `ui::begin()` initialisiert sein (sonst Boot-Schleife).
 
 ### Road Buddy (`firmware/roadbuddy`)

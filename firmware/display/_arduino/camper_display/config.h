@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "2.9.13"
+#define FW_VERSION              "2.9.14"
 
 // ---- Device / access point ------------------------------------------
 #ifndef STATIC_IP_FALLBACK_MS
@@ -90,6 +90,17 @@
 #ifndef DEFAULT_WX_TOPIC
 #define DEFAULT_WX_TOPIC        ""      // MQTT topic with the GPS position, e.g. from the router
 #endif
+// Built-in warnings (web page: Einstellungen > Dienste > Warnungen), 0 = off
+#ifndef DEFAULT_WARN_WATER
+#define DEFAULT_WARN_WATER      10      // fresh water below this level in %
+#endif
+#ifndef DEFAULT_WARN_GAS
+#define DEFAULT_WARN_GAS        15      // gas bottle below this level in %
+#endif
+#ifndef DEFAULT_WARN_FROST
+#define DEFAULT_WARN_FROST      3       // frost warning below this outside temperature in °C (off by default)
+#endif
+
 #ifndef DEFAULT_WX_GUST
 #define DEFAULT_WX_GUST         60      // warn from these gusts (km/h), 0 = off
 #endif

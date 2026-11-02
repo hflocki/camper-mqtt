@@ -1,4 +1,6 @@
 #include "sensors.h"
+#include "alerts.h"
+#include "settings.h"
 #include "icons.h"
 #include <ArduinoJson.h>
 #include <Preferences.h>
@@ -235,6 +237,7 @@ String toJson() {
     o["icon"] = d.icon;
     o["warn"] = d.warn;
     if (d.invert) o["invert"] = true;
+    if (!isnan(d.tmax)) o["tmax"] = d.tmax;
     o["show"] = d.show;
   }
   String out;
@@ -258,6 +261,8 @@ bool fromJson(const String& json, String& err, bool apply) {
     d.icon = o["icon"] | "door";
     d.warn = o["warn"] | false;
     d.invert = o["invert"] | false;
+    d.tmax = o["tmax"].is<float>() ? o["tmax"].as<float>() : NAN;
+    if (!isnan(d.tmax) && (d.tmax < -40 || d.tmax > 80)) d.tmax = NAN;
     d.name.trim(); d.addr.trim(); d.alt.trim();
     if (d.bus > B_BLE) d.bus = B_ZIGBEE;
     if (d.kind > K_SWITCH) d.kind = K_CLIMATE;
@@ -477,6 +482,18 @@ String warnings() {
   Lock lock;
   String w;
   for (size_t i = 0; i < devs.size(); i++) {
+    // climate sensor too warm (fridge, freezer); the text before ':' identifies the push message
+    if (devs[i].kind == K_CLIMATE) {
+      bool fresh = vals[i].at && millis() - vals[i].at <= STALE_MS;
+      float t = fresh ? vals[i].temp : NAN;
+      if (alerts::above("tmax:" + devs[i].name, t, devs[i].tmax, settings.wnHystT / 10.0f)) {
+        String v(t, 1);
+        v.replace('.', ',');
+        if (w.length()) w += "\n";
+        w += devs[i].name + " zu warm: " + v + " \xC2\xB0" "C";
+      }
+      continue;
+    }
     if (devs[i].kind != K_CONTACT || !devs[i].warn || vals[i].open != 1) continue;
     if (w.length()) w += "\n";
     w += devs[i].name + " offen";

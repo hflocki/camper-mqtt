@@ -33,6 +33,7 @@ struct Device {
   String  icon = "door";     // contacts: icon while open ("" = none)
   bool    warn = false;      // contacts: warning while open
   bool    invert = false;    // contacts: 1 = closed
+  float   tmax = NAN;        // climate: warning above this temperature in °C (fridge, freezer), NAN = off
   uint8_t show = SH_TEMP;    // Show bits
 };
 
