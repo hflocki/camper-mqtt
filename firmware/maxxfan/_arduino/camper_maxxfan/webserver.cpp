@@ -5,6 +5,7 @@
 #include "wifi_manager.h"
 #include "mqtt_ha.h"
 #include "system.h"
+#include "safeguard.h"
 #include <WiFi.h>
 #include <LittleFS.h>
 #include <ESPAsyncWebServer.h>
@@ -84,6 +85,7 @@ void handleState(AsyncWebServerRequest* r) {
   d["rssi"]   = wifimgr::rssi();
   d["mqtt"]   = mqttha::connected();
   d["uptime"] = millis() / 1000;
+  d["guard"]  = guard::status();
   sendJson(r, d);
 }
 
@@ -120,6 +122,9 @@ void handleSetConfig(AsyncWebServerRequest* r) {
   String host = param(r, "hostname"); host.trim();
   if (host.length()) settings.hostname = host;
 
+  // WiFi change while connected: keep the working values as fallback (safeguard.h)
+  String oldSsid = settings.wifiSsid, oldPass = settings.wifiPass, oldNet = wifimgr::netString();
+
   settings.wifiSsid = param(r, "ssid"); settings.wifiSsid.trim();
   keepIfEmpty("wpass", settings.wifiPass);
   settings.staticIp = b("static_ip");
@@ -127,6 +132,10 @@ void handleSetConfig(AsyncWebServerRequest* r) {
   settings.gateway = param(r, "gw");
   settings.subnet  = param(r, "sn");
   settings.dns     = param(r, "dns");
+  if (wifimgr::staConnected() &&
+      (settings.wifiSsid != oldSsid || settings.wifiPass != oldPass || wifimgr::netString() != oldNet)) {
+    guard::wifiTrialStart(oldSsid, oldPass, oldNet);
+  }
 
   String ap = param(r, "appass");
   if (ap.length() >= 8) settings.apPass = ap;
@@ -238,7 +247,10 @@ void handleUpdateChunk(AsyncWebServerRequest* r, const String& filename, size_t 
 
   if (len && Update.write(data, len) != len) Update.printError(Serial);
   if (final) {
-    if (Update.end(true)) Serial.printf("[ota] success, %u bytes\n", (unsigned)(index + len));
+    if (Update.end(true)) {
+      Serial.printf("[ota] success, %u bytes\n", (unsigned)(index + len));
+      if (upKind == UP_FIRMWARE) guard::otaDone();
+    }
     else Update.printError(Serial);
   }
 }

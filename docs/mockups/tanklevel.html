@@ -673,6 +673,7 @@ code { font-family: ui-monospace, Menlo, monospace; }
             <div class="info-row"><span class="info-label">Firmware</span><span id="fw-version">--</span></div>
             <div class="info-row"><span class="info-label">Laufzeit</span><span id="uptime">--</span></div>
             <div class="info-row"><span class="info-label">Letzter Neustart</span><span id="reset-reason">--</span></div>
+            <div class="info-row"><span class="info-label">Absicherung</span><span id="guard">--</span></div>
             <div class="info-row"><span class="info-label">WLAN-Abbrüche</span><span id="wifi-drops">--</span></div>
             <div class="info-row"><span class="info-label">Letzter Abbruchgrund</span><span id="wifi-reason" style="text-align:right;word-break:break-all">--</span></div>
         </div>
@@ -864,6 +865,7 @@ async function loadSetup() {
         $('cfg-ap-ssid').value = cfg.ap_ssid || '';
         $('fw-version').textContent = cfg.version || '--';
         $('reset-reason').textContent = cfg.reset_reason || '--';
+        $('guard').textContent = cfg.guard || 'OK';
         $('cfg-tx-power').value = String(cfg.wifi_tx_power || 70);
         $('cfg-ap-always').checked = cfg.ap_always !== false;
 

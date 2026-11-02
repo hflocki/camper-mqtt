@@ -484,6 +484,7 @@ code { font-family: ui-monospace, Menlo, monospace; }
             <div class="info-row"><span class="info-label">Laufzeit</span><span id="uptime">--</span></div>
             <div class="info-row"><span class="info-label">Freier Speicher</span><span id="heap">--</span></div>
             <div class="info-row"><span class="info-label">Letzter Neustart</span><span id="reset-reason">--</span></div>
+            <div class="info-row"><span class="info-label">Absicherung</span><span id="guard">--</span></div>
             <div class="info-row"><span class="info-label">WLAN-Abbrüche</span><span id="wifi-drops">--</span></div>
             <div class="info-row"><span class="info-label">Letzter Abbruchgrund</span><span id="wifi-reason" style="text-align:right;word-break:break-all">--</span></div>
         </div>
@@ -656,6 +657,7 @@ async function loadSetup() {
         $('cfg-ap-always').checked = c.ap_always !== false;
         $('fw-version').textContent = c.version || '--';
         $('reset-reason').textContent = c.reset_reason || '--';
+        $('guard').textContent = c.guard || 'OK';
     } catch (e) { showToast('Fehler beim Laden der Einstellungen', true); }
 }
 

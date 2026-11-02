@@ -17,6 +17,7 @@
 
 #include "config.h"
 #include "wifi_manager.h"
+#include "safeguard.h"
 #include "water_sensor.h"
 #include "gas_sensor.h"
 #include "mqtt_ha.h"
@@ -39,6 +40,7 @@ void setupOTA() {
     });
     ArduinoOTA.onEnd([]() {
         Serial.println("\n[OTA] Update complete!");
+        if (ArduinoOTA.getCommand() == U_FLASH) guard::otaDone();
     });
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
         unsigned int pct = (total > 0) ? (progress * 100U / total) : 0;
@@ -66,6 +68,22 @@ static void printRead() {
         g.level, g.raw_level, g.content, g.battery, g.ble_state);
 }
 
+// WiFi start. A changed WiFi that does not connect is replaced by the previous, working
+// one, followed by a restart so the wifi manager starts clean with it (safeguard.h).
+static void startWiFi() {
+    wifiManagerInit();
+    if (!guard::wifiTrialPending()) return;
+    if (isConnected()) { guard::wifiTrialOk(); return; }
+    String ssid, pass, extra;
+    if (!guard::wifiTrialRestore(ssid, pass, extra)) return;
+    strlcpy(config.wifi_ssid, ssid.c_str(), sizeof(config.wifi_ssid));
+    strlcpy(config.wifi_pass, pass.c_str(), sizeof(config.wifi_pass));
+    saveConfig();
+    Serial.println("[MAIN] New WiFi failed - previous WiFi restored, restarting");
+    delay(200);
+    ESP.restart();
+}
+
 void setup() {
     Serial.begin(115200);
     Serial.setTimeout(50);  // Do not block the loop while waiting for a line end
@@ -77,6 +95,7 @@ void setup() {
     Serial.println("========================================");
     Serial.println();
 
+    guard::begin();   // may boot the previous firmware (failed update)
     memset(&sensorData, 0, sizeof(SensorData));
 
     // Phase 1: load config & mount LittleFS
@@ -90,7 +109,7 @@ void setup() {
     if (config.water_enabled || config.grey_enabled) waterInit();
 
     // Phase 3: WiFi (blocking connect or AP fallback)
-    wifiManagerInit();
+    startWiFi();
 
     // Phase 4: Bluetooth LE scanner (after WiFi, both share the radio)
     if (config.gas_enabled) {
@@ -112,6 +131,7 @@ void setup() {
 
 void loop() {
     wifiManagerLoop();
+    guard::loop(isConnected() || config.wifi_ssid[0] == '\0');
     ArduinoOTA.handle();
 
     if (config.water_enabled || config.grey_enabled) waterLoop();

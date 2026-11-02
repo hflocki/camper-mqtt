@@ -318,7 +318,8 @@ function poll(){fetch("/api/state").then(r=>r.json()).then(s=>{
   dot("d-exp",s.expander?"on":"bad");dot("d-wifi",s.sta?"on":(s.ap?"warn":""));dot("d-mqtt",s.mqtt?"on":"");
   $("#info").innerHTML=[["Firmware",s.fw],["IP",s.ip],["WLAN",s.sta?s.rssi+" dBm":"nicht verbunden"],
     ["Setup-AP",s.ap?"aktiv":"aus"],["MQTT",s.mqtt?"verbunden":"getrennt"],["Port-Expander",s.expander?"OK":"nicht gefunden"],
-    ["Laufzeit",Math.floor(s.uptime/3600)+" h "+Math.floor(s.uptime%3600/60)+" min"]]
+    ["Laufzeit",Math.floor(s.uptime/3600)+" h "+Math.floor(s.uptime%3600/60)+" min"],
+    ["Absicherung",String(s.guard||"OK").replace(/[&<>"]/g,c=>"&#"+c.charCodeAt(0)+";")]]
     .map(r=>`<div class="info"><span class="l">${r[0]}</span><span>${r[1]}</span></div>`).join("");
 }).catch(()=>{$("#st").className="badge bad";$("#st").textContent="offline";dot("d-wifi","");dot("d-mqtt","")})}
 function loadCfg(){fetch("/api/config").then(r=>r.json()).then(c=>{

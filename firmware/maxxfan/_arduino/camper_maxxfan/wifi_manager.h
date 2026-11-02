@@ -10,4 +10,5 @@ namespace wifimgr {
   String macSuffix();
   String ipString();
   int    rssi();
+  String netString();   // static IP settings as one string (WiFi trial, safeguard.h)
 }

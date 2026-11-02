@@ -16,6 +16,7 @@
 
 #include "config.h"
 #include "wifi_manager.h"
+#include "safeguard.h"
 #include "sensor.h"
 #include "mqtt_ha.h"
 #include "webserver.h"
@@ -39,9 +40,28 @@ static void setupOTA() {
         if (ArduinoOTA.getCommand() != U_FLASH) LittleFS.end();
         Serial.println("[OTA] Start");
     });
-    ArduinoOTA.onEnd([]() { Serial.println("\n[OTA] Done"); });
+    ArduinoOTA.onEnd([]() {
+        Serial.println("\n[OTA] Done");
+        if (ArduinoOTA.getCommand() == U_FLASH) guard::otaDone();
+    });
     ArduinoOTA.onError([](ota_error_t e) { Serial.printf("[OTA] Error[%u]\n", e); });
     ArduinoOTA.begin();
+}
+
+// WiFi start. A changed WiFi that does not connect is replaced by the previous, working
+// one, followed by a restart so the wifi manager starts clean with it (safeguard.h).
+static void startWiFi() {
+    wifiManagerInit();
+    if (!guard::wifiTrialPending()) return;
+    if (isConnected()) { guard::wifiTrialOk(); return; }
+    String ssid, pass, extra;
+    if (!guard::wifiTrialRestore(ssid, pass, extra)) return;
+    strlcpy(config.wifi_ssid, ssid.c_str(), sizeof(config.wifi_ssid));
+    strlcpy(config.wifi_pass, pass.c_str(), sizeof(config.wifi_pass));
+    saveConfig();
+    Serial.println("[MAIN] New WiFi failed - previous WiFi restored, restarting");
+    delay(200);
+    ESP.restart();
 }
 
 void setup() {
@@ -53,10 +73,11 @@ void setup() {
     Serial.println("  Camper Level v" FW_VERSION);
     Serial.println("========================================");
 
+    guard::begin();      // may boot the previous firmware (failed update)
     memset(&sensorData, 0, sizeof(SensorData));
 
     webserverInit();     // LittleFS + config
-    wifiManagerInit();   // blocking connect or AP fallback
+    startWiFi();         // blocking connect or AP fallback
     webserverStart();
     setupOTA();
     mqttInit();
@@ -94,6 +115,7 @@ static void handleSerial() {
 
 void loop() {
     wifiManagerLoop();
+    guard::loop(isConnected() || config.wifi_ssid[0] == '\0');
     ArduinoOTA.handle();
 
     // The sensor is started a few seconds after boot and retried if it was not found

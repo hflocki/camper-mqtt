@@ -2,6 +2,7 @@
 #include "wifi_manager.h"
 #include "sensor.h"
 #include "mqtt_ha.h"
+#include "safeguard.h"
 
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
@@ -155,6 +156,7 @@ static void handleGetConfig(AsyncWebServerRequest* request) {
     doc["wifi_tx_power"] = config.wifi_tx_power;
     doc["ap_always"] = config.ap_always;
     doc["reset_reason"] = resetReasonString();
+    doc["guard"] = guard::status();
     doc["mqtt_server"] = (const char*)config.mqtt_server;
     doc["mqtt_port"] = config.mqtt_port;
     doc["mqtt_user"] = (const char*)config.mqtt_user;
@@ -207,6 +209,15 @@ static void handleSaveConfig(AsyncWebServerRequest* request, JsonDocument& doc) 
 
     // ---- Apply ----
     // Empty values clear SSID/server/user; empty passwords are ignored (= keep the stored one)
+    // WiFi change while connected: keep the working values as fallback (safeguard.h)
+    if (isConnected()) {
+        const char* newSsid = doc["wifi_ssid"].is<const char*>() ? doc["wifi_ssid"].as<const char*>() : config.wifi_ssid;
+        const char* newPass = config.wifi_pass;
+        if (doc["wifi_pass"].is<const char*>() && doc["wifi_pass"].as<const char*>()[0]) newPass = doc["wifi_pass"].as<const char*>();
+        if (strcmp(newSsid, config.wifi_ssid) != 0 || strcmp(newPass, config.wifi_pass) != 0) {
+            guard::wifiTrialStart(config.wifi_ssid, config.wifi_pass);
+        }
+    }
     copyIfPresent(doc, "wifi_ssid",   config.wifi_ssid,   sizeof(config.wifi_ssid),   false);
     copyIfPresent(doc, "wifi_pass",   config.wifi_pass,   sizeof(config.wifi_pass),   true);
     copyIfPresent(doc, "ap_ssid",     config.ap_ssid,     sizeof(config.ap_ssid),     true);
@@ -358,7 +369,10 @@ void webserverInit() {
             }
             if (len && Update.write(data, len) != len) Update.printError(Serial);
             if (final) {
-                if (Update.end(true)) Serial.printf("[OTA] Firmware ok, %u bytes\n", (unsigned)(index + len));
+                if (Update.end(true)) {
+                    Serial.printf("[OTA] Firmware ok, %u bytes\n", (unsigned)(index + len));
+                    guard::otaDone();
+                }
                 else Update.printError(Serial);
             }
         });

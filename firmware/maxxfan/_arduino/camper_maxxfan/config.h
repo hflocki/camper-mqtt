@@ -9,7 +9,7 @@
 //  Camper MaxxFan - VanTurtle board (TCA9555) -> MQTT / Home Assistant
 // =====================================================================
 
-#define FW_VERSION              "1.5.1"
+#define FW_VERSION              "1.6.0"
 
 // ---- Device / access point ------------------------------------------
 #ifndef DEFAULT_HOSTNAME
@@ -112,6 +112,9 @@
 #endif
 #ifndef SYNC_HOLD_TIMEOUT_MS
 #define SYNC_HOLD_TIMEOUT_MS    10000
+#endif
+#ifndef WIFI_TRIAL_MS
+#define WIFI_TRIAL_MS           50000   // changed WiFi must connect this fast, else the old one returns
 #endif
 #ifndef WIFI_AP_FALLBACK_MS
 #define WIFI_AP_FALLBACK_MS     60000   // open setup AP if STA is down this long

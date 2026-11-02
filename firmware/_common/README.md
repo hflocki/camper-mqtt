@@ -22,6 +22,7 @@ Hier liegt das **Original** von Quelldateien, die mehrere Geräte benutzen. Jede
 | Datei | Zweck | Geräte |
 | --- | --- | --- |
 | `wifi_manager.h/.cpp` | WLAN mit Access-Point-Fallback, Reset-Grund, Sendeleistung (ESP32 und ESP8266) | template, temp, battery, level |
+| `safeguard.h/.cpp` | Rückfall auf die vorherige Firmware, wenn ein Update kein WLAN bekommt; WLAN-Änderung mit Rückweg (nur ESP32). Einbinden: `guard::begin()` am Anfang von `setup()`, `guard::loop(verbunden)` in `loop()`, `guard::otaDone()` nach erfolgreichem `Update.end()` bzw. in `ArduinoOTA.onEnd` (nur Firmware), `guard::wifiTrialStart(alteSsid, altesPasswort)` vor dem Überschreiben der WLAN-Daten, beim Start `wifiTrialPending()` / `wifiTrialOk()` / `wifiTrialRestore()`, `guard::status()` im Web-UI | maxxfan, tanklevel, level |
 | `devinfo.h/.cpp` | Diagnose-JSON für `<prefix>/info` (Version, IP, MAC, RSSI, Laufzeit, Reset-Grund, freier Speicher) und Zeitsteuerung `devinfoDue()` | alle Geräte |
 
 Beim `wifi_manager` haben tanklevel, maxxfan, heater und display noch eigene, abweichende Fassungen. Sie werden einzeln umgestellt, jeweils mit Test am Gerät.

@@ -38,6 +38,16 @@
       "firmware/heater/truma_heater",
       "firmware/display/_arduino/camper_display",
       "firmware/roadbuddy/_arduino/roadbuddy"
+    ],
+    "safeguard.h": [
+      "firmware/level/_arduino/camper_level",
+      "firmware/maxxfan/_arduino/camper_maxxfan",
+      "firmware/tanklevel/_arduino/camper_tanklevel"
+    ],
+    "safeguard.cpp": [
+      "firmware/level/_arduino/camper_level",
+      "firmware/maxxfan/_arduino/camper_maxxfan",
+      "firmware/tanklevel/_arduino/camper_tanklevel"
     ]
   }
 }
