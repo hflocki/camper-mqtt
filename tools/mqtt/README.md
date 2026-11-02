@@ -2,6 +2,8 @@
 
 Zum Testen von Display, Road Buddy und Home Assistant ohne Fahrzeug, z. B. im Testnetz zu Hause.
 
+Dauerhaft und ohne PC geht das auch mit dem [Emulator](../../firmware/emulator/README.md): ein ESP32-C3 im Testnetz, der dieselben Topics sendet, mit Web-Oberfläche zum Ein- und Ausschalten der Geräte, Ändern der Werte und Starten der Szenarien. `sim.py` bleibt für Skripte, `replay` und Tests am PC.
+
 ## Einrichten
 
 ```bash

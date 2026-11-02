@@ -33,6 +33,8 @@ DEVICES = [
      "firmware/maxxfan/_arduino/camper_maxxfan/web/index.html"),
     ("battery", "Batterie", "BLE-Gateway für Daly, Ective und BM2",
      "firmware/battery/_arduino/camper_battery/web/index.html"),
+    ("emulator", "Emulator", "Testgerät: sendet die Topics aller fest verbauten Geräte mit änderbaren Werten, Szenarien",
+     "firmware/emulator/_arduino/camper_emulator/web/index.html"),
     ("template", "Vorlage", "Muster für ein neues Gerät (firmware/_template)",
      "firmware/_template/_arduino/camper_example/web/index.html"),
 ]

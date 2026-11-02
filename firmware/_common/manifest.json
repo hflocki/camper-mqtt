@@ -3,18 +3,21 @@
   "files": {
     "wifi_manager.h": [
       "firmware/_template/_arduino/camper_example",
+      "firmware/emulator/_arduino/camper_emulator",
       "firmware/temp/_arduino/camper_temp",
       "firmware/battery/_arduino/camper_battery",
       "firmware/level/_arduino/camper_level"
     ],
     "wifi_manager.cpp": [
       "firmware/_template/_arduino/camper_example",
+      "firmware/emulator/_arduino/camper_emulator",
       "firmware/temp/_arduino/camper_temp",
       "firmware/battery/_arduino/camper_battery",
       "firmware/level/_arduino/camper_level"
     ],
     "devinfo.h": [
       "firmware/_template/_arduino/camper_example",
+      "firmware/emulator/_arduino/camper_emulator",
       "firmware/tanklevel/_arduino/camper_tanklevel",
       "firmware/temp/_arduino/camper_temp",
       "firmware/battery/_arduino/camper_battery",
@@ -26,6 +29,7 @@
     ],
     "devinfo.cpp": [
       "firmware/_template/_arduino/camper_example",
+      "firmware/emulator/_arduino/camper_emulator",
       "firmware/tanklevel/_arduino/camper_tanklevel",
       "firmware/temp/_arduino/camper_temp",
       "firmware/battery/_arduino/camper_battery",

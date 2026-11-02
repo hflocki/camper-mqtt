@@ -29,6 +29,7 @@ flowchart LR
 | [`firmware/omg`](firmware/omg) | ESP32 / ESP32-C3 | Bluetooth-Thermometer (Govee, Ruuvi, Xiaomi …) über OpenMQTTGateway | `camper/OMG` |
 | [`firmware/display`](firmware/display) | Guition ESP32-4848S040 | 4"-Wandpanel + gleiche Webseite fürs Handy, zeigt und steuert alles, Wetter, Warnungen | `camper/display` |
 | [`firmware/roadbuddy`](firmware/roadbuddy) | M5Stack Core2 | kleines Akku-Display: Ausrichtung, Wasser, Gas | – (nur Empfänger) |
+| [`firmware/emulator`](firmware/emulator) | ESP32-C3 | **Testgerät:** sendet die Topics aller fest verbauten Geräte, Router und Zigbee mit änderbaren Beispielwerten und Szenarien – Display und Road Buddy zu Hause testen | `camper/emulator` |
 
 Dazu, nicht in diesem Repo:
 
@@ -141,3 +142,4 @@ Jeder Ordner behält seine Lizenz:
 | `firmware/level` | MIT [klehnst](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT), |
 | `firmware/tanklevel`, `temp`, `maxxfan`, `display` | MIT |
 | `firmware/roadbuddy` | MIT |
+| `firmware/emulator` | MIT |
