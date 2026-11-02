@@ -22,5 +22,6 @@ Hier liegt das **Original** von Quelldateien, die mehrere Geräte benutzen. Jede
 | Datei | Zweck | Geräte |
 | --- | --- | --- |
 | `wifi_manager.h/.cpp` | WLAN mit Access-Point-Fallback, Reset-Grund, Sendeleistung (ESP32 und ESP8266) | template, temp, battery, level |
+| `devinfo.h/.cpp` | Diagnose-JSON für `<prefix>/info` (Version, IP, MAC, RSSI, Laufzeit, Reset-Grund, freier Speicher) und Zeitsteuerung `devinfoDue()` | alle Geräte |
 
-Die Geräte tanklevel, maxxfan, heater und display haben noch eigene, abweichende Fassungen. Sie werden einzeln umgestellt, jeweils mit Test am Gerät.
+Beim `wifi_manager` haben tanklevel, maxxfan, heater und display noch eigene, abweichende Fassungen. Sie werden einzeln umgestellt, jeweils mit Test am Gerät.

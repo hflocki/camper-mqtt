@@ -127,6 +127,7 @@ Prefix (Web-UI) Standard `camper/battery`, `<id>` ist die ID aus dem Tab Batteri
 | Topic | Wert |
 |---|---|
 | `<prefix>/status` | `online` / `offline` (Last Will) |
+| `<prefix>/info` | Diagnose (retained, beim Verbinden und jede Minute): JSON mit `version`, `ip`, `mac`, `rssi`, `uptime` (s), `reset` (Grund des letzten Neustarts), `heap` |
 | `<prefix>/rssi` | WLAN-Signal |
 | `<prefix>/<id>/available` | `online`, solange das BMS antwortet, sonst `offline` |
 | `<prefix>/<id>/soc` | Ladestand in % |

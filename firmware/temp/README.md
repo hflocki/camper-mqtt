@@ -108,6 +108,7 @@ Prefix (Web-UI) Standard `camper/temp`:
 | Topic | Wert |
 |---|---|
 | `<prefix>/status` | `online` / `offline` (Last Will) |
+| `<prefix>/info` | Diagnose (retained, beim Verbinden und jede Minute): JSON mit `version`, `ip`, `mac`, `rssi`, `uptime` (s), `reset` (Grund des letzten Neustarts), `heap` |
 | `<prefix>/rssi` | WLAN-Signal |
 | `<prefix>/<id>` | Temperatur in °C (2 Nachkommastellen), retained |
 | `<prefix>/<id>/available` | `online` / `offline` – Sensor antwortet am Bus |

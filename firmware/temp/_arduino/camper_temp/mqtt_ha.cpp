@@ -1,4 +1,5 @@
 #include "mqtt_ha.h"
+#include "devinfo.h"
 #include "wifi_manager.h"
 #include "temp_sensor.h"
 
@@ -113,6 +114,7 @@ void mqttLoop() {
     }
 
     mqtt.loop();
+    if (devinfoDue(mqtt.connected())) mqtt.publish(topic("info").c_str(), devinfoJson(FW_VERSION).c_str(), true);
 
     if (removalCount > 0) processRemovals();
 

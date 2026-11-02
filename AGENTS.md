@@ -29,7 +29,7 @@ Monorepo für Camper-Elektronik: jedes Gerät ist ein ESP8266/ESP32 mit reiner *
 | `tools/mockups/` | Generator der Mockups: `python3 tools/mockups/make_mockups.py`, Beispieldaten je Gerät in `mock/<gerät>.js` |
 | `.github/workflows/build.yml` | baut bei jedem Push alle Geräte; Tag `<gerät>-v<version>` erzeugt ein Release mit `.bin` |
 
-Gemeinsames MQTT-Schema: `camper/<gerät>/…` retained, `…/status` = `online`/`offline` als Last Will, Befehle unter `…/cmd/…` bzw. `…/set/…` nicht retained.
+Gemeinsames MQTT-Schema: `camper/<gerät>/…` retained, `…/status` = `online`/`offline` als Last Will, `…/info` = Diagnose-JSON (`devinfo.*` aus `firmware/_common`), Befehle unter `…/cmd/…` bzw. `…/set/…` nicht retained.
 
 ## Bauen und prüfen
 

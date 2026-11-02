@@ -216,6 +216,7 @@ Prefix (Web-UI) Standard `camper/tanklevel`:
 | Topic | Wert |
 | --- | --- |
 | `<prefix>/status` | `online` / `offline` (Last Will) |
+| `<prefix>/info` | Diagnose (retained, beim Verbinden und jede Minute): JSON mit `version`, `ip`, `mac`, `rssi`, `uptime` (s), `reset` (Grund des letzten Neustarts), `heap` |
 | `<prefix>/rssi` | WLAN-Signal |
 | `<prefix>/water/liters`, `percent`, `voltage` | Frischwasser |
 | `<prefix>/water/filter_active` | `ON` / `OFF` |

@@ -59,6 +59,7 @@ TODO: Anschlussplan / Foto.
 | Topic | Inhalt |
 |---|---|
 | `camper/example/status` | `online` / `offline` (Last Will) |
+| `camper/example/info` | Diagnose (retained, beim Verbinden und jede Minute): JSON mit `version`, `ip`, `mac`, `rssi`, `uptime` (s), `reset` (Grund des letzten Neustarts), `heap` |
 | `camper/example/rssi` | WLAN-Signal in dBm |
 | `camper/example/<key>` | ein Topic pro Wert, siehe `VALUES[]` in `sensor.cpp` |
 | `camper/example/cmd/measure` | beliebiger Inhalt: sofort messen |

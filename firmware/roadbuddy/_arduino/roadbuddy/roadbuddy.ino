@@ -7,8 +7,14 @@
 #include <Preferences.h>
 #include "config.h"
 #include "webota.h"
+#include "devinfo.h"
 
-#define FW_VERSION "1.2.2"
+// Own topics: <prefix>/status (online/offline as last will) and <prefix>/info
+#ifndef SELF_TOPIC
+#define SELF_TOPIC "camper/roadbuddy"
+#endif
+
+#define FW_VERSION "1.2.3"
 
 // ---------- Sensor selection ----------
 // Choose in config.h which sensors are used (1 = enabled, 0 = disabled).
@@ -1430,7 +1436,9 @@ void mqttReconnect() {
   lastMqttAttempt = millis();
 
   String clientId = "roadbuddy-" + String(random(0xffff), HEX);
-  if (client.connect(clientId.c_str(), cfgMqttUser.c_str(), cfgMqttPass.c_str())) {
+  if (client.connect(clientId.c_str(), cfgMqttUser.c_str(), cfgMqttPass.c_str(),
+                     SELF_TOPIC "/status", 1, true, "offline")) {
+    client.publish(SELF_TOPIC "/status", "online", true);
     // Retained values arrive immediately after subscribing
 #if USE_LEVEL
     client.subscribe(cfgLevelTopic.c_str());
@@ -1495,6 +1503,7 @@ void loop() {
 
   mqttReconnect();
   client.loop();
+  if (devinfoDue(client.connected())) client.publish(SELF_TOPIC "/info", devinfoJson(FW_VERSION).c_str(), true);
   webota::loop();
 
   // Firmware upload running: keep everything awake and show the progress only

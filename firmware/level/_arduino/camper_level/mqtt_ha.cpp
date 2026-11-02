@@ -1,4 +1,5 @@
 #include "mqtt_ha.h"
+#include "devinfo.h"
 #include "sensor.h"
 #include "wifi_manager.h"
 #include "webserver.h"
@@ -86,6 +87,7 @@ void mqttLoop() {
     }
 
     mqtt.loop();
+    if (devinfoDue(mqtt.connected())) mqtt.publish(topic("info").c_str(), devinfoJson(FW_VERSION).c_str(), true);
 
     if (discoveryPending) {
         discoveryPending = false;

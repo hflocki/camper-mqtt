@@ -111,6 +111,7 @@ Basis-Topic standardmäßig `camper/heater` (in den Einstellungen änderbar; bis
 | `cpplus_version`, `heater_version`, `release`, `rssi`, `lin_traffic` | | Diagnose |
 
 Verfügbarkeit: `camper/heater/status` = `online` / `offline` (Last Will).
+Diagnose: `camper/heater/info` (retained, beim Verbinden und jede Minute) – JSON mit `version`, `ip`, `mac`, `rssi`, `uptime` (s), `reset` (Grund des letzten Neustarts), `heap`.
 
 ### Befehle `camper/heater/set/<key>`
 

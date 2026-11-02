@@ -121,6 +121,7 @@ Prefix (Web-UI) Standard `camper/maxxfan`. Zustände sind retained.
 | Topic | Wert |
 | --- | --- |
 | `<prefix>/status` | `online` / `offline` (Last Will) |
+| `<prefix>/info` | Diagnose (retained, beim Verbinden und jede Minute): JSON mit `version`, `ip`, `mac`, `rssi`, `uptime` (s), `reset` (Grund des letzten Neustarts), `heap` |
 | `<prefix>/p<n>/auto_hold` | `ON` / `OFF` |
 | `<prefix>/p<n>/led` | `ON` / `OFF` |
 | `<prefix>/expander` | `ON` / `OFF` (TCA9555 erreichbar) |

@@ -1,4 +1,5 @@
 #include "mqtt_client.h"
+#include "devinfo.h"
 #include "weather.h"
 #include "router.h"
 #include "rules.h"
@@ -188,11 +189,13 @@ void loop() {
   if (!mqtt.connected()) {
     if (wasConnected) Serial.println("[mqtt] disconnected");
     wasConnected = false;
+    devinfoDue(false);   // send the info again right after reconnecting
     connect();
     return;
   }
   wasConnected = true;
   mqtt.loop();
+  if (devinfoDue(true)) mqtt.publish(self("info").c_str(), devinfoJson(FW_VERSION).c_str(), true);
 
   if (millis() - lastSelf > SELF_PUBLISH_MS) publishSelfState();
   if (finderOn && millis() - finderStarted > FINDER_TIMEOUT_MS) finderStop();

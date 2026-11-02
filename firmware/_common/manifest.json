@@ -12,6 +12,28 @@
       "firmware/temp/_arduino/camper_temp",
       "firmware/battery/_arduino/camper_battery",
       "firmware/level/_arduino/camper_level"
+    ],
+    "devinfo.h": [
+      "firmware/_template/_arduino/camper_example",
+      "firmware/tanklevel/_arduino/camper_tanklevel",
+      "firmware/temp/_arduino/camper_temp",
+      "firmware/battery/_arduino/camper_battery",
+      "firmware/level/_arduino/camper_level",
+      "firmware/maxxfan/_arduino/camper_maxxfan",
+      "firmware/heater/truma_heater",
+      "firmware/display/_arduino/camper_display",
+      "firmware/roadbuddy/_arduino/roadbuddy"
+    ],
+    "devinfo.cpp": [
+      "firmware/_template/_arduino/camper_example",
+      "firmware/tanklevel/_arduino/camper_tanklevel",
+      "firmware/temp/_arduino/camper_temp",
+      "firmware/battery/_arduino/camper_battery",
+      "firmware/level/_arduino/camper_level",
+      "firmware/maxxfan/_arduino/camper_maxxfan",
+      "firmware/heater/truma_heater",
+      "firmware/display/_arduino/camper_display",
+      "firmware/roadbuddy/_arduino/roadbuddy"
     ]
   }
 }

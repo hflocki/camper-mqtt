@@ -78,6 +78,13 @@ Das Display ist reiner Empfänger und fragt nichts ab, die Aktualisierungsrate b
 | `camper/battery/status` | `online` / `offline` von camper-battery |
 | `camper/router/mobile` | Mobilfunkdaten des Routers als JSON (`rsrp`, `rssi`, Netztyp), für die Signalbalken. Einstellbar mit `ROUTER_TOPIC` in `config.h`, `""` schaltet es ab |
 
+Eigene Topics (sendet der Road Buddy selbst, Präfix änderbar mit `#define SELF_TOPIC` in `config.h`):
+
+| Topic | Bedeutung |
+| ----- | --------- |
+| `camper/roadbuddy/status` | `online` / `offline` (Last Will) |
+| `camper/roadbuddy/info` | Diagnose (retained, beim Verbinden und jede Minute): JSON mit `version`, `ip`, `mac`, `rssi`, `uptime` (s), `reset`, `heap` |
+
 Weitere Topics unter diesen Präfixen (z. B. `rssi`, `voltage`, `raw_level`, `tare_*`, Grauwasser) werden ignoriert. Die Topics für Wasser und Gas stehen als Konstanten am Anfang des Sketches, das Level-Topic in `config.h`. Die früheren getrennten Geräte (`camper/waterlevel`, `camper/gaslevel`) werden nicht mehr unterstützt.
 
 Die Sensoren dazu:

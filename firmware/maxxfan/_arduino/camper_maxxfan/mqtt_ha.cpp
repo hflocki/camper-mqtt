@@ -1,4 +1,5 @@
 #include "mqtt_ha.h"
+#include "devinfo.h"
 #include "config.h"
 #include "settings.h"
 #include "fan_control.h"
@@ -253,8 +254,9 @@ void begin() {
 }
 
 void loop() {
-  if (!mqtt.connected()) { connect(); return; }
+  if (!mqtt.connected()) { devinfoDue(false); connect(); return; }
   mqtt.loop();
+  if (devinfoDue(true)) mqtt.publish(topic("info").c_str(), devinfoJson(FW_VERSION).c_str(), true);
 
   uint32_t now = millis();
   if (dirty || now - lastFull > STATE_REPUBLISH_MS) {

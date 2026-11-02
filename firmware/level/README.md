@@ -103,6 +103,7 @@ Prefix (Web-UI) Standard `camper/level`:
 | Topic | Wert |
 |---|---|
 | `<prefix>/status` | `online` / `offline` (Last Will) |
+| `<prefix>/info` | Diagnose (retained, beim Verbinden und jede Minute): JSON mit `version`, `ip`, `mac`, `rssi`, `uptime` (s), `reset` (Grund des letzten Neustarts), `heap` |
 | `<prefix>/pitch` | Längsneigung in °, positiv = vorne höher |
 | `<prefix>/roll` | Querneigung in °, positiv = links höher |
 | `<prefix>/wedge_fl`, `wedge_fr`, `wedge_rl`, `wedge_rr` | Keilhöhe in cm vorne links / vorne rechts / hinten links / hinten rechts |

@@ -1,4 +1,5 @@
 #include "mqtt_ha.h"
+#include "devinfo.h"
 
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
@@ -511,10 +512,12 @@ void loop() {
   }
 
   if (!g_client.connected()) {
+    devinfoDue(false);   // send the info again right after reconnecting
     connect();
     return;
   }
   g_client.loop();
+  if (devinfoDue(true)) g_client.publish((g_settings.mqtt_base + "/info").c_str(), devinfoJson(FW_VERSION).c_str(), true);
 
   if (g_discovery_pending) {
     g_discovery_pending = false;

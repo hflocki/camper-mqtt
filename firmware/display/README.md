@@ -235,6 +235,7 @@ Das Display abonniert `<Basis-Topic>/#` jedes Geräts und die Topics der Kacheln
 | Topic | Inhalt |
 | --- | --- |
 | `camper/display/status` | `online` / `offline` (Last Will) |
+| `camper/display/info` | Diagnose (retained, beim Verbinden und jede Minute): JSON mit `version`, `ip`, `mac`, `rssi`, `uptime` (s), `reset` (Grund des letzten Neustarts), `heap` |
 | `camper/display/ip`, `/rssi`, `/brightness`, `/screen` | Zustand (retained) |
 | `camper/display/cmd/brightness` | `5` … `100` |
 | `camper/display/cmd/screen` | `ON` / `OFF` |
