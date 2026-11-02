@@ -1,6 +1,7 @@
 #include "web.h"
 #include "netdev.h"
 #include "alerts.h"
+#include "depart.h"
 #include "weather.h"
 #include "icons.h"
 #include "config.h"
@@ -151,6 +152,20 @@ void buildSys(JsonObject s) {
   s["open"] = sensors::openCount();                // open windows / doors on the actuator page
   s["awn"] = alerts::awning();                     // awning: -1 unknown, 0 in, 1 out
   s["awnSw"] = alerts::awningIsSwitch();           // switchable from the web page
+  if (settings.dpOn) {                             // departure check
+    JsonObject dp = s["dp"].to<JsonObject>();
+    dp["drv"] = depart::driving();
+    dp["gps"] = depart::gpsFresh();
+    float sp = depart::speed();
+    if (!isnan(sp)) dp["spd"] = sp;
+    JsonArray it = dp["it"].to<JsonArray>();
+    for (auto& i : depart::items()) {
+      JsonObject o = it.add<JsonObject>();
+      o["n"] = i.name;
+      o["s"] = i.state;
+      o["ok"] = i.ok;
+    }
+  }
   {
     sensors::TempOut o{};                          // outside temperature (chosen sensor)
     if (sensors::outdoor(o)) {
@@ -304,6 +319,13 @@ void getSettings(AsyncWebServerRequest* r) {
   d["outName"] = settings.outName;
   d["awnSrc"] = settings.awnSrc;
   d["awnGust"] = settings.awnGust;
+  d["dpOn"] = settings.dpOn;
+  d["dpTopic"] = settings.dpTopic;
+  d["dpDoor"] = settings.dpDoor;
+  d["dpDoorInv"] = settings.dpDoorInv;
+  d["dpSpeed"] = settings.dpSpeed;
+  d["dpSecs"] = settings.dpSecs;
+  d["dpCont"] = settings.dpCont;
   d["poStatus"] = notify::status();
   d["brightness"] = settings.brightness;
   d["dimBrightness"] = settings.dimBrightness;
@@ -441,6 +463,16 @@ bool applySettings(JsonObject o, bool apply) {
   str("awnSrc", settings.awnSrc, false);
   settings.awnSrc.trim();
   if (o["awnGust"].is<int>()) settings.awnGust = constrain(o["awnGust"].as<int>(), 0, 150);
+  // departure check
+  if (o["dpOn"].is<bool>()) settings.dpOn = o["dpOn"];
+  str("dpTopic", settings.dpTopic, false);
+  settings.dpTopic.trim();
+  str("dpDoor", settings.dpDoor, false);
+  settings.dpDoor.trim();
+  if (o["dpDoorInv"].is<bool>()) settings.dpDoorInv = o["dpDoorInv"];
+  if (o["dpSpeed"].is<int>()) settings.dpSpeed = constrain(o["dpSpeed"].as<int>(), 1, 50);
+  if (o["dpSecs"].is<int>()) settings.dpSecs = constrain(o["dpSecs"].as<int>(), 0, 120);
+  if (o["dpCont"].is<bool>()) settings.dpCont = o["dpCont"];
   if (o["ovTempSel"].is<const char*>() && apply) settings.ovTempSel = icons::clean(o["ovTempSel"].as<const char*>(), icons::MAX_TEMP_SLOTS);
   if (o["ovBatSel"].is<const char*>() && apply) settings.ovBatSel = icons::clean(o["ovBatSel"].as<const char*>());
   settings.prefixSelf = cleanPrefix(settings.prefixSelf);

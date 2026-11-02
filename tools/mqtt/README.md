@@ -13,7 +13,7 @@ Broker-Zugang per Option oder Umgebungsvariable: `--host`/`MQTT_HOST`, `--port`/
 
 ## Simulator `sim.py`
 
-Sendet dieselben Topics wie die echte Firmware (retained): Tanks, Level, Heizung, Dachlüfter, Temperatur, Batterie, Router (Mobilfunk und GPS) sowie `…/status` und `…/info` jedes Geräts.
+Sendet dieselben Topics wie die echte Firmware (retained): Tanks, Level, Heizung, Dachlüfter, Temperatur, Batterie, Router (Mobilfunk, GPS als JSON wie beim RUT956 auf `camper/rut`, Tür auf `camper/door`) sowie `…/status` und `…/info` jedes Geräts.
 
 ```bash
 python3 tools/mqtt/sim.py --list                         # alle Szenarien
@@ -27,6 +27,7 @@ python3 tools/mqtt/sim.py --host 192.168.8.1 drive --contact 0x00158d0000000001
 | --- | --- |
 | `normal` | alle Geräte online, gleichmäßige Werte mit etwas Rauschen |
 | `drive` | Fahrt: GPS-Geschwindigkeit 0 → 80 km/h, Level-Werte schwanken; mit `--contact` bleibt ein Fenster offen |
+| `depart` | Abfahrtscheck: Markise draußen und Tür offen, ab 20 s Fahrt, Tür zu nach 60 s, Markise rein nach 90 s, ab 150 s Stillstand (Fahrt endet 2 min später). Mit `--contact` bleibt ein Fenster bis 120 s offen |
 | `tilt` | schräg geparkt, nach 90 s eben |
 | `empty` | Frischwasser 30 → 5 %, Gas 25 → 8 % in 3 Minuten |
 | `offline` | `--device` geht nach 30 s offline und kommt nach 2 Minuten wieder |
@@ -35,7 +36,7 @@ python3 tools/mqtt/sim.py --host 192.168.8.1 drive --contact 0x00158d0000000001
 | `frost` | Außentemperatur fällt unter 0 °C (braucht `--outdoor`: Zigbee-Sensor, der am Display für die Wetter-Seite markiert ist) |
 | `replay DATEI` | spielt einen Mitschnitt von `record.py` ab, `--speed 10` zehnmal schneller |
 
-Weitere Optionen: `--skip <gerät>` lässt ein Gerät weg (z. B. wenn das echte läuft), `--duration` beendet nach Sekunden, `--cleanup` löscht beim Beenden alle retained Topics, die der Simulator gesendet hat, `-v` zeigt jede Nachricht.
+Weitere Optionen: `--skip <gerät>` lässt ein Gerät weg (z. B. wenn das echte läuft), `--duration` beendet nach Sekunden, `--cleanup` löscht beim Beenden alle retained Topics, die der Simulator gesendet hat, `-v` zeigt jede Nachricht. `--gps-topic` (Vorgabe `camper/rut`) und `--door-topic` (Vorgabe `camper/door`) passen die Router-Topics an, `--no-fix` meldet im Stand `fix_status` 0.
 
 Echte Geräte am selben Broker überschreiben die simulierten Werte. Entweder ausschalten oder mit `--skip` weglassen.
 

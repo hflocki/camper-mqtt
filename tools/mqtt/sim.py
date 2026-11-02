@@ -27,6 +27,7 @@ DEVICES = ["tanklevel", "level", "heater", "maxxfan", "temp", "battery", "router
 SCENARIOS = {
     "normal":  "all devices online, steady values with a little noise",
     "drive":   "driving: GPS speed 0 -> 80 km/h, level values move; with --contact a window stays open",
+    "depart":  "departure check: awning out and door open, driving from 20 s, door closes at 60 s, awning in at 90 s, stop at 150 s",
     "tilt":    "parking on a slope: van tilted, after 90 s it is level",
     "empty":   "fresh water 30 -> 5 %, gas 25 -> 8 % within 3 minutes",
     "offline": "--device goes offline after 30 s and comes back after 2 minutes",
@@ -54,6 +55,8 @@ class Sim:
         self.outdoor = 8.0
         self.soc = 78.0
         self.contact_open = False
+        self.door_open = False
+        self.awning = None         # None = do not touch, True/False = send the display command
 
     # ---- publishing ----
     def pub(self, sub, payload, force=False, retain=True):
@@ -142,7 +145,14 @@ class Sim:
                                             "w": -56, "rt": int(s / 100 * 100 * 12.8 / 56 * 60)}], force)
         if on("router"):
             self.pub("router/mobile", {"rsrp": -92 + random.randint(-3, 3), "rssi": -65, "conntype": "LTE"}, force)
-            self.pub(self.a.gps_topic, {"lat": 51.0, "lon": 10.0, "speed": round(self.speed, 1)}, force)
+            # same shape as the RUT956 "Data to Server" JSON: values as strings, speed in km/h
+            fix = "1" if self.speed > 0 or not self.a.no_fix else "0"
+            self.pub(self.a.gps_topic, {"TIME": time.strftime("%Y-%m-%d %H:%M:%S"),
+                                        "GPS": {"latitude": "51.000000", "longitude": "10.000000", "altitude": "200.0",
+                                                "speed": f"{self.speed:.1f}", "accuracy": "0.9", "satellites": "9",
+                                                "fix_status": fix, "timestamp": str(int(time.time()))}}, force)
+            self.pub(self.a.door_topic, {"Door": {"name": "din2", "type": "Digital In",
+                                                  "state": "open" if self.door_open else "close", "custom_name": "Door"}}, force)
         if self.a.contact:
             self.zigbee(self.a.contact, "0006", "0000", 1 if self.contact_open else 0, force)
         if self.a.fridge:
@@ -150,9 +160,23 @@ class Sim:
         if self.a.outdoor:
             self.zigbee(self.a.outdoor, "0402", "0000", round(n(self.outdoor, 0.1), 2), force)
 
+    def set_awning(self, out):
+        # the display keeps the awning switch itself: send its command (not retained)
+        if self.awning == out:
+            return
+        self.awning = out
+        self.c.publish(f"{self.root}/display/cmd/awning", "ON" if out else "OFF", qos=0, retain=False)
+        print(f"{time.monotonic() - self.t0:6.0f} s  awning {'out' if out else 'in'}")
+
     # ---- scenarios: change the state over time ----
     def step(self, scenario, t):
-        if scenario == "drive":
+        if scenario == "depart":
+            # 0-20 s standing with the door open and the awning out, then the van drives off
+            self.set_awning(t < 90)
+            self.door_open = t < 60
+            self.speed = 0.0 if t < 20 or t >= 150 else min(50.0, (t - 20) * 2.0)
+            self.contact_open = t < 120
+        elif scenario == "drive":
             self.speed = min(80.0, max(0.0, (t - 10) * 1.5))
             self.contact_open = True
             wob = 1.5 if self.speed > 5 else 0
@@ -203,7 +227,9 @@ def main() -> int:
     ap.add_argument("--skip", action="append", default=[], choices=DEVICES, help="do not simulate this device (repeatable)")
     ap.add_argument("--duration", type=float, default=0, help="end after this many seconds (0 = Ctrl+C)")
     ap.add_argument("--speed", type=float, default=1.0, help="replay: time factor (10 = ten times faster)")
-    ap.add_argument("--gps-topic", default="camper/router/gps", help="GPS topic with lat/lon/speed (default: camper/router/gps)")
+    ap.add_argument("--gps-topic", default="camper/rut", help="router JSON with GPS (default: camper/rut, like the RUT956)")
+    ap.add_argument("--door-topic", default="camper/door", help="door state like the RUT956 digital input (default: camper/door)")
+    ap.add_argument("--no-fix", action="store_true", help="GPS without a fix while standing (fix_status 0)")
     ap.add_argument("--zigbee-base", default="camper/zigbee/data", help="Zigbee hub base topic (default: camper/zigbee/data)")
     ap.add_argument("--contact", help="IEEE of a Zigbee door/window contact to simulate")
     ap.add_argument("--fridge", help="IEEE of a Zigbee climate sensor in the fridge")

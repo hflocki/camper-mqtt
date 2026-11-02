@@ -273,7 +273,18 @@ function updDev(){
   const pi=BUILTIN.findIndex(b=>b[0]===page);
   set('dv_st',all.length?'':`Noch nichts auf dieser Seite. Unter ⚙ Einstellungen → 📡 Sensoren bei einem Sensor „${esc(ptitle(pi))}“ ankreuzen.`);
 }
-function pgWarn(){return `<div class="card" id="wn_box"><div id="wn_l" style="white-space:pre-line;font-size:18px;font-weight:600">--</div></div>`}
+function pgWarn(){return `<div class="card" id="wn_box"><div id="wn_l" style="white-space:pre-line;font-size:18px;font-weight:600">--</div></div>
+ <div class="card" id="dp_box" style="margin-top:12px"><h3 id="dp_h">🚐 Abfahrtscheck</h3><div id="dp_l" class="mu">--</div></div>`}
+// departure check list (state "dp" from the display)
+function updDepart(){
+  if(!$('#dp_l'))return;
+  const d=S.dp;
+  if(!d){set('dp_h','🚐 Abfahrtscheck');set('dp_l','Aus. Einschalten unter ⚙ Einstellungen → 🌦 Dienste → ⚠️ Warnungen.');$('#dp_l').className='mu';return}
+  set('dp_h','🚐 Abfahrtscheck <span class="mu" style="font-weight:400">· '+(d.drv?'Fahrt'+(d.spd!=null?' '+Math.round(d.spd)+' km/h':''):d.gps?'steht':'kein GPS')+'</span>');
+  const it=d.it||[];
+  $('#dp_l').className='';
+  set('dp_l',it.length?it.map(x=>`<div class="sysrow"><span>${x.ok===1?'✅':x.ok===0?'❌':'❔'} ${esc(x.n)}</span><b class="${x.ok===0?'err':x.ok===1?'okc':'mu'}" style="font-weight:600">${esc(x.s)}</b></div>`).join(''):'<span class="mu">Nichts zu prüfen</span>');
+}
 // Links to the web pages of the other devices (Einstellungen -> Geräte-Links)
 // System page: connection, display brightness, and everything that is not in the icon bar
 function pgSystem(){
@@ -588,6 +599,7 @@ function update(){
   const warn=warnings();
   ['warn','t_warn'].forEach(id=>{const e=document.getElementById(id);if(e){e.hidden=!warn.length;e.textContent='⚠ '+warn.join('\n')}});
   if($('#ost')){const c=$('#ost'),v=$('#ost_v');c.classList.toggle('alarm',!!warn.length);v.textContent=warn.length?warn.join('\n'):'OK';v.style.fontSize=warn.length?'17px':'';v.classList.toggle('okc',!warn.length);$('#ost_i').textContent=((S.open>0?S.open+' 🚪 ':'')+(S.ind||[]).map(k=>(ICONS.find(x=>x[0]===k)||['','•'])[1]).join(' ')).trim()}
+  updDepart();
   if($('#wn_l')){$('#wn_l').textContent=warn.length?'⚠ '+warn.join('\n\n⚠ '):'Keine Warnungen';$('#wn_l').className=warn.length?'err':'okc'}
   {const cs=contacts(),op=cs.filter(x=>x.o===1);
    if($('#oa_v')){set('oa_v',!cs.length?'--':op.length?op.slice(0,3).map(x=>`<span class="err">${esc(x.n)}</span>`).join('<br>'):'<span class="okc">Alles zu</span>');
@@ -771,7 +783,14 @@ function pgSettings(){
    <p class="mu" style="margin-top:-4px">Ruhezeit: Kommt eine Warnung innerhalb dieser Zeit wieder, wird sie nicht noch einmal gesendet. Die Böen-Grenze selbst steht unter 🌦 Wetter.</p>
    <label style="margin-top:12px"><b>⛱️ Markise</b></label>
    <div class="f2"><div><label for="awnSrc">Zustand kommt von</label><select id="awnSrc"></select></div>${inp('awnGust','Warnung bei ausgefahrener Markise ab Böen (km/h, 0 = aus)','number')}</div>
-   <p class="mu" style="margin-top:-4px">Ohne Kontakt setzt du den Zustand von Hand auf der Wetter-Seite (Display und Webseite) oder per MQTT <code>&lt;display&gt;/cmd/awning</code> = <code>ON</code>/<code>OFF</code>/<code>TOGGLE</code>. Braucht das Wetter (Böen von Open-Meteo).</p></details>
+   <p class="mu" style="margin-top:-4px">Ohne Kontakt setzt du den Zustand von Hand auf der Wetter-Seite (Display und Webseite) oder per MQTT <code>&lt;display&gt;/cmd/awning</code> = <code>ON</code>/<code>OFF</code>/<code>TOGGLE</code>. Braucht das Wetter (Böen von Open-Meteo).</p>
+   <label style="margin-top:12px"><b>🚐 Abfahrtscheck</b></label>
+   <label class="chk"><input type="checkbox" id="dpOn"> Warnen, wenn beim Losfahren etwas offen ist</label>
+   <div class="f2">${inp('dpTopic','GPS des Routers (JSON mit speed und fix_status)','text','camper/rut')}${inp('dpDoor','Tür (Topic, leer = keine)','text','camper/door')}</div>
+   <div class="f2">${inp('dpSpeed','Fahrt ab (km/h)','number')}${inp('dpSecs','… für (Sekunden)','number')}</div>
+   <label class="chk"><input type="checkbox" id="dpDoorInv"> Tür-Topic umkehren (meldet „open“ bei geschlossener Tür)</label>
+   <label class="chk"><input type="checkbox" id="dpCont"> Eigene Kontakte prüfen (Fenster, Dachhauben aus 📡 Sensoren)</label>
+   <p class="mu" style="margin-top:-4px">Geprüft werden Tür, Markise und die Kontakte. Fährt der Camper schneller als die Grenze, kommt für jedes offene Teil eine Warnung (Display und Pushover). Die Fahrt endet nach 2 Minuten Stillstand oder ohne GPS. Die Liste steht auf der Seite Warnungen. Per MQTT: <code>&lt;display&gt;/driving</code> = <code>ON</code>/<code>OFF</code>, <code>&lt;display&gt;/depart</code> = <code>OK</code> oder die offenen Teile.</p></details>
   <section data-g="rules">${pgRules()}</section>
   <details data-g="sys" class="fixed" open><summary>🔧 System</summary>
    ${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
@@ -798,7 +817,7 @@ function showGroup(g){setGroup=g;try{localStorage.setItem('setGroup',g)}catch(e)
   const sb=$('.savebar');if(sb)sb.style.display=g==='rules'?'none':'';   // automations have their own save button
   if(g==='rules'){if(!rulesLoaded){rulesLoaded=true;loadRules()}else ruleState()}
   const sd=$('#snd');if(g==='dev'&&sd&&!sd.open){sd.open=true}}
-const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','rtTopic','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet','awnGust'];
+const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','rtTopic','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet','awnGust','dpTopic','dpDoor','dpSpeed','dpSecs'];
 async function loadSettings(){
   rulesLoaded=false;
   try{
@@ -812,7 +831,7 @@ async function loadSettings(){
     LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
     $('#warnWake').checked=!!ST.warnWake;$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||60);
     $('#slt').innerHTML=$('#slb').innerHTML='';renderSlots();
-    $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#wnFrostOn').checked=!!ST.wnFrostOn;fillOutAwn();$('#wnHystT').value=cnum(ST.wnHystT??1,1);$('#poPrio').value=String(ST.poPrio||0);
+    $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#wnFrostOn').checked=!!ST.wnFrostOn;$('#dpOn').checked=ST.dpOn!==false;$('#dpDoorInv').checked=!!ST.dpDoorInv;$('#dpCont').checked=ST.dpCont!==false;fillOutAwn();$('#wnHystT').value=cnum(ST.wnHystT??1,1);$('#poPrio').value=String(ST.poPrio||0);
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
     $('#sysinfo').textContent=`Firmware ${ST.fw} · MAC ${ST.mac} · IP ${S.ip||''}`;
     const p=await fetch('/api/pages');PG=await p.json();PG.pages=PG.pages||[];PG.tiles=PG.tiles||[];renderPages();
@@ -943,8 +962,8 @@ function fillOutAwn(){
 }
 function saveSettings(){
   const o={};FIELDS.forEach(f=>{const e=document.getElementById(f);if(e)o[f]=e.value});
-  ['mqttPort','dimBrightness','screenTimeout','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet','awnGust'].forEach(f=>o[f]=parseInt(o[f])||0);
-  o.wnFrostOn=$('#wnFrostOn').checked;o.outName=$('#outName').value;o.awnSrc=$('#awnSrc').value;o.wnHystT=parseFloat(String($('#wnHystT').value).replace(',','.'))||0;
+  ['mqttPort','dimBrightness','screenTimeout','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet','awnGust','dpSpeed','dpSecs'].forEach(f=>o[f]=parseInt(o[f])||0);
+  o.wnFrostOn=$('#wnFrostOn').checked;o.dpOn=$('#dpOn').checked;o.dpDoorInv=$('#dpDoorInv').checked;o.dpCont=$('#dpCont').checked;o.outName=$('#outName').value;o.awnSrc=$('#awnSrc').value;o.wnHystT=parseFloat(String($('#wnHystT').value).replace(',','.'))||0;
   o.warnWake=$('#warnWake').checked;o.wxOn=$('#wxOn').checked;o.wxEvery=+$('#wxEvery').value;
   o.ovTempSel=readSlots('slt',SLOTS_T);o.ovBatSel=readSlots('slb',SLOTS_B);
   o.heaterSrc=+$('#heaterSrc').value;

@@ -88,6 +88,14 @@ struct Settings {
   String   awnSrc;
   uint8_t  awnGust = 40;        // warn while the awning is out from these gusts in km/h, 0 = off
   bool     awnOut = false;      // state of the switch (stored, survives a restart)
+  // departure check (depart.*): warns while driving with the door open, the awning out, a contact open
+  bool     dpOn = true;
+  String   dpTopic;             // GPS JSON of the router (speed, fix_status), "" = no driving detection
+  String   dpDoor;              // door state topic, "" = no door
+  bool     dpDoorInv = false;   // the door topic reports open for a closed door
+  uint8_t  dpSpeed = 5;         // driving above this speed in km/h ...
+  uint8_t  dpSecs = 10;         // ... for this many seconds
+  bool     dpCont = true;       // own contact sensors (windows, roof vents) are part of the check
   // overview tiles temperature / battery: "name=icon" lines (see icons.cpp), "" = all / first 3
   String   ovTempSel, ovBatSel;
   // heater source: own camper-heater firmware or a CampMatic box (topics <prefixHeater>/climate/truma_*/...)

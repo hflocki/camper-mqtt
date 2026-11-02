@@ -24,6 +24,7 @@
 #include "rules.h"
 #include "sensors.h"
 #include "weather.h"
+#include "depart.h"
 #include <ArduinoOTA.h>
 
 void setup() {
@@ -57,6 +58,7 @@ void loop() {
   notify::loop();
   history::loop();
   rules::loop();
+  depart::loop();
   disp::loop();
   if (!otaStarted && wifimgr::staConnected()) {   // network upload from the Arduino IDE
     ArduinoOTA.setHostname(settings.hostname.c_str());

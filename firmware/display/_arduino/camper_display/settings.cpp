@@ -104,6 +104,13 @@ void load() {
   settings.awnSrc       = prefs.getString("awnsrc", "");
   settings.awnGust      = prefs.getUChar ("awngst", DEFAULT_AWNING_GUST);
   settings.awnOut       = prefs.getBool  ("awnout", false);
+  settings.dpOn         = prefs.getBool  ("dpon",   true);
+  settings.dpTopic      = prefs.getString("dptop",  DEFAULT_DEPART_TOPIC);
+  settings.dpDoor       = prefs.getString("dpdoor", DEFAULT_DOOR_TOPIC);
+  settings.dpDoorInv    = prefs.getBool  ("dpdinv", false);
+  settings.dpSpeed      = prefs.getUChar ("dpspd",  DEFAULT_DEPART_SPEED);
+  settings.dpSecs       = prefs.getUChar ("dpsecs", DEFAULT_DEPART_SECS);
+  settings.dpCont       = prefs.getBool  ("dpcont", true);
   settings.ovTempSel    = prefs.getString("ovtsel", "");
   settings.ovBatSel     = prefs.getString("ovbsel", "");
   settings.ovTiles      = prefs.getString("ovt",    DEFAULT_OV_TILES);
@@ -210,6 +217,13 @@ void save() {
   prefs.putString("awnsrc", settings.awnSrc);
   prefs.putUChar ("awngst", settings.awnGust);
   prefs.putBool  ("awnout", settings.awnOut);
+  prefs.putBool  ("dpon",   settings.dpOn);
+  prefs.putString("dptop",  settings.dpTopic);
+  prefs.putString("dpdoor", settings.dpDoor);
+  prefs.putBool  ("dpdinv", settings.dpDoorInv);
+  prefs.putUChar ("dpspd",  settings.dpSpeed);
+  prefs.putUChar ("dpsecs", settings.dpSecs);
+  prefs.putBool  ("dpcont", settings.dpCont);
   prefs.putString("ovtsel", settings.ovTempSel);
   prefs.putString("ovbsel", settings.ovBatSel);
   prefs.putUChar("bpknown", BP_COUNT);

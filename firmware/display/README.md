@@ -87,6 +87,7 @@ docs/                      Screenshots
 | `sensors.*` | Eigene Zigbee- und Bluetooth-Sensoren (eigener NVS-Bereich) |
 | `icons.*` | Symbole und Auswahl für die Temperatur- und Batterie-Kachel |
 | `weather.*` | Wetter von Open-Meteo (eigener Task), GPS-Position per MQTT, Wetter-Warnungen |
+| `depart.*` | Abfahrtscheck: Fahrt aus dem GPS des Routers, Tür, Markise, Kontakte |
 | `font_de_*.c` | Montserrat mit Umlauten + Font-Awesome-Icons, erzeugt mit `tools/make_fonts.py` |
 
 ## Hardware
@@ -242,6 +243,8 @@ Das Display abonniert `<Basis-Topic>/#` jedes Geräts und die Topics der Kacheln
 | `camper/display/cmd/page` | Seitenname (`Heizung`) oder Nummer (`0` = erste) |
 | `camper/display/awning` | Markise `ON` (ausgefahren) / `OFF` / `unknown` (retained) |
 | `camper/display/cmd/awning` | `ON` / `OFF` / `TOGGLE` (nur ohne Kontakt-Sensor) |
+| `camper/display/driving` | Abfahrtscheck: `ON` während der Fahrt, sonst `OFF` (retained) |
+| `camper/display/depart` | Abfahrtscheck: `OK` oder die offenen Teile, z. B. `Tür offen, Markise ausgefahren` (retained) |
 | `camper/display/cmd/reboot` | beliebig |
 
 Beispiel: `mosquitto_pub -h <broker> -t camper/display/cmd/screen -m OFF`
@@ -258,6 +261,7 @@ Die Status-Kachel der Übersicht wird rot und zeigt die Warnungen, solange etwas
 | camper-tanklevel | Frischwasser unter 10 %, Gas unter 15 % (einstellbar) |
 | Frost | Außentemperatur unter 3 °C (ab Werk aus): gewählter Außensensor, sonst das Wetter |
 | Markise | Markise ausgefahren und Böen ab 40 km/h (einstellbar, eigene Grenze unter der normalen Wind-Warnung) |
+| Abfahrtscheck | Während der Fahrt: Tür offen, Markise ausgefahren oder ein eigener Kontakt (Fenster, Dachhaube) offen – je Teil eine Warnung, siehe unten |
 | Eigene Klimasensoren | Temperatur über „Warnung über °C“ des Sensors, z. B. Zigbee-Sensor im Kühlschrank |
 | camper-battery | Ladestand unter 20 % (einstellbar, Vorgabe `BAT_WARN_SOC` in `config.h`, mit Restlaufzeit), BM2-Zustand „Schwach“ oder „Kritisch“ (Starterbatterie), BMS meldet einen Fehler – ab camper-battery 1.3.1 mit Text, z. B. „Bordbatterie BMS: Zellspannung zu hoch (Stufe 1)“, auch auf der Batterieseite. Batterien ohne Verbindung lösen keine Warnung aus |
 
@@ -268,6 +272,14 @@ Warnungen von Geräten, die `offline` sind, werden nicht gezeigt (alte retained 
 **Außentemperatur:** Im selben Abschnitt wählst du den Sensor für die Außentemperatur – einen eigenen Zigbee-/Bluetooth-Klimasensor oder einen Sensor von camper-temp. Er gilt für die Wetter-Seite, die Wetter-Kachel und die Frostwarnung. „automatisch“ nimmt wie bisher den ersten eigenen Sensor mit dem Haken „Wetter“.
 
 **Markise:** Ohne Kontakt an der Markise setzt du den Zustand von Hand – Knopf auf der Wetter-Seite (Display und Webseite) oder per MQTT `camper/display/cmd/awning` = `ON`/`OFF`/`TOGGLE`. Der Zustand bleibt über einen Neustart erhalten. Gibt es später einen Kontakt (Zigbee-Tür-/Fensterkontakt an der Markise, offen = ausgefahren), wählst du ihn unter „Zustand kommt von“, dann verschwindet der Knopf. Die Böen kommen von Open-Meteo, also so aktuell wie das eingestellte Abrufintervall des Wetters.
+
+**Abfahrtscheck:** Das Display erkennt die Fahrt am GPS des Routers: Der RUT956 sendet per „Data to Server“ auf `camper/rut` ein JSON mit `GPS.speed` (km/h) und `GPS.fix_status`. Fährt der Camper länger als 10 s schneller als 5 km/h (beides einstellbar) mit GPS-Fix, gilt das als Fahrt. Sie endet nach 2 Minuten Stillstand oder wenn 3 Minuten keine GPS-Daten kommen. Geprüft werden:
+
+- **Tür** vom Topic `camper/door` (Digitaleingang des RUT956 `{"Door":{"state":"open"|"close",…}}` oder einfach `open`/`closed`/`ON`/`OFF`/`1`/`0`); meldet der Eingang verkehrt herum, Haken „umkehren“ setzen
+- **Markise** (Schalter oder Kontakt, siehe oben)
+- **eigene Kontakte** aus 📡 Sensoren, die auf einer Geräteseite stehen (Fenster, Dachhauben), abschaltbar
+
+Ist während der Fahrt etwas offen, kommt je Teil eine Warnung („Tür offen während der Fahrt“) – im Display, im gelben Band und per Pushover. Die Liste mit allen Punkten steht auf der Seite **Warnungen** (Display und Webseite), auch im Stand. Einstellungen unter *Einstellungen → 🌦 Dienste → ⚠️ Warnungen → Abfahrtscheck*. Die Einheit von `speed` beim RUT956 ist km/h; bitte bei der ersten Fahrt gegenprüfen (Seite Warnungen zeigt die Geschwindigkeit). Zum Testen ohne Fahrt: `python3 tools/mqtt/sim.py --host <broker> depart`.
 
 ### Push-Nachrichten (Pushover)
 

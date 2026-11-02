@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "2.9.15"
+#define FW_VERSION              "2.9.16"
 
 // ---- Device / access point ------------------------------------------
 #ifndef STATIC_IP_FALLBACK_MS
@@ -103,6 +103,20 @@
 
 #ifndef DEFAULT_AWNING_GUST
 #define DEFAULT_AWNING_GUST     40      // awning out: warn from these gusts (km/h), 0 = off
+#endif
+
+// Departure check (web page: Einstellungen > Dienste > Warnungen > Abfahrtscheck)
+#ifndef DEFAULT_DEPART_TOPIC
+#define DEFAULT_DEPART_TOPIC    "camper/rut"    // router JSON with GPS.speed (km/h) and GPS.fix_status, "" = off
+#endif
+#ifndef DEFAULT_DOOR_TOPIC
+#define DEFAULT_DOOR_TOPIC      "camper/door"   // door: RUT956 digital input JSON or plain open/closed, "" = none
+#endif
+#ifndef DEFAULT_DEPART_SPEED
+#define DEFAULT_DEPART_SPEED    5       // driving above this speed in km/h ...
+#endif
+#ifndef DEFAULT_DEPART_SECS
+#define DEFAULT_DEPART_SECS     10      // ... for this many seconds
 #endif
 
 #ifndef DEFAULT_WX_GUST

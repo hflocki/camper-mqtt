@@ -11,7 +11,7 @@ const M = {
     ntpServer: 'pool.ntp.org', tz: 'CET-1CEST,M3.5.0,M10.5.0/3',
     poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
     brightness: 80, dimBrightness: 10, screenTimeout: 120, warnWake: false,
-    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, wxGustHyst: 10, wnWater: 10, wnGas: 15, wnBat: 20, wnHystPct: 3, wnFrostOn: false, wnFrost: 3, wnHystT: 1, poQuiet: 30, outName: '', awnSrc: '', awnGust: 40, ovTempSel: '', ovBatSel: '',
+    wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, wxGustHyst: 10, wnWater: 10, wnGas: 15, wnBat: 20, wnHystPct: 3, wnFrostOn: false, wnFrost: 3, wnHystT: 1, poQuiet: 30, outName: '', awnSrc: '', awnGust: 40, dpOn: true, dpTopic: 'camper/rut', dpDoor: 'camper/door', dpDoorInv: false, dpSpeed: 5, dpSecs: 10, dpCont: true, ovTempSel: '', ovBatSel: '',
     builtin: [true, true, true, true, true, true, true, true, true, true, true, false, false],
     pageNames: ['Home', 'Truma', 'MaxxFan', 'Level', 'Temperatur', 'Batterie', 'Wetter', 'Sensoren', 'Warnungen', 'Licht', 'Schalter', 'Energie', 'Extra', 'System'],
     pageIcons: ['', '', '', '', '', '', '', '', '', '', '', '', '', ''],
@@ -93,7 +93,7 @@ const M = {
       {n: 'Govee Außen', k: 1, b: 1, t: 8.6, h: 81, bat: 100, age: 8, i: '', sh: 8},
       {n: 'LED Eingang', k: 2, b: 0, o: door ? 1 : 0, lv: 180, col: '#ff8000', age: 20, i: '', sh: 16},
       {n: 'Steckdose Kühlbox', k: 3, b: 0, o: 1, age: 30, i: '', sh: 32}];
-    return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake, ind: [], open: door ? 2 : 1, sen, awn: M.awn, awnSw: true, outd: {n: 'Außen', t: 6.4, h: 81, st: false}}};
+    return {t: 'v', d, s: {wifi: true, rssi: -52, mqtt: true, ip: '192.168.1.17', bri: M.bri, finder: M.finderOn, awake: M.awake, ind: [], open: door ? 2 : 1, sen, awn: M.awn, awnSw: true, dp: {drv: false, gps: true, spd: 0, it: [{n: 'Tür', s: 'zu', ok: 1}, {n: 'Markise', s: M.awn === 1 ? 'ausgefahren' : 'eingefahren', ok: M.awn === 1 ? 0 : 1}, {n: 'Heki', s: door ? 'offen' : 'zu', ok: door ? 0 : 1}]}, outd: {n: 'Außen', t: 6.4, h: 81, st: false}}};
   },
   wsCmd(o) {
     const H = M.H;

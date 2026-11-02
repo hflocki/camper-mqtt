@@ -12,6 +12,7 @@
 #include "sensors.h"
 #include "router.h"
 #include "alerts.h"
+#include "depart.h"
 #include "netdev.h"
 #include <lvgl.h>
 #include <vector>
@@ -190,6 +191,7 @@ const Swatch SWATCHES[] = {
   {"color", "#a000ff", 0xA040FF, ""}};
 const int SWATCH_N = sizeof(SWATCHES) / sizeof(SWATCHES[0]);
 lv_obj_t *wnCard = nullptr, *wnLbl = nullptr;
+lv_obj_t *dpCard = nullptr, *dpHead = nullptr, *dpLbl = nullptr;   // departure check on the warnings page
 lv_obj_t* wOut = nullptr;               // weather page: outside sensor
 lv_obj_t *wAwn = nullptr, *wAwnBtn = nullptr, *wAwnBtnLbl = nullptr;   // weather page: awning state / switch
 String bSig;
@@ -602,6 +604,8 @@ String warnings() {
   }
   // water, gas, frost (limits in the settings)
   add(alerts::warnings());
+  // departure check: driving with the door open, the awning out, a window open
+  add(depart::warnings());
   // automation rules marked as warning, open Zigbee contacts
   add(rules::warnings());
   add(sensors::warnings());
@@ -1227,6 +1231,13 @@ void buildWarnPage(lv_obj_t* tab) {
   wnLbl = label(wnCard, &font_de_22, C_TEXT, "");
   lv_obj_set_width(wnLbl, PAGE_W - 44);
   lv_label_set_long_mode(wnLbl, LV_LABEL_LONG_WRAP);
+  // departure check: one line per item, refreshed with the warnings
+  dpCard = card(tab, PAGE_W - 20, LV_SIZE_CONTENT);
+  dpHead = label(dpCard, &font_de_22, C_TEXT, "Abfahrtscheck");
+  dpLbl = label(dpCard, &font_de_22, C_TEXT, "");
+  lv_obj_set_width(dpLbl, PAGE_W - 44);
+  lv_label_set_long_mode(dpLbl, LV_LABEL_LONG_WRAP);
+  lv_obj_align(dpLbl, LV_ALIGN_TOP_LEFT, 0, 36);
 }
 
 void buildTemp(lv_obj_t* tab) {
@@ -1749,6 +1760,33 @@ float batFrac(const BatItem& b) {
   return NAN;
 }
 
+// Departure check card on the warnings page: one line per item, title shows driving / standing
+void refreshDepart() {
+  if (!dpLbl) return;
+  if (!settings.dpOn) {
+    lv_label_set_text(dpHead, "Abfahrtscheck");
+    lv_label_set_text(dpLbl, "Aus (Webseite: Einstellungen > Dienste > Warnungen)");
+    lv_obj_set_style_text_color(dpLbl, C_MUTED, 0);
+    return;
+  }
+  bool drv = depart::driving();
+  float sp = depart::speed();
+  String head = "Abfahrtscheck";
+  if (drv) head += " \xC2\xB7 Fahrt" + (isnan(sp) ? String("") : " " + String((int)lroundf(sp)) + " km/h");
+  else if (!depart::gpsFresh()) head += " \xC2\xB7 kein GPS";
+  lv_label_set_text(dpHead, dispText(head).c_str());
+  String t;
+  int bad = 0, unk = 0;
+  for (auto& it : depart::items()) {
+    if (t.length()) t += "\n";
+    t += String(it.ok == 1 ? LV_SYMBOL_OK : it.ok == 0 ? LV_SYMBOL_CLOSE : "?") + "  " + it.name + ": " + it.state;
+    if (it.ok == 0) bad++;
+    else if (it.ok < 0) unk++;
+  }
+  lv_label_set_text(dpLbl, dispText(t).c_str());
+  lv_obj_set_style_text_color(dpLbl, bad ? C_WARN : unk ? C_TEXT : C_OK, 0);
+}
+
 void refreshValues() {
   bool tankOn = store::devOnline(DEV_TANK);
   bool heatOn = store::devOnline(DEV_HEATER);
@@ -1897,6 +1935,7 @@ void refreshValues() {
     lv_label_set_text(wnLbl, dispText(t).c_str());
     lv_obj_set_style_text_color(wnLbl, warn.length() ? C_WARN : C_OK, 0);
   }
+  if (dpLbl) refreshDepart();
 
   // windows / doors: overview tile with the open ones
   if (ovAct.line[0]) {
@@ -2476,6 +2515,7 @@ void clearHandles() {
   for (auto& p : devPages) { p.status = nullptr; p.cards.clear(); p.rows.clear(); p.sig = ""; }
   bSensCard = bSensLbl = nullptr;
   wnCard = wnLbl = nullptr;
+  dpCard = dpHead = dpLbl = nullptr;
   wOut = nullptr;
   wAwn = wAwnBtn = wAwnBtnLbl = nullptr;
   wxTileBase = "";
@@ -2773,6 +2813,10 @@ void loop() {
   if (now - lastHeader > 1000) {
     lastHeader = now;
     refreshHeader();
+    // departure check: driving and the check list do not mark the value store dirty
+    static String dpSig;
+    String sig = String(depart::driving()) + depart::issues() + String(dpLbl && !isnan(depart::speed()) ? (int)lroundf(depart::speed()) : -1);
+    if (sig != dpSig) { dpSig = sig; refreshValues(); }
   }
 }
 

@@ -2,6 +2,7 @@
 #include "devinfo.h"
 #include "netdev.h"
 #include "alerts.h"
+#include "depart.h"
 #include "weather.h"
 #include "router.h"
 #include "rules.h"
@@ -101,6 +102,7 @@ void onMessage(char* topic, byte* payload, unsigned int len) {
   rules::onMessage(topic, (const char*)payload, len);
   sensors::onMessage(topic, (const char*)payload, len);
   rt::onMessage(topic, (const char*)payload, len);
+  depart::onMessage(topic, (const char*)payload, len);   // before wx: the router JSON also carries the position
   netdev::onMessage(topic, (const char*)payload, len);
   if (wx::onMessage(topic, (const char*)payload, len)) return;
 
@@ -147,6 +149,8 @@ void subscribeAll() {
   if (settings.wxTopic.length()) mqtt.subscribe(settings.wxTopic.c_str());
   if (settings.rtTopic.length() && settings.rtTopic != settings.wxTopic) mqtt.subscribe(settings.rtTopic.c_str());
   for (auto& t : sensors::topics()) mqtt.subscribe(t.c_str());
+  for (auto& t : depart::topics())   // departure check: router GPS and door
+    if (t != settings.wxTopic && t != settings.rtTopic) mqtt.subscribe(t.c_str());
   for (auto& t : netdev::topics()) mqtt.subscribe(t.c_str());   // device list on the system page
   for (auto& t : rules::topics()) {
     bool dup = false;
@@ -205,7 +209,7 @@ void loop() {
   mqtt.loop();
   if (devinfoDue(true)) mqtt.publish(self("info").c_str(), devinfoJson(FW_VERSION).c_str(), true);
 
-  if (millis() - lastSelf > SELF_PUBLISH_MS) publishSelfState();
+  if (depart::changed() || millis() - lastSelf > SELF_PUBLISH_MS) publishSelfState();
   if (finderOn && millis() - finderStarted > FINDER_TIMEOUT_MS) finderStop();
 }
 
@@ -230,6 +234,11 @@ void publishSelfState() {
   publish(self("screen"), disp::isAwake() ? "ON" : "OFF", true);
   int8_t awn = alerts::awning();
   publish(self("awning"), awn == 1 ? "ON" : awn == 0 ? "OFF" : "unknown", true);
+  if (settings.dpOn) {
+    publish(self("driving"), depart::driving() ? "ON" : "OFF", true);
+    String is = depart::issues();
+    publish(self("depart"), is.length() ? is : String("OK"), true);
+  }
 }
 
 void finderStart(const String& filter) {
