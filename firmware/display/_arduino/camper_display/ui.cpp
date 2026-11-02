@@ -1500,21 +1500,30 @@ const int SYS_N = sizeof(SYS_ROWS) / sizeof(SYS_ROWS[0]);
 
 void buildSystem(lv_obj_t* tab) {
   pageContainer(tab);
-  // label / value list like a settings screen
-  const int rowH = 24;
-  lv_obj_t* ic = card(tab, PAGE_W - 20, SYS_N * rowH + 20);
-  lv_obj_set_style_pad_ver(ic, 10, 0);
-  sVals.clear();
-  for (int i = 0; i < SYS_N; i++) {
-    lv_obj_t* k = label(ic, &font_de_18, C_MUTED, SYS_ROWS[i]);
-    lv_obj_align(k, LV_ALIGN_TOP_LEFT, 0, i * rowH);
-    lv_obj_t* v = label(ic, &font_de_18, C_TEXT, "--");
-    lv_obj_set_width(v, PAGE_W - 20 - 24 - 140);
-    lv_label_set_long_mode(v, LV_LABEL_LONG_DOT);
-    lv_obj_align(v, LV_ALIGN_TOP_LEFT, 140, i * rowH);
-    sVals.push_back(v);
+  // order: devices in the network, QR code + brightness, the display itself
+  // devices in the network: <root>/+/status and <root>/+/info
+  sNetCard = card(tab, PAGE_W - 20, 2 * NET_ROW_H + 20);
+  lv_obj_t* nh = label(sNetCard, &font_de_18, C_MUTED, LV_SYMBOL_WIFI "  Ger\xC3\xA4te");
+  lv_obj_align(nh, LV_ALIGN_TOP_LEFT, 0, 0);
+  sNetEmpty = label(sNetCard, &font_de_14, C_MUTED, "Noch keine Meldung");
+  lv_obj_align(sNetEmpty, LV_ALIGN_TOP_LEFT, 0, NET_ROW_H);
+  for (int i = 0; i < NET_ROWS; i++) {
+    NetRowW& w = sNetRows[i];
+    int y = (i + 1) * NET_ROW_H;
+    w.dot = shape(sNetCard, 10, 10, LV_RADIUS_CIRCLE);
+    lv_obj_align(w.dot, LV_ALIGN_TOP_LEFT, 0, y + 6);
+    w.name = label(sNetCard, &font_de_18, C_TEXT, "");
+    lv_obj_align(w.name, LV_ALIGN_TOP_LEFT, 18, y);
+    w.val = label(sNetCard, &font_de_14, C_MUTED, "");
+    lv_obj_set_width(w.val, PAGE_W - 20 - 24 - 170);
+    lv_obj_set_style_text_align(w.val, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_label_set_long_mode(w.val, LV_LABEL_LONG_DOT);
+    lv_obj_align(w.val, LV_ALIGN_TOP_RIGHT, 0, y + 3);
+    lv_obj_add_flag(w.dot, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(w.name, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(w.val, LV_OBJ_FLAG_HIDDEN);
   }
-  sIp = sVals[1];
+  sNetAt = 0;
 
   // QR code to open the web page (or join the setup access point)
   lv_obj_t* qc = card(tab, 150, 150);
@@ -1551,29 +1560,21 @@ void buildSystem(lv_obj_t* tab) {
   lv_label_set_long_mode(sNet, LV_LABEL_LONG_WRAP);
   lv_obj_align(sNet, LV_ALIGN_BOTTOM_LEFT, 0, 0);
 
-  // devices in the network: <root>/+/status and <root>/+/info
-  sNetCard = card(tab, PAGE_W - 20, 2 * NET_ROW_H + 20);
-  lv_obj_t* nh = label(sNetCard, &font_de_18, C_MUTED, LV_SYMBOL_WIFI "  Ger\xC3\xA4te");
-  lv_obj_align(nh, LV_ALIGN_TOP_LEFT, 0, 0);
-  sNetEmpty = label(sNetCard, &font_de_14, C_MUTED, "Noch keine Meldung");
-  lv_obj_align(sNetEmpty, LV_ALIGN_TOP_LEFT, 0, NET_ROW_H);
-  for (int i = 0; i < NET_ROWS; i++) {
-    NetRowW& w = sNetRows[i];
-    int y = (i + 1) * NET_ROW_H;
-    w.dot = shape(sNetCard, 10, 10, LV_RADIUS_CIRCLE);
-    lv_obj_align(w.dot, LV_ALIGN_TOP_LEFT, 0, y + 6);
-    w.name = label(sNetCard, &font_de_18, C_TEXT, "");
-    lv_obj_align(w.name, LV_ALIGN_TOP_LEFT, 18, y);
-    w.val = label(sNetCard, &font_de_14, C_MUTED, "");
-    lv_obj_set_width(w.val, PAGE_W - 20 - 24 - 170);
-    lv_obj_set_style_text_align(w.val, LV_TEXT_ALIGN_RIGHT, 0);
-    lv_label_set_long_mode(w.val, LV_LABEL_LONG_DOT);
-    lv_obj_align(w.val, LV_ALIGN_TOP_RIGHT, 0, y + 3);
-    lv_obj_add_flag(w.dot, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(w.name, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(w.val, LV_OBJ_FLAG_HIDDEN);
+  // label / value list like a settings screen
+  const int rowH = 24;
+  lv_obj_t* ic = card(tab, PAGE_W - 20, SYS_N * rowH + 20);
+  lv_obj_set_style_pad_ver(ic, 10, 0);
+  sVals.clear();
+  for (int i = 0; i < SYS_N; i++) {
+    lv_obj_t* k = label(ic, &font_de_18, C_MUTED, SYS_ROWS[i]);
+    lv_obj_align(k, LV_ALIGN_TOP_LEFT, 0, i * rowH);
+    lv_obj_t* v = label(ic, &font_de_18, C_TEXT, "--");
+    lv_obj_set_width(v, PAGE_W - 20 - 24 - 140);
+    lv_label_set_long_mode(v, LV_LABEL_LONG_DOT);
+    lv_obj_align(v, LV_ALIGN_TOP_LEFT, 140, i * rowH);
+    sVals.push_back(v);
   }
-  sNetAt = 0;
+  sIp = sVals[1];
 
   // Rescue: switch a static IP back to DHCP (long press, then restart)
   if (settings.staticIp) {
