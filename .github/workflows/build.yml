@@ -27,7 +27,15 @@ env:
     https://github.com/ESP32Async/AsyncTCP.git#v3.5.0
 
 jobs:
+  # Shared sources in firmware/_common must match their copies in the sketches
+  common:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/common/sync_common.py --check
+
   build:
+    needs: common
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

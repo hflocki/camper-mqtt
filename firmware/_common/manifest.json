@@ -1,0 +1,17 @@
+{
+  "_comment": "Shared source files and the sketches that carry a copy. Edit the file here, then run tools/common/sync_common.py.",
+  "files": {
+    "wifi_manager.h": [
+      "firmware/_template/_arduino/camper_example",
+      "firmware/temp/_arduino/camper_temp",
+      "firmware/battery/_arduino/camper_battery",
+      "firmware/level/_arduino/camper_level"
+    ],
+    "wifi_manager.cpp": [
+      "firmware/_template/_arduino/camper_example",
+      "firmware/temp/_arduino/camper_temp",
+      "firmware/battery/_arduino/camper_battery",
+      "firmware/level/_arduino/camper_level"
+    ]
+  }
+}
