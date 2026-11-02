@@ -43,10 +43,10 @@ Firmware für einen ESP32 (ESP32-S3, ESP32-C3 oder klassischer ESP32) mit einem 
 |---|---|
 | VIN | 3V3 |
 | GND | GND |
-| SDA | `PIN_I2C_SDA` (Standard GPIO1) |
-| SCL | `PIN_I2C_SCL` (Standard GPIO2) |
+| SDA | `PIN_I2C_SDA` (Standard GPIO2) |
+| SCL | `PIN_I2C_SCL` (Standard GPIO1) |
 
-Andere Pins (z. B. ESP32-C3 GPIO4/GPIO10, oder SDA/SCL vertauscht verdrahtet) in `config_local.h` eintragen.
+Die Standard-Pins gelten auch für die fertige `.bin` aus den Releases. Andere Pins (z. B. SDA GPIO1 / SCL GPIO2 oder ESP32-C3 GPIO4/GPIO10) in `config_local.h` eintragen und selbst bauen.
 
 Den Sensor fest mit dem Fahrzeug verbinden. Die Einbaulage (flach oder an einer Wand, USB-Anschluss zeigt nach …) stellt man in der Web-Oberfläche ein.
 
@@ -153,6 +153,7 @@ Bestehende Dashboards mit `custom:wowa-level-card` funktionieren weiter.
 
 | Version | Änderungen |
 |---|---|
+| 2.1.2 | Standard-Pins SDA GPIO2 / SCL GPIO1, damit die Release-.bin ohne eigene `config_local.h` den Sensor findet |
 | 2.1.0 | Firmware (.bin) und Web-Oberfläche (index.html.gz) im Web-UI unter WiFi hochladbar, ohne USB; Arduino-OTA-Dateisystem-Upload hängt LittleFS vorher aus |
 | 2.0.0 | Fork als camper-level: nur Wohnmobil mit vier Keilen, korrigierte Keilberechnung, Sicherheitslücken geschlossen, Filter funktioniert, Topics und Oberfläche wie die anderen camper-mqtt-Geräte |
 | 1.x | Original [WoWa-Level](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT) von klehnst |

@@ -13,7 +13,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "2.1.1"
+#define FW_VERSION            "2.1.2"
 
 #ifndef DEFAULT_AP_SSID
 #define DEFAULT_AP_SSID       "Camper-Level"     // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
@@ -79,14 +79,14 @@
 
 // ============================================================
 // I2C - Adafruit BNO085 breakout
-// ESP32-S3: GPIO1 / GPIO2, ESP32-C3 Super Mini: e.g. GPIO4 / GPIO10.
-// If the sensor is not found, swap SDA and SCL in config_local.h.
+// Default as wired in the reference build: SDA GPIO2, SCL GPIO1 (ESP32-S3), so the CI .bin works there.
+// Other wiring (e.g. SDA 1 / SCL 2, ESP32-C3 Super Mini GPIO4 / GPIO10): set it in config_local.h.
 // ============================================================
 #ifndef PIN_I2C_SDA
-#define PIN_I2C_SDA           1
+#define PIN_I2C_SDA           2
 #endif
 #ifndef PIN_I2C_SCL
-#define PIN_I2C_SCL           2
+#define PIN_I2C_SCL           1
 #endif
 #ifndef BNO08X_I2C_ADDR
 #define BNO08X_I2C_ADDR       0x4A   // 0x4B if the DI pin of the breakout is pulled high
