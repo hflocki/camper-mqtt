@@ -36,7 +36,7 @@ Welche Seiten es gibt, steht in `config.h` (`USE_LEVEL`, `USE_WATER`, `USE_GAS`,
 
 In der Kopfzeile stehen links Signalbalken: mit Router-Daten die Mobilfunkstärke (5 Balken nach RSRP bzw. RSSI, dazu das Netz, z. B. „LTE“), sonst die WLAN-Stärke des RoadBuddy (4 Balken). Grün = WLAN und MQTT ok, gelb = MQTT fehlt, rotes Kreuz = kein WLAN. In der Mitte die Seitenanzeige (aktive Seite als Pille), rechts der Akku des Core2 (blau mit „+“ beim Laden).
 
-Level-Werte, die länger als 30 Sekunden nicht aktualisiert wurden, werden grau angezeigt. Meldet ein Sensor `offline`, wird seine Seite ausgegraut.
+Level-Werte, die länger als 30 Sekunden nicht aktualisiert wurden, behalten ihre Farben; rechts unten steht dann „Werte alt“. Meldet ein Sensor `offline`, wird seine Seite ausgegraut.
 
 ---
 

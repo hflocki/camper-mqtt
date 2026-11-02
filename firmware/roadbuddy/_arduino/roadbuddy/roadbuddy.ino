@@ -8,7 +8,7 @@
 #include "config.h"
 #include "webota.h"
 
-#define FW_VERSION "1.2.1"
+#define FW_VERSION "1.2.2"
 
 // ---------- Sensor selection ----------
 // Choose in config.h which sensors are used (1 = enabled, 0 = disabled).
@@ -629,8 +629,11 @@ void drawVan(int cx, int top, int w, int h, bool live) {
 void drawPageLevel() {
   drawHeader();
   bool offline = levelStatusKnown && !levelOnline;
-  bool live = !offline && isFresh(lastPitchMs) && isFresh(lastRollMs);
+  // Colors stay on with the last known values; only an offline sensor greys the page.
+  // Old values (no update for STALE_MS) get a short note instead.
+  bool live = !offline;
   bool have = havePitch && haveRoll;
+  bool stale = have && !(isFresh(lastPitchMs) && isFresh(lastRollMs));
 
   // Left: van seen from above
   card(8, TOP, 148, BOTTOM - TOP, COL_LINE);
@@ -669,11 +672,15 @@ void drawPageLevel() {
     canvas.drawString("--", lx, TOP + 132);
   }
 
-  // Bottom: largest wedge as a short hint (the full list is on the van)
-  if (have && live && !vanIsLevel() && haveWedges()) {
+  // Bottom: note on old values, otherwise the largest wedge (the full list is on the van)
+  canvas.setFont(&fonts::FreeSans9pt7b);
+  canvas.setTextDatum(middle_left);
+  if (live && stale) {
+    canvas.setTextColor(COL_DIM);
+    canvas.drawString("Werte alt", lx, BOTTOM - 16);
+  } else if (have && live && !vanIsLevel() && haveWedges()) {
     int best = -1;
     for (int i = 0; i < 4; i++) if (wedgeCm(i) >= 1 && (best < 0 || wedgeCm(i) > wedgeCm(best))) best = i;
-    canvas.setFont(&fonts::FreeSans9pt7b);
     canvas.setTextColor(COL_LVL_HI);
     canvas.drawString(best >= 0 ? String("max. ") + wedgeCm(best) + " cm" : String("fast eben"), lx, BOTTOM - 16);
   }
