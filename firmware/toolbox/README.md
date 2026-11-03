@@ -109,6 +109,24 @@ In Home Assistant erscheint ein Gerät „Camper Toolbox“ (WLAN, Status) und j
 
 > Wer die Toolbox schon aus dem alten Repo nutzt: Das Basis-Topic war `camper/tool`, der Hostname `camper-tool`. Ein Gerät mit gespeicherten Einstellungen behält sein altes Topic, bis es in der Web-UI geändert wird. Ändert man es, legt Home Assistant die Entitäten neu an.
 
+### Dachhaube am Display (eigene Kacheln)
+
+Eine feste Heki-Kachel hat das Display noch nicht. Bis dahin geht es mit eigenen Kacheln, ohne Firmware-Änderung: Webseite des Displays → *Einstellungen → Seiten & Kacheln*, z. B. eine eigene Seite „Heki“ anlegen und darauf:
+
+| Kachel | Typ | Status-Topic | Befehls-Topic | Payload / Sonstiges |
+| --- | --- | --- | --- | --- |
+| Heki | Wert | `camper/toolbox/rvtech/cover` | – | Anzeige umbenennen: `open=Offen, closed=Zu, opening=Öffnet, closing=Schließt` |
+| Heki Position | Regler 0–100, Schritt 10, Einheit `%` | `camper/toolbox/rvtech/cover_position` | `camper/toolbox/cmd/rvtech/cover_position/set` | leer (= nur die Zahl) |
+| Heki Auf | Taster | – | `camper/toolbox/cmd/rvtech/auf/set` | `1` |
+| Heki Zu | Taster | – | `camper/toolbox/cmd/rvtech/zu/set` | `1` |
+| Heki Regen | Taster | – | `camper/toolbox/cmd/rvtech/regen/set` | `1` |
+| Heki Lüften | Taster | – | `camper/toolbox/cmd/rvtech/lueften/set` | `1` |
+
+- Das **Befehls-Topic von Hand eintragen.** Leer sendet das Display an Status-Topic + `/set`; dort hört die Toolbox nicht.
+- Bei den Tastern ist die Payload egal, die Toolbox wertet nur das Topic aus.
+- Die Topics zeigt auch der Topic-Finder des Displays (Filter `camper/toolbox/#`). Bei einer zweiten Haube heißt das Plugin `rvtech2`.
+- Die Seiten *Schalter*, *Licht* und *Sensoren* und der Abfahrtscheck kennen die Dachhaube noch nicht (sie füllen sich aus der Zigbee-/Bluetooth-Sensorliste). Eine Kachel-Warnung „wenn Wert gleich `open`“ ginge, warnt aber auch im Stand.
+
 ## Neues Plugin schreiben
 
 1. Neue Datei `src/plugins/plugin_<name>.cpp`, Klasse von `Plugin` ableiten (`src/core/plugin.h`): Einstellungen `fields()`, HA-Entitäten `entities()`, MQTT-Werte `publish()`, Befehle `command()`, Web-Karte `live()`. Für Geräte mit Verbindung gibt es `BleLink` (`src/core/ble_link.h`), für passive Sensoren `onAdvertisement()`.
