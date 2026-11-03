@@ -1,21 +1,25 @@
+#include "fw_config.h"   // FW_VERSION, GUARD_* overrides (before safeguard.h)
 #include "safeguard.h"
-#include "config.h"   // FW_VERSION
 
 #if defined(ESP32)
 
 #include <Preferences.h>
 #include <esp_ota_ops.h>
 #include <esp_partition.h>
+#include <esp_system.h>
+#include <WiFi.h>
 
 // NVS keys (namespace "safeguard"):
 //   ota   1 = new firmware on probation      new  app slot label of the new firmware
 //   old   app slot label to go back to       oldv version of the previous firmware
 //   boots starts on probation so far
+//   net   1 = the update came over the WiFi (0 = over the setup AP: no WiFi check afterwards)
 //   wtr   1 = WiFi trial running             wss/wpw/wex  previous WiFi values
 //   note  last event for the web UI
 static const char* NS = "safeguard";
 
 static bool     probation = false;
+static bool     netCheck = true;      // roll back if the new firmware gets no WiFi
 static uint32_t healthySince = 0;
 static bool     wifiTrial = false;     // backup stored
 static bool     trialAtBoot = false;   // ... already before this start: the new values are live now
@@ -78,8 +82,10 @@ void begin() {
         p.end();
         return;
     }
-    uint8_t boots = p.getUChar("boots", 0) + 1;
+    // waking up from deep sleep is no new start (Road Buddy): only count real restarts
+    uint8_t boots = p.getUChar("boots", 0) + (esp_reset_reason() == ESP_RST_DEEPSLEEP ? 0 : 1);
     p.putUChar("boots", boots);
+    netCheck = p.getUChar("net", 1) == 1;
     p.end();
     probation = true;
     Serial.printf("[Guard] New firmware on probation, start %u of %u\n", boots, GUARD_MAX_BOOTS);
@@ -97,6 +103,9 @@ void otaDone() {
     p.putString("new", next->label);
     p.putString("old", run->label);
     p.putString("oldv", FW_VERSION);
+    // uploaded over the setup AP (no WiFi right now): the new firmware cannot be expected
+    // to reach the WiFi either, so only the crash loop protection applies
+    p.putUChar("net", WiFi.status() == WL_CONNECTED ? 1 : 0);
     p.putString("note", "");
     p.end();
     note = "";
@@ -105,6 +114,7 @@ void otaDone() {
 
 void loop(bool healthy) {
     if (!probation) return;
+    if (!netCheck) healthy = true;
     uint32_t now = millis();
     if (healthy) {
         if (!healthySince) healthySince = now ? now : 1;

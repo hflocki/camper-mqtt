@@ -31,6 +31,7 @@ def replacements(dev_id: str, name: str) -> list[tuple[str, str]]:
     compact = re.sub(r"\s+", "", name)
     # Order matters: longer / more specific tokens first
     return [
+        ('FW_DEVICE            "example"', f'FW_DEVICE            "{dev_id}"'),   # firmware marker (fwcheck.h)
         ("camper_example", f"camper_{dev_id}"),
         ("camper-example", f"camper-{dash}"),
         ("camper/example", f"camper/{dev_id}"),

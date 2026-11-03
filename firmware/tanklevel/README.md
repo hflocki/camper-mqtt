@@ -332,6 +332,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 | --- | --- |
+| 1.8.1 | Update-Prüfung vergleicht auch den Chip in der Kennung (gleich wie im Browser); ein Update über den Setup-AP löst keinen WLAN-Rückfall mehr aus |
 | 1.8.0 | Sichere Updates: Firmware-Kennung, Prüfung der Datei im Browser und im Gerät (falsches Gerät, falscher Chip, .merged.bin, zu groß), Fehlergrund im Klartext, installierte Version und Ereignis-Log im Web-UI |
 | 1.7.0 | Absicherung gegen Aussperren: Rückfall auf die vorherige Firmware, wenn ein Update kein WLAN bekommt; geänderte WLAN-Daten werden zurückgesetzt, wenn sie nicht funktionieren |
 | 1.6.0 | Firmware (.bin) und Web-Oberfläche (index.html.gz) im Web-UI unter WiFi hochladbar, ohne USB; Arduino-OTA-Dateisystem-Upload hängt LittleFS vorher aus |

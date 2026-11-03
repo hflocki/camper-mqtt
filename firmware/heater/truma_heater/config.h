@@ -26,7 +26,11 @@
 #endif
 
 #define FW_NAME "camper-heater"
-#define FW_VERSION "1.3.1"
+#define FW_VERSION "1.4.0"
+#define FW_DEVICE "heater"   // device id in the firmware marker (fwcheck.h)
+#ifndef WIFI_TRIAL_MS
+#define WIFI_TRIAL_MS 50000   // a changed WiFi must connect this fast, else the old one returns
+#endif
 
 // ---------------------------------------------------------------------------------------------
 // Board profiles

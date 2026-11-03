@@ -15,6 +15,8 @@
 
 #include "config.h"
 #include "wifi_manager.h"
+#include "safeguard.h"
+#include "evlog.h"
 #include "temp_sensor.h"
 #include "mqtt_ha.h"
 #include "webserver.h"
@@ -35,15 +37,14 @@ void setupOTA() {
         Serial.println("[OTA] Start updating " + type);
     });
     ArduinoOTA.onEnd([]() {
-        Serial.println("\n[OTA] Update complete!");
+        evlog::add("Update über den IDE-Netzwerkport ok, Neustart");
+        if (ArduinoOTA.getCommand() == U_FLASH) guard::otaDone();
     });
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
         unsigned int pct = (total > 0) ? (progress * 100U / total) : 0;
         Serial.printf("[OTA] Progress: %u%%\r", pct);
     });
-    ArduinoOTA.onError([](ota_error_t error) {
-        Serial.printf("[OTA] Error[%u]\n", error);
-    });
+    ArduinoOTA.onError([](ota_error_t error) { evlog::add("Update über den IDE-Netzwerkport fehlgeschlagen (Fehler %u)", (unsigned)error); });
 
     ArduinoOTA.begin();
     Serial.println("[OTA] Ready");
@@ -64,8 +65,28 @@ static void printRead() {
     }
 }
 
+// WiFi start. A changed WiFi that does not connect is replaced by the previous, working
+// one, followed by a restart so the wifi manager starts clean with it (safeguard.h).
+static void startWiFi() {
+    wifiManagerInit();
+    if (!guard::wifiTrialPending()) return;
+    if (isConnected()) { guard::wifiTrialOk(); return; }
+    String ssid, pass, extra;
+    if (!guard::wifiTrialRestore(ssid, pass, extra)) return;
+    strlcpy(config.wifi_ssid, ssid.c_str(), sizeof(config.wifi_ssid));
+    strlcpy(config.wifi_pass, pass.c_str(), sizeof(config.wifi_pass));
+    saveConfig();
+    Serial.println("[MAIN] New WiFi failed - previous WiFi restored, restarting");
+    delay(200);
+    ESP.restart();
+}
+
 void setup() {
     Serial.begin(115200);
+    evlog::begin();
+    evlog::add("Start v%s, Grund: %s", FW_VERSION, evlog::resetReason());
+    guard::begin();   // may boot the previous firmware (failed update)
+    if (guard::status().length()) evlog::add("%s", guard::status().c_str());
     Serial.setTimeout(50);  // Do not block the loop while waiting for a line end
     delay(1000);
 
@@ -84,7 +105,7 @@ void setup() {
     tempInit();
 
     // Phase 3: WiFi (blocking connect or AP fallback)
-    wifiManagerInit();
+    startWiFi();
 
     // Phase 4: start web server
     webserverStart();
@@ -98,6 +119,8 @@ void setup() {
 
 void loop() {
     wifiManagerLoop();
+    guard::loop(isConnected() || config.wifi_ssid[0] == '\0');
+    evlog::watch(isConnected(), mqttIsConnected());
     ArduinoOTA.handle();
 
     tempLoop();

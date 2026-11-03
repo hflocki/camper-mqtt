@@ -2,10 +2,20 @@
 #include "evlog.h"
 #include <stdarg.h>
 
+#if defined(ESP32) || defined(ESP8266)
 #if defined(ESP32)
 #include <WiFi.h>
 #include <esp_attr.h>
 #include <esp_system.h>
+#define EVLOG_KEEP RTC_NOINIT_ATTR        // survives restart, crash and update
+#define EVLOG_LOCK() portENTER_CRITICAL(&mux)
+#define EVLOG_UNLOCK() portEXIT_CRITICAL(&mux)
+#else
+#include <ESP8266WiFi.h>
+#define EVLOG_KEEP                        // ESP8266: plain RAM, lost on every restart
+#define EVLOG_LOCK()
+#define EVLOG_UNLOCK()
+#endif
 
 namespace {
 
@@ -24,8 +34,10 @@ struct Store {
     Entry e[EVLOG_SIZE];
 };
 
-RTC_NOINIT_ATTR Store rtc;
+EVLOG_KEEP Store rtc;
+#if defined(ESP32)
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+#endif
 
 } // namespace
 
@@ -46,28 +58,26 @@ void add(const char* fmt, ...) {
     vsnprintf(buf, sizeof(buf), fmt, a);
     va_end(a);
     Serial.printf("[log] %s\n", buf);
-    portENTER_CRITICAL(&mux);
+    EVLOG_LOCK();
     Entry& e = rtc.e[rtc.head];
     e.boot = rtc.boot;
     e.sec = millis() / 1000;
     memcpy(e.text, buf, sizeof(buf));
     rtc.head = (rtc.head + 1) % EVLOG_SIZE;
     if (rtc.count < EVLOG_SIZE) rtc.count++;
-    portEXIT_CRITICAL(&mux);
+    EVLOG_UNLOCK();
 }
 
 void json(JsonArray out) {
-    Entry copy[EVLOG_SIZE];
-    uint8_t head, count;
-    uint16_t boot;
-    portENTER_CRITICAL(&mux);
-    memcpy(copy, rtc.e, sizeof(copy));
-    head = rtc.head;
-    count = rtc.count;
-    boot = rtc.boot;
-    portEXIT_CRITICAL(&mux);
+    EVLOG_LOCK();
+    uint8_t head = rtc.head, count = rtc.count;
+    uint16_t boot = rtc.boot;
+    EVLOG_UNLOCK();
     for (int k = 0; k < count; k++) {
-        const Entry& e = copy[(head - 1 - k + 2 * EVLOG_SIZE) % EVLOG_SIZE];
+        Entry e;   // one entry at a time: little stack (ESP8266)
+        EVLOG_LOCK();
+        e = rtc.e[(head - 1 - k + 2 * EVLOG_SIZE) % EVLOG_SIZE];
+        EVLOG_UNLOCK();
         JsonObject o = out.add<JsonObject>();
         o["b"] = (uint16_t)(boot - e.boot);
         o["t"] = e.sec;
@@ -76,6 +86,18 @@ void json(JsonArray out) {
 }
 
 const char* resetReason() {
+#if defined(ESP8266)
+    switch (ESP.getResetInfoPtr()->reason) {
+        case REASON_DEFAULT_RST:      return "Einschalten";
+        case REASON_WDT_RST:          return "Watchdog (Hardware)";
+        case REASON_EXCEPTION_RST:    return "Absturz";
+        case REASON_SOFT_WDT_RST:     return "Watchdog (Software)";
+        case REASON_SOFT_RESTART:     return "Neustart (Software)";
+        case REASON_DEEP_SLEEP_AWAKE: return "Deep Sleep";
+        case REASON_EXT_SYS_RST:      return "Reset-Pin";
+        default:                      return "unbekannt";
+    }
+#else
     switch (esp_reset_reason()) {
         case ESP_RST_POWERON:   return "Einschalten";
         case ESP_RST_SW:        return "Neustart (Software)";
@@ -89,6 +111,7 @@ const char* resetReason() {
         case ESP_RST_USB:       return "USB";
         default:                return "unbekannt";
     }
+#endif
 }
 
 void watch(bool wifi, bool mqtt) {
@@ -107,7 +130,7 @@ void watch(bool wifi, bool mqtt) {
 
 } // namespace evlog
 
-#else   // no RTC memory: nothing is kept
+#else   // other platforms: nothing is kept
 
 namespace evlog {
 void begin() {}

@@ -2,7 +2,8 @@
 //
 // Small event log for the web UI: the last EVLOG_SIZE events (start, WiFi, MQTT, updates,
 // rollback ...) with the time since that start. Kept in RTC memory, so it survives a
-// restart, a crash and a firmware update, but not a power cut. ESP32 only.
+// restart, a crash and a firmware update, but not a power cut. On the ESP8266 it is
+// plain RAM and starts empty after every restart.
 #ifndef EVLOG_H
 #define EVLOG_H
 
@@ -10,7 +11,11 @@
 #include <ArduinoJson.h>
 
 #ifndef EVLOG_SIZE
+#if defined(ESP8266)
+#define EVLOG_SIZE 16
+#else
 #define EVLOG_SIZE 24
+#endif
 #endif
 
 namespace evlog {

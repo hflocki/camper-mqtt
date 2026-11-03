@@ -207,7 +207,7 @@ const M = {
     if (r !== undefined) return json(r);
     // firmware info and event log (fwcheck / evlog), the same example for every device
     if (u.pathname === '/api/system' && method === 'GET') {
-      const S3 = M.id === 'level';
+      const S3 = M.id === 'level' || M.id === 'display';
       return json({fw: {dev: M.id, ver: (M.cfg && M.cfg.version) || '1.7.0', chip: S3 ? 'esp32s3' : 'esp32c3', chip_id: S3 ? 9 : 5, max: 1966080},
                    up: 5400, log: [
         {b: 0, t: 5380, m: 'MQTT verbunden'}, {b: 0, t: 5378, m: 'WLAN verbunden (192.168.8.31, -61 dBm)'},
@@ -391,6 +391,15 @@ code{font-size:12px;color:var(--mu)}
 .trow{display:flex;align-items:center;gap:10px}
 .trow .n{flex:1;color:var(--mu);font-size:18px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .trow.al .big{color:var(--warn)}
+:root{--fwu-ok:var(--ok);--fwu-warn:#f0a030;--fwu-bad:var(--warn);--fwu-mute:var(--mu);--fwu-line:var(--hi)}
+.fwu-cur{font-size:.8rem;margin:0 0 10px}
+.fwu-chk{font-size:.8rem;margin:8px 0;line-height:1.4}
+.fwu-chk.ok{color:var(--fwu-ok)}.fwu-chk.warn{color:var(--fwu-warn)}.fwu-chk.bad{color:var(--fwu-bad)}
+.fwu-force{display:flex;gap:8px;align-items:center;font-size:.8rem;margin:0 0 8px}
+.fwu-log{font-size:.75rem;line-height:1.4;max-height:320px;overflow-y:auto}
+.fwu-ev{padding:4px 0;border-bottom:1px solid var(--fwu-line)}.fwu-ev:last-child{border-bottom:0}
+.fwu-ev span{color:var(--fwu-mute);margin-right:8px;white-space:nowrap}.fwu-ev.bad{color:var(--fwu-bad)}
+button:disabled{opacity:.45;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -593,6 +602,7 @@ function pgSystem(){
   <div class="card wide"><h3>Display</h3><div class="row"><span class="mu">Helligkeit</span>
    <input type="range" id="sy_bri" min="5" max="100" class="grow"><button class="btn" id="sy_scr">💤 Aus</button></div></div>
   <div class="card wide"><h3>📡 Geräte im Netz</h3><div id="sy_dev" class="mu">Lade …</div></div>
+  <div class="card wide"><h3>📋 Ereignisse</h3><div id="fwu-log" class="fwu-log">Lade …</div><div class="mu" style="font-size:12px;margin-top:8px">Bleibt bei Neustart, Absturz und Update erhalten, nicht bei Stromausfall.</div></div>
   <div class="card wide"><h3>Einstellungen &amp; Geräte</h3><div class="syslist">
    ${b('settings','⚙','Einstellungen')}<button class="btn" id="sy_rules">⚡ Automationen</button>${b('links','🔗','Geräte')}</div></div>
   ${more.length?`<div class="card wide"><h3>Weitere Seiten</h3><div class="syslist">${more.map(p=>b(p.id,p.icon||'📄',p.title)).join('')}</div></div>`:''}
@@ -604,7 +614,7 @@ function bindSystem(){
   const br=$('#sy_bri');if(S.bri!==undefined)br.value=S.bri;br.oninput=e=>send({c:'bri',v:e.target.value});
   $('#sy_scr').onclick=()=>{const on=S.awake===false;send({c:'screen',v:on?'on':'off'});S.awake=on;update()};
   update();
-  loadDevices();clearInterval(devTimer);devTimer=setInterval(()=>{if($('#sy_dev'))loadDevices();else clearInterval(devTimer)},10000);
+  loadDevices();fwLoad();clearInterval(devTimer);devTimer=setInterval(()=>{if($('#sy_dev'))loadDevices();else clearInterval(devTimer)},10000);
 }
 // devices in the network: <root>/+/status and <root>/+/info, collected by the display
 let devTimer=0;
@@ -1095,7 +1105,12 @@ function pgSettings(){
    ${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
    <div class="f2">${inp('webUser','Web-Benutzer')}${inp('webPass','Web-Passwort (leer = kein Schutz)','password')}</div>
    <div class="f2">${inp('ntpServer','Zeitserver')}${inp('tz','Zeitzone (POSIX)')}</div>
-   <label>Firmware-Update (.bin)</label><div class="row"><input type="file" id="fw" accept=".bin" class="grow"><button class="btn" id="fwup">Hochladen</button></div>
+   <label>Firmware-Update (.bin)</label>
+   <div class="fwu-cur" id="fwu-cur">Installiert: …</div>
+   <p class="mu" style="margin-top:0">Die <code>.bin</code> aus dem Release (<code>camper-display-esp32s3.bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>camper_display.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>). Die Datei wird vor dem Hochladen geprüft.</p>
+   <div class="row"><input type="file" id="fwu-file" accept=".bin" class="grow" onchange="fwChosen(false)"><button class="btn" id="fwu-btn" disabled>Hochladen</button></div>
+   <div class="fwu-chk" id="fwu-chk"></div>
+   <label class="chk fwu-force" id="fwu-force-row" style="display:none"><input type="checkbox" id="fwu-force" onchange="fwForce()"> Ohne Kennung hochladen</label>
    <div id="updbox" hidden style="margin:8px 0"><div class="bar"><i id="updbar" style="width:0%;background:var(--ac)"></i></div><div class="mu" id="updtxt" style="margin-top:4px"></div></div>
    <label>Einstellungen sichern / wiederherstellen</label>
    <p class="mu" style="margin-top:0">Alle Einstellungen, Seiten und Kacheln als Datei. Passwörter und Tokens sind nicht enthalten, beim Einspielen bleiben die vorhandenen erhalten.</p>
@@ -1146,7 +1161,7 @@ async function loadSettings(){
   $('#wxsearch').onclick=wxSearch;$('#wxq').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();wxSearch()}};
   $('#reboot').onclick=()=>{if(confirm('Neu starten?'))post('/api/reboot')};
   $('#factory').onclick=()=>{if(confirm('Alle Einstellungen löschen?'))post('/api/factory')};
-  $('#fwup').onclick=upload;
+  $('#fwu-btn').onclick=upload;fwLoad();
   $('#bkexp').onclick=backupExport;$('#bkimp').onclick=backupImport;
   $('#potest').onclick=async()=>{await post('/api/pushover/test');setTimeout(async()=>{try{const r=await fetch('/api/settings');const s=await r.json();$('#postat').textContent=s.poStatus?'Zuletzt: '+s.poStatus:''}catch(e){}},6000)};
   $('#fstart').onclick=()=>send({c:'finder',on:!finder.on,f:$('#ffilter').value});
@@ -1331,15 +1346,17 @@ async function backupImport(){
 // progress bar of the file upload; the panel shows its own update screen meanwhile
 function updProgress(pct,txt){const b=$('#updbox');if(!b)return;b.hidden=pct<0;$('#updbar').style.width=Math.max(0,Math.min(100,pct))+'%';$('#updtxt').textContent=txt||''}
 function upload(){
-  const f=$('#fw').files[0];if(!f)return toast('Datei wählen');
-  if(!confirm('Firmware „'+f.name+'“ einspielen? Das Display startet danach neu.'))return;
+  const f=fwEl('fwu-file').files[0];if(!f||!fwPick)return toast('Datei wählen');
+  const force=!fwPick.ok&&fwPick.force&&fwEl('fwu-force').checked;
+  if(!fwPick.ok&&!force)return toast(fwPick.msg);
+  if(!confirm(fwPick.msg+'\n\nEinspielen? Das Display startet danach neu.'))return;
   const fd=new FormData();fd.append('firmware',f);
-  const x=new XMLHttpRequest();x.open('POST','/update');
+  const x=new XMLHttpRequest();x.open('POST','/update'+(force?'?force=1':''));
   x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.round(e.loaded*100/e.total);updProgress(p,p<100?`Übertrage ... ${p} %`:'Wird geschrieben ...')}};
   x.onload=()=>{let j={};try{j=JSON.parse(x.responseText)}catch(e){}
     if(j.ok||(x.status===200&&/^OK/.test(x.responseText))){updProgress(100,'Fertig – Display startet neu, die Seite lädt gleich neu ...');setTimeout(()=>location.reload(),12000)}
-    else{updProgress(-1);toast(j.msg||'Update fehlgeschlagen')}};
-  x.onerror=()=>{updProgress(-1);toast('Upload fehlgeschlagen')};
+    else{const m=j.msg||x.responseText||'Update fehlgeschlagen';updProgress(-1);toast(m);const c=fwEl('fwu-chk');c.textContent='✕ '+m;c.className='fwu-chk bad';fwLoad()}};
+  x.onerror=()=>{updProgress(-1);toast('Upload fehlgeschlagen');fwLoad()};
   updProgress(0,'Übertrage ... 0 %');x.send(fd);
 }
 
@@ -1421,6 +1438,74 @@ $('#wake').onclick=()=>{send({c:'screen',v:'on'});S.awake=true;$('#wake').hidden
 $('#sleep').onclick=()=>{send({c:'screen',v:'off'});S.awake=false;$('#sleep').hidden=true;$('#wake').hidden=false};
 setInterval(()=>{const d=new Date();$('#clock').textContent=d.toTimeString().slice(0,5)},10000);
 connect();
+// ---- Firmware update with checks, event log (same checks as fwcheck.cpp on the device) ----
+// Elements: fwu-cur, fwu-file, fwu-chk, fwu-force-row, fwu-force, fwu-btn, fwu-pr, fwu-log
+let FWI = null;   // running firmware: {dev, ver, chip, chip_id, max}
+const FW_CHIPS = {'-1': 'ESP8266', 0: 'ESP32', 2: 'ESP32-S2', 5: 'ESP32-C3', 9: 'ESP32-S3', 12: 'ESP32-C2', 13: 'ESP32-C6', 16: 'ESP32-H2'};
+const fwEl = id => document.getElementById(id);
+const fwEsc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+function fwVerCmp(a, b) {
+    const x = String(a).split('.').map(n => parseInt(n) || 0), y = String(b).split('.').map(n => parseInt(n) || 0);
+    for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; }
+    return 0;
+}
+function fwAgo(s) { return s < 90 ? s + ' s' : s < 5400 ? Math.round(s / 60) + ' min' : s < 172800 ? Math.round(s / 3600) + ' h' : Math.round(s / 86400) + ' d'; }
+async function fwLoad() {
+    try {
+        const r = await fetch('/api/system', {cache: 'no-store'});
+        if (!r.ok) return;
+        const d = await r.json();
+        FWI = d.fw || null;
+        if (FWI && fwEl('fwu-cur')) fwEl('fwu-cur').innerHTML = `Installiert: <b>${fwEsc(FWI.dev)} v${fwEsc(FWI.ver)}</b> · ${FW_CHIPS[FWI.chip_id] || fwEsc(FWI.chip)} · Platz ${Math.round(FWI.max / 1024)} kB`;
+        const box = fwEl('fwu-log');
+        if (box) box.innerHTML = (d.log || []).length ? d.log.map(e => {
+            const when = e.b === 0 ? 'vor ' + fwAgo(Math.max(0, (d.up || 0) - e.t)) : (e.b === 1 ? 'vorheriger Start' : e.b + ' Starts zuvor') + ', nach ' + fwAgo(e.t);
+            const bad = /abgelehnt|fehlgeschlagen|nicht gespeichert|zurück auf|Absturz|Watchdog|Spannungseinbruch/.test(e.m);
+            return `<div class="fwu-ev${bad ? ' bad' : ''}"><span>${fwEsc(when)}</span>${fwEsc(e.m)}</div>`;
+        }).join('') : '<div class="fwu-ev">Noch keine Einträge.</div>';
+    } catch (e) {}
+}
+// Checks the chosen file in the browser: {ok, kind, msg, warn, force}
+async function fwInspect(file, fsImages) {
+    const n = file.name.toLowerCase(), kb = Math.round(file.size / 1024) + ' kB';
+    if (n.endsWith('.gz')) return {ok: true, kind: 'web', msg: 'Web-Oberfläche (' + kb + '), ersetzt nur die Seite, ohne Neustart'};
+    if (fsImages && /littlefs|spiffs/.test(n)) return {ok: true, kind: 'fs', warn: true, msg: 'Dateisystem-Abbild (' + kb + ') – ersetzt die Web-Oberfläche, danach Neustart'};
+    if (!n.endsWith('.bin')) return {ok: false, msg: 'Nur .bin (Firmware) oder .gz (Web-Oberfläche)'};
+    const merged = 'Das ist die .merged.bin (komplettes Flash-Abbild für USB). Bitte die .bin ohne „merged“ nehmen.';
+    if (n.includes('merged')) return {ok: false, msg: merged};
+    const u = new Uint8Array(await file.arrayBuffer());
+    if (u.length < 64 || u[0] !== 0xE9) return {ok: false, msg: 'Keine ESP-Firmware'};
+    const esp32 = !FWI || FWI.chip_id >= 0;   // ESP8266 images have no chip id and no .merged.bin
+    if (esp32 && u.length > 0x8001 && u[0x8000] === 0xAA && u[0x8001] === 0x50) return {ok: false, msg: merged};
+    const chip = u[12] | (u[13] << 8);
+    if (FWI && esp32 && chip !== FWI.chip_id) return {ok: false, msg: `Firmware für ${FW_CHIPS[chip] || 'einen unbekannten Chip'}, dieses Gerät ist ein ${FW_CHIPS[FWI.chip_id] || FWI.chip}`};
+    if (FWI && FWI.max && u.length > FWI.max) return {ok: false, msg: `Datei zu groß (${kb}, Platz ${Math.round(FWI.max / 1024)} kB)`};
+    const m = new TextDecoder('latin1').decode(u).match(/CAMPER-FW:([A-Za-z0-9_.-]{1,24}):([A-Za-z0-9_.-]{1,24}):([A-Za-z0-9_.-]{1,24});/);
+    if (!m) return {ok: false, force: true, msg: 'Keine Gerätekennung in der Datei: fremde Firmware oder eine Version vor der Kennung. Nur hochladen, wenn sicher ist, dass sie für dieses Gerät ist.'};
+    if (FWI && m[1] !== FWI.dev) return {ok: false, msg: `Firmware für „${m[1]}“, dieses Gerät ist „${FWI.dev}“`};
+    if (FWI && m[3] !== FWI.chip) return {ok: false, msg: `Firmware für ${m[3]}, dieses Gerät ist ein ${FWI.chip}`};
+    const c = FWI ? fwVerCmp(m[2], FWI.ver) : 1;
+    return {ok: true, kind: 'fw', warn: c <= 0, msg: `Firmware ${m[1]} v${m[2]} (${kb}) – ` +
+        (c > 0 ? 'neuer als die installierte' : c === 0 ? 'gleiche Version wie installiert' : 'ÄLTER als die installierte (Downgrade)')};
+}
+let fwPick = null;
+async function fwChosen(fsImages) {
+    const f = fwEl('fwu-file').files[0], chk = fwEl('fwu-chk');
+    fwPick = null;
+    fwEl('fwu-force-row').style.display = 'none';
+    fwEl('fwu-force').checked = false;
+    if (!f) { chk.textContent = ''; fwEl('fwu-btn').disabled = true; return; }
+    chk.className = 'fwu-chk'; chk.textContent = 'Prüfe …';
+    const r = await fwInspect(f, fsImages);
+    fwPick = r;
+    chk.textContent = (r.ok ? (r.warn ? '⚠ ' : '✓ ') : '✕ ') + r.msg;
+    chk.className = 'fwu-chk ' + (r.ok ? (r.warn ? 'warn' : 'ok') : 'bad');
+    if (r.force) fwEl('fwu-force-row').style.display = '';
+    fwEl('fwu-btn').disabled = !r.ok;
+}
+function fwForce() { fwEl('fwu-btn').disabled = !(fwPick && (fwPick.ok || (fwPick.force && fwEl('fwu-force').checked))); }
+fwLoad();
+setInterval(fwLoad, 15000);
 </script>
 </body>
 </html>

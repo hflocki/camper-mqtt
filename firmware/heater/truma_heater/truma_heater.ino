@@ -12,6 +12,9 @@
 #include <time.h>
 
 #include "config.h"
+#include "safeguard.h"
+#include "evlog.h"
+#include <Preferences.h>
 #include "heater_control.h"
 #include "inetbox.h"
 #include "logger.h"
@@ -57,6 +60,35 @@ static void time_begin() {
   configTzTime(g_settings.tz.c_str(), g_settings.ntp_server.c_str(), gw == "0.0.0.0" ? nullptr : gw.c_str());
 }
 
+// A changed WiFi (saved in the web UI while connected) that does not connect within
+// WIFI_TRIAL_MS: put the previous, working values back and restart (safeguard.h)
+static void wifiTrialCheck() {
+  if (!guard::wifiTrialPending()) return;
+  if (wifi::connected()) { guard::wifiTrialOk(); return; }
+  if (millis() < WIFI_TRIAL_MS) return;
+  String ssid, pass, net;
+  if (!guard::wifiTrialRestore(ssid, pass, net)) return;
+  String f[4];
+  int from = 0;
+  for (int i = 0; i < 4; i++) {
+    int bar = net.indexOf('|', from);
+    f[i] = bar < 0 ? net.substring(from) : net.substring(from, bar);
+    from = bar < 0 ? net.length() : bar + 1;
+  }
+  Preferences p;
+  p.begin("truma", false);
+  p.putString("ssid", ssid);
+  p.putString("wpass", pass);
+  p.putString("ip", f[0]);
+  p.putString("gw", f[1]);
+  p.putString("mask", f[2]);
+  p.putString("dns", f[3]);
+  p.end();
+  LOGW(TAG, "New WiFi failed - previous WiFi restored, restarting");
+  delay(200);
+  ESP.restart();
+}
+
 void setup() {
 #if SERIAL_LOG_ENABLED
   Serial.setTxBufferSize(2048);
@@ -68,6 +100,10 @@ void setup() {
   pinMode(3, INPUT);
 #endif
 
+  evlog::begin();
+  evlog::add("Start v%s, Grund: %s", FW_VERSION, evlog::resetReason());
+  guard::begin();   // may boot the previous firmware (failed update)
+  if (guard::status().length()) evlog::add("%s", guard::status().c_str());
   settings_load();
   log_init((LogLevel) constrain(g_settings.log_level, 0, 3));
   LOGI(TAG, "%s %s on %s", FW_NAME, FW_VERSION, BOARD_NAME);
@@ -89,6 +125,9 @@ void loop() {
   static bool time_started = false;
 
   wifi::loop();
+  wifiTrialCheck();
+  guard::loop(wifi::connected() || g_settings.wifi_ssid.isEmpty());
+  evlog::watch(wifi::connected(), mqtt::connected());
   if (!time_started && wifi::connected()) {
     time_started = true;
     time_begin();

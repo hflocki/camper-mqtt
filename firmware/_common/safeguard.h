@@ -6,6 +6,8 @@
 // 1. Firmware rollback: after an OTA update the new firmware runs on probation. If it does
 //    not reach the WiFi within GUARD_TIMEOUT_MS, or restarts more than GUARD_MAX_BOOTS
 //    times before that, the device boots the previous firmware from the other app slot.
+//    An update uploaded over the setup AP (no WiFi at that moment) is only checked for
+//    restart loops, as the new firmware cannot be expected to find the WiFi either.
 //    Only updates written by this firmware are guarded (web upload, ArduinoOTA); flashing
 //    over USB is never rolled back.
 // 2. WiFi trial: when SSID/password are changed while the device is connected, the working

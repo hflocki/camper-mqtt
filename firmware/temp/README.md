@@ -155,12 +155,23 @@ Im Tab **MQTT** unter „Web-Oberfläche Login“ Benutzer und Passwort setzen. 
 | Web-Oberfläche | `data/index.html.gz` im Web-UI hochladen – ersetzt nur die Seite, ohne Neustart, Einstellungen bleiben |
 | Komplettes LittleFS-Image | Nur per USB oder IDE-Netzwerkport; löscht dabei auch die Einstellungen (`config.json`) |
 
+## Sicheres Update, Ereignisse und Rückfall
+
+Seit 1.3.0 hat jede Firmware eine Kennung (`CAMPER-FW:temp:<version>:<chip>;`) und dieselbe Absicherung wie alle camper-mqtt-Geräte (`fwcheck.*`, `evlog.*`, `safeguard.*` aus `firmware/_common`):
+
+- **Prüfung beim Update** (Web-UI unter **WiFi → Firmware- & Web-Update**): Die installierte Version steht dabei. Eine gewählte Datei wird schon im Browser und beim Hochladen im Gerät noch einmal geprüft, bevor etwas aktiviert wird. Abgelehnt werden eine `.merged.bin` (komplettes Flash-Abbild für USB), Firmware für ein anderes Gerät oder einen anderen Chip und zu große Dateien. Eine Datei ohne Kennung (Version vor 1.3.0) geht nur mit „Ohne Kennung hochladen“. Fehler stehen im Klartext da statt „Update failed“.
+- **Ereignisse:** Die letzten Ereignisse (Start mit Grund, WLAN und MQTT verbunden/getrennt, Uploads mit Ergebnis, Rückfall, gespeicherte Einstellungen) stehen in der Web-Oberfläche. Sie bleiben bei Neustart, Absturz und Update erhalten, nach einem Stromausfall ist das Log leer.
+- **Rückfall nach Update:** Hat eine neue Firmware nach 5 Minuten kein WLAN oder startet sie mehr als dreimal neu, startet wieder die vorherige. Kam das Update über den Setup-AP (ohne WLAN), wird nur auf Neustart-Schleifen geachtet.
+- **WLAN-Änderung mit Rückweg:** Werden die WLAN-Daten geändert, während das Gerät verbunden ist, merkt es sich die funktionierenden. Klappt die Verbindung mit den neuen nach dem Neustart etwa 1 Minute lang nicht, kommen die alten zurück.
+- **ESP8266:** Prüfung über die Kennung (Gerät und Chip), das Log liegt nur im RAM (nach jedem Neustart leer), den Rückfall gibt es nur auf dem ESP32-C3 (der ESP8266 hat dafür keine zwei App-Bereiche mit Umschaltung wie der ESP32).
+
 ## Versionen
 
 Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant in der Geräteinfo. Bei Änderungen `FW_VERSION` in `config.h` hochzählen.
 
 | Version | Änderungen |
 |---|---|
+| 1.3.0 | Sicheres Update (Kennung, Prüfung im Browser und im Gerät, Fehler im Klartext), Ereignis-Log, Rückfall auf die vorherige Firmware und WLAN-Änderung mit Rückweg; auf dem ESP8266 nur Prüfung und Log |
 | 1.2.0 | Firmware (.bin) und Web-Oberfläche (index.html.gz) im Web-UI unter WiFi hochladbar, ohne USB (ESP32-C3 und ESP8266); Arduino-OTA-Dateisystem-Upload hängt LittleFS vorher aus |
 | 1.0.0 | Erste Version: bis zu 8 DS18B20, automatische Erkennung, Web-UI, MQTT mit HA-Discovery |
 | 1.1.0 | Alarm-Grenzwerte je Sensor mit Verzögerung (`<id>/alarm`, `alarm`, `alarm_text`, HA-Binärsensoren), JSON-Liste `<prefix>/sensors` für Displays, Web-Login, Last Will mit QoS 1 |

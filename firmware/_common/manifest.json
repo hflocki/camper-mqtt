@@ -40,34 +40,88 @@
       "firmware/roadbuddy/roadbuddy"
     ],
     "safeguard.h": [
+      "firmware/_template/camper_example",
+      "firmware/battery/camper_battery",
+      "firmware/display/camper_display",
+      "firmware/emulator/camper_emulator",
+      "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
-      "firmware/tanklevel/camper_tanklevel"
+      "firmware/roadbuddy/roadbuddy",
+      "firmware/tanklevel/camper_tanklevel",
+      "firmware/temp/camper_temp"
     ],
     "safeguard.cpp": [
+      "firmware/_template/camper_example",
+      "firmware/battery/camper_battery",
+      "firmware/display/camper_display",
+      "firmware/emulator/camper_emulator",
+      "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
-      "firmware/tanklevel/camper_tanklevel"
+      "firmware/roadbuddy/roadbuddy",
+      "firmware/tanklevel/camper_tanklevel",
+      "firmware/temp/camper_temp"
     ],
     "evlog.h": [
+      "firmware/_template/camper_example",
+      "firmware/battery/camper_battery",
+      "firmware/display/camper_display",
+      "firmware/emulator/camper_emulator",
+      "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
-      "firmware/tanklevel/camper_tanklevel"
+      "firmware/roadbuddy/roadbuddy",
+      "firmware/tanklevel/camper_tanklevel",
+      "firmware/temp/camper_temp"
     ],
     "evlog.cpp": [
+      "firmware/_template/camper_example",
+      "firmware/battery/camper_battery",
+      "firmware/display/camper_display",
+      "firmware/emulator/camper_emulator",
+      "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
-      "firmware/tanklevel/camper_tanklevel"
+      "firmware/roadbuddy/roadbuddy",
+      "firmware/tanklevel/camper_tanklevel",
+      "firmware/temp/camper_temp"
     ],
     "fwcheck.h": [
+      "firmware/_template/camper_example",
+      "firmware/battery/camper_battery",
+      "firmware/display/camper_display",
+      "firmware/emulator/camper_emulator",
+      "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
-      "firmware/tanklevel/camper_tanklevel"
+      "firmware/roadbuddy/roadbuddy",
+      "firmware/tanklevel/camper_tanklevel",
+      "firmware/temp/camper_temp"
     ],
     "fwcheck.cpp": [
+      "firmware/_template/camper_example",
+      "firmware/battery/camper_battery",
+      "firmware/display/camper_display",
+      "firmware/emulator/camper_emulator",
+      "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
-      "firmware/tanklevel/camper_tanklevel"
+      "firmware/roadbuddy/roadbuddy",
+      "firmware/tanklevel/camper_tanklevel",
+      "firmware/temp/camper_temp"
+    ],
+    "fw_config.h": [
+      "firmware/_template/camper_example",
+      "firmware/battery/camper_battery",
+      "firmware/display/camper_display",
+      "firmware/emulator/camper_emulator",
+      "firmware/heater/truma_heater",
+      "firmware/level/camper_level",
+      "firmware/maxxfan/camper_maxxfan",
+      "firmware/roadbuddy/roadbuddy",
+      "firmware/tanklevel/camper_tanklevel",
+      "firmware/temp/camper_temp"
     ]
   }
 }

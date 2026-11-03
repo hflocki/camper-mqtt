@@ -17,7 +17,8 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.0.0"
+#define FW_VERSION            "1.1.0"
+#define FW_DEVICE            "example"   // device id in the firmware marker (fwcheck.h)
 #define DEVICE_NAME           "Camper Example"   // web UI title, HA device name, serial banner
 
 #ifndef DEFAULT_AP_SSID

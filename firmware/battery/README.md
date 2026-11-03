@@ -169,12 +169,22 @@ Im Tab **MQTT** unter „Web-Oberfläche Login“ Benutzer und Passwort setzen. 
 
 115200 Baud. Befehle: `read` (Werte und Suchergebnisse), `scan` (Bluetooth-Suche), `noauth` (Web-Login entfernen), `help`.
 
+## Sicheres Update, Ereignisse und Rückfall
+
+Seit 1.4.0 hat jede Firmware eine Kennung (`CAMPER-FW:battery:<version>:<chip>;`) und dieselbe Absicherung wie alle camper-mqtt-Geräte (`fwcheck.*`, `evlog.*`, `safeguard.*` aus `firmware/_common`):
+
+- **Prüfung beim Update** (Web-UI unter **WiFi → Firmware- & Web-Update**): Die installierte Version steht dabei. Eine gewählte Datei wird schon im Browser und beim Hochladen im Gerät noch einmal geprüft, bevor etwas aktiviert wird. Abgelehnt werden eine `.merged.bin` (komplettes Flash-Abbild für USB), Firmware für ein anderes Gerät oder einen anderen Chip und zu große Dateien. Eine Datei ohne Kennung (Version vor 1.4.0) geht nur mit „Ohne Kennung hochladen“. Fehler stehen im Klartext da statt „Update failed“.
+- **Ereignisse:** Die letzten Ereignisse (Start mit Grund, WLAN und MQTT verbunden/getrennt, Uploads mit Ergebnis, Rückfall, gespeicherte Einstellungen) stehen in der Web-Oberfläche. Sie bleiben bei Neustart, Absturz und Update erhalten, nach einem Stromausfall ist das Log leer.
+- **Rückfall nach Update:** Hat eine neue Firmware nach 5 Minuten kein WLAN oder startet sie mehr als dreimal neu, startet wieder die vorherige. Kam das Update über den Setup-AP (ohne WLAN), wird nur auf Neustart-Schleifen geachtet.
+- **WLAN-Änderung mit Rückweg:** Werden die WLAN-Daten geändert, während das Gerät verbunden ist, merkt es sich die funktionierenden. Klappt die Verbindung mit den neuen nach dem Neustart etwa 1 Minute lang nicht, kommen die alten zurück.
+
 ## Versionen
 
 Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant in der Geräteinfo. Bei Änderungen `FW_VERSION` in `config.h` hochzählen.
 
 | Version | Änderungen |
 |---|---|
+| 1.4.0 | Sicheres Update (Kennung, Prüfung im Browser und im Gerät, Fehler im Klartext), Ereignis-Log, Rückfall auf die vorherige Firmware und WLAN-Änderung mit Rückweg |
 | 1.3.1 | BMS-Fehler im Klartext: Web-UI, Topic `<id>/problem_text` und `pt` in der Batterieliste (Display) |
 | 1.2.2 | Batterieliste `batteries` mit Restlaufzeit, Typ und Fehler-Flag (für Road Buddy und Display) |
 | 1.2.1 | BM2: Zustand (Normal/Schwach/Kritisch/Lädt/Erhaltungsladung) aus der Spannung, Werte ohne Strommessung (Strom, Leistung, Ah, Wh, Restlaufzeit) im Web-UI und in HA ausgeblendet bzw. entfernt |

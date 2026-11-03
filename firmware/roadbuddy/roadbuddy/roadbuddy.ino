@@ -6,6 +6,9 @@
 #include <esp_sleep.h>
 #include <Preferences.h>
 #include "config.h"
+#include "fw_id.h"
+#include "safeguard.h"
+#include "evlog.h"
 #include "webota.h"
 #include "devinfo.h"
 
@@ -14,7 +17,6 @@
 #define SELF_TOPIC "camper/roadbuddy"
 #endif
 
-#define FW_VERSION "1.2.3"
 
 // ---------- Sensor selection ----------
 // Choose in config.h which sensors are used (1 = enabled, 0 = disabled).
@@ -1476,6 +1478,12 @@ void setup() {
   }
 
   Serial.println("RoadBuddy v" FW_VERSION);
+  evlog::begin();
+  // waking up from deep sleep is the normal way to use it: only real starts are logged
+  if (esp_reset_reason() != ESP_RST_DEEPSLEEP) evlog::add("Start v%s, Grund: %s", FW_VERSION, evlog::resetReason());
+  guard::begin();   // may boot the previous firmware (failed update)
+  if (guard::onProbation() || (guard::status().length() && esp_reset_reason() != ESP_RST_DEEPSLEEP))
+    evlog::add("%s", guard::status().c_str());
   if (page_index < 0 || page_index >= PAGE_COUNT || !pageVisible(page_index)) page_index = 0;
 
   loadCredentials();
@@ -1505,6 +1513,7 @@ void loop() {
   client.loop();
   if (devinfoDue(client.connected())) client.publish(SELF_TOPIC "/info", devinfoJson(FW_VERSION).c_str(), true);
   webota::loop();
+  guard::loop(WiFi.status() == WL_CONNECTED || cfgSsid.isEmpty());
 
   // Firmware upload running: keep everything awake and show the progress only
   if (webota::busy()) {

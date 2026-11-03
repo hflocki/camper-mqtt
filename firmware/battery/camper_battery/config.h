@@ -13,7 +13,8 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.3.2"
+#define FW_VERSION            "1.4.0"
+#define FW_DEVICE            "battery"   // device id in the firmware marker (fwcheck.h)
 
 #ifndef DEFAULT_AP_SSID
 #define DEFAULT_AP_SSID       "Camper-Battery"   // Base name; "-XXXXXX" (last 3 MAC bytes) is appended

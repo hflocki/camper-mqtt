@@ -17,6 +17,9 @@
 #include "rules.h"
 #include "sensors.h"
 #include "web_ui.h"
+#include "safeguard.h"
+#include "fwcheck.h"
+#include "evlog.h"
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncJson.h>
@@ -650,7 +653,14 @@ void applyPending() {
   if (s.length()) {
     JsonDocument d;
     if (!deserializeJson(d, s)) {
+      // WiFi change while connected: keep the working values as fallback (safeguard.h)
+      String oldSsid = settings.wifiSsid, oldPass = settings.wifiPass;
+      String oldNet = String(settings.staticIp ? "1|" : "0|") + settings.ip + "|" + settings.gateway + "|" + settings.subnet + "|" + settings.dns;
       bool reboot = applySettings(d.as<JsonObject>(), true);
+      String newNet = String(settings.staticIp ? "1|" : "0|") + settings.ip + "|" + settings.gateway + "|" + settings.subnet + "|" + settings.dns;
+      if (wifimgr::staConnected() && (settings.wifiSsid != oldSsid || settings.wifiPass != oldPass || newNet != oldNet))
+        guard::wifiTrialStart(oldSsid, oldPass, oldNet);
+      evlog::add("Einstellungen gespeichert%s", reboot ? ", Neustart" : "");
       cfg::save();
       reloadPrefix = true;
       if (reboot) rebootAt = millis() + 1500;
@@ -702,27 +712,27 @@ void getScan(AsyncWebServerRequest* r) {
 }
 
 // ---- OTA upload ----------------------------------------------------------------
+// Checked and written by fwcheck (wrong device / chip, .merged.bin ... are refused early)
 void otaUpload(AsyncWebServerRequest* r, const String& filename, size_t index, uint8_t* data, size_t len, bool final) {
   if (!settings.webPass.isEmpty() && !r->authenticate(settings.webUser.c_str(), settings.webPass.c_str())) return;
   if (index == 0) {
     Serial.printf("[ota] upload %s\n", filename.c_str());
-    if (!Update.begin(UPDATE_SIZE_UNKNOWN)) Update.printError(Serial);
+    fwcheck::begin(r->contentLength(), r->hasParam("force"));
     otaprog::set(0);
   }
-  if (Update.isRunning() && Update.write(data, len) != len) Update.printError(Serial);
+  fwcheck::chunk(data, len, final);
   // request length includes the multipart framing, close enough for a progress bar
   size_t total = r->contentLength();
-  if (total > 0) otaprog::set(min(99, (int)((uint64_t)(index + len) * 100 / total)));
-  if (final) {
-    if (Update.end(true)) { Serial.printf("[ota] done, %u bytes\n", (unsigned)(index + len)); otaprog::set(100); }
-    else { Update.printError(Serial); otaprog::set(-1); }
-  }
+  if (total > 0 && !final) otaprog::set(min(99, (int)((uint64_t)(index + len) * 100 / total)));
+  if (final) otaprog::set(fwcheck::ok() ? 100 : -1);
 }
 
 void otaDone(AsyncWebServerRequest* r) {
   if (!auth(r)) return;
-  bool ok = !Update.hasError();
-  sendResult(r, ok, ok ? "Update ok, Neustart ..." : "Update fehlgeschlagen", ok);
+  bool ok = fwcheck::ok();
+  if (!ok) otaprog::set(-1);
+  else guard::otaDone();
+  sendResult(r, ok, ok ? "Update ok, Neustart ..." : "Update abgelehnt: " + fwcheck::error(), ok);
   if (ok) rebootAt = millis() + 1500;
 }
 
@@ -746,6 +756,7 @@ void begin() {
   server.on("/api/scan", HTTP_GET, getScan);
   server.on("/api/reboot", HTTP_POST, [](AsyncWebServerRequest* r) {
     if (!auth(r)) return;
+    evlog::add("Neustart über die Web-Oberfläche");
     sendResult(r, true, "Neustart ...", true);
     rebootAt = millis() + 1000;
   });
@@ -766,6 +777,15 @@ void begin() {
   server.on("/api/rules", HTTP_GET, getRules);
   server.on("/api/rules/state", HTTP_GET, [](AsyncWebServerRequest* r) {
     r->send(200, "application/json", rules::statusJson());
+  });
+  // Firmware info for the update check in the browser, and the event log
+  server.on("/api/system", HTTP_GET, [](AsyncWebServerRequest* r) {
+    if (!auth(r)) return;
+    JsonDocument d;
+    fwcheck::info(d["fw"].to<JsonObject>());
+    evlog::json(d["log"].to<JsonArray>());
+    d["up"] = millis() / 1000;
+    sendJson(r, d);
   });
   server.on("/api/devices", HTTP_GET, [](AsyncWebServerRequest* r) {
     if (!auth(r)) return;

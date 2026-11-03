@@ -462,6 +462,14 @@ Am Display dann im **Topic-Finder** `camper/router/#` starten und die gewünscht
 
 **Firmware-Update:** *🔧 System → Firmware-Update (.bin)*, Datei wählen, *Hochladen*. Die Webseite zeigt einen Fortschrittsbalken, das Display einen eigenen Update-Bildschirm mit Prozentanzeige. Während in den Flash geschrieben wird, kann das Bild flackern oder kurz verrutschen: Der Bildspeicher liegt im PSRAM, und der ist beim Schreiben in den Flash kurz blockiert. Das ist harmlos und nach dem Neustart vorbei.
 
+**Sicheres Update, Ereignisse und Rückfall:** Seit 2.10.0 hat jede Firmware eine Kennung (`CAMPER-FW:display:<version>:<chip>;`) und dieselbe Absicherung wie alle camper-mqtt-Geräte (`fwcheck.*`, `evlog.*`, `safeguard.*` aus `firmware/_common`):
+
+- **Prüfung beim Update** (Webseite unter *Einstellungen → 🔧 System → Firmware-Update*): Die installierte Version steht dabei. Eine gewählte Datei wird schon im Browser und beim Hochladen im Gerät noch einmal geprüft, bevor etwas aktiviert wird. Abgelehnt werden eine `.merged.bin` (komplettes Flash-Abbild für USB), Firmware für ein anderes Gerät oder einen anderen Chip und zu große Dateien. Eine Datei ohne Kennung (Version vor 2.10.0) geht nur mit „Ohne Kennung hochladen“. Fehler stehen im Klartext da statt „Update failed“.
+- **Ereignisse:** Die letzten Ereignisse (Start mit Grund, WLAN und MQTT verbunden/getrennt, Uploads mit Ergebnis, Rückfall, gespeicherte Einstellungen) stehen in der Web-Oberfläche. Sie bleiben bei Neustart, Absturz und Update erhalten, nach einem Stromausfall ist das Log leer.
+- **Rückfall nach Update:** Hat eine neue Firmware nach 5 Minuten kein WLAN oder startet sie mehr als dreimal neu, startet wieder die vorherige. Kam das Update über den Setup-AP (ohne WLAN), wird nur auf Neustart-Schleifen geachtet.
+- **WLAN-Änderung mit Rückweg:** Werden die WLAN-Daten geändert, während das Gerät verbunden ist, merkt es sich die funktionierenden. Klappt die Verbindung mit den neuen nach dem Neustart etwa 1 Minute lang nicht, kommen die alten zurück.
+- Die Ereignisse stehen auf der Webseite unter *System* unter der Geräteliste.
+
 **Verlauf:** Alle 5 Minuten merkt sich das Display jeden Temperatursensor und jede Batterie (Ladestand, beim BM2 die Spannung), 24 Stunden lang. Die Seiten *Temperatur* und *Batterie* der Webseite zeigen daraus Kurven. Der Verlauf liegt nur im Arbeitsspeicher: Nach einem Neustart oder Stromausfall beginnt er neu. Schrittweite und Länge: `HISTORY_STEP_S`, `HISTORY_POINTS` in `config.h`.
 
 ## Fertige Firmware

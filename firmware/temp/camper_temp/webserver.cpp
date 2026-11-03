@@ -2,6 +2,9 @@
 #include "wifi_manager.h"
 #include "temp_sensor.h"
 #include "mqtt_ha.h"
+#include "safeguard.h"
+#include "fwcheck.h"
+#include "evlog.h"
 
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
@@ -249,14 +252,18 @@ void webserverInit() {
     server.on("/api/update", HTTP_POST,
         [](AsyncWebServerRequest* request) {
             if (!auth(request)) return;
+            if (!upAuthorized) { request->send(401, "text/plain", "Login fehlt"); return; }
             if (upWebPage) {
-                bool ok = upAuthorized && !upFailed;
-                request->send(ok ? 200 : 500, "text/plain", ok ? "OK web" : "Upload failed");
+                if (upFailed) request->send(500, "text/plain", "Web-Oberfläche nicht gespeichert (LittleFS voll oder nicht bereit)");
+                else request->send(200, "text/plain", "OK web");
                 return;
             }
-            bool ok = upAuthorized && !Update.hasError();
-            request->send(ok ? 200 : 500, "text/plain", ok ? "OK" : "Update failed");
-            if (ok) { restartPending = true; restartAt = millis() + 1000; }
+            // firmware: checked and written by fwcheck
+            if (!fwcheck::ok()) { request->send(400, "text/plain", "Update abgelehnt: " + fwcheck::error()); return; }
+            guard::otaDone();
+            request->send(200, "text/plain", "OK");
+            restartPending = true;
+            restartAt = millis() + 1000;
         },
         [](AsyncWebServerRequest* request, const String& filename, size_t index, uint8_t* data, size_t len, bool final) {
             if (index == 0) {
@@ -271,13 +278,7 @@ void webserverInit() {
                     upFile = fsReady ? LittleFS.open(WEB_TMP, "w") : File();
                     if (!upFile) upFailed = true;
                 } else {
-#if defined(ESP8266)
-                    Update.runAsync(true);   // called from the async web server
-                    uint32_t maxSize = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-                    if (!Update.begin(maxSize, U_FLASH)) Update.printError(Serial);
-#else
-                    if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) Update.printError(Serial);
-#endif
+                    fwcheck::begin(request->contentLength(), request->hasParam("force"));
                 }
             }
             if (!upAuthorized) return;
@@ -288,16 +289,36 @@ void webserverInit() {
                     upFile.close();
                     if (!upFailed) { LittleFS.remove(WEB_FILE); upFailed = !LittleFS.rename(WEB_TMP, WEB_FILE); }
                     else LittleFS.remove(WEB_TMP);
-                    Serial.printf("[OTA] Web page %s\n", upFailed ? "FAILED" : "replaced");
+                    if (upFailed) evlog::add("Web-Oberfläche nicht gespeichert");
+                    else evlog::add("Web-Oberfläche ersetzt (%u kB)", (unsigned)((index + len) / 1024));
                 }
                 return;
             }
-            if (len && Update.write(data, len) != len) Update.printError(Serial);
-            if (final) {
-                if (Update.end(true)) Serial.printf("[OTA] Firmware ok, %u bytes\n", (unsigned)(index + len));
-                else Update.printError(Serial);
-            }
+            fwcheck::chunk(data, len, final);
         });
+
+    // Firmware info for the update check in the browser, and the event log
+
+    server.on("/api/system", HTTP_GET, [](AsyncWebServerRequest* request) {
+
+        if (!auth(request)) return;
+
+        JsonDocument d;
+
+        fwcheck::info(d["fw"].to<JsonObject>());
+
+        evlog::json(d["log"].to<JsonArray>());
+
+        d["up"] = millis() / 1000;
+
+        String out;
+
+        serializeJson(d, out);
+
+        request->send(200, "application/json", out);
+
+    });
+
 
     server.on("/api/restart", HTTP_POST, handleApiRestart);
 
@@ -526,6 +547,16 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
     // ---- Apply ----
 
     // Empty values clear SSID/server/user; empty passwords are ignored (= keep the stored one)
+    // WiFi change while connected: keep the working values as fallback (safeguard.h)
+    if (isConnected()) {
+        const char* newSsid = doc["wifi_ssid"].is<const char*>() ? doc["wifi_ssid"].as<const char*>() : config.wifi_ssid;
+        const char* newPass = config.wifi_pass;
+        if (doc["wifi_pass"].is<const char*>() && doc["wifi_pass"].as<const char*>()[0]) newPass = doc["wifi_pass"].as<const char*>();
+        if (strcmp(newSsid, config.wifi_ssid) != 0 || strcmp(newPass, config.wifi_pass) != 0) {
+            guard::wifiTrialStart(config.wifi_ssid, config.wifi_pass);
+        }
+    }
+    evlog::add("Einstellungen gespeichert");
     copyIfPresent(doc, "wifi_ssid",   config.wifi_ssid,   sizeof(config.wifi_ssid),   false);
     copyIfPresent(doc, "wifi_pass",   config.wifi_pass,   sizeof(config.wifi_pass),   true);
     copyIfPresent(doc, "ap_ssid",     config.ap_ssid,     sizeof(config.ap_ssid),     true);
@@ -565,7 +596,8 @@ static void handleApiSaveConfig(AsyncWebServerRequest* request, uint8_t* data, s
 
 static void handleApiRestart(AsyncWebServerRequest* request) {
     if (!auth(request)) return;
-    request->send(200, "application/json", "{\"status\":\"restarting\"}");
+    evlog::add("Neustart über die Web-Oberfläche");
+        request->send(200, "application/json", "{\"status\":\"restarting\"}");
     // Do not block the async web task: restart from webserverLoop() instead
     restartPending = true;
     restartAt = millis() + 500;

@@ -80,6 +80,15 @@ input[type=file]{font-size:.8rem;color:var(--mute);width:100%}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 @media (max-width:374px){.header{padding:14px 12px}.header h1{font-size:1rem}.dots{gap:4px;font-size:.6rem}.cols{grid-template-columns:1fr}}
 @media (min-width:600px){body{display:flex;justify-content:center}.wrap{width:100%;max-width:520px}}
+:root{--fwu-ok:var(--ok);--fwu-warn:var(--warn);--fwu-bad:var(--danger);--fwu-mute:var(--mute);--fwu-line:var(--line)}
+.fwu-cur{font-size:.8rem;margin:0 0 10px}
+.fwu-chk{font-size:.8rem;margin:8px 0;line-height:1.4}
+.fwu-chk.ok{color:var(--fwu-ok)}.fwu-chk.warn{color:var(--fwu-warn)}.fwu-chk.bad{color:var(--fwu-bad)}
+.fwu-force{display:flex;gap:8px;align-items:center;font-size:.8rem;margin:0 0 8px}
+.fwu-log{font-size:.75rem;line-height:1.4;max-height:320px;overflow-y:auto}
+.fwu-ev{padding:4px 0;border-bottom:1px solid var(--fwu-line)}.fwu-ev:last-child{border-bottom:0}
+.fwu-ev span{color:var(--fwu-mute);margin-right:8px;white-space:nowrap}.fwu-ev.bad{color:var(--fwu-bad)}
+button:disabled{opacity:.45;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -255,8 +264,18 @@ input[type=file]{font-size:.8rem;color:var(--mute);width:100%}
   </div>
   <div class="card">
     <div class="ct">Firmware-Update</div>
-    <input type="file" id="fw" accept=".bin">
-    <div class="row"><button class="btn primary" id="upload">⬆️ Hochladen</button><span class="sub" id="up-status"></span></div>
+    <div class="fwu-cur" id="fwu-cur">Installiert: …</div>
+    <div class="sub" style="margin:0 0 8px">Die <code>.bin</code> aus dem Release (<code>camper-heater-esp32c3.bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>truma_heater.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>). Die Datei wird vor dem Hochladen geprüft.</div>
+    <input type="file" id="fwu-file" accept=".bin" onchange="fwChosen(false)">
+    <div class="fwu-chk" id="fwu-chk"></div>
+    <label class="fwu-force" id="fwu-force-row" style="display:none"><input type="checkbox" id="fwu-force" onchange="fwForce()">Ohne Kennung hochladen</label>
+    <progress id="fwu-pr" value="0" max="100" style="width:100%;display:none"></progress>
+    <div class="row"><button class="btn primary" id="fwu-btn" disabled onclick="fwUpload('firmware',(m,e)=>setTxt('up-status',m))">⬆️ Hochladen</button><span class="sub" id="up-status"></span></div>
+  </div>
+  <div class="card">
+    <div class="ct">Ereignisse</div>
+    <div class="fwu-log" id="fwu-log">Lade …</div>
+    <div class="sub" style="margin-top:8px">Bleibt bei Neustart, Absturz und Update erhalten, nicht bei Stromausfall. Der ausführliche Verlauf steht unter „Log“.</div>
   </div>
   <div class="card">
     <div class="ct">Log</div>
@@ -379,9 +398,98 @@ $('logsave').onclick=()=>{const a=document.createElement('a');a.href=URL.createO
 $('loglvl').onchange=e=>cmd('log_level',e.target.value);
 $('sniff').onchange=e=>cmd('sniffer',e.target.checked?'1':'0');
 $('rawd').onchange=e=>cmd('rawdump',e.target.checked?'1':'0');
-$('upload').onclick=async()=>{const f=$('fw').files[0];if(!f)return;const fd=new FormData();fd.append('firmware',f,f.name);setTxt('up-status','Lade hoch …');
-  try{const r=await fetch('/update',{method:'POST',body:fd});setTxt('up-status',r.ok?'Fertig, Neustart …':'Fehlgeschlagen')}catch(e){setTxt('up-status','Fehlgeschlagen')}};
 load();setInterval(load,2000);loadCfg().catch(()=>{});
+// ---- Firmware update with checks, event log (same checks as fwcheck.cpp on the device) ----
+// Elements: fwu-cur, fwu-file, fwu-chk, fwu-force-row, fwu-force, fwu-btn, fwu-pr, fwu-log
+let FWI = null;   // running firmware: {dev, ver, chip, chip_id, max}
+const FW_CHIPS = {'-1': 'ESP8266', 0: 'ESP32', 2: 'ESP32-S2', 5: 'ESP32-C3', 9: 'ESP32-S3', 12: 'ESP32-C2', 13: 'ESP32-C6', 16: 'ESP32-H2'};
+const fwEl = id => document.getElementById(id);
+const fwEsc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+function fwVerCmp(a, b) {
+    const x = String(a).split('.').map(n => parseInt(n) || 0), y = String(b).split('.').map(n => parseInt(n) || 0);
+    for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; }
+    return 0;
+}
+function fwAgo(s) { return s < 90 ? s + ' s' : s < 5400 ? Math.round(s / 60) + ' min' : s < 172800 ? Math.round(s / 3600) + ' h' : Math.round(s / 86400) + ' d'; }
+async function fwLoad() {
+    try {
+        const r = await fetch('/api/system', {cache: 'no-store'});
+        if (!r.ok) return;
+        const d = await r.json();
+        FWI = d.fw || null;
+        if (FWI && fwEl('fwu-cur')) fwEl('fwu-cur').innerHTML = `Installiert: <b>${fwEsc(FWI.dev)} v${fwEsc(FWI.ver)}</b> · ${FW_CHIPS[FWI.chip_id] || fwEsc(FWI.chip)} · Platz ${Math.round(FWI.max / 1024)} kB`;
+        const box = fwEl('fwu-log');
+        if (box) box.innerHTML = (d.log || []).length ? d.log.map(e => {
+            const when = e.b === 0 ? 'vor ' + fwAgo(Math.max(0, (d.up || 0) - e.t)) : (e.b === 1 ? 'vorheriger Start' : e.b + ' Starts zuvor') + ', nach ' + fwAgo(e.t);
+            const bad = /abgelehnt|fehlgeschlagen|nicht gespeichert|zurück auf|Absturz|Watchdog|Spannungseinbruch/.test(e.m);
+            return `<div class="fwu-ev${bad ? ' bad' : ''}"><span>${fwEsc(when)}</span>${fwEsc(e.m)}</div>`;
+        }).join('') : '<div class="fwu-ev">Noch keine Einträge.</div>';
+    } catch (e) {}
+}
+// Checks the chosen file in the browser: {ok, kind, msg, warn, force}
+async function fwInspect(file, fsImages) {
+    const n = file.name.toLowerCase(), kb = Math.round(file.size / 1024) + ' kB';
+    if (n.endsWith('.gz')) return {ok: true, kind: 'web', msg: 'Web-Oberfläche (' + kb + '), ersetzt nur die Seite, ohne Neustart'};
+    if (fsImages && /littlefs|spiffs/.test(n)) return {ok: true, kind: 'fs', warn: true, msg: 'Dateisystem-Abbild (' + kb + ') – ersetzt die Web-Oberfläche, danach Neustart'};
+    if (!n.endsWith('.bin')) return {ok: false, msg: 'Nur .bin (Firmware) oder .gz (Web-Oberfläche)'};
+    const merged = 'Das ist die .merged.bin (komplettes Flash-Abbild für USB). Bitte die .bin ohne „merged“ nehmen.';
+    if (n.includes('merged')) return {ok: false, msg: merged};
+    const u = new Uint8Array(await file.arrayBuffer());
+    if (u.length < 64 || u[0] !== 0xE9) return {ok: false, msg: 'Keine ESP-Firmware'};
+    const esp32 = !FWI || FWI.chip_id >= 0;   // ESP8266 images have no chip id and no .merged.bin
+    if (esp32 && u.length > 0x8001 && u[0x8000] === 0xAA && u[0x8001] === 0x50) return {ok: false, msg: merged};
+    const chip = u[12] | (u[13] << 8);
+    if (FWI && esp32 && chip !== FWI.chip_id) return {ok: false, msg: `Firmware für ${FW_CHIPS[chip] || 'einen unbekannten Chip'}, dieses Gerät ist ein ${FW_CHIPS[FWI.chip_id] || FWI.chip}`};
+    if (FWI && FWI.max && u.length > FWI.max) return {ok: false, msg: `Datei zu groß (${kb}, Platz ${Math.round(FWI.max / 1024)} kB)`};
+    const m = new TextDecoder('latin1').decode(u).match(/CAMPER-FW:([A-Za-z0-9_.-]{1,24}):([A-Za-z0-9_.-]{1,24}):([A-Za-z0-9_.-]{1,24});/);
+    if (!m) return {ok: false, force: true, msg: 'Keine Gerätekennung in der Datei: fremde Firmware oder eine Version vor der Kennung. Nur hochladen, wenn sicher ist, dass sie für dieses Gerät ist.'};
+    if (FWI && m[1] !== FWI.dev) return {ok: false, msg: `Firmware für „${m[1]}“, dieses Gerät ist „${FWI.dev}“`};
+    if (FWI && m[3] !== FWI.chip) return {ok: false, msg: `Firmware für ${m[3]}, dieses Gerät ist ein ${FWI.chip}`};
+    const c = FWI ? fwVerCmp(m[2], FWI.ver) : 1;
+    return {ok: true, kind: 'fw', warn: c <= 0, msg: `Firmware ${m[1]} v${m[2]} (${kb}) – ` +
+        (c > 0 ? 'neuer als die installierte' : c === 0 ? 'gleiche Version wie installiert' : 'ÄLTER als die installierte (Downgrade)')};
+}
+let fwPick = null;
+async function fwChosen(fsImages) {
+    const f = fwEl('fwu-file').files[0], chk = fwEl('fwu-chk');
+    fwPick = null;
+    fwEl('fwu-force-row').style.display = 'none';
+    fwEl('fwu-force').checked = false;
+    if (!f) { chk.textContent = ''; fwEl('fwu-btn').disabled = true; return; }
+    chk.className = 'fwu-chk'; chk.textContent = 'Prüfe …';
+    const r = await fwInspect(f, fsImages);
+    fwPick = r;
+    chk.textContent = (r.ok ? (r.warn ? '⚠ ' : '✓ ') : '✕ ') + r.msg;
+    chk.className = 'fwu-chk ' + (r.ok ? (r.warn ? 'warn' : 'ok') : 'bad');
+    if (r.force) fwEl('fwu-force-row').style.display = '';
+    fwEl('fwu-btn').disabled = !r.ok;
+}
+function fwForce() { fwEl('fwu-btn').disabled = !(fwPick && (fwPick.ok || (fwPick.force && fwEl('fwu-force').checked))); }
+function fwUpload(field, toast) {
+    const f = fwEl('fwu-file').files[0];
+    if (!f || !fwPick) { toast('Erst eine Datei wählen', true); return; }
+    if (fwPick.warn && fwPick.kind === 'fw' && !confirm(fwPick.msg + '\nTrotzdem installieren?')) return;
+    const force = !fwPick.ok && fwPick.force && fwEl('fwu-force').checked;
+    const fd = new FormData();
+    fd.append(field, f);
+    const x = new XMLHttpRequest(), pr = fwEl('fwu-pr');
+    pr.classList.remove('hide', 'hidden'); pr.style.display = ''; pr.value = 0;
+    fwEl('fwu-btn').disabled = true;
+    x.upload.onprogress = e => { if (e.lengthComputable) pr.value = e.loaded / e.total * 100; };
+    x.onload = () => {
+        if (x.status === 200 && x.responseText === 'OK web') { toast('Web-Oberfläche ersetzt – lädt neu …'); setTimeout(() => location.reload(), 1500); return; }
+        if (x.status === 200) { toast('Update ok – Neustart …'); setTimeout(() => location.reload(), 15000); return; }
+        toast(x.responseText || ('Fehler HTTP ' + x.status), true);
+        const chk = fwEl('fwu-chk'); chk.textContent = '✕ ' + (x.responseText || 'Fehler HTTP ' + x.status); chk.className = 'fwu-chk bad';
+        fwEl('fwu-btn').disabled = false;
+        fwLoad();
+    };
+    x.onerror = () => { toast('Verbindung abgebrochen', true); fwEl('fwu-btn').disabled = false; fwLoad(); };
+    x.open('POST', '/update' + (force ? '?force=1' : ''));
+    x.send(fd);
+}
+fwLoad();
+setInterval(fwLoad, 15000);
 </script>
 </body>
 </html>)rawliteral";

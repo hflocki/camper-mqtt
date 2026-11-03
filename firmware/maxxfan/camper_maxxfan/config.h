@@ -9,7 +9,7 @@
 //  Camper MaxxFan - VanTurtle board (TCA9555) -> MQTT / Home Assistant
 // =====================================================================
 
-#define FW_VERSION              "1.7.0"
+#define FW_VERSION              "1.7.1"
 #define FW_DEVICE               "maxxfan"   // device id in the firmware marker (fwcheck.h)
 
 // ---- Device / access point ------------------------------------------

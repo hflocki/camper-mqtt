@@ -1,7 +1,9 @@
 // Shared source – edit only in firmware/_common, then run tools/common/sync_common.py
+#include "fw_config.h"   // FW_DEVICE, FW_VERSION
 #include "fwcheck.h"
-#include "config.h"   // FW_DEVICE, FW_VERSION
 #include "evlog.h"
+#include <algorithm>
+#include <string>
 
 #ifndef FW_DEVICE
 #error "fwcheck needs FW_DEVICE in config.h (short device id, e.g. \"maxxfan\")"
@@ -11,10 +13,20 @@
 #include <Update.h>
 #include <esp_ota_ops.h>
 #include <sdkconfig.h>
-#include <algorithm>
+#define FW_TARGET CONFIG_IDF_TARGET
+#define FW_CHIP_ID ((int)CONFIG_IDF_FIRMWARE_CHIP_ID)
+#define FW_UPDATE_ERROR() String(Update.errorString())
+#elif defined(ESP8266)
+#include <Updater.h>
+#define FW_TARGET "esp8266"
+#define FW_CHIP_ID (-1)   // ESP8266 images have no chip id in the header
+#define FW_UPDATE_ERROR() Update.getErrorString()
+#endif
+
+#if defined(FW_TARGET)
 
 // The marker. Referenced by id(), so the linker keeps it in the image.
-static const char FW_ID[] = "CAMPER-FW:" FW_DEVICE ":" FW_VERSION ":" CONFIG_IDF_TARGET ";";
+static const char FW_ID[] = "CAMPER-FW:" FW_DEVICE ":" FW_VERSION ":" FW_TARGET ";";
 
 namespace {
 
@@ -29,7 +41,8 @@ uint8_t pt[2];
 std::string tail;
 String err, fileDev, fileVer, fileChip;
 
-const char* chipName(uint16_t id) {
+#if defined(ESP32)
+const char* chipName(int id) {
     switch (id) {
         case 0x0000: return "ESP32";
         case 0x0002: return "ESP32-S2";
@@ -47,11 +60,23 @@ size_t maxSize() {
     return p ? p->size : 0;
 }
 
+bool updateBegin() { return Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH); }
+void updateAbort() { Update.abort(); }
+#else
+size_t maxSize() { return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000; }
+
+bool updateBegin() {
+    Update.runAsync(true);   // called from the async web server
+    return Update.begin(maxSize(), U_FLASH);
+}
+void updateAbort() { Update.end(false); }   // not finished: resets the updater
+#endif
+
 void fail(const String& why) {
     if (failed) return;
     failed = true;
     err = why;
-    if (active) Update.abort();
+    if (active) updateAbort();
     active = false;
     evlog::add("Update abgelehnt: %s", err.c_str());
 }
@@ -100,28 +125,29 @@ const char* id() { return FW_ID; }
 void info(JsonObject o) {
     o["dev"] = FW_DEVICE;
     o["ver"] = FW_VERSION;
-    o["chip"] = CONFIG_IDF_TARGET;
-    o["chip_id"] = CONFIG_IDF_FIRMWARE_CHIP_ID;
+    o["chip"] = FW_TARGET;
+    o["chip_id"] = FW_CHIP_ID;
     o["max"] = (uint32_t)maxSize();
     o["id"] = id();
 }
 
 void begin(size_t total, bool forceIt) {
-    if (active) Update.abort();
+    if (active) updateAbort();
     active = failed = done = found = false;
     force = forceIt;
     seen = 0;
+    pt[0] = pt[1] = 0;
     tail.clear();
     err = fileDev = fileVer = fileChip = "";
     size_t max = maxSize();
     evlog::add("Firmware-Upload gestartet (%u kB)", (unsigned)(total / 1024));
-    if (max == 0) { fail("kein Update-Bereich im Flash (Partitionsschema?)"); return; }
+    if (max == 0) { fail("kein Platz für ein Update im Flash (Partitionsschema?)"); return; }
     if (total > max + 4096) {
         fail(String("Datei zu groß (") + String((unsigned)(total / 1024)) + " kB, Platz " +
              String((unsigned)(max / 1024)) + " kB) – evtl. die .merged.bin statt der .bin?");
         return;
     }
-    if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) { fail(String("Update-Start: ") + Update.errorString()); return; }
+    if (!updateBegin()) { fail(String("Update-Start: ") + FW_UPDATE_ERROR()); return; }
     active = true;
 }
 
@@ -132,28 +158,36 @@ void chunk(const uint8_t* data, size_t len, bool final) {
         size_t at = seen + i;
         if (at < sizeof(hdr)) hdr[at] = data[i];
         else if (at == MERGED_PT || at == MERGED_PT + 1) pt[at - MERGED_PT] = data[i];
-        else if (at > MERGED_PT + 1 && at >= sizeof(hdr)) break;
+        else if (at > MERGED_PT + 1) break;
     }
     size_t before = seen;
     seen += len;
     if (before < sizeof(hdr) && seen >= sizeof(hdr)) {
-        if (hdr[0] != 0xE9) { fail("keine ESP32-Firmware (.bin aus „Kompilierte Binärdatei exportieren“ oder aus dem Release)"); return; }
-        uint16_t chip = hdr[12] | (hdr[13] << 8);
-        if (chip != CONFIG_IDF_FIRMWARE_CHIP_ID) {
-            fail(String("Firmware für ") + chipName(chip) + ", dieses Gerät ist ein " + chipName(CONFIG_IDF_FIRMWARE_CHIP_ID));
+        if (hdr[0] != 0xE9) { fail("keine ESP-Firmware (.bin aus „Kompilierte Binärdatei exportieren“ oder aus dem Release)"); return; }
+#if defined(ESP32)
+        int chip = hdr[12] | (hdr[13] << 8);
+        if (chip != FW_CHIP_ID) {
+            fail(String("Firmware für ") + chipName(chip) + ", dieses Gerät ist ein " + chipName(FW_CHIP_ID));
             return;
         }
+#endif
     }
+#if defined(ESP32)
     if (before <= MERGED_PT + 1 && seen > MERGED_PT + 1 && pt[0] == 0xAA && pt[1] == 0x50) {
         fail("das ist die .merged.bin (komplettes Flash-Abbild für USB) – bitte die .bin ohne „merged“ nehmen");
         return;
     }
+#endif
     scan(data, len);
     if (found && fileDev != FW_DEVICE) {
         fail(String("Firmware für „") + fileDev + "“, dieses Gerät ist „" FW_DEVICE "“");
         return;
     }
-    if (len && Update.write((uint8_t*)data, len) != len) { fail(String("Schreiben: ") + Update.errorString()); return; }
+    if (found && fileChip != FW_TARGET) {
+        fail(String("Firmware für ") + fileChip + ", dieses Gerät ist ein " FW_TARGET);
+        return;
+    }
+    if (len && Update.write((uint8_t*)data, len) != len) { fail(String("Schreiben: ") + FW_UPDATE_ERROR()); return; }
     if (!final) return;
 
     if (seen < sizeof(hdr)) { fail("Datei zu klein"); return; }
@@ -161,7 +195,7 @@ void chunk(const uint8_t* data, size_t len, bool final) {
         fail("keine Gerätekennung in der Datei (fremde oder ältere Firmware) – zum Erzwingen „Ohne Kennung hochladen“ wählen");
         return;
     }
-    if (!Update.end(true)) { fail(String("Abschluss: ") + Update.errorString()); return; }
+    if (!Update.end(true)) { fail(String("Abschluss: ") + FW_UPDATE_ERROR()); return; }
     active = false;
     done = true;
     if (found) evlog::add("Update auf v%s ok (%u kB), Neustart", fileVer.c_str(), (unsigned)(seen / 1024));
@@ -178,7 +212,7 @@ const String& error() {
 
 } // namespace fwcheck
 
-#else   // ESP8266: no checks here
+#else   // other platforms: no checks
 
 namespace fwcheck {
 const char* id() { return ""; }

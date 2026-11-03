@@ -18,7 +18,7 @@ Monorepo für Camper-Elektronik: jedes Gerät ist ein ESP8266/ESP32 mit reiner *
 - **Keine Downloads im Repo-Hauptordner:** `.bin`, `.zip`, Bilder usw. gehören in `firmware/<gerät>/…` oder gar nicht ins Repo (`.gitignore` fängt Hauptordner-Dateien ab).
 - Bei jeder Änderung an einem Gerät `FW_VERSION` in dessen `config.h` erhöhen und die README des Geräts mitpflegen.
 - **Nur Arduino:** Firmware wird mit der Arduino IDE bzw. `arduino-cli` gebaut, keine `platformio.ini` für eigene Geräte. Einzige Ausnahme ist `firmware/omg` (OpenMQTTGateway, fremdes PlatformIO-Projekt).
-- **Firmware-Kennung:** Geräte mit `fwcheck.*` brauchen `FW_DEVICE` in `config.h` (gleich der Geräte-ID im Tag). Die Prüfung im Browser (`fwInspect()`) und im Gerät (`fwcheck.cpp`) müssen dieselben Regeln haben.
+- **Firmware-Kennung:** Alle Geräte haben `fwcheck.*`, `evlog.*` und `safeguard.*` und brauchen `FW_DEVICE` in `config.h` (Road Buddy: `fw_id.h`), gleich der Geräte-ID im Tag. Die Prüfung im Browser (`fwInspect()`) und im Gerät (`fwcheck.cpp`) müssen dieselben Regeln haben.
 - **Web-Oberflächen:** `web/index.html` ist die Quelle, nach jeder Änderung `python3 tools/web/pack_web.py` (packt nach `data/index.html.gz`); CI prüft mit `--check`. Das Display bettet seine Seite stattdessen per `embed_web.py` ein.
 
 ## Aufbau

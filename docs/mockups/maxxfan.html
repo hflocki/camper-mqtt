@@ -63,7 +63,7 @@ const M = {
     if (r !== undefined) return json(r);
     // firmware info and event log (fwcheck / evlog), the same example for every device
     if (u.pathname === '/api/system' && method === 'GET') {
-      const S3 = M.id === 'level';
+      const S3 = M.id === 'level' || M.id === 'display';
       return json({fw: {dev: M.id, ver: (M.cfg && M.cfg.version) || '1.7.0', chip: S3 ? 'esp32s3' : 'esp32c3', chip_id: S3 ? 9 : 5, max: 1966080},
                    up: 5400, log: [
         {b: 0, t: 5380, m: 'MQTT verbunden'}, {b: 0, t: 5378, m: 'WLAN verbunden (192.168.8.31, -61 dBm)'},
@@ -362,7 +362,7 @@ loadCfg();poll();setInterval(poll,2000);
 // ---- Firmware update with checks, event log (same checks as fwcheck.cpp on the device) ----
 // Elements: fwu-cur, fwu-file, fwu-chk, fwu-force-row, fwu-force, fwu-btn, fwu-pr, fwu-log
 let FWI = null;   // running firmware: {dev, ver, chip, chip_id, max}
-const FW_CHIPS = {0: 'ESP32', 2: 'ESP32-S2', 5: 'ESP32-C3', 9: 'ESP32-S3', 12: 'ESP32-C2', 13: 'ESP32-C6', 16: 'ESP32-H2'};
+const FW_CHIPS = {'-1': 'ESP8266', 0: 'ESP32', 2: 'ESP32-S2', 5: 'ESP32-C3', 9: 'ESP32-S3', 12: 'ESP32-C2', 13: 'ESP32-C6', 16: 'ESP32-H2'};
 const fwEl = id => document.getElementById(id);
 const fwEsc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 function fwVerCmp(a, b) {
@@ -395,14 +395,16 @@ async function fwInspect(file, fsImages) {
     const merged = 'Das ist die .merged.bin (komplettes Flash-Abbild für USB). Bitte die .bin ohne „merged“ nehmen.';
     if (n.includes('merged')) return {ok: false, msg: merged};
     const u = new Uint8Array(await file.arrayBuffer());
-    if (u.length < 64 || u[0] !== 0xE9) return {ok: false, msg: 'Keine ESP32-Firmware'};
-    if (u.length > 0x8001 && u[0x8000] === 0xAA && u[0x8001] === 0x50) return {ok: false, msg: merged};
+    if (u.length < 64 || u[0] !== 0xE9) return {ok: false, msg: 'Keine ESP-Firmware'};
+    const esp32 = !FWI || FWI.chip_id >= 0;   // ESP8266 images have no chip id and no .merged.bin
+    if (esp32 && u.length > 0x8001 && u[0x8000] === 0xAA && u[0x8001] === 0x50) return {ok: false, msg: merged};
     const chip = u[12] | (u[13] << 8);
-    if (FWI && chip !== FWI.chip_id) return {ok: false, msg: `Firmware für ${FW_CHIPS[chip] || 'einen unbekannten Chip'}, dieses Gerät ist ein ${FW_CHIPS[FWI.chip_id] || FWI.chip}`};
+    if (FWI && esp32 && chip !== FWI.chip_id) return {ok: false, msg: `Firmware für ${FW_CHIPS[chip] || 'einen unbekannten Chip'}, dieses Gerät ist ein ${FW_CHIPS[FWI.chip_id] || FWI.chip}`};
     if (FWI && FWI.max && u.length > FWI.max) return {ok: false, msg: `Datei zu groß (${kb}, Platz ${Math.round(FWI.max / 1024)} kB)`};
     const m = new TextDecoder('latin1').decode(u).match(/CAMPER-FW:([A-Za-z0-9_.-]{1,24}):([A-Za-z0-9_.-]{1,24}):([A-Za-z0-9_.-]{1,24});/);
     if (!m) return {ok: false, force: true, msg: 'Keine Gerätekennung in der Datei: fremde Firmware oder eine Version vor der Kennung. Nur hochladen, wenn sicher ist, dass sie für dieses Gerät ist.'};
     if (FWI && m[1] !== FWI.dev) return {ok: false, msg: `Firmware für „${m[1]}“, dieses Gerät ist „${FWI.dev}“`};
+    if (FWI && m[3] !== FWI.chip) return {ok: false, msg: `Firmware für ${m[3]}, dieses Gerät ist ein ${FWI.chip}`};
     const c = FWI ? fwVerCmp(m[2], FWI.ver) : 1;
     return {ok: true, kind: 'fw', warn: c <= 0, msg: `Firmware ${m[1]} v${m[2]} (${kb}) – ` +
         (c > 0 ? 'neuer als die installierte' : c === 0 ? 'gleiche Version wie installiert' : 'ÄLTER als die installierte (Downgrade)')};

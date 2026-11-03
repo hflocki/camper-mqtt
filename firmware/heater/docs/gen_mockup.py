@@ -55,6 +55,9 @@ function cmd(a,v){const h=S.heater;log('I','Command '+a+' = '+v);
 const J=o=>new Response(JSON.stringify(o),{status:200,headers:{'Content-Type':'application/json'}});
 window.fetch=async(url,opt)=>{const u=String(url);
  if(u.startsWith('/api/state'))return J(S);
+ if(u.startsWith('/api/system'))return J({fw:{dev:'heater',ver:'1.4.0',chip:'esp32c3',chip_id:5,max:1966080},up:7300,log:[
+  {b:0,t:7280,m:'MQTT verbunden'},{b:0,t:7278,m:'WLAN verbunden (192.168.8.35, -64 dBm)'},{b:0,t:0,m:'Start v1.4.0, Grund: Neustart (Software)'},
+  {b:1,t:640,m:'Update auf v1.4.0 ok (1203 kB), Neustart'},{b:1,t:0,m:'Start v1.3.1, Grund: Einschalten'}]});
  if(u.startsWith('/api/config')&&(!opt||opt.method!=='POST'))return J(CFG);
  if(u.startsWith('/api/log')){const since=+(u.split('since=')[1]||0);const lines=logs.slice(since);return J({next:logs.length,lines:lines.length?lines.join('\n')+'\n':''})}
  if(u.startsWith('/api/cmd')){const p=new URLSearchParams(opt.body);cmd(p.get('a'),p.get('v'));return J({ok:true})}

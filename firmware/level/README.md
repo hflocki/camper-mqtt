@@ -179,6 +179,7 @@ Der Schutz greift erst bei Updates, die von dieser Version **aus** gemacht werde
 
 | Version | Änderungen |
 |---|---|
+| 2.3.1 | Update-Prüfung vergleicht auch den Chip in der Kennung (gleich wie im Browser); ein Update über den Setup-AP löst keinen WLAN-Rückfall mehr aus |
 | 2.3.0 | Sichere Updates: Firmware-Kennung, Prüfung der Datei im Browser und im Gerät (falsches Gerät, falscher Chip, .merged.bin, zu groß), Fehlergrund im Klartext, installierte Version und Ereignis-Log im Web-UI |
 | 2.2.0 | Absicherung gegen Aussperren: Rückfall auf die vorherige Firmware, wenn ein Update kein WLAN bekommt; geänderte WLAN-Daten werden zurückgesetzt, wenn sie nicht funktionieren |
 | 2.1.2 | Standard-Pins SDA GPIO2 / SCL GPIO1, damit die Release-.bin ohne eigene `config_local.h` den Sensor findet |

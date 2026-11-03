@@ -11,7 +11,11 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "2.9.19"
+#define FW_VERSION              "2.10.0"
+#define FW_DEVICE               "display"   // device id in the firmware marker (fwcheck.h)
+#ifndef WIFI_TRIAL_MS
+#define WIFI_TRIAL_MS           50000   // a changed WiFi must connect this fast, else the old one returns
+#endif
 
 // ---- Device / access point ------------------------------------------
 #ifndef STATIC_IP_FALLBACK_MS

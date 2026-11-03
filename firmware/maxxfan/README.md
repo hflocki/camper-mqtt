@@ -184,6 +184,7 @@ Mit Discovery erscheint ein Gerät **„Camper MaxxFan“** mit Tasten-Entitäte
 
 | Version | Änderungen |
 | --- | --- |
+| 1.7.1 | Update-Prüfung vergleicht auch den Chip in der Kennung (gleich wie im Browser); ein Update über den Setup-AP löst keinen WLAN-Rückfall mehr aus |
 | 1.7.0 | Sichere Updates: Firmware-Kennung, Prüfung der Datei im Browser und im Gerät (falsches Gerät, falscher Chip, .merged.bin, zu groß), Fehlergrund im Klartext, installierte Version und Ereignis-Log im Web-UI |
 | 1.6.0 | Absicherung gegen Aussperren: Rückfall auf die vorherige Firmware, wenn ein Update kein WLAN bekommt; geänderte WLAN-Daten werden zurückgesetzt, wenn sie nicht funktionieren |
 | 1.5.0 | Stufe setzen wieder wie in 1.3.0 (von unten), Stufe 0 schließt die Haube (Web-UI, MQTT, HA-Regler) |

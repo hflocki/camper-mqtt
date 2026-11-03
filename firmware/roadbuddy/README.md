@@ -143,6 +143,15 @@ Der RoadBuddy hat eine kleine Webseite für Firmware-Updates. Sie ist nur erreic
 3. Die `.bin` aus den GitHub Actions bzw. dem Release (`camper-roadbuddy-core2.bin`) auswählen und hochladen.
 4. Während des Uploads zeigt das Display den Fortschritt, danach startet er neu.
 
+### Sicheres Update, Ereignisse und Rückfall
+
+Seit 1.3.0 hat jede Firmware eine Kennung (`CAMPER-FW:roadbuddy:<version>:<chip>;`) und dieselbe Absicherung wie alle camper-mqtt-Geräte (`fwcheck.*`, `evlog.*`, `safeguard.*` aus `firmware/_common`):
+
+- **Prüfung beim Update** (Update-Webseite): Die installierte Version steht dabei. Eine gewählte Datei wird schon im Browser und beim Hochladen im Gerät noch einmal geprüft, bevor etwas aktiviert wird. Abgelehnt werden eine `.merged.bin` (komplettes Flash-Abbild für USB), Firmware für ein anderes Gerät oder einen anderen Chip und zu große Dateien. Eine Datei ohne Kennung (Version vor 1.3.0) geht nur mit „Ohne Kennung hochladen“. Fehler stehen im Klartext da statt „Update failed“.
+- **Ereignisse:** Die letzten Ereignisse (Start mit Grund, WLAN und MQTT verbunden/getrennt, Uploads mit Ergebnis, Rückfall, gespeicherte Einstellungen) stehen in der Web-Oberfläche. Sie bleiben bei Neustart, Absturz und Update erhalten, nach einem Stromausfall ist das Log leer.
+- **Rückfall nach Update:** Hat eine neue Firmware nach 5 Minuten kein WLAN oder startet sie mehr als dreimal neu, startet wieder die vorherige. Kam das Update über den Setup-AP (ohne WLAN), wird nur auf Neustart-Schleifen geachtet.
+- Aufwachen aus dem Deep Sleep zählt nicht als Neustart und wird nicht eingetragen. Eine neue Firmware gilt nach 15 s mit WLAN als gut. WLAN-Daten kommen nur über USB (`config.h`), deshalb gibt es keinen WLAN-Rückweg.
+
 **Einmal per USB mit eigener `config.h` flashen:** Der Build aus GitHub Actions enthält keine Zugangsdaten (er nutzt `config.example.h`). Ab Version 1.1.0 speichert eine Firmware mit echter `config.h` WLAN, MQTT und den Web-Login im Flash, die Actions-Firmware liest sie von dort. Deshalb das erste Mal (und nach einem Löschen des Flash) per USB mit eigener `config.h` flashen, danach reichen die Updates über die Webseite.
 
 Ein Login für die Seite lässt sich mit `WEB_USER` / `WEB_PASS` in `config.h` setzen (leer = ohne Login).

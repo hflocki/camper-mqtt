@@ -155,10 +155,20 @@ firmware/emulator/tests/run.sh -v    # zusätzlich alle Payloads
 
 Er sucht ArduinoJson im Bibliotheksordner der Arduino IDE, sonst `ARDUINOJSON=<…/ArduinoJson/src>` setzen.
 
+## Sicheres Update, Ereignisse und Rückfall
+
+Seit 1.2.0 hat jede Firmware eine Kennung (`CAMPER-FW:emulator:<version>:<chip>;`) und dieselbe Absicherung wie alle camper-mqtt-Geräte (`fwcheck.*`, `evlog.*`, `safeguard.*` aus `firmware/_common`):
+
+- **Prüfung beim Update** (Web-UI unter **WiFi → Firmware- & Web-Update**): Die installierte Version steht dabei. Eine gewählte Datei wird schon im Browser und beim Hochladen im Gerät noch einmal geprüft, bevor etwas aktiviert wird. Abgelehnt werden eine `.merged.bin` (komplettes Flash-Abbild für USB), Firmware für ein anderes Gerät oder einen anderen Chip und zu große Dateien. Eine Datei ohne Kennung (Version vor 1.2.0) geht nur mit „Ohne Kennung hochladen“. Fehler stehen im Klartext da statt „Update failed“.
+- **Ereignisse:** Die letzten Ereignisse (Start mit Grund, WLAN und MQTT verbunden/getrennt, Uploads mit Ergebnis, Rückfall, gespeicherte Einstellungen) stehen in der Web-Oberfläche. Sie bleiben bei Neustart, Absturz und Update erhalten, nach einem Stromausfall ist das Log leer.
+- **Rückfall nach Update:** Hat eine neue Firmware nach 5 Minuten kein WLAN oder startet sie mehr als dreimal neu, startet wieder die vorherige. Kam das Update über den Setup-AP (ohne WLAN), wird nur auf Neustart-Schleifen geachtet.
+- **WLAN-Änderung mit Rückweg:** Werden die WLAN-Daten geändert, während das Gerät verbunden ist, merkt es sich die funktionierenden. Klappt die Verbindung mit den neuen nach dem Neustart etwa 1 Minute lang nicht, kommen die alten zurück.
+
 ## Versionen
 
 | Version | Änderungen |
 |---|---|
+| 1.2.0 | Sicheres Update (Kennung, Prüfung im Browser und im Gerät, Fehler im Klartext), Ereignis-Log, Rückfall auf die vorherige Firmware und WLAN-Änderung mit Rückweg |
 | 1.1.0 | Szenarien als JSON herunterladen (einzeln oder alle) und eigene hochladen; die Standard-Szenarien bleiben und sind selbst im selben Format beschrieben. Gerätewahl direkt am Szenario, optionales Ende (`end`). „Fahrt“ schwankt jetzt in Dreiecksform statt Sinus |
 | 1.0.1 | Geräteliste lädt wieder: Schema wird stückweise gesendet statt als ein großer Block (der C3 hatte bei allen Broker-Verbindungen nicht mehr genug zusammenhängenden Speicher); Seite zeigt den Fehlergrund und versucht es erneut |
 | 1.0.0 | Erste Version: 8 Geräte, Web-Oberfläche mit Werten, Zuständen und Szenarien, Befehle vom Display |

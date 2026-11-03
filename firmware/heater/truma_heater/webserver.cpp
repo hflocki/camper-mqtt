@@ -15,6 +15,9 @@
 #include "settings.h"
 #include "web_ui.h"
 #include "wifi_manager.h"
+#include "safeguard.h"
+#include "fwcheck.h"
+#include "evlog.h"
 
 using namespace truma;
 
@@ -35,7 +38,6 @@ static SemaphoreHandle_t g_json_mutex = nullptr;
 static String g_state_json = "{}";
 static uint32_t g_last_render = 0;
 static volatile uint32_t g_reboot_at = 0;
-static bool g_ota_ok = false;
 
 static bool check_auth(AsyncWebServerRequest *req) {
   if (g_settings.web_user.isEmpty()) return true;
@@ -231,6 +233,21 @@ static void config_save(AsyncWebServerRequest *req) {
     if (req->hasParam(param, true) && !req->getParam(param, true)->value().isEmpty())
       p.putString(key, req->getParam(param, true)->value());
   };
+  // WiFi change while connected: keep the working values as fallback (safeguard.h);
+  // static IP fields go along as "ip|gateway|subnet|dns"
+  if (wifi::connected()) {
+    auto val = [&](const char *param, const String &cur) {
+      return req->hasParam(param, true) ? req->getParam(param, true)->value() : cur;
+    };
+    String pass = req->hasParam("wifi_pass", true) && !req->getParam("wifi_pass", true)->value().isEmpty()
+                      ? req->getParam("wifi_pass", true)->value() : g_settings.wifi_pass;
+    String net = g_settings.static_ip + "|" + g_settings.gateway + "|" + g_settings.subnet + "|" + g_settings.dns;
+    String newNet = val("static_ip", g_settings.static_ip) + "|" + val("gateway", g_settings.gateway) + "|" +
+                    val("subnet", g_settings.subnet) + "|" + val("dns", g_settings.dns);
+    if (val("ssid", g_settings.wifi_ssid) != g_settings.wifi_ssid || pass != g_settings.wifi_pass || newNet != net)
+      guard::wifiTrialStart(g_settings.wifi_ssid, g_settings.wifi_pass, net);
+  }
+  evlog::add("Einstellungen gespeichert, Neustart");
   put("ssid", "ssid");
   put_secret("wifi_pass", "wpass");
   put("hostname", "host");
@@ -320,19 +337,38 @@ void begin() {
     req->send(200, "application/json", out);
   });
 
+  // Firmware info for the update check in the browser, and the event log
+  g_server.on("/api/system", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (!check_auth(req)) return;
+    JsonDocument d;
+    fwcheck::info(d["fw"].to<JsonObject>());
+    evlog::json(d["log"].to<JsonArray>());
+    d["up"] = millis() / 1000;
+    String out;
+    serializeJson(d, out);
+    req->send(200, "application/json", out);
+  });
+
   g_server.on("/api/reboot", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!check_auth(req)) return;
+    evlog::add("Neustart über die Web-Oberfläche");
     req->send(200, "application/json", "{\"ok\":true}");
     g_reboot_at = millis() + 1000;
   });
 
-  // Firmware update (.bin from PlatformIO: .pio/build/<env>/firmware.bin)
+  // Firmware update (.bin from the release or Arduino IDE "Export compiled binary"), checked by fwcheck
   g_server.on(
       "/update", HTTP_POST,
       [](AsyncWebServerRequest *req) {
         if (!check_auth(req)) return;
-        req->send(g_ota_ok ? 200 : 500, "application/json", g_ota_ok ? "{\"ok\":true}" : "{\"ok\":false}");
-        if (g_ota_ok) g_reboot_at = millis() + 1500;
+        if (!fwcheck::ok()) {
+          LOGE(TAG, "Update rejected: %s", fwcheck::error().c_str());
+          req->send(400, "text/plain", "Update abgelehnt: " + fwcheck::error());
+          return;
+        }
+        guard::otaDone();
+        req->send(200, "text/plain", "OK");
+        g_reboot_at = millis() + 1500;
       },
       [](AsyncWebServerRequest *req, const String &filename, size_t index, uint8_t *data, size_t len, bool final) {
         if (!g_settings.web_user.isEmpty() &&
@@ -341,20 +377,10 @@ void begin() {
         }
         if (index == 0) {
           LOGI(TAG, "OTA update started: %s", filename.c_str());
-          g_ota_ok = false;
-          if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) {
-            LOGE(TAG, "OTA begin failed: %s", Update.errorString());
-            return;
-          }
+          fwcheck::begin(req->contentLength(), req->hasParam("force"));
         }
-        if (Update.isRunning() && Update.write(data, len) != len) {
-          LOGE(TAG, "OTA write failed: %s", Update.errorString());
-        }
-        if (final) {
-          g_ota_ok = Update.end(true);
-          if (g_ota_ok) LOGI(TAG, "OTA update finished (%u bytes)", (unsigned) (index + len));
-          else LOGE(TAG, "OTA end failed: %s", Update.errorString());
-        }
+        fwcheck::chunk(data, len, final);
+        if (final) LOGI(TAG, "OTA update %s", fwcheck::ok() ? "finished" : fwcheck::error().c_str());
       });
 
   g_server.onNotFound([](AsyncWebServerRequest *req) {
