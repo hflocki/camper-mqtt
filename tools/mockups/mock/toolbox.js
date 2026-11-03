@@ -2,7 +2,7 @@
 const M = {
   id: 'toolbox',
   config: {
-    version: '1.0.0', device: 'Camper Toolbox', reset_reason: 'Neustart (Software)', ha_node: 'camper_toolbox',
+    version: '1.0.1', device: 'Camper Toolbox', reset_reason: 'Neustart (Software)', ha_node: 'camper_toolbox',
     core: {wifi_ssid: 'Camper-WLAN', wifi_pass_set: true, ap_ssid: 'Camper-Toolbox-A1B2C3', wifi_tx_power: 70, ap_always: false,
            mqtt_server: '192.168.1.1', mqtt_port: 1883, mqtt_user: '', mqtt_pass_set: false, mqtt_prefix: 'camper/toolbox',
            web_user: '', web_pass_set: false},

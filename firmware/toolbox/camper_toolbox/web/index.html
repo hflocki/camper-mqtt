@@ -5,343 +5,183 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Camper Toolbox</title>
     <style>
+      /* Same look as the other camper-mqtt devices (battery, tanklevel, temp ...) */
       :root {
-        --bg: #f3f4f6;
-        --card: #fff;
-        --fg: #111827;
-        --mute: #6b7280;
-        --line: #e5e7eb;
-        --acc: #2563eb;
-        --ok: #16a34a;
-        --warn: #d97706;
-        --bad: #dc2626;
-        --bar: #e5e7eb;
+        --bg-primary: #0f1419;
+        --bg-secondary: #1a2332;
+        --bg-card: #1e2d3d;
+        --bg-input: #0d1b2a;
+        --accent: #4fc3f7;
+        --warning: #ffb800;
+        --danger: #ff4757;
+        --success: #00d4aa;
+        --warm: #ff9f43;
+        --text-primary: #e8f0f8;
+        --text-secondary: #8899aa;
+        --text-muted: #556677;
+        --border: #2a3a4a;
+        --radius: 12px;
+        /* names used by the firmware update block */
+        --ok: var(--success);
+        --warn: var(--warning);
+        --bad: var(--danger);
+        --mute: var(--text-secondary);
+        --line: var(--border);
       }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0f172a;
-          --card: #1e293b;
-          --fg: #e5e7eb;
-          --mute: #94a3b8;
-          --line: #334155;
-          --acc: #60a5fa;
-          --ok: #4ade80;
-          --warn: #fbbf24;
-          --bad: #f87171;
-          --bar: #334155;
-        }
-      }
-      * {
-        box-sizing: border-box;
-      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
       body {
-        margin: 0;
-        font:
-          15px/1.4 system-ui,
-          -apple-system,
-          Segoe UI,
-          Roboto,
-          sans-serif;
-        background: var(--bg);
-        color: var(--fg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg-primary); color: var(--text-primary);
+        min-height: 100vh; overflow-x: hidden;
       }
       header {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-        padding: 12px 16px;
-        background: var(--card);
-        border-bottom: 1px solid var(--line);
+        background: var(--bg-secondary); padding: 16px 20px; border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
       }
-      header h1 {
-        font-size: 18px;
-        margin: 0 auto 0 0;
-      }
-      .chip {
-        font-size: 12px;
-        padding: 2px 8px;
-        border-radius: 10px;
-        background: var(--bar);
-        color: var(--mute);
-      }
-      .chip.ok {
-        background: var(--ok);
-        color: #fff;
-      }
-      .chip.bad {
-        background: var(--bad);
-        color: #fff;
-      }
-      nav {
-        display: flex;
-        overflow-x: auto;
-        gap: 4px;
-        padding: 8px 12px;
-        background: var(--card);
-        border-bottom: 1px solid var(--line);
-      }
+      header h1 { font-size: 1.15rem; font-weight: 600; color: var(--accent); white-space: nowrap; }
+      .status-dots { display: flex; gap: 6px; align-items: center; font-size: 0.65rem; color: var(--text-muted); }
+      .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); display: inline-block; margin-right: 4px; }
+      .status-dot.active { background: var(--success); box-shadow: 0 0 8px rgba(0, 212, 170, 0.3); }
+      .status-dot.bad { background: var(--danger); }
+      /* Icon above the label: all tabs fit even on small phones */
+      nav { display: flex; background: var(--bg-secondary); border-bottom: 1px solid var(--border); overflow-x: auto; }
       nav button {
-        border: 0;
-        background: none;
-        color: var(--mute);
-        padding: 6px 12px;
-        border-radius: 8px;
-        font: inherit;
-        white-space: nowrap;
-        cursor: pointer;
+        flex: 1; min-width: 0; padding: 8px 2px 7px; font: inherit; font-size: 0.68rem; font-weight: 500; line-height: 1.2;
+        display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0;
+        color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis;
       }
-      nav button.on {
-        background: var(--acc);
-        color: #fff;
-      }
-      main {
-        max-width: 980px;
-        margin: 0 auto;
-        padding: 16px;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 12px;
+      nav button .ico { font-size: 1.05rem; line-height: 1; }
+      nav button.on { color: var(--accent); border-bottom-color: var(--accent); background: rgba(79, 195, 247, 0.05); }
+      main { padding: 16px; }
+      @media (min-width: 600px) {
+        body { display: flex; justify-content: center; }
+        .app-wrap { width: 100%; max-width: 520px; }
       }
       .card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 14px;
-        margin-bottom: 12px;
+        position: relative; background: var(--bg-card); border-radius: var(--radius); padding: 16px;
+        margin-bottom: 12px; border: 1px solid var(--border); overflow: hidden; font-size: 0.85rem;
       }
       .card h2 {
-        font-size: 16px;
-        margin: 0 0 8px;
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        align-items: center;
+        display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+        font-size: 0.75rem; font-weight: 400; text-transform: uppercase; letter-spacing: 0.5px;
+        color: var(--text-secondary); margin-bottom: 12px;
       }
-      .state {
-        font-size: 12px;
-        font-weight: normal;
-        padding: 2px 8px;
-        border-radius: 10px;
-        background: var(--bar);
+      .card h2 .mute { text-transform: none; letter-spacing: 0; font-size: 0.65rem; color: var(--text-muted); }
+      /* Live: one card per plugin with a coloured bar on the left like the battery cards */
+      .card.dev-card { padding: 14px 14px 12px 20px; }
+      .card.dev-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--text-muted); }
+      .card.dev-card.ok::before { background: var(--success); }
+      .state { font-size: 0.6rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: none; letter-spacing: 0;
+        background: rgba(255, 184, 0, 0.15); color: var(--warning); white-space: nowrap; }
+      .state.ok { background: rgba(0, 212, 170, 0.15); color: var(--success); }
+      .gauge .v { font-size: 2.4rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.05; color: var(--accent); }
+      .card.ok .gauge .v { color: var(--success); }
+      .gauge .l { font-size: 0.8rem; color: var(--text-secondary); margin: 2px 0 8px; }
+      .bar { height: 8px; background: var(--bg-input); border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+      .bar i { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s; }
+      .card.ok .bar i { background: var(--success); }
+      .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+      .tile { background: var(--bg-input); border-radius: 8px; padding: 8px 6px; text-align: center; min-width: 0; }
+      .tile span { display: block; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 4px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .tile b { font-size: 1rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+      @media (max-width: 374px) { .tiles { grid-template-columns: 1fr 1fr; } header { padding: 14px 12px; } }
+      .ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+      .ctl label { flex: 1 1 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--text-secondary); }
+      .ctl input[type="range"] { flex: 1; accent-color: var(--accent); }
+      .ctl label > span { min-width: 2.5em; text-align: right; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+      .row { display: flex; gap: 8px; align-items: center; }
+      .row > * { flex: 1; }
+      /* Buttons */
+      button.b {
+        display: inline-flex; align-items: center; justify-content: center; width: 100%; margin-top: 12px;
+        padding: 10px 16px; border-radius: 8px; font: inherit; font-size: 0.85rem; font-weight: 600;
+        cursor: pointer; border: none; background: var(--accent); color: var(--bg-primary);
       }
-      .state.ok {
-        background: var(--ok);
-        color: #fff;
-      }
-      .gauge {
-        margin: 6px 0 10px;
-      }
-      .gauge .v {
-        font-size: 30px;
-        font-weight: 600;
-      }
-      .gauge .l {
-        color: var(--mute);
-        font-size: 13px;
-      }
-      .bar {
-        height: 8px;
-        border-radius: 4px;
-        background: var(--bar);
-        overflow: hidden;
-        margin-top: 4px;
-      }
-      .bar i {
-        display: block;
-        height: 100%;
-        background: var(--acc);
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      td {
-        padding: 3px 0;
-        border-bottom: 1px solid var(--line);
-      }
-      td:last-child {
-        text-align: right;
-      }
-      tr:last-child td {
-        border-bottom: 0;
-      }
-      .ctl {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        align-items: center;
-        margin-top: 10px;
-      }
-      .ctl label {
-        flex: 1 1 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-      }
-      button.b,
-      input[type="submit"] {
-        border: 1px solid var(--acc);
-        background: var(--acc);
-        color: #fff;
-        padding: 7px 14px;
-        border-radius: 8px;
-        font: inherit;
-        cursor: pointer;
-      }
-      button.s {
-        background: none;
-        color: var(--acc);
-      }
-      button.d {
-        border-color: var(--bad);
-        background: var(--bad);
-      }
-      input,
-      select {
-        font: inherit;
-        padding: 7px 9px;
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        background: var(--bg);
-        color: var(--fg);
-        width: 100%;
-      }
+      button.b.s { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); }
+      button.b.d { background: rgba(255, 71, 87, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+      .row button.b, .ctl button.b, .dev button.b { margin-top: 0; }
+      .ctl .row button.b { padding: 8px 6px; }
+      .dev button.b, .f .row button.b { width: auto; padding: 8px 12px; font-size: 0.75rem; }
+      button:disabled { opacity: 0.45; cursor: not-allowed; }
+      /* Toggle switch (checkboxes) */
       input[type="checkbox"] {
-        width: auto;
-        transform: scale(1.3);
+        appearance: none; -webkit-appearance: none; position: relative; flex-shrink: 0;
+        width: 46px; height: 26px; border-radius: 13px; background: var(--border); cursor: pointer; transition: 0.2s;
       }
-      input[type="range"] {
-        padding: 0;
+      input[type="checkbox"]::before {
+        content: ""; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px;
+        background: var(--text-primary); border-radius: 50%; transition: 0.2s;
       }
-      .f {
-        margin-bottom: 12px;
+      input[type="checkbox"]:checked { background: var(--accent); }
+      input[type="checkbox"]:checked::before { transform: translateX(20px); }
+      /* Forms */
+      .f { margin-bottom: 12px; }
+      .f > span { display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; }
+      .f > label { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+      .f > label .mute { margin-left: auto; }
+      .f input:not([type="checkbox"]), .f select {
+        width: 100%; padding: 10px 12px; background: var(--bg-input); border: 1px solid var(--border);
+        border-radius: 8px; color: var(--text-primary); font: inherit; font-size: 0.9rem; outline: none;
       }
-      .f > span {
-        display: block;
-        font-size: 13px;
-        color: var(--mute);
-        margin-bottom: 3px;
-      }
-      .f small {
-        display: block;
-        color: var(--mute);
-        font-size: 12px;
-        margin-top: 3px;
-      }
-      .row {
-        display: flex;
-        gap: 8px;
-      }
-      .row > * {
-        flex: 1;
-      }
-      .mute {
-        color: var(--mute);
-        font-size: 13px;
-      }
-      .raw {
-        font-family: ui-monospace, Consolas, monospace;
-        font-size: 12px;
-        word-break: break-all;
-        color: var(--mute);
-      }
-      details {
-        margin-top: 8px;
-      }
-      summary {
-        cursor: pointer;
-        color: var(--mute);
-        font-size: 13px;
-      }
+      .f input:focus, .f select:focus { border-color: var(--accent); }
+      .f input[type="file"] { padding: 8px; font-size: 0.8rem; }
+      .f small, .card > small { display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+      .mute { color: var(--text-muted); font-size: 0.8rem; }
+      code { font-family: ui-monospace, Menlo, monospace; }
+      /* Info table (System) */
+      table { width: 100%; border-collapse: collapse; }
+      td { padding: 8px 0; border-bottom: 1px solid var(--border); }
+      td:first-child { color: var(--text-secondary); }
+      td:last-child { text-align: right; }
+      tr:last-child td { border-bottom: 0; }
+      /* Device lists (Bluetooth, picker) */
       .dev {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 6px 0;
-        border-bottom: 1px solid var(--line);
-        font-size: 13px;
+        display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        background: var(--bg-input); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 0.8rem;
       }
-      .dev b {
-        font-family: ui-monospace, Consolas, monospace;
-      }
+      .dev b { font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; font-weight: 600; word-break: break-all; }
+      .dev > span:last-child { text-align: right; white-space: nowrap; }
+      .picker { margin-top: 8px; }
+      details { margin-top: 10px; font-size: 0.75rem; color: var(--text-secondary); }
+      .raw { font-family: ui-monospace, Menlo, monospace; word-break: break-all; margin-top: 6px; color: var(--text-primary); }
       #toast {
-        position: fixed;
-        left: 50%;
-        bottom: 20px;
-        transform: translateX(-50%);
-        background: var(--fg);
-        color: var(--bg);
-        padding: 8px 16px;
-        border-radius: 8px;
-        display: none;
+        position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(100px); opacity: 0;
+        background: var(--bg-card); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 20px;
+        font-size: 0.85rem; color: var(--accent); transition: all 0.3s; z-index: 999; pointer-events: none;
       }
-      .fwu-cur {
-        font-size: 0.85rem;
-        margin: 0 0 8px;
-      }
-      .fwu-hint {
-        font-size: 0.8rem;
-        color: var(--mute);
-        margin: 0 0 8px;
-      }
-      .fwu-chk {
-        font-size: 0.85rem;
-        margin: 8px 0;
-      }
-      .fwu-chk.ok {
-        color: var(--ok);
-      }
-      .fwu-chk.warn {
-        color: var(--warn);
-      }
-      .fwu-chk.bad {
-        color: var(--bad);
-      }
-      .fwu-force {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        font-size: 0.85rem;
-        margin: 0 0 8px;
-      }
-      .fwu-log {
-        font-size: 0.8rem;
-        max-height: 320px;
-        overflow-y: auto;
-      }
-      .fwu-ev {
-        padding: 4px 0;
-        border-bottom: 1px solid var(--line);
-      }
-      .fwu-ev:last-child {
-        border-bottom: 0;
-      }
-      .fwu-ev span {
-        color: var(--mute);
-        margin-right: 8px;
-        white-space: nowrap;
-      }
-      .fwu-ev.bad {
-        color: var(--bad);
-      }
-      .hide {
-        display: none;
-      }
+      #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+      #toast.err { border-color: var(--danger); color: var(--danger); }
+      .hide { display: none; }
+      /* Firmware update and event log (same block as the other devices) */
+      .fwu-cur { font-size: 0.8rem; margin: 0 0 10px; }
+      .fwu-hint { font-size: 0.7rem; color: var(--text-muted); margin: 0 0 8px; line-height: 1.4; }
+      .fwu-chk { font-size: 0.8rem; margin: 8px 0; line-height: 1.4; }
+      .fwu-chk.ok { color: var(--ok); }
+      .fwu-chk.warn { color: var(--warn); }
+      .fwu-chk.bad { color: var(--bad); }
+      .fwu-force { display: flex; gap: 8px; align-items: center; font-size: 0.8rem; margin: 0 0 8px; }
+      .fwu-log { font-size: 0.75rem; line-height: 1.4; max-height: 320px; overflow-y: auto; }
+      .fwu-ev { padding: 4px 0; border-bottom: 1px solid var(--line); }
+      .fwu-ev:last-child { border-bottom: 0; }
+      .fwu-ev span { color: var(--mute); margin-right: 8px; white-space: nowrap; }
+      .fwu-ev.bad { color: var(--bad); }
     </style>
   </head>
   <body>
+    <div class="app-wrap">
     <header>
-      <h1 id="title">Camper Toolbox</h1>
-      <span class="chip" id="cWifi">WLAN</span
-      ><span class="chip" id="cMqtt">MQTT</span
-      ><span class="chip" id="cBle">BLE</span>
+      <h1 id="title">🧰 Camper Toolbox</h1>
+      <div class="status-dots">
+        <span id="cBle"><span class="status-dot"></span>BLE</span>
+        <span id="cWifi"><span class="status-dot"></span>WiFi</span>
+        <span id="cMqtt"><span class="status-dot"></span>MQTT</span>
+      </div>
     </header>
     <nav id="nav"></nav>
     <main id="main"></main>
+    </div>
     <div id="toast"></div>
     <script>
       const $ = (s) => document.querySelector(s),
@@ -368,12 +208,13 @@
         70: "17,5 dBm",
         78: "19,5 dBm",
       };
-      function toast(t) {
+      function toast(t, err) {
         const x = $("#toast");
         x.textContent = t;
-        x.style.display = "block";
+        x.classList.toggle("err", !!err);
+        x.classList.add("show");
         clearTimeout(x._t);
-        x._t = setTimeout(() => (x.style.display = "none"), 2500);
+        x._t = setTimeout(() => x.classList.remove("show"), 2500);
       }
       async function api(url, body) {
         const r = await fetch(
@@ -400,29 +241,36 @@
       }
 
       // ---------------- Navigation ----------------
+      // Tab icon per plugin type (unknown types get a plug)
+      const ICONS = { rvtech: "🪟", pump: "🚰", fridge: "❄️", dimes: "🔥", mopeka: "🔥", mopeka_std: "🔥" };
       function tabs() {
-        const t = [["live", "Live"]];
+        const t = [["live", "Live", "📊"]];
         // Disabled plugins get no tab; they are switched on in System -> Plugins
         for (const p of CFG.plugins)
-          if (p.cfg.enabled) t.push(["p:" + p.id, p.cfg.name]);
+          if (p.cfg.enabled) t.push(["p:" + p.id, p.cfg.name, ICONS[p.type] || "🔌"]);
         t.push(
-          ["ble", "Bluetooth"],
-          ["wifi", "WLAN"],
-          ["mqtt", "MQTT"],
-          ["sys", "System"],
+          ["ble", "Bluetooth", "📡"],
+          ["wifi", "WLAN", "📶"],
+          ["mqtt", "MQTT", "⚙️"],
+          ["sys", "System", "🔧"],
         );
         $("#nav").replaceChildren(
-          ...t.map(([k, l]) =>
-            el("button", {
-              className: tab == k ? "on" : "",
-              textContent: l,
-              on: {
-                click: () => {
-                  tab = k;
-                  render();
+          ...t.map(([k, l, ico]) =>
+            el(
+              "button",
+              {
+                className: tab == k ? "on" : "",
+                title: l,
+                on: {
+                  click: () => {
+                    tab = k;
+                    render();
+                  },
                 },
               },
-            }),
+              el("span", { className: "ico" }, ico),
+              el("span", {}, l),
+            ),
           ),
         );
       }
@@ -447,7 +295,7 @@
 
       // ---------------- Live ----------------
       function cmd(p, k, v) {
-        api("/api/cmd", { p, k, v: String(v) }).catch((e) => toast(e.message));
+        api("/api/cmd", { p, k, v: String(v) }).catch((e) => toast(e.message, true));
       }
       function renderLive() {
         const g = el("div", { className: "grid", id: "live" });
@@ -479,7 +327,7 @@
         g.replaceChildren(...LIVE.plugins.filter((p) => p.enabled).map(card));
       }
       function card(p) {
-        const c = el("div", { className: "card" });
+        const c = el("div", { className: "card dev-card" + (p.enabled && p.ok ? " ok" : "") });
         c.append(
           el(
             "h2",
@@ -526,10 +374,10 @@
         if (p.rows)
           c.append(
             el(
-              "table",
-              {},
+              "div",
+              { className: "tiles" },
               ...p.rows.map((r) =>
-                el("tr", {}, el("td", {}, r[0]), el("td", {}, fmt(r[1], r[2]))),
+                el("div", { className: "tile" }, el("span", {}, r[0]), el("b", {}, fmt(r[1], r[2]))),
               ),
             ),
           );
@@ -710,7 +558,7 @@
                   if (r.restart) setTimeout(() => location.reload(), 8000);
                   else tabs();
                 } catch (e) {
-                  toast(e.message);
+                  toast(e.message, true);
                 }
               },
             },
@@ -889,7 +737,7 @@
             if (r.restart) setTimeout(() => location.reload(), 10000);
             else load();
           } catch (e) {
-            toast(e.message);
+            toast(e.message, true);
           }
         };
       }
@@ -1043,7 +891,7 @@
                       setTimeout(() => location.reload(), 8000);
                     } else toast("Keine Änderung");
                   } catch (e) {
-                    toast(e.message);
+                    toast(e.message, true);
                   }
                 },
               },
@@ -1256,22 +1104,18 @@
       // ---------------- Data ----------------
       function chips() {
         if (!LIVE) return;
-        const s = (id, ok, t) => {
+        const s = (id, ok, title) => {
           const e = $(id);
-          e.className = "chip " + (ok ? "ok" : "bad");
-          e.textContent = t;
+          e.firstChild.className = "status-dot" + (ok ? " active" : " bad");
+          e.title = title;
         };
-        s(
-          "#cWifi",
-          LIVE.rssi != 0,
-          "WLAN " + (LIVE.rssi ? LIVE.rssi + " dBm" : LIVE.wifi),
-        );
-        s("#cMqtt", LIVE.mqtt, "MQTT");
+        s("#cWifi", LIVE.rssi != 0, LIVE.rssi ? "WLAN " + LIVE.rssi + " dBm" : String(LIVE.wifi || ""));
+        s("#cMqtt", LIVE.mqtt, LIVE.mqtt ? "MQTT verbunden" : "MQTT getrennt");
         const b = $("#cBle");
         if (LIVE.ble) {
-          b.className = "chip " + (LIVE.ble.scanning ? "ok" : "");
-          b.textContent = "BLE";
-        } else b.className = "hide";
+          b.classList.remove("hide");
+          b.firstChild.className = "status-dot" + (LIVE.ble.scanning ? " active" : "");
+        } else b.classList.add("hide");
       }
       function connect() {
         ws = new WebSocket(
@@ -1288,7 +1132,7 @@
       }
       async function load() {
         CFG = await api("/api/config");
-        $("#title").textContent = CFG.device;
+        $("#title").textContent = "🧰 " + CFG.device;
         document.title = CFG.device;
         render();
       }

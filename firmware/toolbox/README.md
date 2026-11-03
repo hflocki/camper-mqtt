@@ -160,6 +160,7 @@ Ein Update ersetzt nur das Programm: WLAN, MQTT, Login, Plugin-Einstellungen (MA
 
 | Version | Änderungen |
 | --- | --- |
+| 1.0.1 | Web-Oberfläche im Aussehen der übrigen camper-mqtt-Geräte (Farben, Kopfzeile mit Statuspunkten, Tab-Leiste mit Symbolen, Werte als Kacheln, Schalter statt Häkchen) |
 | 1.0.0 | Ins camper-mqtt-Repo übernommen: sicheres Update (Kennung, Prüfung im Browser und im Gerät), Ereignis-Log, Rückfall und WLAN-Rückweg, Topic `info`; Basis-Topic `camper/toolbox`, Hostname `camper-toolbox`; ab Werk nur die Dachhaube (RV Tech) |
 | 0.1.x | Eigenes Repo `camper_toolbox`: Plugins Gas (DIMES, Mopeka), Wasserpumpe, Dachhaube, Kühlschrank |
 

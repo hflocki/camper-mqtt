@@ -66,7 +66,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.0.0"
+#define FW_VERSION            "1.0.1"
 #define FW_DEVICE             "toolbox"   // device id in the firmware marker (fwcheck.h)
 
 // Network upload from the Arduino IDE (port in the IDE, password DEFAULT_OTA_PASSWORD).
