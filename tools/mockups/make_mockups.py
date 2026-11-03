@@ -20,23 +20,23 @@ OUT = ROOT / "docs" / "mockups"
 # id, title, description, web page source (None = built by the device's own generator)
 DEVICES = [
     ("display", "Camper Display", "Wandpanel: Übersicht, Truma, MaxxFan, Level, Temperatur, Batterie, eigene Kacheln, Einstellungen",
-     "firmware/display/_arduino/camper_display/web/index.html"),
+     "firmware/display/camper_display/web/index.html"),
     ("heater", "Truma Heizung", "iNet-Box-Emulation am CP Plus: Heizung, Warmwasser, Timer, Modellauswahl, LIN-Log",
      None),
     ("tanklevel", "Tanks", "Frischwasser, Grauwasser und Gasflasche (BLE) mit Kalibrierung",
-     "firmware/tanklevel/_arduino/camper_tanklevel/web/index.html"),
+     "firmware/tanklevel/camper_tanklevel/web/index.html"),
     ("temp", "Temperatur", "DS18B20-Sensoren mit Min/Max und Alarmgrenzen",
-     "firmware/temp/_arduino/camper_temp/web/index.html"),
+     "firmware/temp/camper_temp/web/index.html"),
     ("level", "Level", "Wasserwaage mit Keilhöhen und Tara",
-     "firmware/level/_arduino/camper_level/web/index.html"),
+     "firmware/level/camper_level/web/index.html"),
     ("maxxfan", "MaxxFan", "Dachlüfter: Öffnen, Schließen, Stufe, Auto-Hold",
-     "firmware/maxxfan/_arduino/camper_maxxfan/web/index.html"),
+     "firmware/maxxfan/camper_maxxfan/web/index.html"),
     ("battery", "Batterie", "BLE-Gateway für Daly, Ective und BM2",
-     "firmware/battery/_arduino/camper_battery/web/index.html"),
+     "firmware/battery/camper_battery/web/index.html"),
     ("emulator", "Emulator", "Testgerät: sendet die Topics aller fest verbauten Geräte mit änderbaren Werten, Szenarien",
-     "firmware/emulator/_arduino/camper_emulator/web/index.html"),
+     "firmware/emulator/camper_emulator/web/index.html"),
     ("template", "Vorlage", "Muster für ein neues Gerät (firmware/_template)",
-     "firmware/_template/_arduino/camper_example/web/index.html"),
+     "firmware/_template/camper_example/web/index.html"),
 ]
 
 

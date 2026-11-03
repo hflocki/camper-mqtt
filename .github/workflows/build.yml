@@ -27,12 +27,14 @@ env:
     https://github.com/ESP32Async/AsyncTCP.git#v3.5.0
 
 jobs:
-  # Shared sources in firmware/_common must match their copies in the sketches
+  # Shared sources in firmware/_common must match their copies in the sketches, and every
+  # packed web page (data/index.html.gz) must match its web/index.html
   common:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: python3 tools/common/sync_common.py --check
+      - run: python3 tools/web/pack_web.py --check
 
   build:
     needs: common
@@ -44,27 +46,27 @@ jobs:
           - device: tanklevel
             target: esp32c3
             fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
-            sketch: firmware/tanklevel/_arduino/camper_tanklevel
+            sketch: firmware/tanklevel/camper_tanklevel
             libs: https://github.com/h2zero/NimBLE-Arduino.git#2.5.1
           - device: battery
             target: esp32c3
             fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
-            sketch: firmware/battery/_arduino/camper_battery
+            sketch: firmware/battery/camper_battery
             libs: https://github.com/h2zero/NimBLE-Arduino.git#2.5.1
           - device: battery
             target: atoms3
             fqbn: esp32:esp32:m5stack_atoms3:CDCOnBoot=cdc,PartitionScheme=default_8MB
-            sketch: firmware/battery/_arduino/camper_battery
+            sketch: firmware/battery/camper_battery
             libs: https://github.com/h2zero/NimBLE-Arduino.git#2.5.1
           - device: temp
             target: esp8266
             fqbn: esp8266:esp8266:nodemcuv2:eesz=4M1M
-            sketch: firmware/temp/_arduino/camper_temp
+            sketch: firmware/temp/camper_temp
             libs: https://github.com/PaulStoffregen/OneWire.git#v2.3.8 https://github.com/milesburton/Arduino-Temperature-Control-Library.git#v4.0.6 https://github.com/ESP32Async/ESPAsyncTCP.git#v2.0.0
           - device: temp
             target: esp32c3
             fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
-            sketch: firmware/temp/_arduino/camper_temp
+            sketch: firmware/temp/camper_temp
             libs: https://github.com/PaulStoffregen/OneWire.git#v2.3.8 https://github.com/milesburton/Arduino-Temperature-Control-Library.git#v4.0.6
           - device: heater
             target: esp32c3
@@ -74,33 +76,33 @@ jobs:
           - device: maxxfan
             target: esp32c3
             fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
-            sketch: firmware/maxxfan/_arduino/camper_maxxfan
+            sketch: firmware/maxxfan/camper_maxxfan
             libs: ''
           - device: level
             target: esp32s3
             fqbn: esp32:esp32:esp32s3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
-            sketch: firmware/level/_arduino/camper_level
+            sketch: firmware/level/camper_level
             libs: https://github.com/sparkfun/SparkFun_BNO08x_Arduino_Library.git#v1.0.6
           - device: display
             target: esp32s3
             fqbn: esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB
-            sketch: firmware/display/_arduino/camper_display
+            sketch: firmware/display/camper_display
             libs: https://github.com/moononournation/Arduino_GFX.git#v1.6.0 https://github.com/lvgl/lvgl.git#v9.2.2
           - device: emulator
             target: esp32c3
             fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
-            sketch: firmware/emulator/_arduino/camper_emulator
+            sketch: firmware/emulator/camper_emulator
             libs: ''
           # Template for new devices (firmware/_template/ANLEITUNG.md), built so it always compiles
           - device: template
             target: esp32c3
             fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
-            sketch: firmware/_template/_arduino/camper_example
+            sketch: firmware/_template/camper_example
             libs: ''
           - device: roadbuddy
             target: core2
             fqbn: esp32:esp32:m5stack_core2
-            sketch: firmware/roadbuddy/_arduino/roadbuddy
+            sketch: firmware/roadbuddy/roadbuddy
             libs: https://github.com/m5stack/M5GFX.git#0.2.34 https://github.com/m5stack/M5Unified.git#0.2.27
 
     steps:
@@ -137,7 +139,7 @@ jobs:
           done
           # LVGL reads its configuration from next to the lvgl library folder
           if [[ "${{ matrix.device }}" == display ]]; then
-            cp firmware/display/_arduino/lv_conf.h "$(arduino-cli config get directories.user)/libraries/"
+            cp firmware/display/lv_conf.h "$(arduino-cli config get directories.user)/libraries/"
           fi
           # CI build only: the real config.h with credentials is never in git
           if [[ "${{ matrix.device }}" == roadbuddy ]]; then

@@ -24,10 +24,9 @@ Die Bilder zeigen Beispieldaten.
 ## Ordner
 
 ```
-_arduino/camper_temp/        Sketch für die Arduino IDE (.ino + .cpp/.h)
-_arduino/camper_temp/web/    Quelle der Web-Oberfläche (index.html)
-_arduino/camper_temp/data/   LittleFS-Inhalt: index.html.gz (komprimiert, wird hochgeladen)
-_platformio/                 platformio.ini, nutzt dieselben Quellen
+camper_temp/        Sketch für die Arduino IDE (.ino + .cpp/.h)
+camper_temp/web/    Quelle der Web-Oberfläche (index.html)
+camper_temp/data/   LittleFS-Inhalt: index.html.gz (komprimiert, wird hochgeladen)
 ```
 
 | Datei | Inhalt |
@@ -85,11 +84,12 @@ Der LittleFS-Upload überschreibt die gespeicherte Konfiguration.
 **Web-Oberfläche ändern:** Quelle ist `web/index.html`, hochgeladen wird `data/index.html.gz`. Nach einer Änderung neu packen, dann LittleFS hochladen:
 
 ```
-cd _arduino/camper_temp
-gzip -9 -n -c web/index.html > data/index.html.gz
+python3 tools/web/pack_web.py temp      # im Repo-Hauptordner
 ```
 
-PlatformIO erledigt das automatisch bei jedem Build (`_platformio/gzip_web.py`). Spätere Firmware-Updates gehen auch per OTA (`camper-temp` unter Netzwerk-Ports).
+Ohne das Repo-Werkzeug geht es auch so (im Sketch-Ordner `camper_temp`): `gzip -9 -n -c web/index.html > data/index.html.gz`. Die GitHub Action prüft bei jedem Push, ob die gepackte Seite zur `index.html` passt.
+
+Spätere Firmware-Updates gehen auch per OTA (`camper-temp` unter Netzwerk-Ports) oder über die Web-Oberfläche.
 
 ## Erstbenutzung
 

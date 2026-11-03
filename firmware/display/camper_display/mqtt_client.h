@@ -9,6 +9,7 @@ namespace mqttc {
   void resubscribe();            // after tile / prefix changes
   void publishSelfState();
   bool publishTo(const String& topic, const String& payload);   // e.g. for automation rules
+  bool publishRetained(const String& topic, const String& payload);   // "" deletes a retained topic
 
   // Topic finder (helps to find zigbee2mqtt and other topics)
   struct Found { String topic; String payload; };

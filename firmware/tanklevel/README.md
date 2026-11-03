@@ -39,10 +39,9 @@ Die Bilder zeigen Beispieldaten.
 ## Ordner
 
 ```
-_arduino/camper_tanklevel/        Sketch für die Arduino IDE (.ino + .cpp/.h)
-_arduino/camper_tanklevel/web/    Quelle der Web-Oberfläche (index.html)
-_arduino/camper_tanklevel/data/   LittleFS-Inhalt: index.html.gz (komprimiert, wird hochgeladen)
-_platformio/                 platformio.ini, nutzt dieselben Quellen
+camper_tanklevel/        Sketch für die Arduino IDE (.ino + .cpp/.h)
+camper_tanklevel/web/    Quelle der Web-Oberfläche (index.html)
+camper_tanklevel/data/   LittleFS-Inhalt: index.html.gz (komprimiert, wird hochgeladen)
 ```
 
 | Datei | Inhalt |
@@ -53,6 +52,7 @@ _platformio/                 platformio.ini, nutzt dieselben Quellen
 | `mqtt_ha.cpp` | MQTT, HA-Discovery, Filter-Schalter |
 | `webserver.cpp` | Web-UI (gzip), REST-API, Konfiguration in LittleFS |
 | `wifi_manager.cpp` | WLAN mit AP-Fallback (Modem-Sleep für WiFi/BLE-Koexistenz) |
+| `fwcheck.*`, `evlog.*` | Prüfung beim Firmware-Upload, Ereignis-Log (Kopien aus `firmware/_common`) |
 | `safeguard.*` | Rückfall nach Update, WLAN-Änderung mit Rückweg (Kopie aus `firmware/_common`) |
 
 ## Hardware
@@ -143,11 +143,12 @@ Der LittleFS-Upload überschreibt die gespeicherte Konfiguration (WLAN, MQTT, Ma
 **Web-Oberfläche ändern:** Die Quelle ist `web/index.html`. Hochgeladen wird die komprimierte `data/index.html.gz` (ca. ein Viertel der Größe, lädt auf dem Handy deutlich schneller). Nach einer Änderung neu packen, dann LittleFS hochladen:
 
 ```
-cd _arduino/camper_tanklevel
-gzip -9 -n -c web/index.html > data/index.html.gz
+python3 tools/web/pack_web.py tanklevel      # im Repo-Hauptordner
 ```
 
-PlatformIO erledigt das automatisch bei jedem Build (`_platformio/gzip_web.py`). Spätere Firmware-Updates gehen auch per OTA (`camper-tanklevel` unter Netzwerk-Ports).
+Ohne das Repo-Werkzeug geht es auch so (im Sketch-Ordner `camper_tanklevel`): `gzip -9 -n -c web/index.html > data/index.html.gz`. Die GitHub Action prüft bei jedem Push, ob die gepackte Seite zur `index.html` passt.
+
+Spätere Firmware-Updates gehen auch per OTA (`camper-tanklevel` unter Netzwerk-Ports) oder über die Web-Oberfläche.
 
 ## Erstbenutzung
 
@@ -199,15 +200,7 @@ esptool --chip esp32c3 --port /dev/cu.usbmodemXXXX write-flash 0x3D0000 mklittle
 | --- | --- |
 | Netzwerk-Port `camper-tanklevel` erscheint nicht | Rechner und ESP müssen im selben Netz sein. mDNS wird manchmal von Routern oder Gastnetzen blockiert. Unter macOS beim ersten Mal die Firewall-Abfrage für die Arduino IDE erlauben. |
 | Passwortabfrage schlägt fehl | Es gilt `DEFAULT_OTA_PASSWORD` aus `config.h` in der Firmware, die **gerade auf dem ESP läuft**. |
-| LittleFS per WLAN | Geht mit dem Arduino-Plugin nicht, nur per USB. PlatformIO kann es: `pio run -e esp32-c3-ota -t uploadfs`. |
-
-**PlatformIO**
-
-| Problem | Lösung |
-| --- | --- |
-| `platformio.ini` wird nicht gefunden | In VS Code den Ordner **`_platformio`** öffnen, nicht das ganze Repo. |
-| Erster Build dauert sehr lange | Normal: Plattform, Toolchain und Libraries werden einmalig geladen (einige hundert MB). |
-| Web-Oberfläche hochladen | In der PlatformIO-Seitenleiste unter *esp32-c3 → Platform* **Upload Filesystem Image**, oder `pio run -e esp32-c3 -t uploadfs`. Das gzip-Packen passiert automatisch. |
+| LittleFS per WLAN | Geht mit dem Arduino-Plugin nicht. Die Web-Oberfläche (`data/index.html.gz`) lässt sich aber im Web-UI unter **WiFi → Firmware- & Web-Update** hochladen. |
 
 
 ## MQTT / Home Assistant
@@ -309,6 +302,20 @@ Im Tab **MQTT** unter „Web-Oberfläche Login“ Benutzer und Passwort setzen. 
 | Web-Oberfläche | `data/index.html.gz` im Web-UI hochladen – ersetzt nur die Seite, ohne Neustart, Einstellungen bleiben |
 | Komplettes LittleFS-Image | Nur per USB oder IDE-Netzwerkport; löscht dabei auch die Einstellungen (`config.json`) |
 
+## Sicheres Firmware-Update und Ereignisse
+
+Seit 1.8.0 trägt jede Firmware eine Kennung (`CAMPER-FW:tanklevel:<version>:<chip>;`, `fwcheck.*` aus `firmware/_common`). Im Web-UI unter **WiFi → Firmware- & Web-Update** steht die installierte Version. Eine gewählte Datei wird schon im Browser geprüft und beim Hochladen im Gerät noch einmal, bevor etwas aktiviert wird:
+
+| Datei | Ergebnis |
+| --- | --- |
+| `.bin` dieses Geräts | Gerät, Version und Vergleich mit der installierten (neuer / gleich / älter, bei gleich oder älter mit Rückfrage) |
+| `.merged.bin` aus der Arduino IDE | abgelehnt: das ist das komplette Flash-Abbild für USB, fürs Web-Update die `.bin` ohne „merged“ nehmen |
+| `.bin` eines anderen Geräts oder Chips | abgelehnt, z. B. „Firmware für „tanklevel“, dieses Gerät ist „tanklevel““ |
+| `.bin` ohne Kennung (ältere Firmware, fremde Datei) | gesperrt, mit „Ohne Kennung hochladen“ trotzdem möglich (für ein Downgrade auf eine Version vor 1.8.0) |
+| `data/index.html.gz` | Web-Oberfläche, ohne Neustart |
+
+Schlägt etwas fehl, nennt die Meldung den Grund statt nur „Update failed“. Die Karte **Ereignisse** darunter zeigt die letzten 24 Ereignisse: Start mit Grund (Einschalten, Absturz, Watchdog …), WLAN und MQTT verbunden/getrennt, Uploads mit Ergebnis, Rückfall und gespeicherte Einstellungen (`evlog.*`). Das Log bleibt bei Neustart, Absturz und Update erhalten, bei Stromausfall ist es leer. Updates über den Netzwerkport der Arduino IDE werden nicht geprüft, aber ebenfalls protokolliert.
+
 ## Absicherung gegen Aussperren
 
 Damit das Gerät erreichbar bleibt, ohne dass jemand hinmuss (`safeguard.*` aus `firmware/_common`):
@@ -325,6 +332,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 | --- | --- |
+| 1.8.0 | Sichere Updates: Firmware-Kennung, Prüfung der Datei im Browser und im Gerät (falsches Gerät, falscher Chip, .merged.bin, zu groß), Fehlergrund im Klartext, installierte Version und Ereignis-Log im Web-UI |
 | 1.7.0 | Absicherung gegen Aussperren: Rückfall auf die vorherige Firmware, wenn ein Update kein WLAN bekommt; geänderte WLAN-Daten werden zurückgesetzt, wenn sie nicht funktionieren |
 | 1.6.0 | Firmware (.bin) und Web-Oberfläche (index.html.gz) im Web-UI unter WiFi hochladbar, ohne USB; Arduino-OTA-Dateisystem-Upload hängt LittleFS vorher aus |
 | 1.5.0 | Mopeka Standard (Std Check) als weiterer Sensortyp, Propan-Anteil einstellbar |

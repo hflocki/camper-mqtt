@@ -5,7 +5,7 @@
 # ArduinoJson: the library folder of the Arduino IDE is searched, or set ARDUINOJSON=<path to .../ArduinoJson/src>
 set -euo pipefail
 cd "$(dirname "$0")"
-SRC=../_arduino/camper_emulator
+SRC=../camper_emulator
 if [[ -z "${ARDUINOJSON:-}" ]]; then
   for d in ~/Documents/Arduino/libraries/ArduinoJson/src ~/Arduino/libraries/ArduinoJson/src; do
     [[ -f "$d/ArduinoJson.h" ]] && ARDUINOJSON=$d && break

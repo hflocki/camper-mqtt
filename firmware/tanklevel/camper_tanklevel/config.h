@@ -12,7 +12,8 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.7.0"
+#define FW_VERSION            "1.8.0"
+#define FW_DEVICE             "tanklevel"   // device id in the firmware marker (fwcheck.h)
 
 #ifndef DEFAULT_AP_SSID
 #define DEFAULT_AP_SSID       "Camper-Tanklevel" // Base name; "-XXXXXX" (last 3 MAC bytes) is appended

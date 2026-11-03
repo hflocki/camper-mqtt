@@ -3,6 +3,8 @@
 #include "sensor.h"
 #include "mqtt_ha.h"
 #include "safeguard.h"
+#include "fwcheck.h"
+#include "evlog.h"
 
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
@@ -249,6 +251,7 @@ static void handleSaveConfig(AsyncWebServerRequest* request, JsonDocument& doc) 
     if (doc["mqtt_fast"].is<bool>()) config.mqtt_fast = doc["mqtt_fast"].as<bool>();
 
     configDirty = true;   // flash write + recalculation in loop()
+    evlog::add("Einstellungen gespeichert");
     sendOk(request);
 }
 
@@ -324,14 +327,18 @@ void webserverInit() {
     server.on("/api/update", HTTP_POST,
         [](AsyncWebServerRequest* request) {
             if (!auth(request)) return;
+            if (!upAuthorized) { request->send(401, "text/plain", "Login fehlt"); return; }
             if (upWebPage) {
-                bool ok = upAuthorized && !upFailed;
-                request->send(ok ? 200 : 500, "text/plain", ok ? "OK web" : "Upload failed");
+                if (upFailed) request->send(500, "text/plain", "Web-Oberfläche nicht gespeichert (LittleFS voll oder nicht bereit)");
+                else request->send(200, "text/plain", "OK web");
                 return;
             }
-            bool ok = upAuthorized && !Update.hasError();
-            request->send(ok ? 200 : 500, "text/plain", ok ? "OK" : "Update failed");
-            if (ok) { restartPending = true; restartAt = millis() + 1000; }
+            // firmware: checked and written by fwcheck
+            if (!fwcheck::ok()) { request->send(400, "text/plain", "Update abgelehnt: " + fwcheck::error()); return; }
+            guard::otaDone();
+            request->send(200, "text/plain", "OK");
+            restartPending = true;
+            restartAt = millis() + 1000;
         },
         [](AsyncWebServerRequest* request, const String& filename, size_t index, uint8_t* data, size_t len, bool final) {
             if (index == 0) {
@@ -346,13 +353,7 @@ void webserverInit() {
                     upFile = fsReady ? LittleFS.open(WEB_TMP, "w") : File();
                     if (!upFile) upFailed = true;
                 } else {
-#if defined(ESP8266)
-                    Update.runAsync(true);   // called from the async web server
-                    uint32_t maxSize = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-                    if (!Update.begin(maxSize, U_FLASH)) Update.printError(Serial);
-#else
-                    if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) Update.printError(Serial);
-#endif
+                    fwcheck::begin(request->contentLength(), request->hasParam("force"));
                 }
             }
             if (!upAuthorized) return;
@@ -363,22 +364,29 @@ void webserverInit() {
                     upFile.close();
                     if (!upFailed) { LittleFS.remove(WEB_FILE); upFailed = !LittleFS.rename(WEB_TMP, WEB_FILE); }
                     else LittleFS.remove(WEB_TMP);
-                    Serial.printf("[OTA] Web page %s\n", upFailed ? "FAILED" : "replaced");
+                    if (upFailed) evlog::add("Web-Oberfläche nicht gespeichert");
+                    else evlog::add("Web-Oberfläche ersetzt (%u kB)", (unsigned)((index + len) / 1024));
                 }
                 return;
             }
-            if (len && Update.write(data, len) != len) Update.printError(Serial);
-            if (final) {
-                if (Update.end(true)) {
-                    Serial.printf("[OTA] Firmware ok, %u bytes\n", (unsigned)(index + len));
-                    guard::otaDone();
-                }
-                else Update.printError(Serial);
-            }
+            fwcheck::chunk(data, len, final);
         });
+
+    // Firmware info for the update check in the browser, and the event log
+    server.on("/api/system", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (!auth(request)) return;
+        JsonDocument d;
+        fwcheck::info(d["fw"].to<JsonObject>());
+        evlog::json(d["log"].to<JsonArray>());
+        d["up"] = millis() / 1000;
+        String out;
+        serializeJson(d, out);
+        request->send(200, "application/json", out);
+    });
 
     server.on("/api/restart", HTTP_POST, [](AsyncWebServerRequest* request) {
         if (!auth(request)) return;
+        evlog::add("Neustart über die Web-Oberfläche");
         request->send(200, "application/json", "{\"status\":\"restarting\"}");
         restartPending = true;   // do not block the async web task
         restartAt = millis() + 500;

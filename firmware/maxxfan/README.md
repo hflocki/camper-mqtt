@@ -12,10 +12,9 @@ Firmware für einen **ESP32-C3** mit dem **VanTurtle**-Board (TCA9555-Port-Expan
 ## Ordner
 
 ```
-_arduino/camper_maxxfan/        Sketch für die Arduino IDE
-_arduino/camper_maxxfan/web/    Quelle der Web-Oberfläche (index.html)
-_arduino/camper_maxxfan/data/   LittleFS-Inhalt: index.html.gz (komprimiert, wird hochgeladen)
-_platformio/                    platformio.ini, nutzt dieselben Quellen
+camper_maxxfan/        Sketch für die Arduino IDE
+camper_maxxfan/web/    Quelle der Web-Oberfläche (index.html)
+camper_maxxfan/data/   LittleFS-Inhalt: index.html.gz (komprimiert, wird hochgeladen)
 ```
 
 | Datei | Inhalt |
@@ -26,6 +25,7 @@ _platformio/                    platformio.ini, nutzt dieselben Quellen
 | `mqtt_ha.*` | MQTT, Home-Assistant-Discovery |
 | `webserver.*` | Web-Oberfläche aus LittleFS, REST-API, Firmware-Update |
 | `wifi_manager.*` | WLAN, feste IP, Setup-AP |
+| `fwcheck.*`, `evlog.*` | Prüfung beim Firmware-Upload, Ereignis-Log (Kopien aus `firmware/_common`) |
 | `safeguard.*` | Rückfall nach Update, WLAN-Änderung mit Rückweg (Kopie aus `firmware/_common`) |
 | `settings.*` | Einstellungen im NVS |
 
@@ -81,9 +81,10 @@ Ohne LittleFS-Image zeigt das Gerät eine Notseite mit Hinweis und Firmware-Upda
 **Web-Oberfläche ändern:** Quelle ist `web/index.html`, hochgeladen wird `data/index.html.gz`:
 
 ```
-cd _arduino/camper_maxxfan
-gzip -9 -n -c web/index.html > data/index.html.gz
+python3 tools/web/pack_web.py maxxfan      # im Repo-Hauptordner
 ```
+
+Ohne das Repo-Werkzeug geht es auch so (im Sketch-Ordner `camper_maxxfan`): `gzip -9 -n -c web/index.html > data/index.html.gz`. Die GitHub Action prüft bei jedem Push, ob die gepackte Seite zur `index.html` passt.
 
 **Updates ohne USB** (das Gerät sitzt im Lüftergehäuse): im Web-UI unter **WiFi → Firmware- & Web-Update**. Welche Datei gemeint ist, erkennt die Firmware am Namen:
 
@@ -105,6 +106,20 @@ Gleicher Aufbau und gleiche Optik wie bei camper-tanklevel, camper-temp und camp
 - **WiFi:** Verbindungsstatus, WLAN, feste IP, Access Point, Firmware-Update, Neustart, Werkseinstellungen
 
 Zum Ausprobieren ohne Gerät: [`docs/mockups/maxxfan.html`](../../docs/mockups/maxxfan.html) im Repo-Hauptordner (siehe [Mockups](../../README.md#mockups)).
+
+## Sicheres Firmware-Update und Ereignisse
+
+Seit 1.7.0 trägt jede Firmware eine Kennung (`CAMPER-FW:maxxfan:<version>:<chip>;`, `fwcheck.*` aus `firmware/_common`). Im Web-UI unter **WiFi → Firmware- & Web-Update** steht die installierte Version. Eine gewählte Datei wird schon im Browser geprüft und beim Hochladen im Gerät noch einmal, bevor etwas aktiviert wird:
+
+| Datei | Ergebnis |
+| --- | --- |
+| `.bin` dieses Geräts | Gerät, Version und Vergleich mit der installierten (neuer / gleich / älter, bei gleich oder älter mit Rückfrage) |
+| `.merged.bin` aus der Arduino IDE | abgelehnt: das ist das komplette Flash-Abbild für USB, fürs Web-Update die `.bin` ohne „merged“ nehmen |
+| `.bin` eines anderen Geräts oder Chips | abgelehnt, z. B. „Firmware für „tanklevel“, dieses Gerät ist „maxxfan““ |
+| `.bin` ohne Kennung (ältere Firmware, fremde Datei) | gesperrt, mit „Ohne Kennung hochladen“ trotzdem möglich (für ein Downgrade auf eine Version vor 1.7.0) |
+| `data/index.html.gz` | Web-Oberfläche, ohne Neustart |
+
+Schlägt etwas fehl, nennt die Meldung den Grund statt nur „Update failed“. Die Karte **Ereignisse** darunter zeigt die letzten 24 Ereignisse: Start mit Grund (Einschalten, Absturz, Watchdog …), WLAN und MQTT verbunden/getrennt, Uploads mit Ergebnis, Rückfall und gespeicherte Einstellungen (`evlog.*`). Das Log bleibt bei Neustart, Absturz und Update erhalten, bei Stromausfall ist es leer. Updates über den Netzwerkport der Arduino IDE werden nicht geprüft, aber ebenfalls protokolliert.
 
 ## Absicherung gegen Aussperren
 
@@ -169,6 +184,7 @@ Mit Discovery erscheint ein Gerät **„Camper MaxxFan“** mit Tasten-Entitäte
 
 | Version | Änderungen |
 | --- | --- |
+| 1.7.0 | Sichere Updates: Firmware-Kennung, Prüfung der Datei im Browser und im Gerät (falsches Gerät, falscher Chip, .merged.bin, zu groß), Fehlergrund im Klartext, installierte Version und Ereignis-Log im Web-UI |
 | 1.6.0 | Absicherung gegen Aussperren: Rückfall auf die vorherige Firmware, wenn ein Update kein WLAN bekommt; geänderte WLAN-Daten werden zurückgesetzt, wenn sie nicht funktionieren |
 | 1.5.0 | Stufe setzen wieder wie in 1.3.0 (von unten), Stufe 0 schließt die Haube (Web-UI, MQTT, HA-Regler) |
 | 1.4.0 | „Schließen“ (Web-UI, MQTT `cmd/p<n>/close`, HA-Taste); Stufe setzen von oben (10× Schneller), damit die Haube dabei nicht zugeht; Web-Oberfläche und LittleFS-Image per Web-UI oder OTA hochladbar (kein USB nötig) |

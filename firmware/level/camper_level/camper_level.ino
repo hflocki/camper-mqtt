@@ -17,6 +17,7 @@
 #include "config.h"
 #include "wifi_manager.h"
 #include "safeguard.h"
+#include "evlog.h"
 #include "sensor.h"
 #include "mqtt_ha.h"
 #include "webserver.h"
@@ -41,10 +42,10 @@ static void setupOTA() {
         Serial.println("[OTA] Start");
     });
     ArduinoOTA.onEnd([]() {
-        Serial.println("\n[OTA] Done");
+        evlog::add("Update über den IDE-Netzwerkport ok, Neustart");
         if (ArduinoOTA.getCommand() == U_FLASH) guard::otaDone();
     });
-    ArduinoOTA.onError([](ota_error_t e) { Serial.printf("[OTA] Error[%u]\n", e); });
+    ArduinoOTA.onError([](ota_error_t e) { evlog::add("Update über den IDE-Netzwerkport fehlgeschlagen (Fehler %u)", (unsigned)e); });
     ArduinoOTA.begin();
 }
 
@@ -73,7 +74,10 @@ void setup() {
     Serial.println("  Camper Level v" FW_VERSION);
     Serial.println("========================================");
 
+    evlog::begin();
+    evlog::add("Start v%s, Grund: %s", FW_VERSION, evlog::resetReason());
     guard::begin();      // may boot the previous firmware (failed update)
+    if (guard::status().length()) evlog::add("%s", guard::status().c_str());
     memset(&sensorData, 0, sizeof(SensorData));
 
     webserverInit();     // LittleFS + config
@@ -116,6 +120,7 @@ static void handleSerial() {
 void loop() {
     wifiManagerLoop();
     guard::loop(isConnected() || config.wifi_ssid[0] == '\0');
+    evlog::watch(isConnected(), mqttIsConnected());
     ArduinoOTA.handle();
 
     // The sensor is started a few seconds after boot and retried if it was not found

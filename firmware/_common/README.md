@@ -22,6 +22,8 @@ Hier liegt das **Original** von Quelldateien, die mehrere Geräte benutzen. Jede
 | Datei | Zweck | Geräte |
 | --- | --- | --- |
 | `wifi_manager.h/.cpp` | WLAN mit Access-Point-Fallback, Reset-Grund, Sendeleistung (ESP32 und ESP8266) | template, temp, battery, level |
+| `fwcheck.h/.cpp` | Firmware-Kennung `CAMPER-FW:<gerät>:<version>:<chip>;` und Prüfung beim Upload (Chip, Gerät, `.merged.bin`, Größe), Fehler im Klartext. Braucht `FW_DEVICE` in `config.h`. Einbinden: `fwcheck::begin(request->contentLength(), request->hasParam("force"))` beim ersten Stück, `fwcheck::chunk()` für jedes, im Request-Handler `fwcheck::ok()` / `fwcheck::error()`; `fwcheck::info()` und `evlog::json()` unter `GET /api/system` für die Webseite (Prüfung im Browser: `fwInspect()` in den Web-Oberflächen) | maxxfan, tanklevel, level |
+| `evlog.h/.cpp` | Ereignis-Log im RTC-Speicher (übersteht Neustart, Absturz und Update), `evlog::begin()` als Erstes in `setup()`, `evlog::add()`, `evlog::watch(wlan, mqtt)` in `loop()` | maxxfan, tanklevel, level |
 | `safeguard.h/.cpp` | Rückfall auf die vorherige Firmware, wenn ein Update kein WLAN bekommt; WLAN-Änderung mit Rückweg (nur ESP32). Einbinden: `guard::begin()` am Anfang von `setup()`, `guard::loop(verbunden)` in `loop()`, `guard::otaDone()` nach erfolgreichem `Update.end()` bzw. in `ArduinoOTA.onEnd` (nur Firmware), `guard::wifiTrialStart(alteSsid, altesPasswort)` vor dem Überschreiben der WLAN-Daten, beim Start `wifiTrialPending()` / `wifiTrialOk()` / `wifiTrialRestore()`, `guard::status()` im Web-UI | maxxfan, tanklevel, level |
 | `devinfo.h/.cpp` | Diagnose-JSON für `<prefix>/info` (Version, IP, MAC, RSSI, Laufzeit, Reset-Grund, freier Speicher) und Zeitsteuerung `devinfoDue()` | alle Geräte |
 

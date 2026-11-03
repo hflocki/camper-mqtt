@@ -1,4 +1,4 @@
-"""Shared MQTT connection helpers for sim.py and record.py."""
+"""Shared MQTT connection helpers for sim.py, record.py and clean.py."""
 import argparse
 import os
 import sys

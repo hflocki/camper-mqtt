@@ -6,6 +6,8 @@
 #include "mqtt_ha.h"
 #include "system.h"
 #include "safeguard.h"
+#include "fwcheck.h"
+#include "evlog.h"
 #include <WiFi.h>
 #include <LittleFS.h>
 #include <ESPAsyncWebServer.h>
@@ -26,6 +28,7 @@ enum UploadKind : uint8_t { UP_FIRMWARE, UP_FS_IMAGE, UP_WEBPAGE };
 UploadKind upKind = UP_FIRMWARE;
 File upFile;
 bool upFailed = false;
+String upError;   // reason of a failed web page / filesystem upload
 const char* WEB_TMP = "/index.html.gz.tmp";
 const char* WEB_FILE = "/index.html.gz";
 
@@ -161,6 +164,7 @@ void handleSetConfig(AsyncWebServerRequest* r) {
   settings.syncPort = param(r, "syncport", "1").toInt() == 0 ? 0 : 1;
 
   settingsSave();
+  evlog::add("Einstellungen gespeichert, Neustart");
   sendOk(r);
   requestReboot(1000);
 }
@@ -186,15 +190,24 @@ void handleLed(AsyncWebServerRequest* r) {
 
 void handleUpdateDone(AsyncWebServerRequest* r) {
   if (!auth(r)) return;
+  if (!updateAuthorized) { r->send(401, "text/plain", "Login fehlt"); return; }
   if (upKind == UP_WEBPAGE) {
     // Only the web page was replaced: no restart needed
-    bool ok = updateAuthorized && !upFailed;
-    r->send(ok ? 200 : 500, "text/plain", ok ? "OK web" : "Upload failed");
+    if (upFailed) r->send(500, "text/plain", "Web-Oberfläche nicht gespeichert: " + upError);
+    else r->send(200, "text/plain", "OK web");
     return;
   }
-  bool ok = updateAuthorized && !Update.hasError();
-  r->send(ok ? 200 : 500, "text/plain", ok ? "OK" : "Update failed");
-  if (ok) requestReboot(1000);
+  if (upKind == UP_FS_IMAGE) {
+    bool ok = !upFailed && !Update.hasError();
+    r->send(ok ? 200 : 500, "text/plain", ok ? "OK" : "Dateisystem-Abbild fehlgeschlagen: " + upError);
+    if (ok) requestReboot(1000);
+    return;
+  }
+  // firmware: checked and written by fwcheck
+  if (!fwcheck::ok()) { r->send(400, "text/plain", "Update abgelehnt: " + fwcheck::error()); return; }
+  guard::otaDone();
+  r->send(200, "text/plain", "OK");
+  requestReboot(1000);
 }
 
 // One upload field for everything, the file name decides:
@@ -216,22 +229,23 @@ void handleUpdateChunk(AsyncWebServerRequest* r, const String& filename, size_t 
     Serial.printf("[ota] web upload (%s): %s\n",
                   upKind == UP_WEBPAGE ? "web page" : upKind == UP_FS_IMAGE ? "filesystem" : "firmware",
                   filename.c_str());
+    upError = "";
     if (upKind == UP_WEBPAGE) {
       upFile = fsReady ? LittleFS.open(WEB_TMP, "w") : File();
-      if (!upFile) { upFailed = true; Serial.println("[ota] cannot write to LittleFS"); }
+      if (!upFile) { upFailed = true; upError = "LittleFS nicht beschreibbar"; }
     } else if (upKind == UP_FS_IMAGE) {
       if (fsReady) LittleFS.end();   // the image replaces the whole partition
       fsReady = false;
-      if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_SPIFFS)) Update.printError(Serial);
+      if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_SPIFFS)) { upFailed = true; upError = Update.errorString(); }
     } else {
-      if (!Update.begin(UPDATE_SIZE_UNKNOWN, U_FLASH)) Update.printError(Serial);
+      fwcheck::begin(r->contentLength(), r->hasParam("force"));
     }
   }
   if (!updateAuthorized) return;
 
   if (upKind == UP_WEBPAGE) {
     if (upFailed) return;
-    if (len && upFile.write(data, len) != len) upFailed = true;
+    if (len && upFile.write(data, len) != len) { upFailed = true; upError = "Schreibfehler (Speicher voll?)"; }
     if (final) {
       upFile.close();
       if (!upFailed) {
@@ -240,18 +254,25 @@ void handleUpdateChunk(AsyncWebServerRequest* r, const String& filename, size_t 
       } else {
         LittleFS.remove(WEB_TMP);
       }
-      Serial.printf("[ota] web page %s, %u bytes\n", upFailed ? "FAILED" : "replaced", (unsigned)(index + len));
+      if (upFailed && upError.isEmpty()) upError = "Umbenennen fehlgeschlagen";
+      if (upFailed) evlog::add("Web-Oberfläche nicht gespeichert: %s", upError.c_str());
+      else evlog::add("Web-Oberfläche ersetzt (%u kB)", (unsigned)((index + len) / 1024));
     }
     return;
   }
 
-  if (len && Update.write(data, len) != len) Update.printError(Serial);
+  if (upKind == UP_FIRMWARE) {
+    fwcheck::chunk(data, len, final);
+    return;
+  }
+
+  // complete LittleFS image
+  if (upFailed) return;
+  if (len && Update.write(data, len) != len) { upFailed = true; upError = Update.errorString(); Update.abort(); return; }
   if (final) {
-    if (Update.end(true)) {
-      Serial.printf("[ota] success, %u bytes\n", (unsigned)(index + len));
-      if (upKind == UP_FIRMWARE) guard::otaDone();
-    }
-    else Update.printError(Serial);
+    if (Update.end(true)) evlog::add("Dateisystem-Abbild geschrieben (%u kB), Neustart", (unsigned)((index + len) / 1024));
+    else { upFailed = true; upError = Update.errorString(); }
+    if (upFailed) evlog::add("Dateisystem-Abbild fehlgeschlagen: %s", upError.c_str());
   }
 }
 
@@ -295,6 +316,7 @@ void begin() {
   });
   server.on("/api/reboot", HTTP_POST, [](AsyncWebServerRequest* r) {
     if (!auth(r)) return;
+    evlog::add("Neustart über die Web-Oberfläche");
     sendOk(r);
     requestReboot();
   });
@@ -305,6 +327,16 @@ void begin() {
     requestReboot();
   });
   server.on("/api/update", HTTP_POST, handleUpdateDone, handleUpdateChunk);
+
+  // Firmware info for the update check in the browser, and the event log
+  server.on("/api/system", HTTP_GET, [](AsyncWebServerRequest* r) {
+    if (!auth(r)) return;
+    JsonDocument d;
+    fwcheck::info(d["fw"].to<JsonObject>());
+    evlog::json(d["log"].to<JsonArray>());
+    d["up"] = millis() / 1000;
+    sendJson(r, d);
+  });
 
   // Captive portal: redirect everything to the UI while the setup AP is up
   server.onNotFound([](AsyncWebServerRequest* r) {

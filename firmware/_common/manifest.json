@@ -2,52 +2,72 @@
   "_comment": "Shared source files and the sketches that carry a copy. Edit the file here, then run tools/common/sync_common.py.",
   "files": {
     "wifi_manager.h": [
-      "firmware/_template/_arduino/camper_example",
-      "firmware/emulator/_arduino/camper_emulator",
-      "firmware/temp/_arduino/camper_temp",
-      "firmware/battery/_arduino/camper_battery",
-      "firmware/level/_arduino/camper_level"
+      "firmware/_template/camper_example",
+      "firmware/emulator/camper_emulator",
+      "firmware/temp/camper_temp",
+      "firmware/battery/camper_battery",
+      "firmware/level/camper_level"
     ],
     "wifi_manager.cpp": [
-      "firmware/_template/_arduino/camper_example",
-      "firmware/emulator/_arduino/camper_emulator",
-      "firmware/temp/_arduino/camper_temp",
-      "firmware/battery/_arduino/camper_battery",
-      "firmware/level/_arduino/camper_level"
+      "firmware/_template/camper_example",
+      "firmware/emulator/camper_emulator",
+      "firmware/temp/camper_temp",
+      "firmware/battery/camper_battery",
+      "firmware/level/camper_level"
     ],
     "devinfo.h": [
-      "firmware/_template/_arduino/camper_example",
-      "firmware/emulator/_arduino/camper_emulator",
-      "firmware/tanklevel/_arduino/camper_tanklevel",
-      "firmware/temp/_arduino/camper_temp",
-      "firmware/battery/_arduino/camper_battery",
-      "firmware/level/_arduino/camper_level",
-      "firmware/maxxfan/_arduino/camper_maxxfan",
+      "firmware/_template/camper_example",
+      "firmware/emulator/camper_emulator",
+      "firmware/tanklevel/camper_tanklevel",
+      "firmware/temp/camper_temp",
+      "firmware/battery/camper_battery",
+      "firmware/level/camper_level",
+      "firmware/maxxfan/camper_maxxfan",
       "firmware/heater/truma_heater",
-      "firmware/display/_arduino/camper_display",
-      "firmware/roadbuddy/_arduino/roadbuddy"
+      "firmware/display/camper_display",
+      "firmware/roadbuddy/roadbuddy"
     ],
     "devinfo.cpp": [
-      "firmware/_template/_arduino/camper_example",
-      "firmware/emulator/_arduino/camper_emulator",
-      "firmware/tanklevel/_arduino/camper_tanklevel",
-      "firmware/temp/_arduino/camper_temp",
-      "firmware/battery/_arduino/camper_battery",
-      "firmware/level/_arduino/camper_level",
-      "firmware/maxxfan/_arduino/camper_maxxfan",
+      "firmware/_template/camper_example",
+      "firmware/emulator/camper_emulator",
+      "firmware/tanklevel/camper_tanklevel",
+      "firmware/temp/camper_temp",
+      "firmware/battery/camper_battery",
+      "firmware/level/camper_level",
+      "firmware/maxxfan/camper_maxxfan",
       "firmware/heater/truma_heater",
-      "firmware/display/_arduino/camper_display",
-      "firmware/roadbuddy/_arduino/roadbuddy"
+      "firmware/display/camper_display",
+      "firmware/roadbuddy/roadbuddy"
     ],
     "safeguard.h": [
-      "firmware/level/_arduino/camper_level",
-      "firmware/maxxfan/_arduino/camper_maxxfan",
-      "firmware/tanklevel/_arduino/camper_tanklevel"
+      "firmware/level/camper_level",
+      "firmware/maxxfan/camper_maxxfan",
+      "firmware/tanklevel/camper_tanklevel"
     ],
     "safeguard.cpp": [
-      "firmware/level/_arduino/camper_level",
-      "firmware/maxxfan/_arduino/camper_maxxfan",
-      "firmware/tanklevel/_arduino/camper_tanklevel"
+      "firmware/level/camper_level",
+      "firmware/maxxfan/camper_maxxfan",
+      "firmware/tanklevel/camper_tanklevel"
+    ],
+    "evlog.h": [
+      "firmware/level/camper_level",
+      "firmware/maxxfan/camper_maxxfan",
+      "firmware/tanklevel/camper_tanklevel"
+    ],
+    "evlog.cpp": [
+      "firmware/level/camper_level",
+      "firmware/maxxfan/camper_maxxfan",
+      "firmware/tanklevel/camper_tanklevel"
+    ],
+    "fwcheck.h": [
+      "firmware/level/camper_level",
+      "firmware/maxxfan/camper_maxxfan",
+      "firmware/tanklevel/camper_tanklevel"
+    ],
+    "fwcheck.cpp": [
+      "firmware/level/camper_level",
+      "firmware/maxxfan/camper_maxxfan",
+      "firmware/tanklevel/camper_tanklevel"
     ]
   }
 }

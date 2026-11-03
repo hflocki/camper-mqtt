@@ -1,5 +1,6 @@
 #include "netdev.h"
 #include "settings.h"
+#include "mqtt_client.h"
 #include <ArduinoJson.h>
 #include <algorithm>
 #include <freertos/FreeRTOS.h>
@@ -121,10 +122,11 @@ String json() {
   JsonDocument doc;
   JsonArray a = doc.to<JsonArray>();
   uint32_t now = millis();
-  for (auto& e : list()) {
+  std::vector<Entry> all = list();
+  for (auto& e : all) {
     JsonObject o = a.add<JsonObject>();
     o["id"] = e.id;
-    o["n"] = name(e.id);
+    o["n"] = label(e.id, all);
     o["on"] = e.online;
     if (e.hasInfo) {
       o["v"] = e.version;
@@ -138,6 +140,35 @@ String json() {
   String out;
   serializeJson(doc, out);
   return out;
+}
+
+// Removes a left-over entry: an old firmware's retained status / info (e.g. after a device
+// moved to another topic) stays on the broker forever otherwise. A live device would
+// simply announce itself again, so only offline entries or entries without fresh info.
+bool forget(const String& id) {
+  String r = root();
+  if (r.isEmpty() || id.isEmpty() || id.indexOf('/') >= 0 || id.indexOf('+') >= 0 || id.indexOf('#') >= 0) return false;
+  {
+    Lock lock;
+    auto it = std::find_if(entries.begin(), entries.end(), [&](const Entry& e) { return e.id == id; });
+    if (it == entries.end()) return false;
+    if (it->online == 1 && !infoStale(*it)) return false;
+  }
+  String base = r + "/" + id + "/";
+  bool ok = mqttc::publishRetained(base + "info", "") && mqttc::publishRetained(base + "status", "");
+  if (!ok) return false;
+  Lock lock;
+  entries.erase(std::remove_if(entries.begin(), entries.end(), [&](const Entry& e) { return e.id == id; }), entries.end());
+  dirty = true;
+  Serial.printf("[netdev] %s removed from the broker\n", id.c_str());
+  return true;
+}
+
+String label(const String& id, const std::vector<Entry>& all) {
+  String n = name(id);
+  int same = 0;
+  for (auto& e : all) if (name(e.id) == n) same++;
+  return same > 1 && n != id ? n + " (" + id + ")" : n;
 }
 
 bool changed() {

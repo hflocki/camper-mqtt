@@ -37,6 +37,9 @@ main{padding:14px 14px calc(84px + env(safe-area-inset-bottom));max-width:820px;
 .syslist .btn{justify-content:flex-start;text-align:left;padding:14px;font-size:16px}
 .sysrow{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--hi)}
 .sysrow:last-child{border-bottom:0}
+.devr{display:flex;align-items:center;gap:10px}
+.devdel{background:none;border:1px solid var(--hi);color:var(--mu,#8696a6);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12px}
+.devdel:hover{color:var(--warn,#e5484d);border-color:var(--warn,#e5484d)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
 .card{background:var(--card);border-radius:16px;padding:14px;position:relative}
 .card.wide{grid-column:1/-1}
@@ -326,10 +329,16 @@ async function loadDevices(){
   if(!$('#sy_dev'))return;
   if(!l.length){b.textContent='Noch keine Meldung. Geräte ab dieser Firmware-Version senden <prefix>/info.';return}
   b.classList.remove('mu');
-  b.innerHTML=l.map(d=>{const dot=d.on===1?'🟢':d.on===0?'🔴':'⚪',old=d.age==null||d.age>180;
+  // left-overs (offline, or "online" without info from an old firmware) can be removed from the broker
+  b.innerHTML=l.map(d=>{const old=d.age==null||d.age>180,dot=d.on===1?(d.v==null?'🟡':'🟢'):d.on===0?'🔴':'⚪';
     const v=d.on===0?'offline':d.v==null?'keine Info':`v${esc(d.v)}${d.rssi?' · '+d.rssi+' dBm':''}${!old?' · '+upTxt(d.up):' · keine Info'}`;
-    const t=d.v!=null?`IP ${d.ip||'?'} · letzter Neustart: ${d.rst||'?'}`:'';
-    return `<div class="sysrow" title="${esc(t)}"><span>${dot} ${esc(d.n)}</span><b class="${d.on===0?'':'mu'}" style="font-weight:400${d.on===0?';color:var(--warn,#e5484d)':''}">${v}</b></div>`}).join('');
+    const t=(d.v!=null?`IP ${d.ip||'?'} · letzter Neustart: ${d.rst||'?'} · `:'')+'Topic: …/'+d.id+'/status';
+    const del=d.on!==1||old?`<button class="devdel" data-id="${esc(d.id)}" data-n="${esc(d.n)}" title="Eintrag vom Broker löschen">✕</button>`:'';
+    return `<div class="sysrow" title="${esc(t)}"><span>${dot} ${esc(d.n)}</span><span class="devr"><b class="${d.on===0?'':'mu'}" style="font-weight:400${d.on===0?';color:var(--warn,#e5484d)':''}">${v}</b>${del}</span></div>`}).join('')+
+    (l.some(d=>d.on!==1||d.age==null||d.age>180)?'<div class="mu" style="font-size:12px;margin-top:8px">✕ löscht einen alten Eintrag (Status und Info) vom Broker, z. B. nach einem Wechsel des Topics. Ein Gerät, das noch läuft, meldet sich danach von selbst wieder.</div>':'');
+  b.querySelectorAll('.devdel').forEach(x=>x.onclick=()=>{
+    if(!confirm(`„${x.dataset.n}“ (Topic …/${x.dataset.id}/status und /info) vom Broker löschen?`))return;
+    send({c:'devdel',v:x.dataset.id});setTimeout(loadDevices,800)});
 }
 function pgLinks(){
   const l=(cfg&&cfg.links)||[];

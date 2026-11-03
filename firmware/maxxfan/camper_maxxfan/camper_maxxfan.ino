@@ -4,6 +4,7 @@
 #include "config.h"
 #include "settings.h"
 #include "safeguard.h"
+#include "evlog.h"
 #include "fan_control.h"
 #include "wifi_manager.h"
 #include "mqtt_ha.h"
@@ -30,10 +31,10 @@ static void startArduinoOta() {
     Serial.printf("[ota] start (%s)\n", ArduinoOTA.getCommand() == U_SPIFFS ? "filesystem" : "firmware");
   });
   ArduinoOTA.onEnd([]() {
-    Serial.println("[ota] done");
+    evlog::add("Update über den IDE-Netzwerkport ok, Neustart");
     if (ArduinoOTA.getCommand() == U_FLASH) guard::otaDone();
   });
-  ArduinoOTA.onError([](ota_error_t e) { Serial.printf("[ota] error %u\n", e); });
+  ArduinoOTA.onError([](ota_error_t e) { evlog::add("Update über den IDE-Netzwerkport fehlgeschlagen (Fehler %u)", (unsigned)e); });
   ArduinoOTA.begin();
   otaStarted = true;
 }
@@ -43,7 +44,10 @@ void setup() {
   delay(300);
   Serial.printf("\nCamper MaxxFan %s\n", FW_VERSION);
 
+  evlog::begin();
+  evlog::add("Start v%s, Grund: %s", FW_VERSION, evlog::resetReason());
   guard::begin();   // may boot the previous firmware (failed update)
+  if (guard::status().length()) evlog::add("%s", guard::status().c_str());
   settingsLoad();
   fan::begin();
   wifimgr::begin();
@@ -54,6 +58,7 @@ void setup() {
 void loop() {
   wifimgr::loop();
   guard::loop(wifimgr::staConnected() || settings.wifiSsid.isEmpty());
+  evlog::watch(wifimgr::staConnected(), mqttha::connected());
   if (!otaStarted && wifimgr::staConnected()) startArduinoOta();
   if (otaStarted) ArduinoOTA.handle();
 

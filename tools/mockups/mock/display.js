@@ -1,5 +1,6 @@
 // camper-display: wall panel; the web page mirrors it over a WebSocket (t: cfg / v / f / err)
 const M = {
+  gone: [],   // devices removed with ✕ on the system page
   id: 'display',
   wsInterval: 2000,
   config: {
@@ -109,6 +110,7 @@ const M = {
     } else if (o.c === 'bri') M.bri = +o.v;
     else if (o.c === 'screen') M.awake = o.v !== 'off';
     else if (o.c === 'awning') M.awn = M.awn === 1 ? 0 : 1;
+    else if (o.c === 'devdel') M.gone.push(o.v);
     else if (o.c === 'finder') {
       M.finderOn = !!o.on;
       return {t: 'f', on: M.finderOn, filter: o.f || '', l: M.finderOn ? [
@@ -134,7 +136,10 @@ const M = {
       const D = (id, n, v, rssi, base) => ({id, n, on: 1, v, ip: '192.168.8.' + (20 + id.length), rssi, up: base + up, rst: 'power on', age: 20});
       return [D('display', 'Display', '2.9.13', -52, 86400), D('heater', 'Heizung', '1.3.1', -63, 7200), D('level', 'Level', '2.1.1', -58, 3600),
               D('maxxfan', 'Dachlüfter', '1.5.1', -66, 7100), D('tanklevel', 'Tanks', '1.6.1', -61, 90000), D('temp', 'Temperatur', '1.2.1', -70, 4000),
-              {id: 'battery', n: 'Batterie', on: 1}, {id: 'roadbuddy', n: 'Road Buddy', on: 0, v: '1.2.3', ip: '192.168.8.40', rssi: -71, up: 600, rst: 'deep sleep', age: 900}];
+              {id: 'battery', n: 'Batterie', on: 1}, {id: 'roadbuddy', n: 'Road Buddy', on: 0, v: '1.2.3', ip: '192.168.8.40', rssi: -71, up: 600, rst: 'deep sleep', age: 900},
+              // left-overs of old firmware on the broker (removable with ✕)
+              {id: 'gaslevel', n: 'gaslevel', on: 1}, {id: 'truma', n: 'Heizung (truma)', on: 0}].filter(d => !M.gone.includes(d.id))
+              .map(d => d.id === 'heater' ? Object.assign(d, {n: M.gone.includes('truma') ? 'Heizung' : 'Heizung (heater)'}) : d);
     }
     if (path === '/api/sensors/unknown') return [{bus: 0, addr: '00158d0000000009', ago: 25}, {bus: 1, addr: 'A4C1380000BB', ago: 70}];
     if (path === '/api/rules' && method === 'GET') return M.rules;

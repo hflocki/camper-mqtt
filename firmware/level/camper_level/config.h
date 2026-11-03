@@ -13,7 +13,8 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "2.2.0"
+#define FW_VERSION            "2.3.0"
+#define FW_DEVICE             "level"   // device id in the firmware marker (fwcheck.h)
 
 #ifndef DEFAULT_AP_SSID
 #define DEFAULT_AP_SSID       "Camper-Level"     // Base name; "-XXXXXX" (last 3 MAC bytes) is appended

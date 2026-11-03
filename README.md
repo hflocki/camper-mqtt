@@ -39,7 +39,7 @@ Alle Topics aller Geräte auf einen Blick: [`docs/TOPICS.md`](docs/TOPICS.md).
 
 Hinweise für KI-Assistenten und Mitwirkende (Arbeitsweise, Bauen, Patches): [`AGENTS.md`](AGENTS.md).
 
-Jeder Ordner ist für sich vollständig: eigene README mit Hardware, Board-Einstellungen, Bibliotheken und Topics, Arduino-Sketch unter `_arduino/` (bzw. `truma_heater/`), teils zusätzlich PlatformIO unter `_platformio/`.
+Jeder Ordner ist für sich vollständig: eigene README mit Hardware, Board-Einstellungen, Bibliotheken und Topics, Arduino-Sketch im Unterordner mit dem Namen der `.ino` (z. B. `camper_temp/`, Heizung `truma_heater/`). Gebaut wird nur mit Arduino (IDE oder `arduino-cli`), PlatformIO nur beim Bluetooth-Gateway `firmware/omg`, weil OpenMQTTGateway ein fremdes PlatformIO-Projekt ist.
 
 ## Mockups
 
@@ -80,7 +80,7 @@ Alle Geräte halten sich an dasselbe Schema, damit Displays und Home Assistant s
 Passwörter, WLAN und Broker gehören nicht ins Repo. Jedes Gerät hat dafür neben seiner `config.h` eine Vorlage `config_local.h.example`:
 
 ```bash
-cd firmware/temp/_arduino/camper_temp
+cd firmware/temp/camper_temp
 cp config_local.h.example config_local.h   # then edit
 ```
 

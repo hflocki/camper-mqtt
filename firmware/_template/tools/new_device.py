@@ -82,7 +82,7 @@ def main() -> int:
             shutil.copy2(src, dst)
 
     # The web page carries the device name, so its gzip copy is rebuilt from web/index.html
-    sketch = target / "_arduino" / f"camper_{dev_id}"
+    sketch = target / f"camper_{dev_id}"
     page = (sketch / "web" / "index.html").read_bytes()
     (sketch / "data" / "index.html.gz").write_bytes(gzip.compress(page, compresslevel=9, mtime=0))
 

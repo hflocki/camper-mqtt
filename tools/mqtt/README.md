@@ -1,4 +1,4 @@
-# MQTT-Werkzeuge: Simulator und Recorder
+# MQTT-Werkzeuge: Simulator, Recorder und Aufräumen
 
 Zum Testen von Display, Road Buddy und Home Assistant ohne Fahrzeug, z. B. im Testnetz zu Hause.
 
@@ -54,3 +54,17 @@ python3 tools/mqtt/record.py -t 'camper/zigbee/data/#' --duration 600 -o pj1203.
 `--no-retained` lässt die retained Nachrichten beim Start weg, `-q` gibt nichts auf der Konsole aus. Beenden mit Strg+C.
 
 Mitschnitte können Positionen (GPS) und Gerätenamen enthalten. Sie gehören nicht ins Repo, `*.jsonl` im Hauptordner fängt `.gitignore` ab.
+
+## Aufräumen `clean.py`
+
+Retained Topics bleiben am Broker, bis jemand sie löscht. Nach dem Umzug eines Geräts auf ein anderes Topic (z. B. `camper/waterlevel` und `camper/gaslevel` → `camper/tanklevel`, `camper/truma` → `camper/heater`) stehen die alten Einträge deshalb weiter in der Geräteliste des Displays und in Home Assistant.
+
+```bash
+python3 tools/mqtt/clean.py --host 192.168.8.1                                  # Übersicht, Altlasten markiert
+python3 tools/mqtt/clean.py --host 192.168.8.1 camper/gaslevel camper/waterlevel # alles darunter löschen (fragt nach)
+```
+
+Ohne Präfix listet es alle Geräte unter `camper/+/status` mit Version und markiert Altlasten: `offline` oder „online“ ohne `…/info`. Mit Präfixen sammelt es alle retained Topics darunter (auch alte Messwerte), zeigt sie und löscht sie nach Rückfrage (`--yes` ohne Rückfrage). Wildcards und die ganze Wurzel `camper` werden abgelehnt. Ein Gerät, das gerade nur ausgeschaltet ist, erscheint wieder, sobald es läuft.
+
+Einzelne Einträge der Geräteliste lassen sich auch direkt in der Web-Oberfläche des Displays entfernen (System → Geräte im Netz → ✕). Das löscht nur `…/status` und `…/info`.
+

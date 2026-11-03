@@ -8,7 +8,7 @@ Uses only the Python standard library.
 import pathlib
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent / "_arduino" / "camper_display"
+ROOT = pathlib.Path(__file__).resolve().parent.parent / "camper_display"
 SRC = ROOT / "web" / "index.html"
 DST = ROOT / "web_ui.h"
 DELIM = "WEBUI"

@@ -50,7 +50,7 @@ Alle Stellen, an denen du etwas tun musst, sind im Code mit **`TODO`** markiert 
 - Code-Kommentare auf Englisch, Texte der Web-Oberfläche auf Deutsch.
 - Nichts Blockierendes in Web-Handlern: nur ein Flag setzen, die Arbeit in `loop()` machen (wie `sensorRequestMeasure()`).
 - Zugangsdaten nur in `config_local.h` (wird von git ignoriert) oder im Web-UI.
-- Nach jeder Änderung an `web/index.html`: `gzip -9 -n -c web/index.html > data/index.html.gz`.
+- Nach jeder Änderung an `web/index.html`: `python3 tools/web/pack_web.py <id>` im Repo-Hauptordner (packt nach `data/index.html.gz`; die GitHub Action prüft, ob beide zusammenpassen).
 
 ## 3. Bauen und flashen
 
@@ -66,7 +66,7 @@ Alle Stellen, an denen du etwas tun musst, sind im Code mit **`TODO`** markiert 
   - device: waste
     target: esp32c3
     fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
-    sketch: firmware/waste/_arduino/camper_waste
+    sketch: firmware/waste/camper_waste
     libs: ''        # zusätzliche Bibliotheken als git-URLs mit #Version
   ```
 - **Haupt-README:** Zeile in der Gerätetabelle und bei den Lizenzen.
@@ -81,7 +81,7 @@ firmware/_template/
 ├── README.md                    README des neuen Geräts (mit TODOs)
 ├── LICENSE                      MIT
 ├── tools/new_device.py          Kopier-Skript (wird nicht mitkopiert)
-└── _arduino/camper_example/
+└── camper_example/
     ├── camper_example.ino       setup()/loop(), OTA, serielle Befehle
     ├── config.h                 Konstanten, AppConfig, SensorData
     ├── config_local.h.example   persönliche Werte (Kopie bleibt außerhalb von git)

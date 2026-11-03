@@ -29,9 +29,9 @@ Die BLE-Arbeit läuft in einem eigenen Task. Web-Oberfläche und MQTT bleiben au
 ## Ordner
 
 ```
-_arduino/camper_battery/        Sketch für die Arduino IDE (.ino + .cpp/.h)
-_arduino/camper_battery/web/    Quelle der Web-Oberfläche (index.html)
-_arduino/camper_battery/data/   LittleFS-Inhalt: index.html.gz (komprimiert, wird hochgeladen)
+camper_battery/        Sketch für die Arduino IDE (.ino + .cpp/.h)
+camper_battery/web/    Quelle der Web-Oberfläche (index.html)
+camper_battery/data/   LittleFS-Inhalt: index.html.gz (komprimiert, wird hochgeladen)
 ```
 
 | Datei | Inhalt |
@@ -96,9 +96,10 @@ Der LittleFS-Upload überschreibt die gespeicherte Konfiguration.
 **Web-Oberfläche ändern:** Quelle ist `web/index.html`, hochgeladen wird `data/index.html.gz`:
 
 ```
-cd _arduino/camper_battery
-gzip -9 -n -c web/index.html > data/index.html.gz
+python3 tools/web/pack_web.py battery      # im Repo-Hauptordner
 ```
+
+Ohne das Repo-Werkzeug geht es auch so (im Sketch-Ordner `camper_battery`): `gzip -9 -n -c web/index.html > data/index.html.gz`. Die GitHub Action prüft bei jedem Push, ob die gepackte Seite zur `index.html` passt.
 
 **Updates ohne USB** (nach dem ersten Flash): im Web-UI unter **WiFi → Firmware- & Web-Update**. Die Firmware erkennt die Datei am Namen:
 

@@ -74,14 +74,16 @@ Board-Paket: esp32 von Espressif **3.x** (getestet 3.3.2).
 
 **Hochladen**
 
-1. `_arduino/camper_level/camper_level.ino` öffnen, Board und Partition Scheme einstellen, Sketch hochladen.
+1. `camper_level/camper_level.ino` öffnen, Board und Partition Scheme einstellen, Sketch hochladen.
 2. Web-Oberfläche hochladen: Das LittleFS-Image aus `data/` (enthält `index.html.gz`) mit dem Plugin [arduino-littlefs-upload](https://github.com/earlephilhower/arduino-littlefs-upload) übertragen (Arduino IDE 2: `Strg/Cmd + Shift + P` → *Upload LittleFS to Pico/ESP8266/ESP32*). Danach startet das Gerät mit leeren Einstellungen bzw. den Werten aus `config_local.h`.
 
 Die lesbare Quelle der Web-Oberfläche liegt in `web/index.html`. Nach Änderungen daran neu packen:
 
-```bash
-python3 -c "import gzip;h=open('web/index.html','rb').read();open('data/index.html.gz','wb').write(gzip.compress(h,9,mtime=0))"
 ```
+python3 tools/web/pack_web.py level      # im Repo-Hauptordner
+```
+
+Ohne das Repo-Werkzeug geht es auch so (im Sketch-Ordner `camper_level`): `gzip -9 -n -c web/index.html > data/index.html.gz`. Die GitHub Action prüft bei jedem Push, ob die gepackte Seite zur `index.html` passt.
 
 ## Erstbenutzung
 
@@ -149,6 +151,20 @@ Bestehende Dashboards mit `custom:wowa-level-card` funktionieren weiter.
 | Web-Oberfläche | `data/index.html.gz` im Web-UI hochladen – ersetzt nur die Seite, ohne Neustart, Einstellungen bleiben |
 | Komplettes LittleFS-Image | Nur per USB oder IDE-Netzwerkport; löscht dabei auch die Einstellungen (`config.json`) |
 
+## Sicheres Firmware-Update und Ereignisse
+
+Seit 2.3.0 trägt jede Firmware eine Kennung (`CAMPER-FW:level:<version>:<chip>;`, `fwcheck.*` aus `firmware/_common`). Im Web-UI unter **WiFi → Firmware- & Web-Update** steht die installierte Version. Eine gewählte Datei wird schon im Browser geprüft und beim Hochladen im Gerät noch einmal, bevor etwas aktiviert wird:
+
+| Datei | Ergebnis |
+| --- | --- |
+| `.bin` dieses Geräts | Gerät, Version und Vergleich mit der installierten (neuer / gleich / älter, bei gleich oder älter mit Rückfrage) |
+| `.merged.bin` aus der Arduino IDE | abgelehnt: das ist das komplette Flash-Abbild für USB, fürs Web-Update die `.bin` ohne „merged“ nehmen |
+| `.bin` eines anderen Geräts oder Chips | abgelehnt, z. B. „Firmware für „tanklevel“, dieses Gerät ist „level““ |
+| `.bin` ohne Kennung (ältere Firmware, fremde Datei) | gesperrt, mit „Ohne Kennung hochladen“ trotzdem möglich (für ein Downgrade auf eine Version vor 2.3.0) |
+| `data/index.html.gz` | Web-Oberfläche, ohne Neustart |
+
+Schlägt etwas fehl, nennt die Meldung den Grund statt nur „Update failed“. Die Karte **Ereignisse** darunter zeigt die letzten 24 Ereignisse: Start mit Grund (Einschalten, Absturz, Watchdog …), WLAN und MQTT verbunden/getrennt, Uploads mit Ergebnis, Rückfall und gespeicherte Einstellungen (`evlog.*`). Das Log bleibt bei Neustart, Absturz und Update erhalten, bei Stromausfall ist es leer. Updates über den Netzwerkport der Arduino IDE werden nicht geprüft, aber ebenfalls protokolliert.
+
 ## Absicherung gegen Aussperren
 
 Damit das Gerät erreichbar bleibt, ohne dass jemand hinmuss (`safeguard.*` aus `firmware/_common`):
@@ -163,6 +179,7 @@ Der Schutz greift erst bei Updates, die von dieser Version **aus** gemacht werde
 
 | Version | Änderungen |
 |---|---|
+| 2.3.0 | Sichere Updates: Firmware-Kennung, Prüfung der Datei im Browser und im Gerät (falsches Gerät, falscher Chip, .merged.bin, zu groß), Fehlergrund im Klartext, installierte Version und Ereignis-Log im Web-UI |
 | 2.2.0 | Absicherung gegen Aussperren: Rückfall auf die vorherige Firmware, wenn ein Update kein WLAN bekommt; geänderte WLAN-Daten werden zurückgesetzt, wenn sie nicht funktionieren |
 | 2.1.2 | Standard-Pins SDA GPIO2 / SCL GPIO1, damit die Release-.bin ohne eigene `config_local.h` den Sensor findet |
 | 2.1.0 | Firmware (.bin) und Web-Oberfläche (index.html.gz) im Web-UI unter WiFi hochladbar, ohne USB; Arduino-OTA-Dateisystem-Upload hängt LittleFS vorher aus |

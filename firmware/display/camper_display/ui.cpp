@@ -2346,7 +2346,7 @@ String uptimeText(uint32_t sec) {
   return String(m) + " min";
 }
 
-// System page: one row per device, green = online, red = offline, grey = no status.
+// System page: one row per device, green = online, red = offline, grey = no status or no info.
 // Uptime and age change every second, so the rows are rewritten every 2 s at most.
 void refreshNetDevices() {
   if (!sNetCard) return;
@@ -2363,7 +2363,8 @@ void refreshNetDevices() {
       continue;
     }
     const netdev::Entry& e = l[i];
-    lv_obj_set_style_bg_color(w.dot, e.online == 1 ? C_OK : e.online == 0 ? C_WARN : C_MUTED, 0);
+    // "online" without any info: most likely a retained status left by an old firmware
+    lv_obj_set_style_bg_color(w.dot, e.online == 1 && e.hasInfo ? C_OK : e.online == 0 ? C_WARN : C_MUTED, 0);
     String v;
     if (e.online == 0) v = "offline";
     else if (netdev::infoStale(e)) v = e.hasInfo ? "v" + e.version + "  \xE2\x80\xA2  keine Info" : "keine Info";
@@ -2372,7 +2373,7 @@ void refreshNetDevices() {
       if (e.rssi) v += "  \xE2\x80\xA2  " + String(e.rssi) + " dBm";
       v += "  \xE2\x80\xA2  " + uptimeText(e.uptime);
     }
-    lv_label_set_text(w.name, dispText(netdev::name(e.id)).c_str());
+    lv_label_set_text(w.name, dispText(netdev::label(e.id, l)).c_str());
     lv_label_set_text(w.val, dispText(v).c_str());
     lv_obj_set_style_text_color(w.val, e.online == 0 ? C_WARN : C_MUTED, 0);
     lv_obj_remove_flag(w.dot, LV_OBJ_FLAG_HIDDEN);

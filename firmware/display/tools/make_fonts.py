@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.abspath(os.path.join(HERE, '..', '_arduino', 'camper_display'))
+OUT = os.path.abspath(os.path.join(HERE, '..', 'camper_display'))
 SRC = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else
                       os.path.expanduser('~/Arduino/libraries/lvgl/scripts/built_in_font'))
 TEXT = '0x20-0x7E,0xB0,0xB7,0xC4,0xD6,0xDC,0xDF,0xE4,0xF6,0xFC,0x2013,0x2022,0x2026'

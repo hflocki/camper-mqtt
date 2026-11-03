@@ -224,6 +224,7 @@ void resubscribe() {
 }
 
 bool publishTo(const String& topic, const String& payload) { return publish(topic, payload, false); }
+bool publishRetained(const String& topic, const String& payload) { return publish(topic, payload, true); }
 
 void publishSelfState() {
   lastSelf = millis();

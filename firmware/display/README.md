@@ -35,7 +35,7 @@ Passt zu den anderen Projekten:
 ## Funktionen
 
 - **Wandpanel** mit LVGL-Oberfläche: Icon-Leiste unten zum Wechseln der Seiten (oder wischen), deutsche Umlaute und Icons
-- **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert, hell/dunkel automatisch. Unten eine Icon-Leiste wie am Display: Home und System immer, dazwischen so viele der gewählten Seiten, wie in die Breite passen (am Handy hochkant meist 3). Die Seite **System** zeigt Verbindung, Firmware, Helligkeit und alle **📡 Geräte im Netz** (aus `camper/+/status` und `camper/+/info`: online/offline, Version, Signal, Laufzeit; am Display ebenfalls auf der Systemseite, dort ganz oben; darunter QR-Code und Helligkeit, dann die Angaben zum Display selbst) und führt zu ⚙ Einstellungen, ⚡ Automationen, 🔗 Geräte und allen Seiten, die keinen Knopf in der Leiste haben
+- **Webseite** mit denselben Seiten, Werte in Echtzeit per WebSocket, für Handy optimiert, hell/dunkel automatisch. Unten eine Icon-Leiste wie am Display: Home und System immer, dazwischen so viele der gewählten Seiten, wie in die Breite passen (am Handy hochkant meist 3). Die Seite **System** zeigt Verbindung, Firmware, Helligkeit und alle **📡 Geräte im Netz** (aus `camper/+/status` und `camper/+/info`: online/offline, Version, Signal, Laufzeit; am Display ebenfalls auf der Systemseite, dort ganz oben; darunter QR-Code und Helligkeit, dann die Angaben zum Display selbst). Alte Einträge, die nach einem Topic-Wechsel am Broker liegen geblieben sind (offline oder „online“ ohne Info, gelber bzw. grauer Punkt), lassen sich auf der Webseite mit ✕ vom Broker löschen; tragen zwei Geräte denselben Namen, steht das Topic dahinter, z. B. „Heizung (truma)“ und führt zu ⚙ Einstellungen, ⚡ Automationen, 🔗 Geräte und allen Seiten, die keinen Knopf in der Leiste haben
 - **📡 Eigene Sensoren:** Zigbee-Kontakte und -Klimasensoren direkt vom Gateway (Cluster-Topics, z. B. SMLIGHT) und Bluetooth-Thermometer über OpenMQTTGateway (Govee, Ruuvi, Xiaomi …), siehe [Sensoren](#sensoren-zigbee--bluetooth)
 - **⚡ Automationen:** Regeln wie „Tür auf → Eingangslicht an, Tür zu → nach 10 s aus, nur wenn dunkel“, siehe [Automationen](#automationen)
 - **Display aufwecken:** Ist der Bildschirm gedimmt oder aus, zeigt die Webseite oben den Knopf **💡 Display an**.
@@ -63,8 +63,8 @@ Passt zu den anderen Projekten:
 ## Ordner
 
 ```
-_arduino/camper_display/   Sketch für die Arduino IDE
-_arduino/lv_conf.h         LVGL-Konfiguration (muss in den libraries-Ordner, siehe unten)
+camper_display/            Sketch für die Arduino IDE
+lv_conf.h                  LVGL-Konfiguration (muss in den libraries-Ordner, siehe unten)
 tools/embed_web.py         packt web/index.html in web_ui.h
 tools/make_fonts.py        erzeugt die Schriften font_de_*.c neu
 docs/                      Screenshots
@@ -131,14 +131,14 @@ docs/                      Screenshots
 | PubSubClient (knolleary) | 2.8 |
 | ArduinoJson (bblanchon) | 7.x |
 
-**LVGL-Konfiguration:** `_arduino/lv_conf.h` in den Arduino-Bibliotheksordner kopieren, **neben** den Ordner `lvgl` (nicht hinein):
+**LVGL-Konfiguration:** `lv_conf.h` in den Arduino-Bibliotheksordner kopieren, **neben** den Ordner `lvgl` (nicht hinein):
 
 ```
 ~/Documents/Arduino/libraries/lv_conf.h
 ~/Documents/Arduino/libraries/lvgl/
 ```
 
-Dann `_arduino/camper_display/camper_display.ino` öffnen, kompilieren, hochladen. Die Firmware belegt ca. 1,9 MB von 3 MB.
+Dann `camper_display/camper_display.ino` öffnen, kompilieren, hochladen. Die Firmware belegt ca. 1,9 MB von 3 MB.
 
 Die Webseite liegt als lesbare Datei in `web/index.html`. Nach Änderungen daran `python3 tools/embed_web.py` ausführen (nur Python-Standardbibliothek, keine venv nötig) – das schreibt `web_ui.h` neu.
 

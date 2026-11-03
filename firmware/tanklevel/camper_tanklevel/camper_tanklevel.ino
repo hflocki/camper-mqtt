@@ -18,6 +18,7 @@
 #include "config.h"
 #include "wifi_manager.h"
 #include "safeguard.h"
+#include "evlog.h"
 #include "water_sensor.h"
 #include "gas_sensor.h"
 #include "mqtt_ha.h"
@@ -39,7 +40,7 @@ void setupOTA() {
         Serial.println("[OTA] Start updating " + type);
     });
     ArduinoOTA.onEnd([]() {
-        Serial.println("\n[OTA] Update complete!");
+        evlog::add("Update über den IDE-Netzwerkport ok, Neustart");
         if (ArduinoOTA.getCommand() == U_FLASH) guard::otaDone();
     });
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
@@ -47,7 +48,7 @@ void setupOTA() {
         Serial.printf("[OTA] Progress: %u%%\r", pct);
     });
     ArduinoOTA.onError([](ota_error_t error) {
-        Serial.printf("[OTA] Error[%u]\n", error);
+        evlog::add("Update über den IDE-Netzwerkport fehlgeschlagen (Fehler %u)", (unsigned)error);
     });
 
     ArduinoOTA.begin();
@@ -95,7 +96,10 @@ void setup() {
     Serial.println("========================================");
     Serial.println();
 
+    evlog::begin();
+    evlog::add("Start v%s, Grund: %s", FW_VERSION, evlog::resetReason());
     guard::begin();   // may boot the previous firmware (failed update)
+    if (guard::status().length()) evlog::add("%s", guard::status().c_str());
     memset(&sensorData, 0, sizeof(SensorData));
 
     // Phase 1: load config & mount LittleFS
@@ -132,6 +136,7 @@ void setup() {
 void loop() {
     wifiManagerLoop();
     guard::loop(isConnected() || config.wifi_ssid[0] == '\0');
+    evlog::watch(isConnected(), mqttIsConnected());
     ArduinoOTA.handle();
 
     if (config.water_enabled || config.grey_enabled) waterLoop();

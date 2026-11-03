@@ -24,5 +24,7 @@ String name(const String& id);  // readable name: "Heizung", "Road Buddy" ... or
 bool infoStale(const Entry& e); // no info for 3 intervals (older firmware or device gone)
 String json();                  // for /api/devices
 bool changed();                 // something new since the last call (UI refresh)
+bool forget(const String& id);  // delete <root>/<id>/status and /info on the broker (left-over entries)
+String label(const String& id, const std::vector<Entry>& all);   // name, plus the id if two share a name
 
 }  // namespace netdev
