@@ -108,7 +108,7 @@ String name(const String& id) {
   static const char* const MAP[][2] = {
     {"display", "Display"}, {"roadbuddy", "Road Buddy"}, {"tanklevel", "Tanks"}, {"level", "Level"},
     {"heater", "Heizung"}, {"truma", "Heizung"}, {"maxxfan", "Dachl\xC3\xBC" "fter"}, {"temp", "Temperatur"},
-    {"battery", "Batterie"}, {"zigbee", "Zigbee"}, {"ble", "Bluetooth"}, {"router", "Router"},
+    {"battery", "Batterie"}, {"toolbox", "Toolbox"}, {"zigbee", "Zigbee"}, {"ble", "Bluetooth"}, {"router", "Router"},
   };
   for (auto& m : MAP) if (id == m[0]) return m[1];
   return id;

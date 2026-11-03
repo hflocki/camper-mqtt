@@ -8,6 +8,7 @@ flowchart LR
   tank["tanklevel<br/>Wasser, Grau, Gas"] --> broker
   temp["temp<br/>DS18B20 + Alarme"] --> broker
   bat["battery<br/>BMS per Bluetooth"] --> broker
+  tool["toolbox<br/>Bluetooth-Plugins: Dachhaube …"] <--> broker
   heater["heater<br/>Truma Combi (LIN)"] <--> broker
   fan["maxxfan<br/>VanTurtle"] <--> broker
   level["level<br/>BNO085 + Keile"] <--> broker
@@ -23,6 +24,7 @@ flowchart LR
 | [`firmware/tanklevel`](firmware/tanklevel) | ESP32-C3 | Frischwasser + Grauwasser (Votronic), Gasflasche (BLE) | `camper/tanklevel` |
 | [`firmware/temp`](firmware/temp) | ESP8266 / ESP32-C3 | bis zu 8 DS18B20 (Kühlschrank, Gefrierfach …) mit Alarm-Grenzwerten | `camper/temp` |
 | [`firmware/battery`](firmware/battery) | ESP32-C3 | Batterie-BMS per Bluetooth (Daly, Ective BM X): Ladestand, Strom, Zellen | `camper/battery` |
+| [`firmware/toolbox`](firmware/toolbox) | ESP32-C3 | Bluetooth-Geräte als Plugins: Dachhaube RV Tech (Heki), Wasserpumpe CaraWater, WCS-Kühlschrank, Gas (DIMES, Mopeka); neue Geräte kommen als Plugin dazu | `camper/toolbox` |
 | [`firmware/heater`](firmware/heater) | ESP32 + LIN-Transceiver | Truma Combi / Vario Heat als iNet Box am CP Plus | `camper/heater` |
 | [`firmware/maxxfan`](firmware/maxxfan) | ESP32-C3 + VanTurtle | MaxxFan-Dachlüfter | `camper/maxxfan` |
 | [`firmware/level`](firmware/level) | ESP32 + BNO085 | Längs-/Querneigung und Keilhöhe für jedes Rad (Fork des Levelsensors von klehnst) | `camper/level` |
@@ -115,7 +117,7 @@ git tag temp-v1.1.0
 git push origin temp-v1.1.0
 ```
 
-Dann wird nur dieses Gerät gebaut und die `.bin` ans Release gehängt. Heizung, MaxxFan und Display spielen sie direkt über ihr Web-UI ein; temp, tanklevel, level und battery per USB oder Arduino-OTA. Bei temp, tanklevel, level, battery und MaxxFan liegt die Web-Oberfläche zusätzlich als LittleFS-Image in `data/`.
+Dann wird nur dieses Gerät gebaut und die `.bin` ans Release gehängt. Alle Geräte spielen sie über ihre Web-Oberfläche ein (Road Buddy über seine Update-Seite). Bei temp, tanklevel, level, battery, maxxfan und toolbox liegt die Web-Oberfläche außerdem als `data/index.html.gz` im Sketch-Ordner und wird nach einem Update separat hochgeladen.
 
 ## Nur ein Gerät nachbauen
 
@@ -141,5 +143,6 @@ Jeder Ordner behält seine Lizenz:
 | `firmware/heater` | GPL-3.0 (Protokoll-Logik portiert aus GPL-Projekten, siehe dortige README) |
 | `firmware/level` | MIT [klehnst](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT), |
 | `firmware/tanklevel`, `temp`, `maxxfan`, `display` | MIT |
+| `firmware/toolbox` | MIT (Dachhauben-Protokoll portiert aus der HA-Integration rvtech-hacs) |
 | `firmware/roadbuddy` | MIT |
 | `firmware/emulator` | MIT |

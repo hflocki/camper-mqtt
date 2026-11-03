@@ -1,0 +1,46 @@
+// Personal settings that must not end up in git.
+// Copy this file to config_local.h (same folder). config_local.h is ignored by git, so
+// pulls, patches and CI builds never touch it. Only keep the lines you want to change:
+// everything here wins over the defaults in config.h.
+#pragma once
+
+// ---- Plugins (number of instances, 0 = not compiled in) ---------------
+// Passive sensors (P) only listen: any number works.
+// Connecting devices (C) keep one BLE connection per instance:
+//   PLUGIN_CARAWATER + PLUGIN_RVTECH + PLUGIN_WCS_FRIDGE must be 3 or less,
+//   otherwise the build stops with "At most 3 connecting BLE plugins".
+// Examples: pump 1 + hatch 1 + fridge 1 = 3 ok
+//           pump 0 + hatch 2 + fridge 1 = 3 ok
+//           pump 1 + hatch 2 + fridge 1 = 4 too many
+// Each name appears only once - change the number, do not add a second line.
+// #define PLUGIN_DIMES      1      // (P) gas bottle, Rotarex DIMES / SRG WAVE
+// #define PLUGIN_MOPEKA_PRO    0   // (P) gas bottle, Mopeka Pro family
+// #define PLUGIN_MOPEKA_STD    0   // (P) gas bottle, Mopeka Standard
+// #define PLUGIN_CARAWATER  1      // (C) water pump CaraWater   - counts towards the 3
+// #define PLUGIN_RVTECH     1      // (C) roof hatch RV Tech     - counts towards the 3, 2 = two hatches (default 1)
+// #define PLUGIN_WCS_FRIDGE 1      // (C) WCS fridge             - counts towards the 3
+
+// ---- Passwords -------------------------------------------------------
+#define DEFAULT_AP_PASSWORD     "my-ap-password"   // setup access point, min. 8 characters
+#define DEFAULT_OTA_PASSWORD    "my-ota-password"  // Arduino IDE network port
+
+// ---- Factory defaults ------------------------------------------------
+// Used only while nothing is stored on the device yet (first boot, factory reset or
+// flashing with "Erase All Flash"). Values changed later in the web UI win.
+#define DEFAULT_WIFI_SSID       "my-wifi"
+#define DEFAULT_WIFI_PASSWORD   "my-wifi-password"
+// #define DEFAULT_MQTT_SERVER  "192.168.1.1"
+// #define DEFAULT_MQTT_PORT    1883
+// #define DEFAULT_MQTT_USER     "mqtt-user"
+// #define DEFAULT_MQTT_PASSWORD "mqtt-password"
+// #define DEFAULT_WEB_USER      "admin"
+// #define DEFAULT_WEB_PASSWORD  "web-password"
+
+// ---- Bluetooth devices -----------------------------------------------
+// MAC addresses and PINs of the pump, roof hatch and fridge are NOT set here.
+// Enter them in the web UI (plugin settings, "Suchen" picks the MAC).
+
+// ---- Device ----------------------------------------------------------
+// #define DEVICE_NAME          "Camper Toolbox"
+// #define DEFAULT_MQTT_PREFIX  "camper/toolbox"
+// #define OTA_HOSTNAME         "camper-toolbox"

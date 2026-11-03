@@ -42,7 +42,7 @@ Board-Paket esp32 **3.3.x**, Bibliotheken und genaue Versionen stehen in der REA
 
 | Gerät | FQBN |
 | --- | --- |
-| tanklevel, battery, temp (C3), heater, maxxfan, emulator, template | `esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs` |
+| tanklevel, battery, temp (C3), heater, maxxfan, emulator, toolbox, template | `esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs` |
 | battery (AtomS3) | `esp32:esp32:m5stack_atoms3:CDCOnBoot=cdc,PartitionScheme=default_8MB` |
 | temp (ESP8266) | `esp8266:esp8266:nodemcuv2:eesz=4M1M` |
 | level | `esp32:esp32:esp32s3:CDCOnBoot=cdc,PartitionScheme=min_spiffs` |
@@ -71,6 +71,15 @@ arduino-cli compile --fqbn <fqbn> firmware/<gerät>/<sketch>
 ### Emulator (`firmware/emulator`)
 
 Testgerät, das die fest verbauten Geräte nachbildet. Alles Gerätespezifische steht in `emu.cpp`: Feldtabelle `FIELDS[]` (Werte und Einstellungen, daraus baut die Webseite ihre Karten), Builder je Gerät (`build*`, müssen dieselben Topics und Formate senden wie die echte Firmware), Befehle (`cmd*`) und Szenarien (JSON-Format wie beim Upload, Standard-Szenarien in `BUILTIN_SCEN`, hochgeladene als `/scen/<id>.json` im LittleFS; Format in der README des Emulators). `mqtt_ha.cpp` hält eine Broker-Verbindung je Gerät mit eigenem Last Will plus die eigene (Router, Zigbee) und löscht Topics, die ein Gerät nicht mehr sendet. Ändert sich ein Topic oder Format an einem echten Gerät, den Builder hier mitziehen und `firmware/emulator/tests/run.sh` laufen lassen (Host-Test, braucht nur g++ und ArduinoJson). Die Beispieldaten des Mockups (`tools/mockups/mock/emulator.js`) kommen aus `tests/run.sh --schema`.
+
+### Toolbox (`firmware/toolbox`)
+
+Bluetooth-Geräte als Plugins auf einem ESP32 (früher eigenes Repo `camper_toolbox`). Kern unter `src/core/` (WLAN mit eigenem `wifi_manager`, MQTT/HA, Webserver, BLE-Scan `ble.*`, BLE-Verbindung `ble_link.*`, Plugin-Basis `plugin.h`, `registry.*`, `settings.*`), Gerätetreiber unter `src/plugins/`. Die gemeinsamen Module aus `firmware/_common` liegen im Sketch-Hauptordner und werden aus `src/` mit `../../` eingebunden.
+
+- **Neues Gerät = neues Plugin:** Klasse von `Plugin` ableiten (`plugin.h`), Felder (`fields()`), HA-Entitäten (`entities()`), `publish()`, `command()`, `live()` für die Web-Oberfläche; Fabrik `create<Name>(index)` in der Plugin-Datei, Schalter `PLUGIN_<NAME>` in `config.h` (Zahl = Instanzen, 0 = nicht einkompiliert, dazu in `CT_BLE_PASSIVE` bzw. `CT_BLE_LINKS` eintragen) und Deklaration plus `ADD_PLUGINS` in `registry.cpp`. Die Web-Oberfläche baut Karten und Einstellungen aus `live()` und `fields()`, braucht also meist keine Änderung.
+- Höchstens 3 Plugins mit BLE-Verbindung (Pumpe, Dachhaube, Kühlschrank) pro ESP, passive Sensoren beliebig (`#error` in `config.h`).
+- Standard in `config.h` = Hardware des Besitzers (nur `PLUGIN_RVTECH 1`), damit die Release-`.bin` passt; andere schalten Plugins in `config_local.h` zu.
+- Neue Plugin-Topics in `docs/TOPICS.md` eintragen.
 
 ### Bluetooth-Gateway (`firmware/omg`)
 

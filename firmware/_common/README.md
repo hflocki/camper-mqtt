@@ -28,4 +28,4 @@ Hier liegt das **Original** von Quelldateien, die mehrere Geräte benutzen. Jede
 | `fw_config.h` | holt `FW_VERSION`, `FW_DEVICE` und `GUARD_*` für die drei Module oben aus `fw_id.h` (falls vorhanden, z. B. Road Buddy, dessen `config.h` persönliche Daten enthält) oder aus `config.h` | wie oben |
 | `devinfo.h/.cpp` | Diagnose-JSON für `<prefix>/info` (Version, IP, MAC, RSSI, Laufzeit, Reset-Grund, freier Speicher) und Zeitsteuerung `devinfoDue()` | alle Geräte |
 
-Beim `wifi_manager` haben tanklevel, maxxfan, heater und display noch eigene, abweichende Fassungen. Sie werden einzeln umgestellt, jeweils mit Test am Gerät.
+Beim `wifi_manager` haben tanklevel, maxxfan, heater, display und toolbox noch eigene, abweichende Fassungen. Sie werden einzeln umgestellt, jeweils mit Test am Gerät.

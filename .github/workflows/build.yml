@@ -93,6 +93,11 @@ jobs:
             fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
             sketch: firmware/emulator/camper_emulator
             libs: ''
+          - device: toolbox
+            target: esp32c3
+            fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
+            sketch: firmware/toolbox/camper_toolbox
+            libs: https://github.com/h2zero/NimBLE-Arduino.git#2.5.1
           # Template for new devices (firmware/_template/ANLEITUNG.md), built so it always compiles
           - device: template
             target: esp32c3

@@ -25,7 +25,8 @@
       "firmware/maxxfan/camper_maxxfan",
       "firmware/heater/truma_heater",
       "firmware/display/camper_display",
-      "firmware/roadbuddy/roadbuddy"
+      "firmware/roadbuddy/roadbuddy",
+      "firmware/toolbox/camper_toolbox"
     ],
     "devinfo.cpp": [
       "firmware/_template/camper_example",
@@ -37,7 +38,8 @@
       "firmware/maxxfan/camper_maxxfan",
       "firmware/heater/truma_heater",
       "firmware/display/camper_display",
-      "firmware/roadbuddy/roadbuddy"
+      "firmware/roadbuddy/roadbuddy",
+      "firmware/toolbox/camper_toolbox"
     ],
     "safeguard.h": [
       "firmware/_template/camper_example",
@@ -49,7 +51,8 @@
       "firmware/maxxfan/camper_maxxfan",
       "firmware/roadbuddy/roadbuddy",
       "firmware/tanklevel/camper_tanklevel",
-      "firmware/temp/camper_temp"
+      "firmware/temp/camper_temp",
+      "firmware/toolbox/camper_toolbox"
     ],
     "safeguard.cpp": [
       "firmware/_template/camper_example",
@@ -61,7 +64,8 @@
       "firmware/maxxfan/camper_maxxfan",
       "firmware/roadbuddy/roadbuddy",
       "firmware/tanklevel/camper_tanklevel",
-      "firmware/temp/camper_temp"
+      "firmware/temp/camper_temp",
+      "firmware/toolbox/camper_toolbox"
     ],
     "evlog.h": [
       "firmware/_template/camper_example",
@@ -73,7 +77,8 @@
       "firmware/maxxfan/camper_maxxfan",
       "firmware/roadbuddy/roadbuddy",
       "firmware/tanklevel/camper_tanklevel",
-      "firmware/temp/camper_temp"
+      "firmware/temp/camper_temp",
+      "firmware/toolbox/camper_toolbox"
     ],
     "evlog.cpp": [
       "firmware/_template/camper_example",
@@ -85,7 +90,8 @@
       "firmware/maxxfan/camper_maxxfan",
       "firmware/roadbuddy/roadbuddy",
       "firmware/tanklevel/camper_tanklevel",
-      "firmware/temp/camper_temp"
+      "firmware/temp/camper_temp",
+      "firmware/toolbox/camper_toolbox"
     ],
     "fwcheck.h": [
       "firmware/_template/camper_example",
@@ -97,7 +103,8 @@
       "firmware/maxxfan/camper_maxxfan",
       "firmware/roadbuddy/roadbuddy",
       "firmware/tanklevel/camper_tanklevel",
-      "firmware/temp/camper_temp"
+      "firmware/temp/camper_temp",
+      "firmware/toolbox/camper_toolbox"
     ],
     "fwcheck.cpp": [
       "firmware/_template/camper_example",
@@ -109,7 +116,8 @@
       "firmware/maxxfan/camper_maxxfan",
       "firmware/roadbuddy/roadbuddy",
       "firmware/tanklevel/camper_tanklevel",
-      "firmware/temp/camper_temp"
+      "firmware/temp/camper_temp",
+      "firmware/toolbox/camper_toolbox"
     ],
     "fw_config.h": [
       "firmware/_template/camper_example",
@@ -121,7 +129,8 @@
       "firmware/maxxfan/camper_maxxfan",
       "firmware/roadbuddy/roadbuddy",
       "firmware/tanklevel/camper_tanklevel",
-      "firmware/temp/camper_temp"
+      "firmware/temp/camper_temp",
+      "firmware/toolbox/camper_toolbox"
     ]
   }
 }
