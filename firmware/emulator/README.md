@@ -49,7 +49,45 @@ Wenn sich etwas Abgeleitetes ändert, rechnet der Emulator wie das Gerät: Liter
 | Aufheizen | Heizung an auf 22 °C bei 12 °C, Warmwasser Eco |
 | Gerät offline | gewähltes Gerät fällt nach 30 s aus und kommt nach 2 Minuten wieder |
 
-**Stopp** stellt die Werte von vorher wieder her, **Stopp & behalten** lässt den Endstand stehen.
+**Stopp** stellt die Werte von vorher wieder her, **Stopp & behalten** lässt den Endstand stehen. Bei Szenarien mit Gerätewahl (z. B. *Gerät offline*) steht die Auswahl direkt am Szenario.
+
+**Eigene Szenarien:** ⬇ lädt ein Szenario oder unter *Eigene Szenarien* alle als JSON herunter. Datei ändern, hochladen, und neue Szenarien stehen mit dem Zeichen *eigenes* in der Liste. Die Standard-Szenarien bleiben immer erhalten: Einträge mit deren `id` werden beim Hochladen übersprungen, für eine geänderte Fassung also eine neue `id` vergeben. Ein eigenes Szenario mit gleicher `id` wird ersetzt, 🗑 löscht es. Fehlerhafte Dateien werden ganz abgelehnt, die Meldung nennt Szenario und Stelle. Gespeichert wird im LittleFS (`/scen/<id>.json`), ein Firmware-Update behält sie.
+
+### Eigene Szenarien (JSON)
+
+```json
+{
+  "format": "camper-emulator-scenarios",
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "grey-full",
+      "name": "Grauwasser voll",
+      "desc": "Grauwasser 50 → 100 % in 1 Minute, das gewählte Gerät fällt nach 20 s aus",
+      "start":   { "g_on": "ON" },
+      "tracks":  { "g_pct": [[0, 50], [60, 100]],
+                   "door":  [[0, "open"], [30, "close"]] },
+      "modes":   { "$dev": [[20, "offline"], [80, "on"]] },
+      "publish": [[5, "test/ping", "1"], [10, "@awn_t", "ON"]],
+      "on_stop": [["@awn_t", "OFF"]],
+      "end": 90
+    }
+  ]
+}
+```
+
+| Schlüssel | Bedeutung |
+| --- | --- |
+| `id` | Pflicht, 1–24 Zeichen `a–z 0–9 - _`. Gleiche `id` wie ein Standard-Szenario → übersprungen |
+| `name`, `desc` | Name (sonst die `id`) und Beschreibung für die Liste |
+| `start` | Werte, die beim Start einmal gesetzt werden |
+| `tracks` | Verlauf je Feld: `[[Sekunde, Wert], …]`. Zahlen laufen gleichmäßig zwischen den Punkten, Texte, ON/OFF und Auswahlfelder springen am Punkt. Vor dem ersten Punkt bleibt das Feld unverändert, nach dem letzten bleibt der letzte Wert. Zwei Punkte zur selben Sekunde = Sprung. `{"points": [...], "loop": 13}` wiederholt nach dem letzten Punkt den Teil ab Sekunde 13 |
+| `modes` | Zustand je Gerät über die Zeit: `on`, `offline` (Router/Zigbee: Pause), `off`. Geräte: `tanklevel`, `level`, `heater`, `maxxfan`, `temp`, `battery`, `router`, `zigbee`; `$dev` = das in der Liste gewählte Gerät |
+| `publish` | einmalige Nachrichten `[Sekunde, Topic, Payload]`, nicht retained. `@feld` nimmt das Topic aus dem Feld (z. B. `@awn_t` = Markisen-Befehl) |
+| `on_stop` | Nachrichten beim Stoppen `[Topic, Payload]` |
+| `end`, `keep` | optional: Szenario stoppt nach `end` Sekunden von selbst; `"keep": true` lässt dann den Endstand stehen |
+
+Feldnamen sind die Schlüssel aus der Feldtabelle in `emu.cpp` (z. B. `w_pct`, `gas_pct`, `pitch`, `roll`, `room`, `setp`, `spd`, `door`, `t1_t`, `b1_soc`, `c1_open`, `k1_t`). Am einfachsten ein Standard-Szenario herunterladen und als Vorlage nehmen. Werte werden wie bei der Eingabe in der Web-Oberfläche geprüft (Bereich, Auswahl). Topic-Felder (Basis-Topics, IDs, IEEE-Adressen) kann ein Szenario nicht ändern. Grenzen: 20 eigene Szenarien, je Szenario 32 Verläufe mit höchstens 60 Punkten, 20 Nachrichten, 8 kB; eine Upload-Datei bis 32 kB. Weitere Schlüssel (z. B. `"_kommentar"`) werden ignoriert und bleiben in der Datei erhalten.
 
 **Empfangene Befehle:** die letzten 16 Befehle vom Display (oder `mosquitto_pub`) mit Topic und Inhalt – so siehst du, ob ein Knopf am Display das Richtige sendet.
 
@@ -108,7 +146,7 @@ Läuft ein echtes Gerät am selben Broker, das nachgebildete auf **Aus** stellen
 
 ## Entwickeln
 
-Alles Gerätespezifische steht in `emu.cpp` (Feldtabelle, Builder, Befehle, Szenarien). Host-Test ohne ESP32:
+Alles Gerätespezifische steht in `emu.cpp` (Feldtabelle, Builder, Befehle, Szenarien; die Standard-Szenarien als JSON in `BUILTIN_SCEN`). Host-Test ohne ESP32:
 
 ```bash
 firmware/emulator/tests/run.sh       # Prüfungen
@@ -121,6 +159,7 @@ Er sucht ArduinoJson im Bibliotheksordner der Arduino IDE, sonst `ARDUINOJSON=<�
 
 | Version | Änderungen |
 |---|---|
+| 1.1.0 | Szenarien als JSON herunterladen (einzeln oder alle) und eigene hochladen; die Standard-Szenarien bleiben und sind selbst im selben Format beschrieben. Gerätewahl direkt am Szenario, optionales Ende (`end`). „Fahrt“ schwankt jetzt in Dreiecksform statt Sinus |
 | 1.0.1 | Geräteliste lädt wieder: Schema wird stückweise gesendet statt als ein großer Block (der C3 hatte bei allen Broker-Verbindungen nicht mehr genug zusammenhängenden Speicher); Seite zeigt den Fehlergrund und versucht es erneut |
 | 1.0.0 | Erste Version: 8 Geräte, Web-Oberfläche mit Werten, Zuständen und Szenarien, Befehle vom Display |
 

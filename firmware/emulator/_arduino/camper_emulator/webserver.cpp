@@ -15,10 +15,12 @@
 //   GET  /api/config     all settings (passwords never)
 //   POST /api/config     partial settings as JSON, validated first, saved in loop()
 //   POST /api/update     file upload: .bin = firmware (restart), .gz = web page (no restart)
-//   GET  /api/emu/schema devices, fields and scenarios of the emulator (static)
+//   GET  /api/emu/schema devices, fields and scenarios of the emulator
 //   POST /api/emu        {"set":{key:value,...}} | {"mode":[dev,mode]} | {"noise":[dev,bool]}
 //                        | {"scenario":"id","dev":n} | {"stop":true,"restore":bool}
-//                        | {"reset":dev or -1} | {"clear":true}
+//                        | {"scen_del":"id"} | {"reset":dev or -1} | {"clear":true}
+//   GET  /api/emu/scenarios  all scenarios as JSON (download, same format as the upload)
+//   POST /api/emu/scenarios  upload: JSON body, new scenarios are added (emu.cpp "Scenarios")
 //   POST /api/restart
 //   WS   /ws             emulator state and system info every WS_UPDATE_MS
 
@@ -41,6 +43,10 @@ static const char* WEB_FILE = "/index.html.gz";
 static const char* WEB_TMP = "/index.html.gz.tmp";
 
 static const size_t MAX_BODY_SIZE = 4096;
+static const size_t MAX_SCEN_UPLOAD = 32768;
+static const char* SCEN_TMP = "/scen_up.tmp";
+static File scenUpFile;
+static bool scenUpFailed = false;
 
 static void onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
                       AwsEventType type, void* arg, uint8_t* data, size_t len);
@@ -94,6 +100,55 @@ static void copyIfPresent(JsonDocument& doc, const char* key, char* dest, size_t
 
 static void sendError(AsyncWebServerRequest* request, const char* msg) {
     request->send(400, "application/json", String("{\"error\":\"") + msg + "\"}");
+}
+
+// Chunked response from a piece generator (gen(n, out) for n = 0, 1, ... until it returns false)
+static void sendPieces(AsyncWebServerRequest* request, bool (*gen)(int, String&), const char* disposition) {
+    struct Gen { int n = 0; String pend; size_t off = 0; bool done = false; bool (*fn)(int, String&); };
+    auto g = std::make_shared<Gen>();
+    g->fn = gen;
+    AsyncWebServerResponse* resp = request->beginChunkedResponse("application/json",
+        [g](uint8_t* buf, size_t maxLen, size_t) -> size_t {
+            size_t len = 0;
+            while (len < maxLen) {
+                if (g->off >= g->pend.length()) {
+                    if (g->done || !g->fn(g->n++, g->pend)) { g->done = true; break; }
+                    g->off = 0;
+                    continue;
+                }
+                size_t k = std::min(maxLen - len, (size_t)g->pend.length() - g->off);
+                memcpy(buf + len, g->pend.c_str() + g->off, k);
+                len += k;
+                g->off += k;
+            }
+            return len;   // 0 ends the response
+        });
+    resp->addHeader("Cache-Control", "no-cache");
+    if (disposition) resp->addHeader("Content-Disposition", disposition);
+    request->send(resp);
+}
+
+static void sendJsonMsg(AsyncWebServerRequest* request, int code, const char* key, const String& msg) {
+    JsonDocument r;
+    r[key] = msg;
+    if (code == 200) r["status"] = "ok";
+    String out;
+    serializeJson(r, out);
+    request->send(code, "application/json", out);
+}
+
+// Uploaded scenario file (in SCEN_TMP): parse and hand over to the emulator
+static void handleScenUpload(AsyncWebServerRequest* request) {
+    File f = LittleFS.open(SCEN_TMP, "r");
+    JsonDocument doc;
+    DeserializationError e = f ? deserializeJson(doc, f) : DeserializationError::IncompleteInput;
+    if (f) f.close();
+    LittleFS.remove(SCEN_TMP);
+    String report, err;
+    if (e) err = String("Keine gültige JSON-Datei (") + e.c_str() + ")";
+    else emuImportScenarios(doc, report, err);
+    if (err.length()) sendJsonMsg(request, 400, "error", err);
+    else sendJsonMsg(request, 200, "report", report);
 }
 
 // ============================================================
@@ -192,27 +247,41 @@ void webserverInit() {
     // Chunked: the schema is ~17 kB, built piece by piece so no large buffer is needed
     server.on("/api/emu/schema", HTTP_GET, [](AsyncWebServerRequest* request) {
         if (!auth(request)) return;
-        struct Gen { int n = 0; String pend; size_t off = 0; bool done = false; };
-        auto g = std::make_shared<Gen>();
-        AsyncWebServerResponse* resp = request->beginChunkedResponse("application/json",
-            [g](uint8_t* buf, size_t maxLen, size_t) -> size_t {
-                size_t len = 0;
-                while (len < maxLen) {
-                    if (g->off >= g->pend.length()) {
-                        if (g->done || !emuSchemaPiece(g->n++, g->pend)) { g->done = true; break; }
-                        g->off = 0;
-                        continue;
-                    }
-                    size_t k = std::min(maxLen - len, (size_t)g->pend.length() - g->off);
-                    memcpy(buf + len, g->pend.c_str() + g->off, k);
-                    len += k;
-                    g->off += k;
-                }
-                return len;   // 0 ends the response
-            });
-        resp->addHeader("Cache-Control", "no-cache");
-        request->send(resp);
+        sendPieces(request, emuSchemaPiece, nullptr);
     });
+
+    server.on("/api/emu/scenarios", HTTP_GET, [](AsyncWebServerRequest* request) {
+        if (!auth(request)) return;
+        sendPieces(request, emuScenarioExportPiece, "attachment; filename=\"emulator-szenarien.json\"");
+    });
+
+    // Upload: the body goes to a temporary file first (up to 32 kB), then it is parsed from
+    // there, so no large contiguous buffer is needed
+    server.on("/api/emu/scenarios", HTTP_POST, [](AsyncWebServerRequest* request) {
+                  // The body handler answers; an empty body never reaches it
+                  if (request->contentLength() == 0 && authOk(request)) sendError(request, "Leere Datei");
+              }, NULL,
+              [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+                  bool last = index + len == total;
+                  if (!authOk(request)) {
+                      if (last) request->requestAuthentication();
+                      return;
+                  }
+                  if (index == 0) {
+                      scenUpFailed = !fsReady || total > MAX_SCEN_UPLOAD;
+                      if (!scenUpFailed) scenUpFile = LittleFS.open(SCEN_TMP, "w");
+                      if (!scenUpFailed && !scenUpFile) scenUpFailed = true;
+                  }
+                  if (!scenUpFailed && len && scenUpFile.write(data, len) != len) scenUpFailed = true;
+                  if (!last) return;
+                  if (scenUpFile) scenUpFile.close();
+                  if (scenUpFailed) {
+                      LittleFS.remove(SCEN_TMP);
+                      sendError(request, total > MAX_SCEN_UPLOAD ? "Datei zu groß (max. 32 kB)" : "Upload fehlgeschlagen");
+                      return;
+                  }
+                  handleScenUpload(request);
+              });
 
     server.on("/api/emu", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL,
               [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
@@ -407,6 +476,8 @@ static void handleApiEmu(AsyncWebServerRequest* request, uint8_t* data, size_t l
         emuSetNoise(doc["noise"][0] | 255, doc["noise"][1] | false);
     } else if (doc["scenario"].is<const char*>()) {
         emuStartScenario(doc["scenario"].as<const char*>(), doc["dev"] | 0, err);
+    } else if (doc["scen_del"].is<const char*>()) {
+        emuDeleteScenario(doc["scen_del"].as<const char*>(), err);
     } else if (doc["stop"].is<bool>()) {
         emuStopScenario(doc["restore"] | true);
     } else if (!doc["reset"].isNull()) {

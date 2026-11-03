@@ -2,6 +2,9 @@
 
 #include <math.h>
 #include <time.h>
+#include <algorithm>
+#include <vector>
+#include <map>
 
 #ifndef EMU_HOST_TEST
 #include <LittleFS.h>
@@ -197,22 +200,81 @@ const EmuDevDef EMU_DEVS[D_COUNT] = {
 };
 
 // ============================================================
-// Scenarios (same ideas as tools/mqtt/sim.py)
+// Scenarios
 // ============================================================
+// A scenario is a small JSON object. The built-in ones below, uploads from the web UI and
+// the download all use the same format (README "Eigene Szenarien"):
+//
+//   {"id": "empty", "name": "Tanks leer", "desc": "...",
+//    "start":   {"<field>": value, ...},                 set once when the scenario starts
+//    "tracks":  {"<field>": [[t, value], ...], ...},     values over time (t in seconds)
+//    "modes":   {"<device id>|$dev": [[t, "on|offline|off"], ...]},
+//    "publish": [[t, "<topic>|@<field>", "payload"], ...],   one-shot messages
+//    "on_stop": [["<topic>|@<field>", "payload"], ...],
+//    "end": seconds, "keep": true}                       optional: stop by itself
+//
+// Tracks: numbers are interpolated linearly between the points, other values switch at a
+// point. Before the first point the field is left alone, after the last one it stays. Two
+// points at the same time make a jump. A track can also be {"points": [...], "loop": t0}:
+// after the last point the part from t0 on repeats. "$dev" is the device picked in the
+// web UI; "@<field>" takes the topic from that field (e.g. "@awn_t").
+// Topic fields (base topics, IEEE addresses) cannot be changed by a scenario.
 
-struct ScenarioDef { const char* id; const char* name; const char* desc; };
-static const ScenarioDef SCENARIOS[] = {
-    {"empty",   "Tanks leer",       "Frischwasser 30 → 5 %, Gas 25 → 8 % in 3 Minuten"},
-    {"fridge",  "Kühlschrank warm", "Kühlschrank (camper-temp und Zigbee-Klimasensor 1) 5 → 11 °C in 2 Minuten"},
-    {"battery", "Batterie leer",    "Batterie 1 entlädt von 40 auf 12 % in 2½ Minuten"},
-    {"frost",   "Frost",            "Außen (camper-temp Sensor 4 und Zigbee-Klimasensor 2) fällt von 4 auf −2 °C"},
-    {"depart",  "Abfahrt",          "Markise draußen, Tür und Kontakt 1 offen; Fahrt ab 20 s, Tür zu nach 60 s, Markise rein nach 90 s, Kontakt zu nach 120 s, Stillstand ab 150 s"},
-    {"drive",   "Fahrt",            "0 → 80 km/h, die Neigung schwankt, Kontakt 1 bleibt offen"},
-    {"tilt",    "Schräg geparkt",   "3° nach vorne und 2,2° zur Seite, nach 90 s eben"},
-    {"heat",    "Aufheizen",        "Heizung an auf 22 °C bei 12 °C Raumtemperatur, Warmwasser Eco"},
-    {"offline", "Gerät offline",    "das gewählte Gerät fällt nach 30 s aus (Last Will) und kommt nach 2 Minuten wieder"},
+static const char* const BUILTIN_SCEN[] = {
+    R"({"id":"empty","name":"Tanks leer","desc":"Frischwasser 30 → 5 %, Gas 25 → 8 % in 3 Minuten",
+        "tracks":{"w_pct":[[0,30],[180,5]],"gas_pct":[[0,25],[180,8]]}})",
+    R"({"id":"fridge","name":"Kühlschrank warm","desc":"Kühlschrank (camper-temp und Zigbee-Klimasensor 1) 5 → 11 °C in 2 Minuten",
+        "start":{"t1_on":"ON","t1_ok":"ON"},
+        "tracks":{"t1_t":[[0,5],[120,11]],"k1_t":[[0,5.3],[120,11.3]]}})",
+    R"({"id":"battery","name":"Batterie leer","desc":"Batterie 1 entlädt von 40 auf 12 % in 2½ Minuten",
+        "start":{"b1_on":"ON","b1_ok":"ON"},
+        "tracks":{"b1_soc":[[0,40],[140,12]],"b1_v":[[0,12.56],[140,12.17]],"b1_a":[[0,-8.5]]}})",
+    R"({"id":"frost","name":"Frost","desc":"Außen (camper-temp Sensor 4 und Zigbee-Klimasensor 2) fällt von 4 auf −2 °C",
+        "start":{"t4_on":"ON","t4_ok":"ON","k2_on":"ON"},
+        "tracks":{"t4_t":[[0,4],[90,-2]],"k2_t":[[0,4.2],[90,-1.8]]}})",
+    R"({"id":"depart","name":"Abfahrt","desc":"Markise draußen, Tür und Kontakt 1 offen; Fahrt ab 20 s, Tür zu nach 60 s, Markise rein nach 90 s, Kontakt zu nach 120 s, Stillstand ab 150 s",
+        "start":{"door":"open","spd":0,"fix":"ON"},
+        "modes":{"router":[[0,"on"]]},
+        "tracks":{"door":[[0,"open"],[60,"close"]],"c1_open":[[0,"ON"],[120,"OFF"]],
+                  "spd":[[0,0],[20,0],[45,50],[150,50],[150,0]]},
+        "publish":[[0,"@awn_t","ON"],[90,"@awn_t","OFF"]],
+        "on_stop":[["@awn_t","OFF"]]})",
+    R"({"id":"drive","name":"Fahrt","desc":"0 → 80 km/h, die Neigung schwankt, Kontakt 1 bleibt offen",
+        "modes":{"router":[[0,"on"]]},
+        "tracks":{"spd":[[0,0],[10,0],[63,80]],"c1_open":[[0,"ON"]],
+                  "pitch":{"points":[[0,0.3],[13,0.3],[17.7,1.8],[27.1,-1.2],[31.8,0.3]],"loop":13},
+                  "roll":{"points":[[0,-0.2],[13,-0.2],[19.3,1.3],[31.9,-1.7],[44.4,1.3]],"loop":19.3}}})",
+    R"({"id":"tilt","name":"Schräg geparkt","desc":"3° nach vorne und 2,2° zur Seite, nach 90 s eben",
+        "tracks":{"pitch":[[0,3],[90,0.2]],"roll":[[0,-2.2],[90,-0.3]]}})",
+    R"({"id":"heat","name":"Aufheizen","desc":"Heizung an auf 22 °C bei 12 °C Raumtemperatur, Warmwasser Eco",
+        "start":{"alive":"ON","hvac":"heat","setp":22,"room":12,"wmode":"eco","water":15,"ht_dyn":"ON"}})",
+    R"({"id":"offline","name":"Gerät offline","desc":"das gewählte Gerät fällt nach 30 s aus (Last Will) und kommt nach 2 Minuten wieder",
+        "modes":{"$dev":[[0,"on"],[30,"offline"],[150,"on"]]}})",
 };
-static const int SCENARIO_COUNT = sizeof(SCENARIOS) / sizeof(SCENARIOS[0]);
+static const int BUILTIN_COUNT = sizeof(BUILTIN_SCEN) / sizeof(BUILTIN_SCEN[0]);
+
+// Limits for uploaded scenarios (RAM and flash of the C3)
+static const int MAX_CUSTOM = 20;          // uploaded scenarios
+static const int MAX_TRACKS = 32;          // tracks + mode tracks per scenario
+static const int MAX_POINTS = 60;          // points per track
+static const int MAX_EVENTS = 20;          // publish + on_stop
+static const size_t MAX_SCEN_JSON = 8192;  // one scenario as stored
+static const float MAX_T = 86400;          // one day
+
+// List entry (all scenarios, built-in first)
+struct ScenInfo { String id, name, desc; float end; bool dev; int builtin; };   // builtin: index into BUILTIN_SCEN, -1 = uploaded
+
+// The running scenario, parsed. field >= 0: value track, otherwise a mode track for device
+// dev (-1 = the device picked in the web UI)
+struct Track { int16_t field; int8_t dev; float loop; std::vector<float> t, x; std::vector<String> s; };
+struct Event { float t; String topic, payload; bool done; };
+struct RunScen {
+    ScenInfo info;
+    std::vector<std::pair<int, String>> start;
+    std::vector<Track> tracks;
+    std::vector<Event> events, onStop;
+    bool keep = false;
+};
 
 // ============================================================
 // State
@@ -225,8 +287,8 @@ static bool noiseOn[D_COUNT];
 static bool topicChanged[D_COUNT];
 static bool clearAllReq = false;
 
-static int scenario = -1;                     // index into SCENARIOS, -1 = none
-static uint8_t scenarioDev = D_TANK;          // "offline": which device
+static RunScen* run = nullptr;                // running scenario, nullptr = none
+static uint8_t scenarioDev = D_TANK;          // device picked for "$dev"
 static uint32_t scenarioStart = 0;
 static String* snapshot = nullptr;            // values before the scenario (restored on stop)
 static uint8_t snapModes[D_COUNT];
@@ -378,7 +440,7 @@ static void setRaw(int i, const String& v, bool persist) {
     if (i < 0 || vals[i] == v) return;
     if (FIELDS[i].flags & FL_TOPIC) topicChanged[FIELDS[i].dev] = true;
     vals[i] = v;
-    if (persist && scenario < 0) markSave();
+    if (persist && !run) markSave();
 }
 static void setNum(const char* key, float x, bool persist) {
     int i = fidx(key);
@@ -453,6 +515,294 @@ static void load() {
 }
 
 // ============================================================
+// Scenario storage: one file per uploaded scenario (/scen/<id>.json)
+// ============================================================
+
+static const char* SCEN_DIR = "/scen";
+
+static String scenPath(const String& id) { return String(SCEN_DIR) + "/" + id + ".json"; }
+
+#ifdef EMU_HOST_TEST
+static std::map<String, String> hostFiles;   // stands in for LittleFS in the host test
+static bool fsWrite(const String& path, const String& data) { hostFiles[path] = data; return true; }
+static bool fsRead(const String& path, String& data) {
+    auto it = hostFiles.find(path);
+    if (it == hostFiles.end()) return false;
+    data = it->second;
+    return true;
+}
+static void fsRemove(const String& path) { hostFiles.erase(path); }
+static void fsListScen(std::vector<String>& ids) {
+    String pre = String(SCEN_DIR) + "/";
+    for (auto& kv : hostFiles)
+        if (kv.first.startsWith(pre) && kv.first.endsWith(".json"))
+            ids.push_back(kv.first.substring(pre.length(), kv.first.length() - 5));
+}
+#else
+static bool fsWrite(const String& path, const String& data) {
+    if (!LittleFS.exists(SCEN_DIR)) LittleFS.mkdir(SCEN_DIR);
+    String tmp = path + ".tmp";
+    File f = LittleFS.open(tmp, "w");
+    if (!f) return false;
+    size_t n = f.print(data);
+    f.close();
+    if (n != data.length()) { LittleFS.remove(tmp); return false; }
+    LittleFS.remove(path);
+    return LittleFS.rename(tmp, path);
+}
+static bool fsRead(const String& path, String& data) {
+    File f = LittleFS.open(path, "r");
+    if (!f) return false;
+    data = f.readString();
+    f.close();
+    return true;
+}
+static void fsRemove(const String& path) { LittleFS.remove(path); }
+static void fsListScen(std::vector<String>& ids) {
+    File dir = LittleFS.open(SCEN_DIR);
+    if (!dir || !dir.isDirectory()) return;
+    for (File f = dir.openNextFile(); f; f = dir.openNextFile()) {
+        String n = f.name();
+        int slash = n.lastIndexOf('/');
+        if (slash >= 0) n = n.substring(slash + 1);
+        if (!f.isDirectory() && n.endsWith(".json")) ids.push_back(n.substring(0, n.length() - 5));
+    }
+}
+#endif
+
+// ============================================================
+// Scenario parser (built-in, stored and uploaded scenarios)
+// ============================================================
+
+static bool validId(const String& id) {
+    if (id.length() == 0 || id.length() > 24) return false;
+    for (size_t i = 0; i < id.length(); i++) {
+        char c = id[i];
+        if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_')) return false;
+    }
+    return true;
+}
+
+// Any JSON scalar as text: strings as they are, bools as ON / OFF, numbers as written
+static bool scalarText(JsonVariantConst v, String& out) {
+    if (v.is<const char*>()) { out = v.as<const char*>(); return true; }
+    if (v.is<bool>()) { out = v.as<bool>() ? "ON" : "OFF"; return true; }
+    if (v.is<float>() || v.is<long>()) { out = ""; serializeJson(v, out); return true; }
+    return false;
+}
+
+static int modeOf(const String& v) {
+    if (v == "on") return M_ON;
+    if (v == "offline" || v == "pause") return M_OFFLINE;
+    if (v == "off") return M_OFF;
+    return -1;
+}
+
+static int devOf(const char* id) {
+    for (int d = 0; d < D_COUNT; d++) if (!strcmp(EMU_DEVS[d].id, id)) return d;
+    return -1;
+}
+
+// Field that a scenario may change; err is set otherwise
+static int scenField(const char* key, String& err) {
+    int i = fidx(key);
+    if (i < 0) { err = String("unbekanntes Feld „") + key + "“"; return -1; }
+    if (FIELDS[i].flags & FL_TOPIC) { err = String("„") + key + "“ ist ein Topic und kann nicht geändert werden"; return -1; }
+    return i;
+}
+
+// Topic of a publish entry: "@field" or a full topic without wildcards
+static bool scenTopic(JsonVariantConst v, String& out, String& err) {
+    if (!v.is<const char*>()) { err = "Topic fehlt"; return false; }
+    out = v.as<const char*>();
+    if (out.startsWith("@")) {
+        int i = fidx(out.c_str() + 1);
+        if (i < 0 || FIELDS[i].type != T_TEXT) { err = String("„") + out + "“ ist kein Topic-Feld"; return false; }
+        return true;
+    }
+    if (!validTopicPart(out, true)) { err = String("ungültiges Topic „") + out + "“"; return false; }
+    return true;
+}
+
+static bool scenTime(JsonVariantConst v, float& t) {
+    if (!(v.is<float>() || v.is<long>())) return false;
+    t = v.as<float>();
+    return !isnan(t) && t >= 0 && t <= MAX_T;
+}
+
+// One track: [[t, value], ...] or {"points": [...], "loop": t0}. field >= 0: value track,
+// otherwise a mode track
+static bool parseTrack(JsonVariantConst src, int field, Track& k, String& err) {
+    JsonArrayConst pts;
+    k.loop = -1;
+    if (src.is<JsonObjectConst>()) {
+        pts = src["points"];
+        if (!src["loop"].isNull() && !scenTime(src["loop"], k.loop)) { err = "„loop“ muss eine Zeit in Sekunden sein"; return false; }
+    } else {
+        pts = src;
+    }
+    if (pts.isNull() || pts.size() == 0) { err = "keine Punkte (erwartet [[Sekunde, Wert], …])"; return false; }
+    if ((int)pts.size() > MAX_POINTS) { err = String("höchstens ") + String(MAX_POINTS) + " Punkte je Verlauf"; return false; }
+    float last = 0;
+    for (JsonVariantConst p : pts) {
+        float t;
+        String v;
+        if (!p.is<JsonArrayConst>() || p.size() != 2 || !scenTime(p[0], t) || !scalarText(p[1], v)) {
+            err = "Punkt muss [Sekunde, Wert] sein (Sekunde 0 bis 86400)";
+            return false;
+        }
+        if (t < last) { err = "Zeiten müssen aufsteigend sein"; return false; }
+        last = t;
+        if (field >= 0) {
+            if (!normalize(field, v, err)) return false;
+            k.t.push_back(t);
+            if (FIELDS[field].type == T_NUM) k.x.push_back(v.toFloat());
+            else k.s.push_back(v);
+        } else {
+            int m = modeOf(v);
+            if (m < 0) { err = String("Zustand „") + v + "“ unbekannt (on, offline, off)"; return false; }
+            k.t.push_back(t);
+            k.x.push_back(m);
+        }
+    }
+    if (k.loop >= 0 && k.loop >= last) { err = "„loop“ muss vor dem letzten Punkt liegen"; return false; }
+    return true;
+}
+
+// Checks a scenario and builds it. err is a German message for the web UI.
+static bool parseScen(JsonObjectConst o, RunScen& r, String& err) {
+    String id = o["id"] | "";
+    r.info.id = id;
+    if (!validId(id)) {
+        err = "„id“ fehlt oder ist ungültig (1–24 Zeichen: a–z, 0–9, - und _)";
+        return false;
+    }
+    String pre = String("Szenario „") + id + "“: ";
+    r.info.name = o["name"] | id.c_str();
+    r.info.desc = o["desc"] | "";
+    r.info.name.trim();
+    if (r.info.name.length() == 0 || r.info.name.length() > 60) { err = pre + "„name“ 1–60 Zeichen"; return false; }
+    if (r.info.desc.length() > 300) { err = pre + "„desc“ höchstens 300 Zeichen"; return false; }
+    r.info.dev = false;
+    r.info.end = 0;
+    r.keep = o["keep"] | false;
+    if (!o["end"].isNull() && (!scenTime(o["end"], r.info.end) || r.info.end <= 0)) {
+        err = pre + "„end“ muss eine Zeit in Sekunden sein";
+        return false;
+    }
+
+    for (JsonPairConst kv : o["start"].as<JsonObjectConst>()) {
+        String v, e;
+        int i = scenField(kv.key().c_str(), e);
+        if (i >= 0 && !scalarText(kv.value(), v)) e = String("„") + kv.key().c_str() + "“: Wert fehlt";
+        if (i >= 0 && !e.length()) normalize(i, v, e);
+        if (e.length()) { err = pre + "start: " + e; return false; }
+        r.start.push_back(std::make_pair(i, v));
+    }
+    if (!o["start"].isNull() && !o["start"].is<JsonObjectConst>()) { err = pre + "„start“ muss ein Objekt sein"; return false; }
+
+    for (JsonPairConst kv : o["tracks"].as<JsonObjectConst>()) {
+        Track k;
+        String e;
+        k.dev = 0;
+        k.field = scenField(kv.key().c_str(), e);
+        if (k.field >= 0) parseTrack(kv.value(), k.field, k, e);
+        if (e.length()) { err = pre + "tracks „" + kv.key().c_str() + "“: " + e; return false; }
+        r.tracks.push_back(k);
+    }
+    if (!o["tracks"].isNull() && !o["tracks"].is<JsonObjectConst>()) { err = pre + "„tracks“ muss ein Objekt sein"; return false; }
+
+    for (JsonPairConst kv : o["modes"].as<JsonObjectConst>()) {
+        Track k;
+        String e;
+        k.field = -1;
+        const char* d = kv.key().c_str();
+        if (!strcmp(d, "$dev")) { k.dev = -1; r.info.dev = true; }
+        else if ((k.dev = devOf(d)) < 0) e = "unbekanntes Gerät (tanklevel, level, heater, maxxfan, temp, battery, router, zigbee oder $dev)";
+        if (!e.length()) parseTrack(kv.value(), -1, k, e);
+        if (e.length()) { err = pre + "modes „" + d + "“: " + e; return false; }
+        r.tracks.push_back(k);
+    }
+    if (!o["modes"].isNull() && !o["modes"].is<JsonObjectConst>()) { err = pre + "„modes“ muss ein Objekt sein"; return false; }
+    if ((int)r.tracks.size() > MAX_TRACKS) { err = pre + "höchstens " + String(MAX_TRACKS) + " Verläufe"; return false; }
+
+    for (JsonVariantConst p : o["publish"].as<JsonArrayConst>()) {
+        Event ev;
+        String e;
+        ev.done = false;
+        if (!p.is<JsonArrayConst>() || p.size() != 3 || !scenTime(p[0], ev.t)) e = "Eintrag muss [Sekunde, Topic, Payload] sein";
+        else if (scenTopic(p[1], ev.topic, e) && !scalarText(p[2], ev.payload)) e = "Payload fehlt";
+        if (e.length()) { err = pre + "publish: " + e; return false; }
+        r.events.push_back(ev);
+    }
+    for (JsonVariantConst p : o["on_stop"].as<JsonArrayConst>()) {
+        Event ev;
+        String e;
+        ev.t = 0;
+        ev.done = false;
+        if (!p.is<JsonArrayConst>() || p.size() != 2) e = "Eintrag muss [Topic, Payload] sein";
+        else if (scenTopic(p[0], ev.topic, e) && !scalarText(p[1], ev.payload)) e = "Payload fehlt";
+        if (e.length()) { err = pre + "on_stop: " + e; return false; }
+        r.onStop.push_back(ev);
+    }
+    if ((int)(r.events.size() + r.onStop.size()) > MAX_EVENTS) { err = pre + "höchstens " + String(MAX_EVENTS) + " Nachrichten"; return false; }
+    return true;
+}
+
+// ============================================================
+// Scenario list (built-in first, then the uploaded ones sorted by id)
+// ============================================================
+
+static std::vector<ScenInfo> scenList;
+
+static bool scenJson(const ScenInfo& s, String& json) {
+    if (s.builtin >= 0) { json = BUILTIN_SCEN[s.builtin]; return true; }
+    return fsRead(scenPath(s.id), json);
+}
+
+static int scenIndex(const String& id) {
+    for (int i = 0; i < (int)scenList.size(); i++) if (scenList[i].id == id) return i;
+    return -1;
+}
+
+static bool loadScen(const String& json, RunScen& r, String& err) {
+    JsonDocument doc;
+    DeserializationError e = deserializeJson(doc, json);
+    if (e) { err = String("kein gültiges JSON (") + e.c_str() + ")"; return false; }
+    return parseScen(doc.as<JsonObjectConst>(), r, err);
+}
+
+static void scenRebuild() {
+    scenList.clear();
+    for (int i = 0; i < BUILTIN_COUNT; i++) {
+        RunScen r;
+        String err;
+        if (!loadScen(BUILTIN_SCEN[i], r, err)) { Serial.printf("[EMU] Built-in scenario %d: %s\n", i, err.c_str()); continue; }
+        r.info.builtin = i;
+        scenList.push_back(r.info);
+    }
+    std::vector<String> ids;
+    fsListScen(ids);
+    std::sort(ids.begin(), ids.end());
+    for (const String& id : ids) {
+        String json, err;
+        RunScen r;
+        if (!fsRead(scenPath(id), json) || !loadScen(json, r, err) || r.info.id != id || scenIndex(id) >= 0) {
+            Serial.printf("[EMU] Skipping stored scenario %s %s\n", id.c_str(), err.c_str());
+            continue;
+        }
+        r.info.builtin = -1;
+        scenList.push_back(r.info);
+    }
+}
+
+static int customCount() {
+    int n = 0;
+    for (const ScenInfo& s : scenList) if (s.builtin < 0) n++;
+    return n;
+}
+
+// ============================================================
 // Init / loop
 // ============================================================
 
@@ -464,7 +814,8 @@ void emuInit() {
     defaults(-1);
     load();
     for (int d = 0; d < D_COUNT; d++) topicChanged[d] = false;   // nothing was sent yet
-    Serial.printf("[EMU] %d fields, %d scenarios\n", FIELD_COUNT, SCENARIO_COUNT);
+    scenRebuild();
+    Serial.printf("[EMU] %d fields, %d scenarios (%d own)\n", FIELD_COUNT, (int)scenList.size(), customCount());
 }
 
 static void newNoise() {
@@ -474,52 +825,42 @@ static void newNoise() {
     }
 }
 
-static void awning(bool out) {
-    if (sender && V("awn_t").length()) sender(V("awn_t"), out ? "ON" : "OFF");
+static void sendEvent(const Event& ev) {
+    String topic = ev.topic;
+    if (topic.startsWith("@")) topic = V(topic.c_str() + 1);
+    if (sender && topic.length()) sender(topic, ev.payload);
+}
+
+// Value of a track at time t (seconds since the start); false before its first point
+static bool trackAt(const Track& k, float t, int& i, float& frac) {
+    size_t n = k.t.size();
+    float last = k.t[n - 1];
+    if (k.loop >= 0 && t > last) t = k.loop + fmodf(t - k.loop, last - k.loop);
+    if (t < k.t[0]) return false;
+    i = 0;
+    while (i + 1 < (int)n && k.t[i + 1] <= t) i++;
+    frac = i + 1 < (int)n ? (t - k.t[i]) / (k.t[i + 1] - k.t[i]) : 0;
+    return true;
 }
 
 static void scenarioStep(float t) {
-    const char* id = SCENARIOS[scenario].id;
-    if (!strcmp(id, "empty")) {
-        float f = min(1.0f, t / 180);
-        setNum("w_pct", 30 - 25 * f, false);
-        setNum("gas_pct", 25 - 17 * f, false);
-    } else if (!strcmp(id, "fridge")) {
-        float x = 5 + min(6.0f, t / 20);
-        setNum("t1_t", x, false);
-        setNum("k1_t", x + 0.3f, false);
-    } else if (!strcmp(id, "battery")) {
-        float s = 40 - min(28.0f, t / 5);
-        setNum("b1_soc", s, false);
-        setNum("b1_v", 12.0f + s / 100 * 1.4f, false);
-        setNum("b1_a", -8.5f, false);
-    } else if (!strcmp(id, "frost")) {
-        float x = 4 - min(6.0f, t / 15);
-        setNum("t4_t", x, false);
-        setNum("k2_t", x + 0.2f, false);
-    } else if (!strcmp(id, "depart")) {
-        static int awn = -1;
-        if (t < 1.5f) awn = -1;
-        int want = t < 90 ? 1 : 0;
-        if (awn != want) { awn = want; awning(want); }
-        setStr("door", t < 60 ? "open" : "close", false);
-        setBool("c1_open", t < 120, false);
-        setNum("spd", t < 20 || t >= 150 ? 0 : min(50.0f, (t - 20) * 2.0f), false);
-    } else if (!strcmp(id, "drive")) {
-        float s = min(80.0f, max(0.0f, (t - 10) * 1.5f));
-        setNum("spd", s, false);
-        setBool("c1_open", true, false);
-        float wob = s > 5 ? 1.5f : 0;
-        setNum("pitch", 0.3f + wob * sinf(t / 3), false);
-        setNum("roll", -0.2f + wob * cosf(t / 4), false);
-    } else if (!strcmp(id, "tilt")) {
-        float f = max(0.0f, 1 - t / 90);
-        setNum("pitch", 0.2f + 2.8f * f, false);
-        setNum("roll", -0.3f - 1.9f * f, false);
-    } else if (!strcmp(id, "offline")) {
-        modes[scenarioDev] = (t >= 30 && t < 150) ? M_OFFLINE : M_ON;
+    for (const Track& k : run->tracks) {
+        int i;
+        float f;
+        if (!trackAt(k, t, i, f)) continue;
+        if (k.field < 0) {
+            uint8_t d = k.dev < 0 ? scenarioDev : k.dev;
+            modes[d] = (uint8_t)k.x[i];
+        } else if (FIELDS[k.field].type == T_NUM) {
+            float x = k.x[i] + (f > 0 ? (k.x[i + 1] - k.x[i]) * f : 0);
+            setRaw(k.field, fmt(constrain(x, FIELDS[k.field].min, FIELDS[k.field].max), FIELDS[k.field].dec), false);
+        } else {
+            setRaw(k.field, k.s[i], false);
+        }
     }
-    // "heat" only sets its start values; the heater dynamics do the rest
+    for (Event& ev : run->events)
+        if (!ev.done && t >= ev.t) { ev.done = true; sendEvent(ev); }
+    if (run->info.end > 0 && t >= run->info.end) emuStopScenario(!run->keep);
 }
 
 static void heaterDynamics() {
@@ -540,7 +881,7 @@ void emuLoop() {
     lastTick = now;
     Lock lock;
     if (now - lastNoise >= 10000 || lastNoise == 0) { lastNoise = now; newNoise(); }
-    if (scenario >= 0) scenarioStep((now - scenarioStart) / 1000.0f);
+    if (run) scenarioStep((now - scenarioStart) / 1000.0f);
     heaterDynamics();
     if (saveDue && (int32_t)(now - saveAt) >= 0) { saveDue = false; save(); }
 }
@@ -999,9 +1340,13 @@ static void schemaField(JsonObject o, int i) {
 }
 
 static void schemaScenario(JsonObject o, int i) {
-    o["id"] = SCENARIOS[i].id;
-    o["name"] = SCENARIOS[i].name;
-    o["desc"] = SCENARIOS[i].desc;
+    const ScenInfo& sc = scenList[i];
+    o["id"] = sc.id;
+    o["name"] = sc.name;
+    o["desc"] = sc.desc;
+    if (sc.builtin < 0) o["custom"] = true;
+    if (sc.dev) o["dev"] = true;
+    if (sc.end > 0) o["end"] = sc.end;
 }
 
 void emuSchemaJson(JsonDocument& doc) {
@@ -1010,7 +1355,8 @@ void emuSchemaJson(JsonDocument& doc) {
     JsonArray fs = doc["fields"].to<JsonArray>();
     for (int i = 0; i < FIELD_COUNT; i++) schemaField(fs.add<JsonObject>(), i);
     JsonArray sc = doc["scenarios"].to<JsonArray>();
-    for (int i = 0; i < SCENARIO_COUNT; i++) schemaScenario(sc.add<JsonObject>(), i);
+    Lock lock;
+    for (int i = 0; i < (int)scenList.size(); i++) schemaScenario(sc.add<JsonObject>(), i);
 }
 
 // The same JSON as emuSchemaJson, one entry at a time. The whole document needs
@@ -1033,10 +1379,11 @@ bool emuSchemaPiece(int n, String& out) {
     } else if ((n -= FIELD_COUNT) == 0) {
         out = "],\"scenarios\":[";
         return true;
-    } else if (--n < SCENARIO_COUNT) {
+    } else if (--n < (int)scenList.size()) {
         if (n) out = ",";
+        Lock lock;
         schemaScenario(doc.to<JsonObject>(), n);
-    } else if (n == SCENARIO_COUNT) {
+    } else if (n == (int)scenList.size()) {
         out = "]}";
         return true;
     } else {
@@ -1055,12 +1402,13 @@ void emuStateJson(JsonObject obj) {
     for (int d = 0; d < D_COUNT; d++) { m.add(modes[d]); n.add(noiseOn[d]); }
     JsonObject v = obj["v"].to<JsonObject>();
     for (int i = 0; i < FIELD_COUNT; i++) v[FIELDS[i].key] = vals[i];
-    if (scenario >= 0) {
+    if (run) {
         JsonObject s = obj["scenario"].to<JsonObject>();
-        s["id"] = SCENARIOS[scenario].id;
-        s["name"] = SCENARIOS[scenario].name;
+        s["id"] = run->info.id;
+        s["name"] = run->info.name;
         s["t"] = (millis() - scenarioStart) / 1000;
-        if (!strcmp(SCENARIOS[scenario].id, "offline")) s["dev"] = scenarioDev;
+        if (run->info.dev) s["dev"] = scenarioDev;
+        if (run->info.end > 0) s["end"] = run->info.end;
     }
     JsonArray log = obj["log"].to<JsonArray>();
     uint32_t now = millis();
@@ -1080,7 +1428,7 @@ bool emuSetValue(const char* key, const char* value, String& err) {
     String v(value ? value : "");
     if (!normalize(i, v, err)) return false;
     setRaw(i, v, true);
-    if (scenario >= 0 && snapshot) snapshot[i] = v;   // a manual change survives "stop"
+    if (run && snapshot) snapshot[i] = v;   // a manual change survives "stop"
     return true;
 }
 
@@ -1101,46 +1449,123 @@ void emuSetNoise(uint8_t dev, bool on) {
 
 bool emuStartScenario(const char* id, uint8_t dev, String& err) {
     Lock lock;
-    int s = -1;
-    for (int i = 0; i < SCENARIO_COUNT; i++) if (!strcmp(SCENARIOS[i].id, id)) s = i;
+    int s = scenIndex(id);
     if (s < 0) { err = "Unbekanntes Szenario"; return false; }
-    if (scenario >= 0) emuStopScenario(true);
+    String json;
+    RunScen* r = new RunScen();
+    bool ok = scenJson(scenList[s], json);
+    if (!ok) err = "Szenario nicht lesbar";
+    else ok = loadScen(json, *r, err);
+    if (!ok) { delete r; return false; }
+    r->info = scenList[s];
+    if (run) emuStopScenario(true);
     if (!snapshot) snapshot = new String[FIELD_COUNT];
     for (int i = 0; i < FIELD_COUNT; i++) snapshot[i] = vals[i];
     memcpy(snapModes, modes, sizeof(modes));
     scenarioDev = dev < D_ROUTER ? dev : D_TANK;   // only devices with an own connection can drop out
-    scenario = s;
+    run = r;
     scenarioStart = millis();
-    // start values the scenario needs
-    if (!strcmp(id, "depart")) { setStr("door", "open", false); setNum("spd", 0, false); setBool("fix", true, false); modes[D_ROUTER] = M_ON; }
-    if (!strcmp(id, "drive")) { modes[D_ROUTER] = M_ON; }
-    if (!strcmp(id, "fridge")) { setBool("t1_on", true, false); setBool("t1_ok", true, false); }
-    if (!strcmp(id, "battery")) { setBool("b1_on", true, false); setBool("b1_ok", true, false); }
-    if (!strcmp(id, "frost")) { setBool("t4_on", true, false); setBool("t4_ok", true, false); setBool("k2_on", true, false); }
-    if (!strcmp(id, "heat")) {
-        setBool("alive", true, false); setStr("hvac", "heat", false); setNum("setp", 22, false);
-        setNum("room", 12, false); setStr("wmode", "eco", false); setNum("water", 15, false); setBool("ht_dyn", true, false);
-    }
+    for (const auto& kv : run->start) setRaw(kv.first, kv.second, false);
     Serial.printf("[EMU] Scenario %s started\n", id);
     return true;
 }
 
 void emuStopScenario(bool restore) {
     Lock lock;
-    if (scenario < 0) return;
-    if (!strcmp(SCENARIOS[scenario].id, "depart")) awning(false);
+    if (!run) return;
+    for (const Event& ev : run->onStop) sendEvent(ev);
     if (restore && snapshot) {
         for (int i = 0; i < FIELD_COUNT; i++) setRaw(i, snapshot[i], false);
         memcpy(modes, snapModes, sizeof(modes));
     }
-    Serial.printf("[EMU] Scenario %s stopped%s\n", SCENARIOS[scenario].id, restore ? ", values restored" : "");
-    scenario = -1;
+    Serial.printf("[EMU] Scenario %s stopped%s\n", run->info.id.c_str(), restore ? ", values restored" : "");
+    delete run;
+    run = nullptr;
     if (!restore) markSave();
+}
+
+// Upload: {"scenarios": [...]}, a list or a single scenario. All or nothing: every entry is
+// checked first. Built-in ids are skipped, an uploaded id is replaced.
+bool emuImportScenarios(JsonDocument& doc, String& report, String& err) {
+    JsonArrayConst list;
+    JsonDocument one;
+    if (doc["scenarios"].is<JsonArrayConst>()) list = doc["scenarios"];
+    else if (doc.is<JsonArrayConst>()) list = doc.as<JsonArrayConst>();
+    else if (doc["id"].is<const char*>()) { one.add(doc.as<JsonObjectConst>()); list = one.as<JsonArrayConst>(); }
+    if (list.isNull() || list.size() == 0) { err = "Keine Szenarien gefunden (erwartet {\"scenarios\": [...]})"; return false; }
+
+    Lock lock;
+    std::vector<String> skipped, ids;
+    std::vector<String> jsons;
+    int added = 0, replaced = 0;
+    for (JsonVariantConst v : list) {
+        if (!v.is<JsonObjectConst>()) { err = "Jeder Eintrag muss ein Objekt sein"; return false; }
+        RunScen r;
+        if (!parseScen(v.as<JsonObjectConst>(), r, err)) return false;
+        int at = scenIndex(r.info.id);
+        if (at >= 0 && scenList[at].builtin >= 0) { skipped.push_back(r.info.id); continue; }
+        for (const String& x : ids)
+            if (x == r.info.id) { err = String("Szenario „") + r.info.id + "“ ist doppelt in der Datei"; return false; }
+        String json;
+        serializeJson(v, json);
+        if (json.length() > MAX_SCEN_JSON) { err = String("Szenario „") + r.info.id + "“ ist zu groß (max. 8 kB)"; return false; }
+        if (at >= 0) replaced++; else added++;
+        ids.push_back(r.info.id);
+        jsons.push_back(json);
+    }
+    if (customCount() + added > MAX_CUSTOM) {
+        err = String("Höchstens ") + String(MAX_CUSTOM) + " eigene Szenarien (jetzt " + String(customCount()) + ")";
+        return false;
+    }
+    for (size_t i = 0; i < ids.size(); i++) {
+        if (run && run->info.id == ids[i]) emuStopScenario(true);
+        if (!fsWrite(scenPath(ids[i]), jsons[i])) { err = String("Speichern fehlgeschlagen bei „") + ids[i] + "“"; scenRebuild(); return false; }
+    }
+    scenRebuild();
+    report = String(added) + " neu, " + String(replaced) + " ersetzt";
+    if (skipped.size()) {
+        report += ", " + String((int)skipped.size()) + " Standard übersprungen (";
+        for (size_t i = 0; i < skipped.size(); i++) report += (i ? ", " : "") + skipped[i];
+        report += ")";
+    }
+    Serial.printf("[EMU] Scenario upload: %s\n", report.c_str());
+    return true;
+}
+
+bool emuDeleteScenario(const char* id, String& err) {
+    Lock lock;
+    int s = scenIndex(id);
+    if (s < 0) { err = "Unbekanntes Szenario"; return false; }
+    if (scenList[s].builtin >= 0) { err = "Standard-Szenarien lassen sich nicht löschen"; return false; }
+    if (run && run->info.id == id) emuStopScenario(true);
+    fsRemove(scenPath(id));
+    scenRebuild();
+    Serial.printf("[EMU] Scenario %s deleted\n", id);
+    return true;
+}
+
+// Download: all scenarios in the upload format, one scenario per piece (pretty printed)
+bool emuScenarioExportPiece(int n, String& out) {
+    out = "";
+    Lock lock;
+    int count = scenList.size();
+    if (n == 0) { out = "{\n\"format\": \"camper-emulator-scenarios\",\n\"version\": 1,\n\"scenarios\": [\n"; return true; }
+    if (n == count + 1) { out = "\n]\n}\n"; return true; }
+    if (n > count + 1) return false;
+    const ScenInfo& sc = scenList[n - 1];
+    String json;
+    JsonDocument doc;
+    if (!scenJson(sc, json) || deserializeJson(doc, json)) return true;   // vanished meanwhile: leave it out
+    if (sc.builtin >= 0) doc["builtin"] = true;
+    String pretty;
+    serializeJsonPretty(doc, pretty);
+    out = (n > 1 ? ",\n" : "") + pretty;
+    return true;
 }
 
 void emuResetValues(int dev) {
     Lock lock;
-    if (scenario >= 0) emuStopScenario(false);
+    if (run) emuStopScenario(false);
     defaults(dev);
     markSave();
 }

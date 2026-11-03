@@ -3,7 +3,7 @@
 
 // Device emulator: one table of fields (values and settings of all emulated devices),
 // payload builders that produce the same topics as the real firmware, commands from
-// the display, scenarios and persistence (/emu.json). No networking in here: mqtt_ha.cpp
+// the display, scenarios and persistence (/emu.json, uploaded scenarios in /scen/). No networking in here: mqtt_ha.cpp
 // owns the broker connections and asks this module what to send.
 
 #include <Arduino.h>
@@ -61,6 +61,9 @@ bool emuSetModeReq(uint8_t dev, uint8_t mode);
 void emuSetNoise(uint8_t dev, bool on);
 bool emuStartScenario(const char* id, uint8_t dev, String& err);
 void emuStopScenario(bool restore);
+bool emuImportScenarios(JsonDocument& doc, String& report, String& err);   // upload, see emu.cpp "Scenarios"
+bool emuDeleteScenario(const char* id, String& err);   // uploaded scenarios only
+bool emuScenarioExportPiece(int n, String& out);       // download (n = 0, 1, ...); false after the last
 void emuResetValues(int dev);                          // -1 = all devices back to the example data
 void emuRequestClearAll();
 

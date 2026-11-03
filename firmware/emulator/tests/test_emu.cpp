@@ -37,7 +37,13 @@ int main(int argc, char** argv) {
         String a, b;
         serializeJson(s, a);
         serializeJson(st, b);
-        printf("{\"schema\":%s,\"state\":%s}\n", a.c_str(), b.c_str());
+        String x, piece;   // all scenarios as the download delivers them
+        for (int n = 0; emuScenarioExportPiece(n, piece); n++) x += piece;
+        JsonDocument xd;
+        deserializeJson(xd, x.c_str());
+        String c;
+        serializeJson(xd, c);
+        printf("{\"schema\":%s,\"state\":%s,\"scenarios\":%s}\n", a.c_str(), b.c_str(), c.c_str());
         return 0;
     }
 
@@ -151,6 +157,91 @@ int main(int argc, char** argv) {
     CHECK(get(D_TANK, "test/tanks/water/percent") == "5");
     emuStopScenario(false);                                         // keep the end state
     CHECK(get(D_TANK, "test/tanks/water/percent") == "5");
+
+    CHECK(emuStartScenario("drive", 0, err));
+    {
+        float lo = 99, hi = -99;
+        for (int i = 0; i < 80; i++) {
+            run(1);
+            float p = atof(get(D_LEVEL, "camper/level/pitch").c_str());
+            lo = std::min(lo, p); hi = std::max(hi, p);
+        }
+        CHECK(lo < -0.9f && hi > 1.5f && hi < 2.0f);                // pitch keeps swinging (loop)
+        CHECK(get(D_ROUTER, "camper/rut").find("\"speed\":\"80.0\"") != std::string::npos);
+    }
+    emuStopScenario(true);
+    CHECK(emuStartScenario("tilt", 0, err));
+    run(1);
+    CHECK(atof(get(D_LEVEL, "camper/level/pitch").c_str()) > 2.8f);
+    run(100);
+    CHECK(get(D_LEVEL, "camper/level/is_level") == "ON");
+    emuStopScenario(true);
+
+    // ---- uploaded scenarios ----
+    {
+        auto upload = [](const char* json, String& report, String& e) {
+            JsonDocument d;
+            if (deserializeJson(d, json)) { e = "bad json"; return false; }
+            return emuImportScenarios(d, report, e);
+        };
+        String report;
+        const char* mine = R"({"format":"camper-emulator-scenarios","version":1,"scenarios":[
+            {"id":"empty","name":"changed built-in"},
+            {"id":"grey-full","name":"Grauwasser voll","desc":"test",
+             "start":{"g_on":true},
+             "tracks":{"g_pct":[[0,50],[10,100]],"net":[[0,"LTE"],[5,"3G"]]},
+             "modes":{"$dev":[[3,"offline"]]},
+             "publish":[[2,"test/ping","1"],[4,"@awn_t","ON"]],
+             "on_stop":[["test/ping","0"]],
+             "end":8}]})";
+        CHECK(upload(mine, report, err));
+        CHECK(report == "1 neu, 0 ersetzt, 1 Standard übersprungen (empty)");
+        JsonDocument sch;
+        emuSchemaJson(sch);
+        CHECK(sch["scenarios"].size() == 10);
+        CHECK(sch["scenarios"][9]["id"] == "grey-full" && sch["scenarios"][9]["custom"] == true && sch["scenarios"][9]["dev"] == true);
+        CHECK(sch["scenarios"][0]["name"] == "Tanks leer");          // built-in untouched
+
+        sentOnce.clear();
+        CHECK(emuStartScenario("grey-full", D_LEVEL, err));
+        run(5);
+        CHECK(get(D_TANK, "test/tanks/grey/percent") == "75");
+        CHECK(emuMode(D_LEVEL) == M_OFFLINE);
+        CHECK(get(D_ROUTER, "camper/router/mobile").find("3G") != std::string::npos);
+        CHECK(sentOnce.size() == 2 && sentOnce[0] == "test/ping=1" && sentOnce[1] == "camper/display/cmd/awning=ON");
+        run(5);                                                       // "end": stops by itself, values back
+        CHECK(sentOnce.size() == 3 && sentOnce[2] == "test/ping=0");
+        CHECK(emuMode(D_LEVEL) == M_ON);
+        CHECK(get(D_TANK, "test/tanks/grey/percent") == "35");
+
+        // replace, then bad files: nothing of a bad upload is taken over
+        CHECK(upload(R"({"id":"grey-full","name":"Neu"})", report, err) && report == "0 neu, 1 ersetzt");
+        CHECK(!upload(R"({"scenarios":[{"id":"ok1"},{"id":"bad","tracks":{"w_pct":[[0,150]]}}]})", report, err));
+        CHECK(err.indexOf('b') >= 0 && std::string(err.c_str()).find("„bad“") != std::string::npos);
+        CHECK(!emuStartScenario("ok1", 0, err));
+        CHECK(!upload(R"({"id":"x","tracks":{"tk_pre":[[0,"a/b"]]}})", report, err));          // topic field
+        CHECK(!upload(R"({"id":"x","tracks":{"pitch":[[10,1],[5,2]]}})", report, err));        // time order
+        CHECK(!upload(R"({"id":"x","modes":{"router":[[0,"weg"]]}})", report, err));
+        CHECK(!upload(R"({"id":"x","publish":[[0,"a/#","1"]]})", report, err));
+        CHECK(!upload(R"({"id":"Großes X"})", report, err));
+        CHECK(!upload(R"({"foo":1})", report, err));
+
+        // download: valid JSON with all scenarios in the upload format
+        String all, piece;
+        int n = 0;
+        while (emuScenarioExportPiece(n++, piece)) all += piece;
+        JsonDocument ex;
+        CHECK(!deserializeJson(ex, all.c_str()));
+        CHECK(ex["format"] == "camper-emulator-scenarios" && ex["scenarios"].size() == 10);
+        CHECK(ex["scenarios"][4]["id"] == "depart" && ex["scenarios"][4]["builtin"] == true);
+        CHECK(ex["scenarios"][9]["name"] == "Neu" && ex["scenarios"][9]["builtin"].isNull());
+        CHECK(upload(all.c_str(), report, err) && report == "0 neu, 1 ersetzt, 9 Standard übersprungen (empty, fridge, battery, frost, depart, drive, tilt, heat, offline)");
+
+        CHECK(!emuDeleteScenario("depart", err));
+        CHECK(emuDeleteScenario("grey-full", err));
+        emuSchemaJson(sch);
+        CHECK(sch["scenarios"].size() == 9);
+    }
 
     emuResetValues(-1);
     CHECK(get(D_TANK, "camper/tanklevel/water/percent") == "62");

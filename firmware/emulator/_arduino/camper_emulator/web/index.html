@@ -187,6 +187,10 @@ code { font-family: ui-monospace, Menlo, monospace; }
 .sc-name { font-weight: 600; font-size: 0.88rem; }
 .sc-desc { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; line-height: 1.35; }
 .sc-run { border-color: var(--warning); background: rgba(255,184,0,0.08); }
+.sc-btns { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.sc-dev { margin-top: 6px; max-width: 180px; padding: 5px 8px; font-size: 0.75rem; background: var(--bg-input, #0d1117);
+    color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; }
+.btn-icon { width: auto; padding: 6px 8px; font-size: 0.75rem; }
 .log { font-family: ui-monospace, Menlo, monospace; font-size: 0.72rem; line-height: 1.5; word-break: break-all; }
 .log div { padding: 3px 0; border-bottom: 1px solid rgba(42,58,74,0.5); }
 .log .age { color: var(--text-muted); margin-right: 6px; }
@@ -237,12 +241,17 @@ code { font-family: ui-monospace, Menlo, monospace; }
     <div class="tab-content" id="tab-scen">
         <div class="card" id="scen-card">
             <div class="card-title accent">Szenarien</div>
-            <div class="form-group" style="margin-bottom:6px">
-                <label>Gerät für „Gerät offline“</label>
-                <select id="scen-dev"></select>
-            </div>
             <div id="scen-list"></div>
             <div class="form-hint">Ein Szenario ändert die Werte über die Zeit. <b>Stopp</b> stellt die Werte von vorher wieder her, <b>Stopp &amp; behalten</b> lässt den Endstand stehen.</div>
+        </div>
+        <div class="card">
+            <div class="card-title">Eigene Szenarien</div>
+            <div class="form-hint" style="margin:0 0 8px">Szenarien als JSON herunterladen, als Vorlage ändern (neue <code>id</code>) und wieder hochladen. Neue kommen zur Liste dazu, eigene mit gleicher <code>id</code> werden ersetzt. Die Standard-Szenarien bleiben immer erhalten. Format: README des Emulators, Abschnitt „Eigene Szenarien“.</div>
+            <input type="file" id="scen-file" accept=".json,application/json" class="hidden" onchange="uploadScenarios(this)">
+            <div class="btn-row">
+                <button class="btn btn-secondary" onclick="downloadScenarios()">⬇ Alle herunterladen</button>
+                <button class="btn btn-primary" onclick="$('scen-file').click()">⬆ Hochladen</button>
+            </div>
         </div>
         <div class="card">
             <div class="card-title">Empfangene Befehle</div>
@@ -442,10 +451,69 @@ function buildDevices() {
             el.addEventListener('change', () => send(k, el.value));
         }
     });
-    $('scen-dev').innerHTML = schema.devices.map((d, i) => d.own ? `<option value="${i}">${esc(d.name)}</option>` : '').join('');
-    $('scen-list').innerHTML = schema.scenarios.map(s => `<div class="sc-item" id="sc-${s.id}">
-        <div class="sc-main"><div class="sc-name">${esc(s.name)}</div><div class="sc-desc">${esc(s.desc)}</div></div>
-        <button class="btn btn-primary btn-small" id="scb-${s.id}" onclick="scenarioButton('${s.id}')">▶ Start</button></div>`).join('');
+    buildScenarios();
+}
+
+function buildScenarios() {
+    const devOpts = schema.devices.map((d, i) => d.own ? `<option value="${i}">${esc(d.name)}</option>` : '').join('');
+    $('scen-list').innerHTML = schema.scenarios.map(s => `<div class="sc-item" id="sc-${esc(s.id)}">
+        <div class="sc-main"><div class="sc-name">${esc(s.name)}${s.custom ? '<span class="badge new">eigenes</span>' : ''}</div>
+            <div class="sc-desc">${esc(s.desc)}${s.end ? ' · endet nach ' + s.end + ' s' : ''}</div>
+            ${s.dev ? `<select class="sc-dev" id="scd-${esc(s.id)}" title="Gerät">${devOpts}</select>` : ''}</div>
+        <div class="sc-btns">
+            <button class="btn btn-secondary btn-icon" title="Als JSON herunterladen" onclick="downloadScenarios('${esc(s.id)}')">⬇</button>
+            ${s.custom ? `<button class="btn btn-secondary btn-icon" title="Löschen" onclick="deleteScenario('${esc(s.id)}')">🗑</button>` : ''}
+            <button class="btn btn-primary btn-small" id="scb-${esc(s.id)}" onclick="scenarioButton('${esc(s.id)}')">▶ Start</button>
+        </div></div>`).join('');
+}
+
+// Scenario files: download all or one, upload, delete
+function saveFile(name, text) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], {type: 'application/json'}));
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+async function downloadScenarios(id) {
+    try {
+        const r = await fetch('/api/emu/scenarios', {cache: 'no-store'});
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const all = JSON.parse(await r.text());
+        if (!id) { saveFile('emulator-szenarien.json', JSON.stringify(all, null, 2)); return; }
+        const one = all.scenarios.find(x => x.id === id);
+        if (!one) throw new Error('Szenario nicht gefunden');
+        delete one.builtin;
+        saveFile('szenario-' + id + '.json', JSON.stringify({format: all.format, version: all.version, scenarios: [one]}, null, 2));
+    } catch (e) { showToast('Download fehlgeschlagen: ' + e.message, true); }
+}
+async function reloadScenarios() {
+    const r = await fetch('/api/emu/schema', {cache: 'no-store'});
+    schema.scenarios = JSON.parse(await r.text()).scenarios;
+    buildScenarios();
+    if (lastState) applyState(lastState);
+}
+async function uploadScenarios(input) {
+    const file = input.files[0];
+    input.value = '';
+    if (!file) return;
+    try {
+        const text = await file.text();
+        try { JSON.parse(text); } catch (e) { throw new Error('Keine gültige JSON-Datei: ' + e.message); }
+        const r = await fetch('/api/emu/scenarios', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: text});
+        let res = {};
+        try { res = await r.json(); } catch (e) {}
+        if (!r.ok || res.error) throw new Error(res.error || 'HTTP ' + r.status);
+        showToast('Hochgeladen: ' + (res.report || 'OK'));
+        await reloadScenarios();
+    } catch (e) { showToast(e.message, true); }
+}
+async function deleteScenario(id) {
+    const s = schema.scenarios.find(x => x.id === id);
+    if (!confirm('Szenario „' + (s ? s.name : id) + '“ löschen?')) return;
+    try { await emuPost({scen_del: id}); showToast('Gelöscht'); await reloadScenarios(); }
+    catch (e) { showToast(e.message, true); }
 }
 
 function toggleDev(i, e) {
@@ -496,7 +564,8 @@ async function clearAll() {
     try { await emuPost({clear: true}); showToast('Topics gelöscht, Geräte senden neu'); } catch (e) { showToast(e.message, true); }
 }
 async function startScenario(id) {
-    try { await emuPost({scenario: id, dev: parseInt($('scen-dev').value) || 0}); showToast('Szenario läuft'); }
+    const sel = $('scd-' + id);
+    try { await emuPost({scenario: id, dev: sel ? parseInt(sel.value) || 0 : 0}); showToast('Szenario läuft'); }
     catch (e) { showToast(e.message, true); }
 }
 let runningId = null;
@@ -537,7 +606,7 @@ function applyState(d) {
     runningId = sc ? sc.id : null;
     if (sc) {
         const dev = sc.dev !== undefined ? ' (' + esc(schema.devices[sc.dev].name) + ')' : '';
-        ban.innerHTML = `<div class="enable-row"><div>🎬 <b>${esc(sc.name)}</b>${dev} läuft seit ${sc.t} s</div></div>
+        ban.innerHTML = `<div class="enable-row"><div>🎬 <b>${esc(sc.name)}</b>${dev} läuft seit ${sc.t} s${sc.end ? ' von ' + sc.end + ' s' : ''}</div></div>
             <div class="btn-row"><button class="btn btn-secondary btn-small" onclick="stopScenario(true)">■ Stopp</button>
             <button class="btn btn-secondary btn-small" onclick="stopScenario(false)">■ Stopp &amp; behalten</button></div>`;
         ban.classList.remove('hidden');
@@ -702,7 +771,7 @@ function showToast(msg, isErr) {
     t.classList.toggle('err', !!isErr);
     t.classList.add('show');
     clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+    t._timer = setTimeout(() => t.classList.remove('show'), Math.min(10000, 2500 + msg.length * 40));   // long errors stay longer
 }
 
 loadSetup();
