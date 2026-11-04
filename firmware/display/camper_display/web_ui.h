@@ -7,79 +7,136 @@ const char WEB_UI[] PROGMEM = R"WEBUI(<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0f1419">
+<meta name="theme-color" content="#0D1115">
 <title>Camper Display</title>
 <style>
-:root{--bg:#0f1419;--card:#1b232b;--hi:#26313b;--tx:#e8edf2;--mu:#8696a6;--water:#3ba3e8;--grey:#a88b6a;--gas:#f0a030;--heat:#f06a3b;--ok:#4cc27a;--warn:#e5484d;--ac:#5ab0f0}
-@media (prefers-color-scheme:light){:root{--bg:#eef1f4;--card:#fff;--hi:#e3e8ee;--tx:#14202b;--mu:#5d6d7c}}
+/* camper-mqtt design: calm, technical; colour means state, blue means control */
+:root{--bg:#0D1115;--side:#11161B;--card:#151B21;--hi:#1C242C;--line:#222B34;--line2:#2F3A45;--tx:#E7ECF0;--tx2:#B4BEC8;--mu:#8B98A5;
+ --ok:#46B97C;--gas:#E5A23B;--warn:#E5534B;--ac:#4DA3F0;--acx:#06131F;--water:#3E9BE0;--grey:#8A96A3;--heat:#E2704A;--klima:#9B87E0;--track:#26303A;
+ --hbg:#2A2213;--hline:#4A3A1C;--htx:#F6D9A3;--hmu:#C9B38A;color-scheme:dark}
+@media (prefers-color-scheme:light){:root{--bg:#EEF1F4;--side:#E6EAEE;--card:#FFFFFF;--hi:#EEF2F5;--line:#DCE2E8;--line2:#C9D1D9;--tx:#14202B;--tx2:#3C4A57;--mu:#5D6D7C;
+ --track:#DCE2E8;--hbg:#FFF3DC;--hline:#F0D9A8;--htx:#6B4A0E;--hmu:#8A6A2E;color-scheme:light}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.35 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
-header{position:sticky;top:0;z-index:5;background:var(--card);padding:10px 14px 0;box-shadow:0 1px 0 #0003}
-.top{display:flex;align-items:center;gap:10px;position:relative}
-.top h1{font-size:18px;margin:0;flex:1}
-#clock{font-variant-numeric:tabular-nums;font-weight:600}
-.dot{width:10px;height:10px;border-radius:50%;background:var(--warn);display:inline-block}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+svg.i{width:20px;height:20px;flex:none;vertical-align:-4px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 16px;border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:10px;min-height:40px}
+.top h1{font-size:20px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dname{flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#clock{font-variant-numeric:tabular-nums;font-weight:600;padding:0 4px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;background:var(--hi);color:var(--tx);border:0;font:inherit;font-size:13px;white-space:nowrap}
+.pill.warnp{background:var(--hbg);color:var(--htx);cursor:pointer}
+.pill.warnp .dot{background:var(--gas)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--warn);display:inline-block;flex:none}
 .dot.ok{background:var(--ok)}
-header{padding-bottom:10px}
-/* icon bar at the bottom: Home, the pages chosen for the panel, System (same as on the display) */
-nav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;justify-content:center;gap:2px;background:var(--card);
- padding:6px 4px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -1px 0 #0003;overflow-x:auto;scrollbar-width:none}
-nav::-webkit-scrollbar{display:none}
-nav button{flex:1 1 0;min-width:0;max-width:112px;border:0;background:none;color:var(--mu);display:flex;flex-direction:column;
- align-items:center;gap:3px;font:inherit;font-size:12px;padding:2px 1px;cursor:pointer}
-nav .ic{font-size:22px;line-height:1;padding:6px 14px;border-radius:999px}
+.ibtn[hidden],.pill[hidden]{display:none}
+.card h3 svg.i{width:18px;height:18px;color:var(--mu)}
+.ibtn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line2);background:var(--card);color:var(--tx2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+@media (max-width:560px){#dname,#conn_t{display:none}#conn{padding:0 9px}.top h1{font-size:18px;flex:1}}
+/* navigation: bar at the bottom on phones, side bar on wide screens */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--side);border-top:1px solid var(--line);padding:6px 4px calc(8px + env(safe-area-inset-bottom))}
+nav .nbar{display:flex;justify-content:center;gap:2px}
+nav .nside{display:none}
+nav button{flex:1 1 0;min-width:0;max-width:112px;border:0;background:none;color:var(--mu);display:flex;flex-direction:column;align-items:center;gap:3px;font:inherit;font-size:11px;padding:2px 1px;cursor:pointer}
+nav .ic{display:inline-flex;align-items:center;justify-content:center;width:52px;height:30px;border-radius:999px}
 nav .lb{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 nav button.on{color:var(--tx);font-weight:600}
-nav button.on .ic{background:rgba(90,176,240,.22)}
-@media (max-width:420px){nav .ic{padding:5px 10px;font-size:20px}nav button{font-size:11px}#dname{display:none}}
-main{padding:14px 14px calc(84px + env(safe-area-inset-bottom));max-width:820px;margin:0 auto}
-.syslist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.syslist .btn{justify-content:flex-start;text-align:left;padding:14px;font-size:16px}
-.sysrow{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--hi)}
-.sysrow:last-child{border-bottom:0}
-.devr{display:flex;align-items:center;gap:10px}
-.devdel{background:none;border:1px solid var(--hi);color:var(--mu,#8696a6);border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12px}
-.devdel:hover{color:var(--warn,#e5484d);border-color:var(--warn,#e5484d)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
-.card{background:var(--card);border-radius:16px;padding:14px;position:relative}
+nav .nbar button.on .ic{background:rgba(77,163,240,.18);color:var(--ac)}
+@media (min-width:1000px){
+ body{padding-left:248px}
+ nav{top:0;right:auto;width:248px;bottom:0;border-top:0;border-right:1px solid var(--line);padding:16px 12px;overflow-y:auto}
+ nav .nbar{display:none}nav .nside{display:flex;flex-direction:column;gap:16px}
+ nav .nside button{flex:none;max-width:none;flex-direction:row;gap:10px;height:40px;padding:0 10px;border-radius:10px;font-size:14px;color:var(--tx2);width:100%}
+ nav .nside .ic{width:auto;height:auto}
+ nav .nside button.on{background:var(--hi);color:var(--tx);font-weight:600}
+ nav .nside button.on .ic{color:var(--ac)}
+ nav .nh{font-size:12px;color:var(--mu);padding:0 10px 6px}
+ nav .brand{display:flex;align-items:center;gap:10px;padding:2px 10px 4px}
+ nav .brand .bi{width:34px;height:34px;border-radius:10px;background:var(--hi);display:inline-flex;align-items:center;justify-content:center;color:var(--ac)}
+ nav .brand span{display:flex;flex-direction:column;font-size:12px;color:var(--mu)}nav .brand b{font-size:15px;color:var(--tx)}
+ header{padding:14px 32px}
+ main{padding:24px 32px 48px!important;max-width:1240px!important}
+ #toast{bottom:24px!important}
+ .savebar{bottom:0!important}
+}
+main{padding:16px 16px calc(96px + env(safe-area-inset-bottom));max-width:880px;margin:0 auto}
+/* building blocks */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+@media (max-width:560px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;min-width:0}
 .card.wide{grid-column:1/-1}
-.card h3{margin:0 0 6px;font-size:14px;font-weight:500;color:var(--mu)}
-.big{font-size:30px;font-weight:600;font-variant-numeric:tabular-nums}
+.card.w2{grid-column:span 2}
+.card h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:13px;font-weight:500;color:var(--tx2)}
+.card h3 .ti{display:inline-flex}.card h3 .ti svg.i{width:18px;height:18px}
+.tile{display:flex;flex-direction:column;min-height:132px}
+.tile .mu{margin-top:auto;padding-top:8px}
+.sec{margin:0 0 24px}
+.sec>h2{margin:0 0 12px;font-size:15px;font-weight:600;color:var(--tx2)}
+.big{font-size:30px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15}
+@media (max-width:560px){#ot_v,#ob_v{font-size:19px!important}.big{font-size:26px}.card{padding:14px}.tile{min-height:116px}}
 .huge{font-size:52px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
-.mu{color:var(--mu);font-size:14px}
-.bar{height:10px;border-radius:6px;background:var(--hi);overflow:hidden;margin-top:10px}
+.mu{color:var(--mu);font-size:13px}
+.bar{height:6px;border-radius:999px;background:var(--track);overflow:hidden;margin-top:10px}
 .bar i{display:block;height:100%;width:0;transition:width .4s}
 .click{cursor:pointer}
+.click:hover{border-color:var(--line2)}
 .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .row .grow{flex:1}
-.btn{border:0;border-radius:12px;padding:12px 16px;background:var(--hi);color:var(--tx);font:inherit;cursor:pointer;min-width:52px}
-.btn:active{filter:brightness(1.25)}
-.btn.on{background:var(--heat);color:#fff}
-.btn.pri{background:var(--ac);color:#fff}
-.btn.danger{background:var(--warn);color:#fff}
-.btn.sm{padding:6px 10px;font-size:14px;border-radius:9px}
-.seg{display:inline-flex;gap:6px}
-.seg .btn.on{background:var(--heat)}
+.btn{border:1px solid var(--line2);border-radius:10px;min-height:44px;padding:10px 16px;background:var(--hi);color:var(--tx);font:inherit;cursor:pointer;min-width:52px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:active{filter:brightness(1.2)}
+.btn.on{background:var(--ac);border-color:var(--ac);color:var(--acx);font-weight:600}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:var(--acx);font-weight:600}
+.btn.danger{background:transparent;border-color:#5A2A2A;color:#F08A84}
+.btn.sm{min-height:34px;padding:6px 12px;font-size:14px;border-radius:9px}
+.btn svg.i{width:18px;height:18px}
+.seg{display:inline-flex;gap:4px;padding:3px;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
+.seg .btn{border-color:transparent;background:transparent}
+.seg .btn.on{background:var(--ac);color:var(--acx)}
 .offline{opacity:.45}
 input[type=range]{width:100%;accent-color:var(--ac)}
 .err{color:var(--warn)}
 .okc{color:var(--ok)}
-.card.alarm{background:var(--warn);color:#fff}.card.alarm h3{color:#fff}
+.card.alarm{background:var(--hbg);border-color:var(--hline)}.card.alarm h3,.card.alarm .big{color:var(--htx)}
 .hist{margin-top:12px}.hist svg{width:100%;height:auto;display:block}.hist .lg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font-size:13px;color:var(--mu)}.hist .lg i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .fanbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .fanbtns .btn{padding:18px}
 svg text{fill:var(--tx);font:13px system-ui}
-/* settings */
-details{background:var(--card);border-radius:14px;margin-bottom:12px;padding:0 14px}
-summary{cursor:pointer;padding:14px 0;font-weight:600}
-label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
-input[type=text],input[type=password],input[type=number],select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--hi);background:var(--bg);color:var(--tx);font:inherit}
-.f2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
-.chk{display:flex;align-items:center;gap:8px;margin:8px 0;color:var(--tx);font-size:15px}
-.chk input{width:20px;height:20px}
+.syslist{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.syslist .btn{justify-content:flex-start;text-align:left;padding:12px 14px}
+.sysrow{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.sysrow:last-child{border-bottom:0}
+.devr{display:flex;align-items:center;gap:10px}
+.devdel{background:none;border:1px solid var(--line2);color:var(--mu);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px}
+.devdel:hover{color:var(--warn);border-color:var(--warn)}
+/* settings: category list + one section at a time */
+.setwrap{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.setnav{flex:1 1 240px;max-width:290px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.setnav .search{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);color:var(--mu);margin-bottom:10px}
+.setnav .search input{border:0;background:transparent;padding:0;height:auto}
+.setnav .sh{font-size:12px;color:var(--mu);padding:10px 12px 4px}
+.setnav button{display:block;width:100%;text-align:left;border:1px solid transparent;background:none;color:var(--tx2);font:inherit;font-size:14px;padding:9px 12px;border-radius:10px;cursor:pointer}
+.setnav button.on{background:var(--card);border-color:var(--line);color:var(--tx);font-weight:600}
+.setnav button[hidden]{display:none}
+.setmain{flex:999 1 480px;min-width:0}
+@media (max-width:999px){.setnav{max-width:none;flex-basis:100%}.setnav .navl{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}.setnav .sh{display:none}
+ .setnav button{flex:none;width:auto;white-space:nowrap;background:var(--card);border-color:var(--line)}.setnav button.on{background:var(--ac);border-color:var(--ac);color:var(--acx)}}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:12px;padding:0 18px 6px}
+summary{cursor:pointer;padding:16px 0;font-weight:600;font-size:15px}
+#sets.single>[data-g]>summary{display:none}
+#sets.single>details{padding-top:12px}
+.sectitle{margin:0 0 12px;font-size:18px;font-weight:600}
+label{display:block;font-size:13px;color:var(--mu);margin:12px 0 6px}
+input[type=text],input[type=password],input[type=number],select,textarea{width:100%;min-height:40px;padding:9px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--bg);color:var(--tx);font:inherit;font-size:15px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ac);outline-offset:-1px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+@media (max-width:560px){.f2{grid-template-columns:1fr}}
+/* switches instead of check boxes: text left, switch right */
+.chk{display:flex;flex-direction:row-reverse;justify-content:space-between;align-items:center;gap:16px;margin:4px 0;padding:10px 0;color:var(--tx);font-size:15px;border-bottom:1px solid var(--line)}
+.chk input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:44px;height:26px;margin:0;border-radius:999px;cursor:pointer;
+ background:var(--line2) radial-gradient(circle at 13px 13px,#fff 9px,transparent 9.5px);transition:background .15s}
+.chk input[type=checkbox]:checked{background:var(--ac) radial-gradient(circle at 31px 13px,#fff 9px,transparent 9.5px)}
+.chk input[type=radio]{width:20px;height:20px;accent-color:var(--ac)}
 .actions{display:flex;gap:10px;flex-wrap:wrap;padding:14px 0}
-.sgroups{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.sgroups .btn.on{background:var(--ac);color:#fff}
 details.fixed>summary{pointer-events:none;list-style:none}
 details.fixed>summary::-webkit-details-marker{display:none}
 .lvrow{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -89,21 +146,26 @@ details.fixed>summary::-webkit-details-marker{display:none}
 .lvstate{font-size:24px;font-weight:700;margin-bottom:12px}
 .lvk{color:var(--mu);font-size:13px;letter-spacing:.06em;margin-top:10px}
 .lvv{font:600 20px ui-monospace,SFMono-Regular,Menlo,monospace}
-.lvhint{font-size:18px;font-weight:600;margin-top:10px}
-.savebar{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));display:flex;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:var(--bg);z-index:4}
-.tileed{border:1px solid var(--hi);border-radius:12px;padding:10px;margin:10px 0}
+.lvhint{font-size:17px;font-weight:600;margin-top:10px}
+.savebar{position:sticky;bottom:calc(66px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;padding:12px 16px;margin:8px -16px 0;background:var(--side);border-top:1px solid var(--line);z-index:4}
+.savebar #dirty{flex:1;display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--mu)}
+.savebar #dirty.on{color:var(--htx)}.savebar #dirty .dot{background:var(--mu)}.savebar #dirty.on .dot{background:var(--gas)}
+.tileed{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;background:var(--bg)}
 .tileed .row b{flex:1}
-details.sn{background:none;margin:8px 0;padding:8px 10px}details.sn>summary{padding:4px 0;gap:8px;list-style:none;font-weight:400}details.sn>summary::-webkit-details-marker{display:none}details.sn[open]>summary{margin-bottom:6px}
+details.sn{background:var(--bg);margin:8px 0;padding:8px 12px}details.sn>summary{padding:4px 0;gap:8px;list-style:none;font-weight:400}details.sn>summary::-webkit-details-marker{display:none}details.sn[open]>summary{margin-bottom:6px}
 table{width:100%;border-collapse:collapse;font-size:13px}
-td{padding:6px 4px;border-top:1px solid var(--hi);vertical-align:top;word-break:break-all}
-code{font-size:12px;color:var(--mu)}
-.chip{display:inline-block;margin:2px;padding:3px 8px;border-radius:8px;background:var(--hi);cursor:pointer;font-size:12px}
-#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9}
+td{padding:8px 4px;border-top:1px solid var(--line);vertical-align:top;word-break:break-all}
+code{font-size:12px;color:var(--mu);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.chip{display:inline-block;margin:2px;padding:4px 10px;border-radius:8px;background:var(--hi);cursor:pointer;font-size:12px}
+#toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9}
 #toast.show{opacity:1}
-.banner{background:var(--gas);color:#000;border-radius:12px;padding:10px 14px;margin-bottom:12px}
-.warnbox{background:var(--warn);color:#fff;border-radius:16px;padding:12px 14px;margin-bottom:12px;font-weight:600;white-space:pre-line}
+.banner{background:rgba(77,163,240,.14);border:1px solid rgba(77,163,240,.35);color:var(--tx);border-radius:12px;padding:12px 14px;margin-bottom:16px}
+.warnbox{display:flex;gap:12px;align-items:flex-start;background:var(--hbg);border:1px solid var(--hline);color:var(--htx);border-radius:14px;padding:14px 16px;margin-bottom:20px;font-weight:600;cursor:pointer}
+.warnbox[hidden]{display:none}
+.warnbox .wi{color:var(--gas);display:inline-flex}.warnbox .wt{white-space:pre-line;flex:1}
 .trow{display:flex;align-items:center;gap:10px}
-.trow .n{flex:1;color:var(--mu);font-size:18px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow .n{flex:1;color:var(--tx2);font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow .n svg.i{width:18px;height:18px;color:var(--mu)}
 .trow.al .big{color:var(--warn)}
 :root{--fwu-ok:var(--ok);--fwu-warn:#f0a030;--fwu-bad:var(--warn);--fwu-mute:var(--mu);--fwu-line:var(--hi)}
 .fwu-cur{font-size:.8rem;margin:0 0 10px}
@@ -118,7 +180,12 @@ button:disabled{opacity:.45;cursor:not-allowed}
 </head>
 <body>
 <header>
-  <div class="top"><span class="dot" id="dot" title="Verbindung"></span><h1 id="title">Camper</h1><span class="mu" id="dname" style="position:absolute;left:50%;transform:translateX(-50%);font-weight:600;pointer-events:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn" id="wake" hidden title="Display ist dunkel" style="padding:6px 12px;font-size:14px">💡 Display an</button><button class="btn" id="sleep" hidden title="Display ausschalten" style="padding:6px 10px;font-size:14px">💤</button><span id="clock"></span></div>
+  <div class="top"><h1 id="title">Camper</h1><span class="mu" id="dname"></span>
+   <span class="pill" id="conn" title="Verbindung"><span class="dot" id="dot"></span><span id="conn_t">Verbindung</span></span>
+   <button class="pill warnp" id="wpill" type="button" hidden><span class="dot"></span><span id="wpill_t"></span></button>
+   <span id="clock"></span>
+   <button class="ibtn" id="wake" type="button" hidden title="Display ist dunkel – einschalten" aria-label="Display einschalten"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg></button>
+   <button class="ibtn" id="sleep" type="button" hidden title="Display ausschalten" aria-label="Display ausschalten"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/></svg></button></div>
 </header>
 <main id="main"></main>
 <nav id="nav"></nav>
@@ -126,13 +193,31 @@ button:disabled{opacity:.45;cursor:not-allowed}
 <script>
 'use strict';
 const $=s=>document.querySelector(s);
+// one stroke icon set for all pages (no emoji: looks the same on every phone)
+const SVGP={home:'M4 11l8-7 8 7v9H4zM10 20v-6h4v6',water:'M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z',
+ fire:'M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2.5 1.5-4 3-5 0 2 1 3 2 3 0-3-1-5 0-8z',therm:'M10 4a2 2 0 0 1 4 0v10a4 4 0 1 1-4 0zM12 9v6',
+ bat:'M4 7h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM21 10v4M7 10v4M10 10v4',carbat:'M4 8h16v11H4zM7 8V6h3v2M14 8V6h3v2M8 13h3M15 12v3M13.5 13.5h3',
+ fan:'M12 10.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M12 10.5c0-4 1-6.5 4-6.5 2.5 0 2 4-2.5 6.5M13.5 12c4 0 6.5 1 6.5 4 0 2.5-4 2-6.5-2.5M12 13.5c0 4-1 6.5-4 6.5-2.5 0-2-4 2.5-6.5M10.5 12c-4 0-6.5-1-6.5-4 0-2.5 4-2 6.5 2.5',
+ hatch:'M3 18h18M6 18l2-7h8l2 7M9 11l3-5 3 5',level:'M3 10h18v5H3zM10.5 10v5M13.5 10v5',
+ light:'M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z',plug:'M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-10 0zM12 16v5',
+ door:'M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M4 21h16M14 12h.01',cloud:'M7 18h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 18z',
+ warn:'M12 4l9 16H3zM12 10v4M12 17h.01',sliders:'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4',
+ sys:'M7 7h10v10H7zM10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4',bolt:'M13 3L5 14h6l-1 7 8-11h-6z',box:'M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8',
+ sun:'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+ solar:'M3 18l2-10h14l2 10zM4 13h16M9 8l-1 10M15 8l1 10M12 18v3',car:'M3 16V8a2 2 0 0 1 2-2h10l4 4h1a1 1 0 0 1 1 1v5M3 16h18M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+ fridge:'M6 3h12v18H6zM6 10h12M9 6v2M9 13v3',snow:'M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9',couch:'M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3M3 13a2 2 0 0 1 4 0v2h10v-2a2 2 0 0 1 4 0v5H3zM5 18v2M19 18v2',
+ tree:'M12 3l6 9h-4l4 6H6l4-6H6zM12 18v3',bed:'M3 18V7M3 13h18v5M21 18v-3a3 3 0 0 0-3-3h-8v1M7 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
+ shower:'M4 20L15 9M12 6a5 5 0 0 1 6 6zM16 15v1M19 15v1M16 18v1M19 18v1',awning:'M3 8h18l-2 5H5zM5 13v7M19 13v7M3 8l2-3h14l2 3',lock:'M6 11h12v9H6zM9 11V7a3 3 0 0 1 6 0',
+ link:'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',power:'M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0',
+ grey:'M4 20L15 9M12 6a5 5 0 0 1 6 6zM16 15v1M19 15v1M16 18v1M19 18v1',search:'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4'};
+const svg=(k,sz)=>`<svg class="i" viewBox="0 0 24 24"${sz?` style="width:${sz}px;height:${sz}px"`:''} fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SVGP[k]||SVGP.box}"/></svg>`;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let ws,cfg=null,V={},S={},WX={},page=localStorage.getItem('page')||'',finder={on:false,l:{}};
 let pendingSet=null,setTimer=null,setHold=0;
 const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie'],['weather','Wetter'],['actors','Sensoren'],['warn','Warnungen'],['light','Licht'],['switch','Schalter'],['extra1','Energie'],['extra2','Extra'],['heki','Dachhaube']];
 // default icons of the fixed pages (BUILTIN order, last = system page); own choice in cfg.pageIcons (keys of ICONS)
-const PICON_DEF=['🏠','♨️','🌀','📐','🌡️','🔋','🌦','🚪','⚠','💡','🔌','⚡','📦','⏏','⚙'];
-const picon=i=>{const k=cfg&&cfg.pageIcons&&cfg.pageIcons[i];const f=k&&ICONS.find(x=>x[0]===k);return f?f[1]:PICON_DEF[i]||'📄'};
+const PICON_DEF=['home','fire','fan','level','therm','bat','cloud','door','warn','light','plug','bolt','box','hatch','sys'];
+const picon=i=>{const k=cfg&&cfg.pageIcons&&cfg.pageIcons[i];return svg(k&&SVGP[k]?k:PICON_DEF[i]||'box')};
 // device pages: page id -> Show bit of the sensors (sensors.h)
 const DEVPAGE={actors:4,light:16,switch:32,extra1:64,extra2:128};
 const NAV_FREE=6;   // icon bar on the panel: Home + 6 chosen pages + System
@@ -159,10 +244,10 @@ function online(dev){return V[dev+'_status']==='online'}
 function connect(){
   ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');
   ws.onopen=()=>$('#dot').classList.add('ok');
-  ws.onclose=()=>{$('#dot').classList.remove('ok');setTimeout(connect,2000)};
+  ws.onclose=()=>{$('#dot').classList.remove('ok');$('#conn_t').textContent='Keine Verbindung';setTimeout(connect,2000)};
   ws.onmessage=e=>{
     const m=JSON.parse(e.data);
-    if(m.t==='cfg'){cfg=m;buildNav();if(page==='rules'){page='settings';setGroup='rules'}if(!pages().some(p=>p.id===page))page=cfg.setup?'settings':pages()[0].id;render()}
+    if(m.t==='cfg'){cfg=m;buildNav();if(page==='rules'){page='settings';setGroup='rules';setSec=''}if(!pages().some(p=>p.id===page))page=cfg.setup?'settings':pages()[0].id;render()}
     else if(m.t==='v'){Object.assign(V,m.d||{});if(m.s)Object.assign(S,m.s);update()}
     else if(m.t==='f'){if(!m.add)finder.l={};if('on' in m)finder.on=!!m.on;else finder.on=true;finder.filter=m.filter;(m.l||[]).forEach(x=>finder.l[x[0]]=x[1]);renderFinder()}
     else if(m.t==='err')toast(m.msg);
@@ -176,8 +261,8 @@ function pages(){
   BUILTIN.forEach((b,i)=>{if(cfg.builtin[i])p.push({id:b[0],title:ptitle(i),icon:picon(i)})});
   cfg.pages.forEach((n,i)=>p.push({id:'p'+i,title:n,custom:i}));
   p.push({id:'system',title:sysTitle(),icon:picon(BUILTIN.length)});
-  p.push({id:'links',title:'🔗 Geräte'});
-  p.push({id:'settings',title:'⚙ Einstellungen'});
+  p.push({id:'links',title:'Geräte',icon:svg('link')});
+  p.push({id:'settings',title:'Einstellungen',icon:svg('sliders')});
   return p;
 }
 const sysTitle=()=>(cfg&&cfg.pageNames&&cfg.pageNames[BUILTIN.length])||'System';
@@ -198,15 +283,22 @@ let navW=-1;
 window.addEventListener('resize',()=>{clearTimeout(window._nvT);window._nvT=setTimeout(()=>{
   const n=navRoom();if(n===navW||!cfg)return;buildNav();render()},150)});
 function go(id){page=id;try{localStorage.setItem('page',page)}catch(e){}window.scrollTo(0,0);render()}
+// side bar on wide screens: all pages in groups
+const NAV_GROUPS=[['',['overview','warn']],['Steuern',['heater','fan','heki','light','switch']],['Ansehen',['temp','bat','level','weather','actors','extra1','extra2']],['Eigene Seiten',null],['Gerät',['settings','links','system']]];
 function buildNav(){
   navW=navRoom();
-  $('#nav').innerHTML=navItems().map(p=>`<button data-p="${p.id}" title="${esc(p.title)}"><span class="ic">${p.icon||'📄'}</span><span class="lb">${esc(p.title)}</span></button>`).join('');
+  const P=pages(),btn=p=>`<button type="button" data-p="${p.id}" title="${esc(p.title)}"><span class="ic">${p.icon||svg('box')}</span><span class="lb">${esc(p.title)}</span></button>`;
+  let side=`<div class="brand"><span class="bi">${svg('car')}</span><span><b>${esc((cfg&&cfg.name)||'Camper')}</b>Display</span></div>`;
+  NAV_GROUPS.forEach(([t,ids])=>{const l=ids?ids.map(id=>P.find(p=>p.id===id)).filter(x=>x):P.filter(p=>p.custom!==undefined);
+    if(l.length)side+=`<div class="ng">${t?`<div class="nh">${t}</div>`:''}${l.map(btn).join('')}</div>`});
+  $('#nav').innerHTML=`<div class="nbar">${navItems().map(btn).join('')}</div><div class="nside">${side}</div>`;
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>go(b.dataset.p));
 }
 function render(){
   // pages that are not in the bar (settings, devices, the rest) are reached from System, so System lights up
   const inBar=navItems().some(x=>x.id===page);
-  $('#nav').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.p===page||(!inBar&&b.dataset.p==='system')));
+  $('#nav').querySelectorAll('.nbar button').forEach(b=>b.classList.toggle('on',b.dataset.p===page||(!inBar&&b.dataset.p==='system')));
+  $('#nav').querySelectorAll('.nside button').forEach(b=>b.classList.toggle('on',b.dataset.p===page));
   const p=pages().find(x=>x.id===page);if(!p)return;
   $('#title').textContent=p.title.replace('⚙ ','');
   $('#dname').textContent=cfg.name||'';document.title=cfg.name?cfg.name+' · Camper Display':'Camper Display';
@@ -228,31 +320,37 @@ function render(){
   bind();update();
 }
 
-function tank(id,icon,title,col){return `<div class="card"><h3>${icon} ${title}</h3><div class="row"><span class="big grow" id="${id}_v">--</span><span class="mu" id="${id}_l"></span></div><div class="bar"><i id="${id}_b" style="background:${col}"></i></div></div>`}
-function info(id,icon,title,go){return `<div class="card click" data-go="${go}"><h3>${icon} ${title}</h3><div class="big" id="${id}_v">--</div><div class="mu" id="${id}_s"></div></div>`}
+// tile: icon in its domain colour, name, value, optional bar, one sub line
+const th=(k,col,title,tid)=>`<h3><span class="ti" style="color:${col}">${svg(k)}</span><span${tid?` id="${tid}"`:''}>${title}</span></h3>`;
+function tank(id,k,col,title){return `<div class="card tile">${th(k,col,title)}<span class="big" id="${id}_v">--</span><div class="bar"><i id="${id}_b" style="background:${col}"></i></div><div class="mu" id="${id}_l"></div></div>`}
+function info(id,k,col,title,go){return `<div class="card tile click" data-go="${go}">${th(k,col,title)}<div class="big" id="${id}_v">--</div><div class="mu" id="${id}_s"></div></div>`}
+// the web page groups the tiles chosen for the panel by topic, keeping their order inside a group
+const OV_GROUPS=[['Vorräte',['water','grey','gas']],['Klima',['heater','fan','heki','temp','weather']],['Energie',['bat','bat1','bat2','bat3']],['Fahrzeug',['level','actors','lights','switches']],['Eigene Kacheln',null]];
+function ovTile(t){
+  if(t==='water')return tank('w','water','var(--water)','Frischwasser');
+  if(t==='grey')return tank('g','grey','var(--grey)','Grauwasser');
+  if(t==='gas')return tank('gas','fire','#D9893A','Gas');
+  if(t==='heater')return info('oh','fire','var(--heat)',esc(ptitle(1)),'heater');
+  if(t==='weather')return info('owx','cloud','var(--grey)',esc(ptitle(6)),'weather');
+  if(t==='level')return info('ol','level','var(--grey)',esc(ptitle(3)),'level');
+  if(t==='fan')return info('of','fan','var(--water)',esc(ptitle(2)),'fan');
+  if(t==='heki')return info('ok','hatch','var(--grey)',esc(ptitle(13)),'heki');
+  if(t==='temp')return `<div class="card tile w2 click" data-go="temp">${th('therm','var(--klima)',esc(ptitle(4)))}<div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>`;
+  if(t==='bat')return `<div class="card tile w2 click" data-go="bat">${th('bat','var(--ok)',esc(ptitle(5)))}<div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
+  if(/^bat[123]$/.test(t)){const n=t[3];return `<div class="card tile click" data-go="bat"><h3 id="ob${n}_t">Batterie ${n}</h3><div class="big" id="ob${n}_v">--</div><div class="mu" id="ob${n}_s"></div></div>`}
+  if(/^t\d+$/.test(t)){const i=+t.slice(1),k=(cfg.tiles||[])[i];if(!k)return '';return `<div class="card tile"><h3>${esc(k.n)}</h3><div class="big" id="t${i}_v">--</div></div>`}
+  if(t==='lights')return `<div class="card tile click" data-go="light">${th(PICON_DEF[9],'#E5C24B',esc(ptitle(9)))}<div class="big" id="oli_v" style="font-size:20px">--</div><div class="mu" id="oli_s"></div></div>`;
+  if(t==='switches')return `<div class="card tile click" data-go="switch">${th(PICON_DEF[10],'var(--grey)',esc(ptitle(10)))}<div class="big" id="osw_v" style="font-size:20px">--</div><div class="mu" id="osw_s"></div></div>`;
+  if(t==='actors')return `<div class="card tile click" data-go="actors">${th(PICON_DEF[7],'var(--grey)',esc(ptitle(7)))}<div class="big" id="oa_v" style="font-size:20px">--</div><div class="mu" id="oa_s"></div></div>`;
+  return '';   // status (banner above), clock (header), none
+}
 function pgOverview(){
-  const parts=ovList().map(t=>{
-    if(t==='water')return tank('w','💧','Frischwasser','var(--water)');
-    if(t==='grey')return tank('g','🚿','Grauwasser','var(--grey)');
-    if(t==='gas')return tank('gas','🔥','Gas','var(--gas)');
-    if(t==='heater')return info('oh','♨️',esc(ptitle(1)),'heater');
-    if(t==='weather')return info('owx','🌦',esc(ptitle(6)),'weather');
-    if(t==='level')return info('ol','📐',esc(ptitle(3)),'level');
-    if(t==='fan')return info('of','🌀',esc(ptitle(2)),'fan');
-    if(t==='heki')return info('ok','⏏',esc(ptitle(13)),'heki');
-    if(t==='temp')return `<div class="card wide click" data-go="temp"><h3>🌡️ ${esc(ptitle(4))}</h3><div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>`;
-    if(t==='bat')return `<div class="card wide click" data-go="bat"><h3>🔋 ${esc(ptitle(5))}</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
-    if(/^bat[123]$/.test(t)){const n=t[3];return `<div class="card click" data-go="bat"><h3 id="ob${n}_t">🔋 Batterie ${n}</h3><div class="big" id="ob${n}_v">--</div><div class="mu" id="ob${n}_s"></div></div>`}
-    if(/^t\d+$/.test(t)){const i=+t.slice(1),k=(cfg.tiles||[])[i];if(!k)return '';return `<div class="card"><h3>${esc(k.n)}</h3><div class="big" id="t${i}_v">--</div></div>`}
-    if(t==='lights')return `<div class="card click" data-go="light"><h3>${picon(9)} ${esc(ptitle(9))}</h3><div class="big" id="oli_v" style="font-size:20px">--</div><div class="mu" id="oli_s"></div></div>`;
-    if(t==='switches')return `<div class="card click" data-go="switch"><h3>${picon(10)} ${esc(ptitle(10))}</h3><div class="big" id="osw_v" style="font-size:20px">--</div><div class="mu" id="osw_s"></div></div>`;
-    if(t==='actors')return `<div class="card click" data-go="actors"><h3>${picon(7)} ${esc(ptitle(7))}</h3><div class="big" id="oa_v" style="font-size:20px">--</div><div class="mu" id="oa_s"></div></div>`;
-    if(t==='status')return `<div class="card click" id="ost" data-go="warn"><h3>⚠ Status</h3><div class="big" id="ost_v" style="white-space:pre-line">OK</div><div id="ost_i" style="font-size:22px;margin-top:4px"></div></div>`;
-    return '';   // clock (header), none
-  });
-  // without a status tile the warnings appear in a box above the tiles
-  const box=ovList().includes('status')?'':'<div class="warnbox" id="warn" hidden></div>';
-  return `${box}<div class="grid">${parts.join('')}</div>`;
+  const l=ovList();
+  const secs=OV_GROUPS.map(([title,keys])=>{
+    const tiles=l.filter(t=>keys?keys.includes(t):/^t\d+$/.test(t)).map(ovTile).filter(x=>x);
+    return tiles.length?`<section class="sec"><h2>${title}</h2><div class="grid">${tiles.join('')}</div></section>`:''}).join('');
+  // warnings as a banner on top (the panel's status tile is not needed here)
+  return `<div class="warnbox" id="warn" data-go="warn" hidden><span class="wi">${svg('warn',22)}</span><span class="wt" id="warn_t"></span></div>${secs}`;
 }
 // windows / doors (own Zigbee contacts marked for this page) and all warnings
 // Show bits of a sensor: stored ones or the default of its kind
@@ -326,7 +424,7 @@ function pgSystem(){
 }
 function bindSystem(){
   document.querySelectorAll('#main [data-go]').forEach(e=>e.onclick=()=>go(e.dataset.go));
-  $('#sy_rules').onclick=()=>{setGroup='rules';try{localStorage.setItem('setGroup','rules')}catch(e){}go('settings')};
+  $('#sy_rules').onclick=()=>{setGroup='rules';setSec='';try{localStorage.setItem('setGroup','rules')}catch(e){}go('settings')};
   const br=$('#sy_bri');if(S.bri!==undefined)br.value=S.bri;br.oninput=e=>send({c:'bri',v:e.target.value});
   $('#sy_scr').onclick=()=>{const on=S.awake===false;send({c:'screen',v:on?'on':'off'});S.awake=on;update()};
   update();
@@ -410,7 +508,7 @@ function autoIco(n,temp){n=(n||'').toLowerCase();const h=(...k)=>k.some(x=>n.inc
   if(temp)return h('gefrier','tiefk','frost','freez')?'snow':h('kühl','kuehl','fridge')?'fridge':h('außen','aussen','draußen','outdoor','outside')?'tree':h('bad','dusch','wc')?'shower':h('schlaf','bett','alkoven')?'bed':h('wasser','boiler','tank')?'water':h('heiz','truma')?'fire':h('garage','stau','keller')?'box':h('innen','wohn','raum','inside')?'couch':h('motor','fahrer','cockpit')?'car':'therm';
   return h('solar','pv')?'sun':h('start','motor','fahrzeug','kfz','auto','lkw')?'car':h('land','230')?'plug':h('aufbau','wohn','bord','versorg','house','service')?'home':'bat'}
 function icoKey(n,temp){const sl=slotsOf(cfg&&(temp?cfg.ovTempSel:cfg.ovBatSel)).find(x=>x.n===n);return sl&&ICONS.some(x=>x[0]===sl.k)?sl.k:autoIco(n,temp)}
-const icoE=k=>(ICONS.find(x=>x[0]===k)||ICONS[0])[1];
+const icoE=k=>svg(SVGP[k]?k:'therm');
 // entries of an overview tile: chosen slots, otherwise all temperatures / the first 3 batteries
 function ovSlots(list,temp){const sl=slotsOf(cfg&&(temp?cfg.ovTempSel:cfg.ovBatSel),temp?SLOTS_T:SLOTS_B);return (sl.length?sl:list.slice(0,temp?99:3).map(x=>({n:x.name,k:''}))).map(x=>({n:x.n,e:icoE(ICONS.some(i=>i[0]===x.k)?x.k:autoIco(x.n,temp)),it:list.find(y=>y.name===x.n)}))}
 function ico(n,temp){return icoE(icoKey(n,temp))}
@@ -628,10 +726,10 @@ function update(){
   if($('#sy_ip')){
     set('sy_wifi',S.wifi?`verbunden${S.rssi!==undefined?' · '+S.rssi+' dBm':''}`:'getrennt');
     set('sy_ip',esc(S.ip||'--'));set('sy_mqtt',S.mqtt?'verbunden':'getrennt');
-    $('#sy_scr').textContent=S.awake===false?'💡 An':'💤 Aus';
+    $('#sy_scr').innerHTML=S.awake===false?svg('light')+' An':svg('power')+' Aus';
     const br=$('#sy_bri');if(S.bri!==undefined&&document.activeElement!==br)br.value=S.bri;
   }
-  if(S.ip!==undefined){$('#dot').classList.toggle('ok',ws&&ws.readyState==1&&S.mqtt);$('#dot').title=S.mqtt?'MQTT verbunden':'MQTT getrennt'}
+  if(S.ip!==undefined){$('#dot').classList.toggle('ok',ws&&ws.readyState==1&&S.mqtt);$('#conn').title=S.mqtt?'MQTT verbunden':'MQTT getrennt';$('#conn_t').textContent=S.mqtt?'MQTT':'MQTT getrennt'}
   const d=new Date();$('#clock').textContent=d.toTimeString().slice(0,5);
   // overview
   setTank('w','water_pct','water_l','tank');setTank('g','grey_pct','grey_l','tank');setTank('gas','gas_pct','gas_l','tank');
@@ -650,7 +748,8 @@ function update(){
   set('of_v',online('fan')?'Bereit':'--');set('of_s',online('fan')?(V.fan_hold==='ON'?'Auto-Hold aktiv':'Tippen zum Steuern'):'offline');
   // warnings + temperatures
   const warn=warnings();
-  ['warn','t_warn'].forEach(id=>{const e=document.getElementById(id);if(e){e.hidden=!warn.length;e.textContent='⚠ '+warn.join('\n')}});
+  ['warn','t_warn'].forEach(id=>{const e=document.getElementById(id);if(e){e.hidden=!warn.length;const t=document.getElementById(id+'_t');(t||e).textContent=(t?'':'⚠ ')+warn.join('\n')}});
+  {const w=$('#wpill');w.hidden=!warn.length;$('#wpill_t').textContent=warn.length+(warn.length===1?' Warnung':' Warnungen')}
   if($('#ost')){const c=$('#ost'),v=$('#ost_v');c.classList.toggle('alarm',!!warn.length);v.textContent=warn.length?warn.join('\n'):'OK';v.style.fontSize=warn.length?'17px':'';v.classList.toggle('okc',!warn.length);$('#ost_i').textContent=((S.open>0?S.open+' 🚪 ':'')+(S.ind||[]).map(k=>(ICONS.find(x=>x[0]===k)||['','•'])[1]).join(' ')).trim()}
   updDepart();
   if($('#wn_l')){$('#wn_l').textContent=warn.length?'⚠ '+warn.join('\n\n⚠ '):'Keine Warnungen';$('#wn_l').className=warn.length?'err':'okc'}
@@ -756,8 +855,8 @@ function inp(id,lbl,type='text',ph=''){return `<div><label for="${id}">${lbl}</l
 function pgSettings(){
   const g=SET_GROUPS.some(x=>x[0]===setGroup)?setGroup:'view';
   return `${cfg&&cfg.setup?'<div class="banner">Ersteinrichtung: unter 🔌 Verbindung WLAN und MQTT-Broker eintragen und speichern.</div>':''}
-  <div class="sgroups">${SET_GROUPS.map(x=>`<button class="btn sm${x[0]===g?' on':''}" data-sg="${x[0]}">${x[1]}</button>`).join('')}</div>
-  <div id="sets" data-cur="${g}">
+  <div class="setwrap"><div class="setnav"><label class="search" for="setq">${svg('search',16)}<input type="text" id="setq" placeholder="Einstellung suchen"></label><div class="navl" id="setl"></div></div>
+  <div class="setmain"><div id="sets" class="single" data-cur="${g}">
   <details data-g="view" open><summary>🖥 Display</summary>
 
    <label>Helligkeit</label><input type="range" id="brightness" min="5" max="100">
@@ -870,15 +969,34 @@ function pgSettings(){
    <p class="mu" id="sysinfo"></p>
    <div class="actions"><button class="btn" id="reboot">Neustart</button><button class="btn danger" id="factory">Werkseinstellungen</button></div></details>
   </div>
-  <div class="savebar"><button class="btn pri" id="save" style="flex:1">Einstellungen speichern</button></div>`;
+  <div class="savebar"><span id="dirty"><span class="dot"></span><span id="dirty_t">Alles gespeichert</span></span><button class="btn pri" id="save">Speichern</button></div></div></div>`;
 }
+// one section at a time; the list on the left is built from the sections themselves
+const secTitle=e=>e.dataset.g==='rules'?'Automationen':(e.querySelector('summary')?e.querySelector('summary').firstChild.textContent:'').replace(/^[^\p{L}\d]+/u,'').trim();
+let setSec=(()=>{try{return localStorage.getItem('setSec')||''}catch(e){return''}})();
+function buildSetNav(){
+  const els=[...document.querySelectorAll('#sets>[data-g]')];els.forEach((e,i)=>{if(!e.dataset.sec)e.dataset.sec=e.id||('s'+i)});
+  $('#setl').innerHTML=SET_GROUPS.map(([g,t])=>{const l=els.filter(e=>e.dataset.g===g);return l.length?`<div class="sh">${esc(t.replace(/^[^\p{L}\d]+/u,''))}</div>`+l.map(e=>`<button type="button" data-sec="${e.dataset.sec}">${esc(secTitle(e))}</button>`).join(''):''}).join('');
+  $('#setl').querySelectorAll('button').forEach(b=>b.onclick=()=>showSec(b.dataset.sec));
+  $('#setq').oninput=()=>{const q=$('#setq').value.trim().toLowerCase();
+    $('#setl').querySelectorAll('button').forEach(b=>{const e=document.querySelector(`#sets>[data-sec="${b.dataset.sec}"]`);b.hidden=!!q&&!(e&&e.textContent.toLowerCase().includes(q))})};
+}
+function showSec(id){
+  const els=[...document.querySelectorAll('#sets>[data-g]')];
+  const el=els.find(e=>e.dataset.sec===id)||els.find(e=>e.dataset.g===setGroup)||els[0];if(!el)return;
+  setSec=el.dataset.sec;try{localStorage.setItem('setSec',setSec)}catch(e){}
+  els.forEach(e=>e.hidden=e!==el);if(el.tagName==='DETAILS'&&!el.open)el.open=true;
+  $('#setl').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.sec===setSec));
+  if(el.dataset.g!==setGroup||el.dataset.g==='rules')showGroup(el.dataset.g,true);
+  let h=$('#sectitle');if(!h){h=document.createElement('h2');h.id='sectitle';h.className='sectitle';$('#sets').prepend(h)}h.textContent=secTitle(el);
+}
+function setDirty(on){const d=$('#dirty');if(!d)return;d.classList.toggle('on',on);$('#dirty_t').textContent=on?'Änderungen nicht gespeichert':'Alles gespeichert'}
 // settings groups: [id, label]; the chosen one is remembered in the browser
 const SET_GROUPS=[['view','🖥 Anzeige'],['dev','📡 Sensoren & Geräte'],['rules','⚡ Automationen'],['net','🔌 Verbindung'],['svc','🌦 Dienste'],['sys','🔧 System']];
 let rulesLoaded=false;   // the automations tab loads its rules on first show (own save button)
 let setGroup=(()=>{try{return localStorage.getItem('setGroup')||'view'}catch(e){return'view'}})();
-function showGroup(g){setGroup=g;try{localStorage.setItem('setGroup',g)}catch(e){}
-  document.querySelectorAll('[data-sg]').forEach(b=>b.classList.toggle('on',b.dataset.sg===g));
-  document.querySelectorAll('#sets>[data-g]').forEach(d=>d.hidden=d.dataset.g!==g);
+function showGroup(g,fromSec){setGroup=g;try{localStorage.setItem('setGroup',g)}catch(e){}
+  if(!fromSec){const e=document.querySelector(`#sets>[data-g="${g}"]`);if(e){showSec(e.dataset.sec);return}}
   const sb=$('.savebar');if(sb)sb.style.display=g==='rules'?'none':'';   // automations have their own save button
   if(g==='rules'){if(!rulesLoaded){rulesLoaded=true;loadRules()}else ruleState()}
   const sd=$('#snd');if(g==='dev'&&sd&&!sd.open){sd.open=true}}
@@ -901,10 +1019,14 @@ async function loadSettings(){
     $('#sysinfo').textContent=`Firmware ${ST.fw} · MAC ${ST.mac} · IP ${S.ip||''}`;
     const p=await fetch('/api/pages');PG=await p.json();PG.pages=PG.pages||[];PG.tiles=PG.tiles||[];renderPages();
   }catch(e){toast('Einstellungen konnten nicht geladen werden')}
-  $('#save').onclick=saveSettings;
-  document.querySelectorAll('[data-sg]').forEach(b=>b.onclick=()=>showGroup(b.dataset.sg));
-  if(cfg&&cfg.setup){let had=null;try{had=localStorage.getItem('setGroup')}catch(e){}if(!had)setGroup='net'}
-  showGroup(SET_GROUPS.some(x=>x[0]===setGroup)?setGroup:'view');
+  $('#save').onclick=()=>{saveSettings();setDirty(false)};
+  buildSetNav();
+  if(cfg&&cfg.setup){let had=null;try{had=localStorage.getItem('setGroup')}catch(e){}if(!had){setGroup='net';setSec=''}}
+  if(!SET_GROUPS.some(x=>x[0]===setGroup))setGroup='view';
+  showSec(setSec);
+  // sections with their own save button (automations, sensors, own pages) do not count
+  const mark=e=>{const sec=e.target.closest('#sets>[data-g]');if(sec&&!sec.querySelector('.btn.pri:not(#save)')&&sec.dataset.g!=='rules')setDirty(true)};
+  $('#sets').addEventListener('input',mark);$('#sets').addEventListener('change',mark);
   $('#lnkadd').onclick=()=>{readLinks();LINKS.push({n:'',u:''});renderLinks()};
   $('#lnksug').onclick=()=>{readLinks();SUGGEST.forEach(([n,h])=>{if(!LINKS.some(x=>x.u.includes(h)||x.n.toLowerCase()===n.toLowerCase()))LINKS.push({n,u:'http://'+h+'.local/'})});renderLinks()};
   $('#brightness').oninput=e=>send({c:'bri',v:e.target.value});
@@ -1185,6 +1307,7 @@ function addFromFinder(topic,key){
   PG.tiles.push(t);renderPages();toast('Kachel hinzugefügt – unter „Seiten & Kacheln“ prüfen und speichern');
 }
 
+$('#wpill').onclick=()=>go('warn');
 $('#wake').onclick=()=>{send({c:'screen',v:'on'});S.awake=true;$('#wake').hidden=true;$('#sleep').hidden=false};
 $('#sleep').onclick=()=>{send({c:'screen',v:'off'});S.awake=false;$('#sleep').hidden=true;$('#wake').hidden=false};
 setInterval(()=>{const d=new Date();$('#clock').textContent=d.toTimeString().slice(0,5)},10000);
