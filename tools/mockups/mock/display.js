@@ -18,6 +18,7 @@ const M = {
     pageIcons: ['', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
     navSel: 'heater,temp,actors,light,switch,warn', heaterSrc: 0,
     ovTiles: 'water,gas,heater,lights,heki,switches,temp,bat1,status',
+    webTiles: 'water,grey,gas,none,heater,fan,heki,weather,temp,none,bat,none,level,actors,lights,switches',
     fw: '2.8.0', mac: '24:0A:C4:00:00:01',
     // In the mockup the device links open the other mockups
     links: [{n: 'Truma', u: 'heater.html'}, {n: 'MaxxFan', u: 'maxxfan.html'}, {n: 'Tanks', u: 'tanklevel.html'},
@@ -43,7 +44,7 @@ const M = {
   cfgMsg() {
     const c = M.cfg;
     return {t: 'cfg', fw: c.fw, host: c.hostname, name: c.displayName, links: c.links, ap: false, setup: false,
-            builtin: c.builtin, ovTiles: c.ovTiles, ovTempSel: c.ovTempSel, ovBatSel: c.ovBatSel, pageNames: c.pageNames, navSel: c.navSel, heaterSrc: c.heaterSrc, pageIcons: c.pageIcons, pages: M.pages.pages.map(p => p.name),
+            builtin: c.builtin, ovTiles: c.ovTiles, webTiles: c.webTiles, ovTempSel: c.ovTempSel, ovBatSel: c.ovBatSel, pageNames: c.pageNames, navSel: c.navSel, heaterSrc: c.heaterSrc, pageIcons: c.pageIcons, pages: M.pages.pages.map(p => p.name),
             tiles: M.pages.tiles.map(t => Object.assign({n: t.name, p: t.page, y: t.type, u: t.unit || ''},
               t.type === 1 ? {son: t.stateOn || 'ON'} : {}, t.type === 3 ? {min: t.min, max: t.max, step: t.step} : {}))};
   },

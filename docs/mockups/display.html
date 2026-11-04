@@ -22,6 +22,7 @@ const M = {
     pageIcons: ['', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
     navSel: 'heater,temp,actors,light,switch,warn', heaterSrc: 0,
     ovTiles: 'water,gas,heater,lights,heki,switches,temp,bat1,status',
+    webTiles: 'water,grey,gas,none,heater,fan,heki,weather,temp,none,bat,none,level,actors,lights,switches',
     fw: '2.8.0', mac: '24:0A:C4:00:00:01',
     // In the mockup the device links open the other mockups
     links: [{n: 'Truma', u: 'heater.html'}, {n: 'MaxxFan', u: 'maxxfan.html'}, {n: 'Tanks', u: 'tanklevel.html'},
@@ -47,7 +48,7 @@ const M = {
   cfgMsg() {
     const c = M.cfg;
     return {t: 'cfg', fw: c.fw, host: c.hostname, name: c.displayName, links: c.links, ap: false, setup: false,
-            builtin: c.builtin, ovTiles: c.ovTiles, ovTempSel: c.ovTempSel, ovBatSel: c.ovBatSel, pageNames: c.pageNames, navSel: c.navSel, heaterSrc: c.heaterSrc, pageIcons: c.pageIcons, pages: M.pages.pages.map(p => p.name),
+            builtin: c.builtin, ovTiles: c.ovTiles, webTiles: c.webTiles, ovTempSel: c.ovTempSel, ovBatSel: c.ovBatSel, pageNames: c.pageNames, navSel: c.navSel, heaterSrc: c.heaterSrc, pageIcons: c.pageIcons, pages: M.pages.pages.map(p => p.name),
             tiles: M.pages.tiles.map(t => Object.assign({n: t.name, p: t.page, y: t.type, u: t.unit || ''},
               t.type === 1 ? {son: t.stateOn || 'ON'} : {}, t.type === 3 ? {min: t.min, max: t.max, step: t.step} : {}))};
   },
@@ -353,6 +354,12 @@ main{padding:16px 16px calc(96px + env(safe-area-inset-bottom));max-width:880px;
 @media (max-width:560px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;min-width:0}
 .card.wide{grid-column:1/-1}
+.grid.hs4{grid-template-columns:repeat(4,minmax(0,1fr))}.grid.hs2{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:900px){.grid.hs4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.grid.hs2{grid-template-columns:minmax(0,1fr)}}
+.slot0{min-height:1px}
+.wsel{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+@media (max-width:560px){.wsel{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .card.w2{grid-column:span 2}
 .card h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:13px;font-weight:500;color:var(--tx2)}
 .card h3 .ti{display:inline-flex}.card h3 .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -539,6 +546,11 @@ const ptitle=i=>(cfg&&cfg.pageNames&&cfg.pageNames[i])||BUILTIN[i][1];
 // overview tiles (same list as on the panel)
 const OV_DEFAULT='water,grey,gas,heater,level,fan,temp,bat,status';
 const ovList=()=>((cfg&&cfg.ovTiles)||OV_DEFAULT).split(',').map(x=>x.trim()).filter(x=>x);
+// home of the web page: own layout, fixed slots per group ('none' = empty, the space stays)
+const WEB_DEFAULT='water,grey,gas,none,heater,fan,heki,weather,temp,none,bat,none,level,actors,lights,switches';
+const WEB_GROUPS=[['Tanks',4],['Klima',4],['Temperatur',2],['Energie',2],['Fahrzeug',4]];
+const webList=()=>{const l=((cfg&&cfg.webTiles)||WEB_DEFAULT).split(',').map(x=>x.trim());return Array.from({length:16},(x,i)=>l[i]||'none')};
+const webChoices=()=>ovChoices().filter(c=>c[0]!=='status'&&c[0]!=='clock');
 function ovChoices(){
   const c=[['water','Frischwasser'],['grey','Grauwasser'],['gas','Gas'],['heater',ptitle(1)],['level',ptitle(3)],['fan',ptitle(2)],['heki',ptitle(13)],
     ['temp',ptitle(4)],['bat',ptitle(5)+' (alle)'],['bat1','Batterie 1 (einzeln)'],['bat2','Batterie 2 (einzeln)'],['bat3','Batterie 3 (einzeln)'],
@@ -637,8 +649,6 @@ function render(){
 const th=(k,col,title,tid,did)=>`<h3><span class="ti" style="color:${col}">${svg(k)}</span><span class="grow"${tid?` id="${tid}"`:''}>${title}</span>${did?`<i class="sd" id="${did}_d"></i>`:''}</h3>`;
 function tank(id,k,col,title){return `<div class="card tile">${th(k,col,title,'',id)}<span class="big" id="${id}_v">--</span><div class="bar"><i id="${id}_b" style="background:${col}"></i></div><div class="mu" id="${id}_l"></div></div>`}
 function info(id,k,col,title,go){return `<div class="card tile click" data-go="${go}">${th(k,col,title,'',id)}<div class="big" id="${id}_v">--</div><div class="mu" id="${id}_s"></div></div>`}
-// the web page groups the tiles chosen for the panel by topic, keeping their order inside a group
-const OV_GROUPS=[['Tanks',['water','grey','gas']],['Klima',['heater','fan','heki','temp','weather']],['Energie',['bat','bat1','bat2','bat3']],['Fahrzeug',['level','actors','lights','switches']],['Eigene Kacheln',null]];
 function ovTile(t){
   if(t==='water')return tank('w','water','var(--water)','Frischwasser');
   if(t==='grey')return tank('g','grey','var(--grey)','Grauwasser');
@@ -648,8 +658,8 @@ function ovTile(t){
   if(t==='level')return info('ol','level','var(--grey)',esc(ptitle(3)),'level');
   if(t==='fan')return info('of','fan','var(--water)',esc(ptitle(2)),'fan');
   if(t==='heki')return info('ok','hatch','var(--grey)',esc(ptitle(13)),'heki');
-  if(t==='temp')return `<div class="card tile w2 click" data-go="temp">${th('therm','var(--klima)',esc(ptitle(4)),'','ot')}<div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>`;
-  if(t==='bat')return `<div class="card tile w2 click" data-go="bat">${th('bat','var(--ok)',esc(ptitle(5)),'','ob')}<div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
+  if(t==='temp')return `<div class="card tile click" data-go="temp">${th('therm','var(--klima)',esc(ptitle(4)),'','ot')}<div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>`;
+  if(t==='bat')return `<div class="card tile click" data-go="bat">${th('bat','var(--ok)',esc(ptitle(5)),'','ob')}<div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
   if(/^bat[123]$/.test(t)){const n=t[3];return `<div class="card tile click" data-go="bat"><h3 id="ob${n}_t">Batterie ${n}</h3><div class="big" id="ob${n}_v">--</div><div class="mu" id="ob${n}_s"></div></div>`}
   if(/^t\d+$/.test(t)){const i=+t.slice(1),k=(cfg.tiles||[])[i];if(!k)return '';return `<div class="card tile"><h3>${esc(k.n)}</h3><div class="big" id="t${i}_v">--</div></div>`}
   if(t==='lights')return `<div class="card tile click" data-go="light">${th(PICON_DEF[9],'#E5C24B',esc(ptitle(9)))}<div class="big" id="oli_v" style="font-size:20px">--</div><div class="mu" id="oli_s"></div></div>`;
@@ -658,12 +668,16 @@ function ovTile(t){
   return '';   // status (banner above), clock (header), none
 }
 function pgOverview(){
-  const l=ovList();
-  const secs=OV_GROUPS.map(([title,keys])=>{
-    const tiles=l.filter(t=>keys?keys.includes(t):/^t\d+$/.test(t)).map(ovTile).filter(x=>x);
-    return tiles.length?`<section class="sec"><h2>${title}</h2><div class="grid">${tiles.join('')}</div></section>`:''}).join('');
+  // the web page has its own layout (Einstellungen → Home auf der Webseite): groups with fixed slots,
+  // an empty slot keeps its space; a tile chosen twice is shown once; MQTT tiles not placed follow at the end
+  const l=webList(),used=new Set();let k=0;
+  const secs=WEB_GROUPS.map(([title,n])=>{
+    const slots=l.slice(k,k+n);k+=n;
+    const tiles=slots.map(t=>{if(t==='none'||used.has(t))return '';used.add(t);return ovTile(t)});
+    return tiles.some(x=>x)?`<section class="sec"><h2>${title}</h2><div class="grid hs${n}">${tiles.map(x=>x||'<div class="slot0"></div>').join('')}</div></section>`:''}).join('');
+  const own=((cfg&&cfg.tiles)||[]).map((x,i)=>'t'+i).filter(t=>!used.has(t)).map(ovTile).filter(x=>x);
   // warnings as a banner on top (the panel's status tile is not needed here)
-  return `<div class="warnbox" id="warn" data-go="warn" hidden><span class="wi">${svg('warn',22)}</span><span class="wt" id="warn_t"></span></div>${secs}`;
+  return `<div class="warnbox" id="warn" data-go="warn" hidden><span class="wi">${svg('warn',22)}</span><span class="wt" id="warn_t"></span></div>${secs}${own.length?`<section class="sec"><h2>Eigene Kacheln</h2><div class="grid">${own.join('')}</div></section>`:''}`;
 }
 // windows / doors (own Zigbee contacts marked for this page) and all warnings
 // Show bits of a sensor: stored ones or the default of its kind
@@ -1191,11 +1205,16 @@ function pgSettings(){
    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px" id="navsel"></div>
    <p class="mu" style="margin-top:4px">Seiten ohne Symbol erreichst du über ihre Kachel auf Home oder durch Wischen.</p>
 </details>
-  <details data-g="view" id="dsd" ontoggle="if(this.open)renderSlots()"><summary>Kacheln auf Home</summary>
-   <label>Kacheln der Übersicht (3 × 3, von links oben nach rechts unten)</label>
+  <details data-g="view" id="dsd" ontoggle="if(this.open)renderSlots()"><summary>Home am Display</summary>
+   <label>Kacheln am Display (3 × 3, von links oben nach rechts unten)</label>
    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[0,1,2,3,4,5,6,7,8].map(i=>`<select id="ov${i}" style="padding:8px 4px;font-size:13px">${ovChoices().map(c=>`<option value="${c[0]}">${esc(c[1])}</option>`).join('')}</select>`).join('')}</div>
    <label>Temperatur-Kachel: bis zu ${SLOTS_T} Sensoren mit Symbol (leer = alle). Der erste wird groß angezeigt, bis zu 4 weitere klein darunter. Alle stehen auf der Seite Temperatur.</label><div id="slt"></div>
-   <label>Batterie-Kachel: Die erste Batterie wird groß mit Segmentanzeige gezeigt, die anderen klein darunter.</label><div id="slb"></div></details>
+   <label>Batterie-Kachel: Die erste Batterie wird groß mit Segmentanzeige gezeigt, die anderen klein darunter.</label><div id="slb"></div>
+   <p class="mu" style="margin-top:4px">Die Auswahl für Temperatur- und Batterie-Kachel gilt auch auf der Webseite.</p></details>
+  <details data-g="view"><summary>Home auf der Webseite</summary>
+   <p class="mu">Die Webseite hat Platz für mehr Kacheln als das Display und eine eigene Auswahl. Je Gruppe feste Plätze; „(leer)“ lässt den Platz frei, eine Gruppe ganz ohne Kacheln verschwindet. MQTT-Kacheln, die hier keinen Platz haben, stehen darunter unter „Eigene Kacheln“.</p>
+   ${(()=>{let k=0;return WEB_GROUPS.map(([t,n])=>{const a=k;k+=n;return `<label>${t}</label><div class="wsel">${Array.from({length:n},(x,j)=>`<select id="wt${a+j}" style="padding:8px 4px;font-size:13px${n===2?';grid-column:span 2':''}">${webChoices().map(c=>`<option value="${c[0]}">${esc(c[1])}</option>`).join('')}</select>`).join('')}</div>`}).join('')})()}
+  </details>
   <details data-g="view"><summary>Eigene Seiten &amp; MQTT-Kacheln <span class="mu" style="font-weight:400">· eigener Speichern-Knopf</span></summary><p class="mu">Für Werte, die keine Sensoren sind, z. B. ein beliebiges MQTT-Topic, Landstrom-Messzange, Router-Daten.</p><div id="pged"></div></details>
   <details data-g="dev" id="snd" ontoggle="if(this.open)loadSensors()"><summary>Sensoren (Zigbee &amp; Bluetooth) <span class="mu" style="font-weight:400">· eigener Speichern-Knopf</span></summary>
    <p class="mu">Eigene Sensoren direkt per MQTT: Zigbee-Gateway mit Cluster-Topics (z. B. SMLIGHT: <code>&lt;Basis&gt;/&lt;Adresse&gt;/1/0006/0000</code>) und Bluetooth über OpenMQTTGateway (<code>&lt;Basis&gt;/&lt;MAC&gt;</code>, Govee, Ruuvi, Xiaomi …). Je Sensor wählst du, auf welchen Seiten er erscheint. Offene Kontakte auf den Geräteseiten werden auf Home in der Status-Kachel gezählt.</p>
@@ -1330,6 +1349,7 @@ async function loadSettings(){
     BUILTIN.forEach((b,i)=>$('#bp'+i).checked=ST.builtin[i]);
     for(let i=0;i<=BUILTIN.length;i++){const e=$('#pn'+i);if(e)e.value=(ST.pageNames||[])[i]||'';const ic=$('#pi'+i);if(ic)ic.value=(ST.pageIcons||[])[i]||''}
     {const l=(ST.ovTiles||OV_DEFAULT).split(',');for(let i=0;i<9;i++){const e=$('#ov'+i);if(e)e.value=l[i]||'none'}}
+    {const l=(ST.webTiles||WEB_DEFAULT).split(',');for(let i=0;i<16;i++){const e=$('#wt'+i);if(e)e.value=l[i]||'none'}}
     LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
     $('#warnWake').checked=!!ST.warnWake;$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||60);
     $('#slt').innerHTML=$('#slb').innerHTML='';renderSlots();
@@ -1477,6 +1497,7 @@ function saveSettings(){
   o.staticIp=$('#staticIp').checked;o.fanPort=+$('#fanPort').value;o.brightness=+$('#brightness').value;
   o.builtin=BUILTIN.map((b,i)=>$('#bp'+i).checked);
   o.ovTiles=[0,1,2,3,4,5,6,7,8].map(i=>$('#ov'+i).value).join(',').replace(/(,none)+$/,'');
+  o.webTiles=Array.from({length:16},(x,i)=>$('#wt'+i).value).join(',');
   o.pageNames=[...BUILTIN.map((b,i)=>$('#pn'+i).value.trim()),$('#pn'+BUILTIN.length).value.trim()];
   o.pageIcons=[...BUILTIN.keys(),BUILTIN.length].map(i=>$('#pi'+i).value);
   readLinks();o.links=LINKS.filter(x=>x.n.trim()&&x.u.trim());

@@ -202,7 +202,9 @@ Panel, Webseite und Road Buddy nutzen dieselbe Palette (ab 2.12.0): dunkle Fläc
 
 Alle Kacheln folgen demselben Aufbau: oben ein farbiger Kreis mit Symbol und der Titel, links groß der Wert, unten eine Zeile mit Details, rechts eine Grafik – ein Farbkreis mit Symbol (Heizung, MaxxFan, Status), die Libelle (Level), ein großes Wettersymbol oder die Tank-/Gasflaschen-Zeichnung. Ist ein Gerät offline oder aus (Heizung), wird sein Kreis grau. Temperaturen auf Kacheln stehen kurz als „19,7°“.
 
-**Batterie- und Temperatur-Kachel:** Unter *Einstellungen → Kacheln auf Home* bestimmt die erste Zeile („groß“), welche Batterie bzw. welcher Sensor groß angezeigt wird; die weiteren erscheinen klein mit ihrem Symbol darunter (Batterie: 2, Temperatur: 4). Alle stehen auf den Seiten Batterie und Temperatur. Die Batterie zeigt eine Segmentanzeige aus 13 Feldern von Rot nach Grün – nach Ladezustand, bei Batterien ohne Ladezustand (z. B. BM2 an der Starterbatterie) nach Spannung von 11,8 V (leer) bis 12,8 V (voll). Die Segmentanzeige steht auch auf der Seite Batterie. Die Restlaufzeit steht mit Uhr-Symbol (statt „noch …“) auf Kachel und Batterieseite. Die Symbolfarbe richtet sich nach dem gewählten Symbol (z. B. Schneeflocke hellblau, Auto grau, Haus grün, Sonne gelb).
+**Home auf der Webseite:** Die Webseite hat eine eigene Kachel-Auswahl unter *Einstellungen → Home auf der Webseite*, unabhängig von den 3 × 3 Kacheln am Display. Feste Plätze je Gruppe: Tanks 4, Klima 4, Temperatur 2, Energie 2, Fahrzeug 4. Jeder Platz kann jede Kachel zeigen (auch MQTT-Kacheln); „(leer)“ lässt den Platz frei, eine Gruppe ohne Kacheln fällt weg. MQTT-Kacheln ohne Platz stehen darunter unter „Eigene Kacheln“. Am PC stehen 4 Kacheln nebeneinander, am Handy 2.
+
+**Batterie- und Temperatur-Kachel:** Unter *Einstellungen → Home am Display* bestimmt die erste Zeile („groß“), welche Batterie bzw. welcher Sensor groß angezeigt wird; die weiteren erscheinen klein mit ihrem Symbol darunter (Batterie: 2, Temperatur: 4). Alle stehen auf den Seiten Batterie und Temperatur. Die Batterie zeigt eine Segmentanzeige aus 13 Feldern von Rot nach Grün – nach Ladezustand, bei Batterien ohne Ladezustand (z. B. BM2 an der Starterbatterie) nach Spannung von 11,8 V (leer) bis 12,8 V (voll). Die Segmentanzeige steht auch auf der Seite Batterie. Die Restlaufzeit steht mit Uhr-Symbol (statt „noch …“) auf Kachel und Batterieseite. Die Symbolfarbe richtet sich nach dem gewählten Symbol (z. B. Schneeflocke hellblau, Auto grau, Haus grün, Sonne gelb).
 
 Gas wird als Gasflasche, Frisch- und Grauwasser als Tank mit Skala (25/50/75 %) gezeichnet, die sich von unten füllen. Die Füllung färbt sich nach Zustand: Frischwasser gelb unter 25 %, rot unter 10 %; Gas rot unter 15 %; Grauwasser gelb ab 70 %, rot ab 85 %. Die Prozentzahl wird nur im kritischen Bereich rot. Die Level-Kachel zeigt neben „Eben“/„Schief“ eine kleine Libelle, deren Punkt mit Nick und Roll wandert (Rand = 5°); darunter stehen P (Pitch/Nick) und R (Roll). Zahlen stehen überall mit Dezimalkomma. Ist ein Gerät offline, erscheinen seine Werte grau.
 
@@ -351,7 +353,7 @@ Die Einstellungen sind in Gruppen geteilt, oben umschaltbar (die letzte Wahl mer
 
 | Gruppe | Inhalt |
 | --- | --- |
-| 🖥 Anzeige | Display (Helligkeit, Dimmen, Anzeigename) · Seiten & Symbolleiste · Kacheln auf Home · eigene Seiten & MQTT-Kacheln |
+| 🖥 Anzeige | Display (Helligkeit, Dimmen, Anzeigename) · Seiten & Symbolleiste · Home am Display · Home auf der Webseite · eigene Seiten & MQTT-Kacheln |
 | 📡 Sensoren & Geräte | Sensoren (Zigbee/Bluetooth) · Topics der Geräte (inkl. Heizung/CampMatic) · Geräte-Links · Topic-Finder |
 | ⚡ Automationen | Regeln mit eigenem Speichern-Knopf, siehe [Automationen](#automationen) |
 | 🔌 Verbindung | WLAN · MQTT-Broker |

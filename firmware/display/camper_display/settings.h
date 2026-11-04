@@ -125,6 +125,7 @@ struct Settings {
   // Overview tiles in order, comma separated (max. 9): water grey gas heater level fan temp bat
   // status bat1 bat2 bat3 clock none t<n> (custom tile n). "" = default layout
   String   ovTiles;
+  String   webTiles;        // home of the web page, WEB_TILE_SLOTS tokens ("" = DEFAULT_WEB_TILES)
   // Icon bar: up to NAV_FREE pages between Home and System, comma separated page ids
   // (PAGE_IDS or p<n> for user page n). "" = the first NAV_FREE pages
   String   navSel;

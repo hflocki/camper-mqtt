@@ -127,6 +127,7 @@ void load() {
   settings.ovTempSel    = prefs.getString("ovtsel", "");
   settings.ovBatSel     = prefs.getString("ovbsel", "");
   settings.ovTiles      = prefs.getString("ovt",    DEFAULT_OV_TILES);
+  settings.webTiles     = prefs.getString("wbt",    "");
   settings.navSel       = prefs.getString("navsel", "");
   settings.heaterSrc    = prefs.getUChar ("hsrc",   HEAT_SRC_OWN);
 
@@ -215,6 +216,7 @@ void save() {
   for (int i = 0; i < BP_COUNT; i++) prefs.putString((String("pgi") + i).c_str(), settings.pageIcon[i]);
   prefs.putString("pgisys", settings.pageIcon[BP_COUNT]);
   prefs.putString("ovt",    settings.ovTiles);
+  prefs.putString("wbt",    settings.webTiles);
   prefs.putString("navsel", settings.navSel);
   prefs.putUChar ("hsrc",   settings.heaterSrc);
   prefs.putBool  ("wxon",   settings.wxOn);

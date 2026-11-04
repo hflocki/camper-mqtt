@@ -118,6 +118,7 @@ void buildCfg(JsonDocument& d) {
   JsonArray b = d["builtin"].to<JsonArray>();
   for (int i = 0; i < BP_COUNT; i++) b.add(settings.builtin[i]);
   d["ovTiles"] = settings.ovTiles.length() ? settings.ovTiles : String(DEFAULT_OV_TILES);
+  d["webTiles"] = settings.webTiles.length() ? settings.webTiles : String(DEFAULT_WEB_TILES);
   d["ovTempSel"] = settings.ovTempSel;
   d["ovBatSel"] = settings.ovBatSel;
   d["navSel"] = settings.navSel;
@@ -351,6 +352,7 @@ void getSettings(AsyncWebServerRequest* r) {
   JsonArray pi = d["pageIcons"].to<JsonArray>();
   for (int i = 0; i <= BP_COUNT; i++) pi.add(settings.pageIcon[i]);
   d["ovTiles"] = settings.ovTiles.length() ? settings.ovTiles : String(DEFAULT_OV_TILES);
+  d["webTiles"] = settings.webTiles.length() ? settings.webTiles : String(DEFAULT_WEB_TILES);
   d["ovTempSel"] = settings.ovTempSel;
   d["ovBatSel"] = settings.ovBatSel;
   d["navSel"] = settings.navSel;
@@ -558,6 +560,30 @@ bool applySettings(JsonObject o, bool apply) {
     }
     if (out == DEFAULT_OV_TILES) out = "";
     if (apply) settings.ovTiles = out;
+  }
+  if (o["webTiles"].is<const char*>()) {
+    // home of the web page: exactly 16 slots, unknown tokens become "none" so positions stay
+    static const int WEB_TILE_SLOTS = 16;
+    String in = o["webTiles"].as<const char*>(), out;
+    int start = 0;
+    for (int n = 0; n < WEB_TILE_SLOTS; n++) {
+      String t;
+      if (start <= (int)in.length()) {
+        int c = in.indexOf(',', start);
+        t = in.substring(start, c < 0 ? in.length() : c);
+        start = c < 0 ? in.length() + 1 : c + 1;
+      }
+      t.trim();
+      static const char* const known[] = {"water", "grey", "gas", "heater", "level", "fan", "heki", "temp", "bat",
+                                          "bat1", "bat2", "bat3", "weather", "actors", "lights", "switches"};
+      bool ok = false;
+      for (const char* k : known) if (t == k) ok = true;
+      if (t.length() > 1 && t[0] == 't' && isdigit(t[1]) && t.substring(1).toInt() < (int)settings.tiles.size()) ok = true;
+      if (n) out += ',';
+      out += ok ? t : String("none");
+    }
+    if (out == DEFAULT_WEB_TILES) out = "";
+    if (apply) settings.webTiles = out;
   }
   if (o["pageNames"].is<JsonArray>()) {
     JsonArray pn = o["pageNames"];

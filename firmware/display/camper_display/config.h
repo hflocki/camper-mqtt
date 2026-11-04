@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "2.12.3"
+#define FW_VERSION              "2.13.0"
 #define FW_DEVICE               "display"   // device id in the firmware marker (fwcheck.h)
 #ifndef WIFI_TRIAL_MS
 #define WIFI_TRIAL_MS           50000   // a changed WiFi must connect this fast, else the old one returns
@@ -23,6 +23,10 @@
 #endif
 #ifndef DEV_TILE_COLS
 #define DEV_TILE_COLS           4   // sensor tiles per row on Sensoren / Energie / Extra (3 .. 5; 5 = names wrap to two short lines)
+#endif
+#ifndef DEFAULT_WEB_TILES
+// home of the web page: fixed slots per group (Tanks 4, Klima 4, Temperatur 2, Energie 2, Fahrzeug 4), "none" = empty
+#define DEFAULT_WEB_TILES       "water,grey,gas,none,heater,fan,heki,weather,temp,none,bat,none,level,actors,lights,switches"
 #endif
 #ifndef DEFAULT_OV_TILES
 #define DEFAULT_OV_TILES        "water,grey,gas,heater,level,fan,temp,bat,status"   // overview tiles in order
