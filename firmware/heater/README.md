@@ -225,6 +225,18 @@ Bekannt aus den WomoLIN-Mitschnitten (CP Plus + Combi D6 E): PID 0x03 Soll-Raumt
 
 Zeitstempel sind Uhrzeit (sobald NTP synchronisiert ist), davor Sekunden seit Start (`+12s`).
 
+## Web-Oberfläche
+
+Die Seite liegt lesbar in `truma_heater/web/index.html` und wird in die Firmware eingebettet (keine Datei-Upload nötig). Nach Änderungen:
+
+```bash
+python3 tools/common/sync_common.py          # gemeinsames Design (camper-theme.css) einfügen
+python3 firmware/heater/tools/embed_web.py   # web/index.html -> web_ui.h
+python3 firmware/heater/docs/gen_mockup.py   # Mockup aktualisieren
+```
+
+CI prüft mit `embed_web.py --check`, dass `web_ui.h` zur Seite passt. Seit 1.5.1 im gemeinsamen Design aller camper-mqtt-Geräte.
+
 ## Aufbau des Codes
 
 ```
