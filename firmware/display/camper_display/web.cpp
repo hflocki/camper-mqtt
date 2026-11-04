@@ -227,6 +227,7 @@ void handleCmd(const Cmd& c) {
   if (!strcmp(c.c, "hello"))       { sendFull(c.client); return; }
   else if (!strcmp(c.c, "heat"))   ok = cmd::heater(k, v);
   else if (!strcmp(c.c, "fan"))    ok = cmd::fan(k, v);
+  else if (!strcmp(c.c, "heki"))   ok = cmd::heki(k, v);
   else if (!strcmp(c.c, "lvl"))    ok = cmd::level(k);
   else if (!strcmp(c.c, "tile"))   ok = c.i >= 0 && cmd::tile((size_t)c.i, v);
   else if (!strcmp(c.c, "light"))  ok = c.i >= 0 && cmd::light((size_t)c.i, k, v);
@@ -294,6 +295,7 @@ void getSettings(AsyncWebServerRequest* r) {
   d["prefixFan"] = settings.prefixFan;
   d["prefixTemp"] = settings.prefixTemp;
   d["prefixBattery"] = settings.prefixBattery;
+  d["prefixToolbox"] = settings.prefixToolbox;
   d["fanPort"] = settings.fanPort;
   d["ntpServer"] = settings.ntpServer;
   d["tz"] = settings.tz;
@@ -433,6 +435,7 @@ bool applySettings(JsonObject o, bool apply) {
   str("prefixFan", settings.prefixFan, false);
   str("prefixTemp", settings.prefixTemp, false);
   str("prefixBattery", settings.prefixBattery, false);
+  str("prefixToolbox", settings.prefixToolbox, false);
   str("poToken", settings.poToken, false, true);
   str("poUser", settings.poUser, false, true);
   str("poTitle", settings.poTitle, false);
@@ -504,6 +507,7 @@ bool applySettings(JsonObject o, bool apply) {
   settings.prefixFan = cleanPrefix(settings.prefixFan);
   settings.prefixTemp = cleanPrefix(settings.prefixTemp);
   settings.prefixBattery = cleanPrefix(settings.prefixBattery);
+  settings.prefixToolbox = cleanPrefix(settings.prefixToolbox);
   if (o["fanPort"].is<int>()) settings.fanPort = constrain(o["fanPort"].as<int>(), 0, 1);
 
   if (o["brightness"].is<int>())    settings.brightness = constrain(o["brightness"].as<int>(), 5, 100);
@@ -543,7 +547,7 @@ bool applySettings(JsonObject o, bool apply) {
       int c = in.indexOf(',', start);
       String t = in.substring(start, c < 0 ? in.length() : c);
       t.trim();
-      static const char* const known[] = {"water", "grey", "gas", "heater", "level", "fan", "temp", "bat",
+      static const char* const known[] = {"water", "grey", "gas", "heater", "level", "fan", "heki", "temp", "bat",
                                           "status", "bat1", "bat2", "bat3", "clock", "weather", "actors", "lights", "switches", "none"};
       bool ok = false;
       for (const char* k : known) if (t == k) ok = true;

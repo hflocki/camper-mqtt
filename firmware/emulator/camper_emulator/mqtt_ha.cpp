@@ -7,7 +7,7 @@
 #include <map>
 
 // Broker connections of the emulator:
-//   conn[D_TANK .. D_BATTERY]  one per emulated device, client id and last will of its own,
+//   conn[D_TANK .. D_BATTERY], conn[D_TOOLBOX]  one per emulated device, client id and last will of its own,
 //                              so the display sees each device go online / offline separately
 //   conn[SELF]                 the emulator itself (<prefix>/status, <prefix>/info), also sends
 //                              the router and Zigbee topics and receives the Zigbee commands
@@ -200,8 +200,9 @@ static void publishRound(bool full) {
         RoundCtx r{&k, force, &seen};
         String p = k.prefix;
         if (c == SELF) {
-            for (uint8_t d = D_ROUTER; d < D_COUNT; d++)
-                if (emuMode(d) == M_ON) emuBuild(d, emitTracked, &r);
+            for (uint8_t d = 0; d < D_COUNT; d++)
+                if (EMU_DEVS[d].own) continue;
+                else if (emuMode(d) == M_ON) emuBuild(d, emitTracked, &r);
                 else if (emuMode(d) == M_OFFLINE)   // paused: keep its topics as they are
                     emuBuild(d, collectTopic, &seen);
         } else {

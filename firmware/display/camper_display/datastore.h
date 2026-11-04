@@ -6,7 +6,7 @@
 // comes from here; MQTT writes into it, the UI and the WebSocket read from it.
 // Only touched from the Arduino loop task.
 
-enum Dev : uint8_t { DEV_TANK, DEV_LEVEL, DEV_HEATER, DEV_FAN, DEV_TEMP, DEV_BATTERY, DEV_COUNT };
+enum Dev : uint8_t { DEV_TANK, DEV_LEVEL, DEV_HEATER, DEV_FAN, DEV_TEMP, DEV_BATTERY, DEV_TOOLBOX, DEV_COUNT };
 
 // Fixed datapoint ids (index into the table in datastore.cpp)
 enum DpId : uint8_t {
@@ -24,6 +24,8 @@ enum DpId : uint8_t {
   DP_TEMP_STATUS, DP_TEMP_LIST, DP_TEMP_ALARM,
   // camper-battery: JSON list of all batteries
   DP_BAT_STATUS, DP_BAT_LIST,
+  // camper-toolbox: roof hatch (plugin rvtech)
+  DP_TB_STATUS, DP_HEKI_COVER, DP_HEKI_POS, DP_HEKI_REP, DP_HEKI_CONN,
   DP_COUNT
 };
 

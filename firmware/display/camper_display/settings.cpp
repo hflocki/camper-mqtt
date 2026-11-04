@@ -6,9 +6,9 @@
 #include <ArduinoJson.h>
 
 const char* const DEFAULT_PAGE_NAMES[BP_COUNT + 1] = {"Home", "Truma", "MaxxFan", "Level", "Temperatur", "Batterie", "Wetter",
-                                                       "Sensoren", "Warnungen", "Licht", "Schalter", "Energie", "Extra", "System"};
+                                                       "Sensoren", "Warnungen", "Licht", "Schalter", "Energie", "Extra", "Dachhaube", "System"};
 const char* const PAGE_IDS[BP_COUNT] = {"overview", "heater", "fan", "level", "temp", "bat", "weather", "actors", "warn", "light",
-                                        "switch", "extra1", "extra2"};
+                                        "switch", "extra1", "extra2", "heki"};
 const char* const WARN_CAT_IDS[WC_COUNT] = {"temp", "heater", "bat", "water", "gas", "frost", "weather",
                                             "depart", "tile", "rule", "contact"};
 
@@ -55,6 +55,7 @@ void load() {
   settings.prefixFan    = prefs.getString("pfan",   DEFAULT_PREFIX_FAN);
   settings.prefixTemp   = prefs.getString("ptemp",  DEFAULT_PREFIX_TEMP);
   settings.prefixBattery = prefs.getString("pbat",  DEFAULT_PREFIX_BATTERY);
+  settings.prefixToolbox = prefs.getString("ptbx",  DEFAULT_PREFIX_TOOLBOX);
   settings.fanPort      = prefs.getUChar ("fport",  DEFAULT_FAN_PORT);
   settings.ntpServer    = prefs.getString("ntp",    DEFAULT_NTP_SERVER);
   settings.tz           = prefs.getString("tz",     DEFAULT_TZ);
@@ -84,6 +85,8 @@ void load() {
   for (int i = 0; i < BP_COUNT; i++) settings.builtin[i] = bmask & (1u << i);
   // the spare pages start switched off
   if (bknown <= BP_EXTRA1) settings.builtin[BP_EXTRA1] = settings.builtin[BP_EXTRA2] = false;
+  // the roof hatch page (camper-toolbox) too: not every camper has one
+  if (bknown <= BP_HEKI) settings.builtin[BP_HEKI] = false;
   // page icons: fixed pages by index, the system page under its own key (does not move when pages are added)
   for (int i = 0; i < BP_COUNT; i++) settings.pageIcon[i] = prefs.getString((String("pgi") + i).c_str(), "");
   settings.pageIcon[BP_COUNT] = prefs.getString("pgisys", "");
@@ -188,6 +191,7 @@ void save() {
   prefs.putString("pfan",   settings.prefixFan);
   prefs.putString("ptemp",  settings.prefixTemp);
   prefs.putString("pbat",   settings.prefixBattery);
+  prefs.putString("ptbx",   settings.prefixToolbox);
   prefs.putUChar ("fport",  settings.fanPort);
   prefs.putString("ntp",    settings.ntpServer);
   prefs.putString("tz",     settings.tz);

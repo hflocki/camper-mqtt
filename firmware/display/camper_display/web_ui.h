@@ -129,9 +129,9 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let ws,cfg=null,V={},S={},WX={},page=localStorage.getItem('page')||'',finder={on:false,l:{}};
 let pendingSet=null,setTimer=null,setHold=0;
-const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie'],['weather','Wetter'],['actors','Sensoren'],['warn','Warnungen'],['light','Licht'],['switch','Schalter'],['extra1','Energie'],['extra2','Extra']];
+const BUILTIN=[['overview','Home'],['heater','Truma'],['fan','MaxxFan'],['level','Level'],['temp','Temperatur'],['bat','Batterie'],['weather','Wetter'],['actors','Sensoren'],['warn','Warnungen'],['light','Licht'],['switch','Schalter'],['extra1','Energie'],['extra2','Extra'],['heki','Dachhaube']];
 // default icons of the fixed pages (BUILTIN order, last = system page); own choice in cfg.pageIcons (keys of ICONS)
-const PICON_DEF=['🏠','♨️','🌀','📐','🌡️','🔋','🌦','🚪','⚠','💡','🔌','⚡','📦','⚙'];
+const PICON_DEF=['🏠','♨️','🌀','📐','🌡️','🔋','🌦','🚪','⚠','💡','🔌','⚡','📦','⏏','⚙'];
 const picon=i=>{const k=cfg&&cfg.pageIcons&&cfg.pageIcons[i];const f=k&&ICONS.find(x=>x[0]===k);return f?f[1]:PICON_DEF[i]||'📄'};
 // device pages: page id -> Show bit of the sensors (sensors.h)
 const DEVPAGE={actors:4,light:16,switch:32,extra1:64,extra2:128};
@@ -142,7 +142,7 @@ const ptitle=i=>(cfg&&cfg.pageNames&&cfg.pageNames[i])||BUILTIN[i][1];
 const OV_DEFAULT='water,grey,gas,heater,level,fan,temp,bat,status';
 const ovList=()=>((cfg&&cfg.ovTiles)||OV_DEFAULT).split(',').map(x=>x.trim()).filter(x=>x);
 function ovChoices(){
-  const c=[['water','Frischwasser'],['grey','Grauwasser'],['gas','Gas'],['heater',ptitle(1)],['level',ptitle(3)],['fan',ptitle(2)],
+  const c=[['water','Frischwasser'],['grey','Grauwasser'],['gas','Gas'],['heater',ptitle(1)],['level',ptitle(3)],['fan',ptitle(2)],['heki',ptitle(13)],
     ['temp',ptitle(4)],['bat',ptitle(5)+' (alle)'],['bat1','Batterie 1 (einzeln)'],['bat2','Batterie 2 (einzeln)'],['bat3','Batterie 3 (einzeln)'],
     ['status','Status / Warnungen'],['weather',ptitle(6)],['actors','Offene Fenster/Türen'],['lights',ptitle(9)+' (was an ist)'],['switches',ptitle(10)+' (was an ist)'],['clock','Uhr / Datum'],['none','(leer)']];
   ((cfg&&cfg.tiles)||[]).forEach((t,i)=>c.push(['t'+i,'Kachel: '+t.n]));
@@ -214,6 +214,7 @@ function render(){
   if(p.id==='overview')m.innerHTML=pgOverview();
   else if(p.id==='heater')m.innerHTML=pgHeater();
   else if(p.id==='fan')m.innerHTML=pgFan();
+  else if(p.id==='heki')m.innerHTML=pgHeki();
   else if(p.id==='level')m.innerHTML=pgLevel();
   else if(p.id==='temp'){m.innerHTML=pgTemp();loadHist()}
   else if(p.id==='bat'){m.innerHTML=pgBat();loadHist()}
@@ -238,6 +239,7 @@ function pgOverview(){
     if(t==='weather')return info('owx','🌦',esc(ptitle(6)),'weather');
     if(t==='level')return info('ol','📐',esc(ptitle(3)),'level');
     if(t==='fan')return info('of','🌀',esc(ptitle(2)),'fan');
+    if(t==='heki')return info('ok','⏏',esc(ptitle(13)),'heki');
     if(t==='temp')return `<div class="card wide click" data-go="temp"><h3>🌡️ ${esc(ptitle(4))}</h3><div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>`;
     if(t==='bat')return `<div class="card wide click" data-go="bat"><h3>🔋 ${esc(ptitle(5))}</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
     if(/^bat[123]$/.test(t)){const n=t[3];return `<div class="card click" data-go="bat"><h3 id="ob${n}_t">🔋 Batterie ${n}</h3><div class="big" id="ob${n}_v">--</div><div class="mu" id="ob${n}_s"></div></div>`}
@@ -546,6 +548,25 @@ function pgFan(){
   <div class="card" style="margin:12px 0"><h3>Stufe <span id="f_sv">5</span></h3><input type="range" min="1" max="10" value="5" id="f_speed"></div>
   <div class="fanbtns">${b('auto','Auto')}${b('direction','⇅ Richtung')}${b('sync_off','Sync AUS')}</div>`;
 }
+// roof hatch on the camper-toolbox (plugin rvtech): presets like in the toolbox, slider for the position
+const HEKI_PRESETS=[['auf','▲ Auf'],['zu','▼ Zu'],['regen','Regen'],['lueften','Lüften']];
+function pgHeki(){
+  return `<div class="card" style="margin-bottom:12px"><h3>⏏ ${esc(ptitle(13))}</h3><div class="big" id="k_v">--</div><div class="mu" id="k_s"></div></div>
+  <div class="fanbtns">${HEKI_PRESETS.map(p=>`<button class="btn" data-heki="${p[0]}">${p[1]}</button>`).join('')}</div>
+  <div class="card" style="margin:12px 0"><h3>Position <span id="k_pv">--</span> %</h3><input type="range" min="0" max="100" value="0" id="k_pos"></div>`;
+}
+// Same wording as the panel: [text, preset index (0 auf, 1 zu, 2 regen, 3 lueften, -1), moving, known]
+function hekiState(){
+  const c=V.heki_cover||'',rep=num(V.heki_rep),pos=num(V.heki_pos)??rep,mv=c==='opening'||c==='closing';
+  if(!(c==='open'||c==='closed'||mv))return ['--',-1,false,false];
+  if(c==='opening')return [`Öffnet ${pos} %`,-1,true,true];
+  if(c==='closing')return [`Schließt ${pos} %`,-1,true,true];
+  if(rep===102)return ['Lüften',3,false,true];
+  if(c==='closed'||pos===0)return ['Zu',1,false,true];
+  if(rep===12)return ['Regen',2,false,true];
+  return [`Offen ${pos} %`,pos>=100?0:-1,false,true];
+}
+let hekiHold=0;
 function pgLevel(){
   // van from above: wedge per wheel, dot in the middle moves to the low side (same as panel and Road Buddy)
   const wy=[66,170],wh=40;
@@ -585,6 +606,8 @@ function bind(){
     $('#h_set').textContent=pendingSet+' °C';clearTimeout(setTimer);
     setTimer=setTimeout(()=>{send({c:'heat',k:'room_setpoint',v:String(pendingSet)});setHold=Date.now()+6000;setTimer=null},1000)});
   document.querySelectorAll('[data-fan]').forEach(e=>e.onclick=()=>send({c:'fan',k:e.dataset.fan}));
+  document.querySelectorAll('[data-heki]').forEach(e=>e.onclick=()=>send({c:'heki',k:e.dataset.heki}));
+  const kp=$('#k_pos');if(kp){kp.oninput=()=>$('#k_pv').textContent=kp.value;kp.onchange=()=>{send({c:'heki',k:'position',v:kp.value});hekiHold=Date.now()+8000}}
   const sp=$('#f_speed');if(sp){sp.oninput=()=>$('#f_sv').textContent=sp.value;sp.onchange=()=>send({c:'fan',k:'speed',v:sp.value})}
   document.querySelectorAll('[data-lvl]').forEach(e=>e.onclick=()=>{if(confirm('Aktuelle Lage als eben speichern (Tara)?'))send({c:'lvl',k:e.dataset.lvl})});
   document.querySelectorAll('[data-tile]').forEach(e=>e.onclick=()=>send({c:'tile',i:+e.dataset.tile,v:e.dataset.a}));
@@ -617,6 +640,13 @@ function update(){
   const lvOk=V.lvl_ok==='ON';
   set('ol_v',V.lvl_ok?(lvOk?'<span class="okc">Eben</span>':'<span class="err">Schief</span>'):'--');
   set('ol_s',online('lvl')?`Nick ${fmt(V.lvl_pitch,1,'°')} · Roll ${fmt(V.lvl_roll,1,'°')}`:'offline');
+  {const [st,pr,mv,kn]=hekiState(),on=online('tb'),bt=V.heki_conn!=='OFF',live=on&&kn,open=live&&pr!==1;
+   const col=s=>live&&open?`<span style="color:var(--gas)">${esc(s)}</span>`:esc(s);
+   set('ok_v',col(st.startsWith('Offen ')?st.slice(6):st));
+   set('ok_s',!on?'offline':!kn?'keine Daten':!bt?'Bluetooth getrennt':mv?'fährt …':st.startsWith('Offen ')?'offen':'Tippen zum Steuern');
+   if($('#k_v')){set('k_v',col(st));set('k_s',!on?'Toolbox offline':!bt?'Bluetooth zur Dachhaube getrennt':!kn?'Noch keine Meldung der Dachhaube':'Bluetooth verbunden');
+    document.querySelectorAll('[data-heki]').forEach((b,i)=>b.classList.toggle('on',i===pr&&!mv));
+    const kp=$('#k_pos');if(kp&&V.heki_pos!==undefined&&document.activeElement!==kp&&Date.now()>hekiHold){kp.value=V.heki_pos;set('k_pv',esc(V.heki_pos))}}}
   set('of_v',online('fan')?'Bereit':'--');set('of_s',online('fan')?(V.fan_hold==='ON'?'Auto-Hold aktiv':'Tippen zum Steuern'):'offline');
   // warnings + temperatures
   const warn=warnings();
@@ -762,7 +792,7 @@ function pgSettings(){
    <p class="mu">Basis-Topic je Gerät. Leer lassen, wenn das Gerät nicht vorhanden ist.</p>
    ${inp('prefixTank','Tanks (Wasser/Gas)')}${inp('prefixLevel','Ausrichtung (Levelsensor)')}
    <div class="f2"><div><label>Heizung: Steuerung über</label><select id="heaterSrc"><option value="0">eigene Firmware (camper-heater)</option><option value="1">CampMatic-Box</option></select></div>${inp('prefixHeater','Heizung: Basis-Topic','text','camper/heater')}</div>
-   <p class="mu" style="margin-top:-4px">CampMatic: Basis-Topic <code>campmatic/&lt;Gerätenummer&gt;</code>, z. B. <code>campmatic/003</code>. Die Box muss per Bridge auf deinem Broker ankommen (siehe README). Freibrennen gibt es dort nicht.</p>${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (camper-temp)')}${inp('prefixBattery','Batterien (camper-battery)')}
+   <p class="mu" style="margin-top:-4px">CampMatic: Basis-Topic <code>campmatic/&lt;Gerätenummer&gt;</code>, z. B. <code>campmatic/003</code>. Die Box muss per Bridge auf deinem Broker ankommen (siehe README). Freibrennen gibt es dort nicht.</p>${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (camper-temp)')}${inp('prefixBattery','Batterien (camper-battery)')}${inp('prefixToolbox','Toolbox (Dachhaube Heki)','text','camper/toolbox')}
    <div class="f2"><div><label>MaxxFan-Port</label><select id="fanPort"><option value="0">0 (RJ11)</option><option value="1">1 (RJ45)</option></select></div>${inp('prefixSelf','Eigenes Topic (Display)')}</div></details>
   <details data-g="dev"><summary>🔗 Geräte-Links</summary>
    <p class="mu" style="margin:4px 0 8px">Buttons auf der Seite „🔗 Geräte“, die die Web-Oberfläche des jeweiligen Geräts öffnen. Adresse z. B. <code>192.168.8.13</code> oder <code>camper-tanklevel.local</code>.</p>
@@ -852,7 +882,7 @@ function showGroup(g){setGroup=g;try{localStorage.setItem('setGroup',g)}catch(e)
   const sb=$('.savebar');if(sb)sb.style.display=g==='rules'?'none':'';   // automations have their own save button
   if(g==='rules'){if(!rulesLoaded){rulesLoaded=true;loadRules()}else ruleState()}
   const sd=$('#snd');if(g==='dev'&&sd&&!sd.open){sd.open=true}}
-const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','rtTopic','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet','awnGust','dpTopic','dpDoor','dpSpeed','dpSecs'];
+const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixToolbox','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','rtTopic','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet','awnGust','dpTopic','dpDoor','dpSpeed','dpSecs'];
 async function loadSettings(){
   rulesLoaded=false;
   try{

@@ -16,6 +16,7 @@ Nachgebildet werden:
 | Batterien | `camper/battery/<id>/…`, `batteries` (2 Batterien, Daly / Ective / BM2) | – |
 | Router | `camper/rut` (GPS-JSON wie der RUT956), `camper/door`, `camper/router/mobile` | – |
 | Zigbee | `camper/zigbee/data/<ieee>/1/…`: 3 Tür-/Fensterkontakte, 2 Klimasensoren, LED-Leiste | LED an/aus, Helligkeit, Farbe |
+| Toolbox | `camper/toolbox/rvtech/…`: Dachhaube (Heki) mit `cover`, `cover_position`, `reported`, `connected` | Auf, Zu, Regen, Lüften, Position, `OPEN`/`CLOSE`; die Haube fährt mit einstellbarer Geschwindigkeit (Standard 5 %/s) |
 
 Die Formate sind dieselben wie bei der echten Firmware bzw. beim Router und SMLIGHT-Gateway (siehe [`docs/TOPICS.md`](../../docs/TOPICS.md)). Jedes Gerät hat eine eigene Broker-Verbindung mit eigenem Last Will, `…/status` und `…/info` (Version `emu-<Firmware-Version>`), daher erscheint es in der Geräteliste des Displays wie das echte. Home-Assistant-Discovery sendet der Emulator nicht, damit keine doppelten Entitäten entstehen.
 
@@ -82,7 +83,7 @@ Wenn sich etwas Abgeleitetes ändert, rechnet der Emulator wie das Gerät: Liter
 | `name`, `desc` | Name (sonst die `id`) und Beschreibung für die Liste |
 | `start` | Werte, die beim Start einmal gesetzt werden |
 | `tracks` | Verlauf je Feld: `[[Sekunde, Wert], …]`. Zahlen laufen gleichmäßig zwischen den Punkten, Texte, ON/OFF und Auswahlfelder springen am Punkt. Vor dem ersten Punkt bleibt das Feld unverändert, nach dem letzten bleibt der letzte Wert. Zwei Punkte zur selben Sekunde = Sprung. `{"points": [...], "loop": 13}` wiederholt nach dem letzten Punkt den Teil ab Sekunde 13 |
-| `modes` | Zustand je Gerät über die Zeit: `on`, `offline` (Router/Zigbee: Pause), `off`. Geräte: `tanklevel`, `level`, `heater`, `maxxfan`, `temp`, `battery`, `router`, `zigbee`; `$dev` = das in der Liste gewählte Gerät |
+| `modes` | Zustand je Gerät über die Zeit: `on`, `offline` (Router/Zigbee: Pause), `off`. Geräte: `tanklevel`, `level`, `heater`, `maxxfan`, `temp`, `battery`, `router`, `zigbee`, `toolbox`; `$dev` = das in der Liste gewählte Gerät |
 | `publish` | einmalige Nachrichten `[Sekunde, Topic, Payload]`, nicht retained. `@feld` nimmt das Topic aus dem Feld (z. B. `@awn_t` = Markisen-Befehl) |
 | `on_stop` | Nachrichten beim Stoppen `[Topic, Payload]` |
 | `end`, `keep` | optional: Szenario stoppt nach `end` Sekunden von selbst; `"keep": true` lässt dann den Endstand stehen |
@@ -168,6 +169,7 @@ Seit 1.2.0 hat jede Firmware eine Kennung (`CAMPER-FW:emulator:<version>:<chip>;
 
 | Version | Änderungen |
 |---|---|
+| 1.3.0 | Toolbox mit Dachhaube (Heki): gleiche Topics wie `plugin_rvtech`, reagiert auf die Befehle des Displays und fährt langsam zur Zielposition |
 | 1.2.0 | Sicheres Update (Kennung, Prüfung im Browser und im Gerät, Fehler im Klartext), Ereignis-Log, Rückfall auf die vorherige Firmware und WLAN-Änderung mit Rückweg |
 | 1.1.0 | Szenarien als JSON herunterladen (einzeln oder alle) und eigene hochladen; die Standard-Szenarien bleiben und sind selbst im selben Format beschrieben. Gerätewahl direkt am Szenario, optionales Ende (`end`). „Fahrt“ schwankt jetzt in Dreiecksform statt Sinus |
 | 1.0.1 | Geräteliste lädt wieder: Schema wird stückweise gesendet statt als ein großer Block (der C3 hatte bei allen Broker-Verbindungen nicht mehr genug zusammenhängenden Speicher); Seite zeigt den Fehlergrund und versucht es erneut |

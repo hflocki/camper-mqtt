@@ -139,7 +139,7 @@ Jedes Plugin hat eine eigene ID: `rvtech` (Dachhaube), `pump` (CaraWater), `frid
 | `…/cmd/awning` | `ON` / `OFF` / `TOGGLE` (nur ohne Kontakt-Sensor) |
 | `…/cmd/reboot` | beliebig |
 
-Das Display liest außerdem alle Geräte oben, die Router-Topics, die Gateways und die Topics der eigenen Kacheln und Automationen (frei eingestellt, z. B. `zigbee2mqtt/…`).
+Das Display sendet die Befehle der Dachhaube an `camper/toolbox/cmd/rvtech/…` (Voreinstellungen, Position). Es liest außerdem alle Geräte oben, die Router-Topics, die Gateways und die Topics der eigenen Kacheln und Automationen (frei eingestellt, z. B. `zigbee2mqtt/…`).
 
 ## Road Buddy `camper/roadbuddy`
 

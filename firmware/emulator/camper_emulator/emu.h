@@ -12,6 +12,7 @@
 enum EmuDev : uint8_t {
     D_TANK, D_LEVEL, D_HEATER, D_FAN, D_TEMP, D_BATTERY,   // own MQTT connection with last will
     D_ROUTER, D_ZIGBEE,                                     // sent over the emulator's own connection
+    D_TOOLBOX,                                              // own connection again; appended so stored modes keep their index
     D_COUNT
 };
 

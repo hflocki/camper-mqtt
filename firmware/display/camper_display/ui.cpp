@@ -119,6 +119,10 @@ const int LVL_RING = BADGE, LVL_DOT = 10;
 
 lv_obj_t *hRoom, *hWater, *hSet, *hPower, *hPowerLbl, *hFanBm, *hWaterBm, *hStatus, *hDecoke, *hDecokeLbl;
 lv_obj_t *fStatus, *fSpeed, *fSpeedLbl;
+// roof hatch (camper-toolbox, plugin rvtech): page and overview tile
+lv_obj_t *kState, *kSub, *kPos, *kPosLbl, *kPreset[4];
+lv_obj_t *ovHekiVal = nullptr, *ovHekiSub = nullptr, *ovHekiIcon = nullptr;
+uint32_t kPosHold = 0;   // millis() of the last slider command: do not jump back while the hatch moves
 // level page: van seen from above, wedge per wheel, dot in the middle moves to the low side
 lv_obj_t *lvVan, *lvDot, *lvRoll, *lvPitch, *lvState, *lvHint, *lvWheel[4], *lvWedge[4];
 const lv_color_t C_VAN    = lv_color_hex(0x6F8FBF);   // outline of the van (same on Road Buddy and web page)
@@ -445,6 +449,35 @@ void onFanSpeed(lv_event_t*) {
 void onFanSpeedDrag(lv_event_t*) { lv_label_set_text_fmt(fSpeedLbl, "Stufe %d", (int)lv_slider_get_value(fSpeed)); }
 
 void onTare(lv_event_t*) { cmd::level("tare"); }
+
+// roof hatch: preset buttons and position slider
+void onHekiBtn(lv_event_t* e) { cmd::heki((const char*)lv_event_get_user_data(e)); }
+void onHekiPos(lv_event_t*) {
+  int v = lv_slider_get_value(kPos);
+  lv_label_set_text_fmt(kPosLbl, "Position %d %%", v);
+  cmd::heki("position", String(v));
+  kPosHold = millis();
+}
+void onHekiPosDrag(lv_event_t*) { lv_label_set_text_fmt(kPosLbl, "Position %d %%", (int)lv_slider_get_value(kPos)); }
+
+// State of the roof hatch in words, shared by the page and the overview tile.
+// preset: index of the matching preset button (0 auf, 1 zu, 2 regen, 3 lueften), -1 = none
+String hekiState(int& preset, bool& moving, bool& known) {
+  String c = store::get(DP_HEKI_COVER);
+  int rep = store::has(DP_HEKI_REP) ? store::get(DP_HEKI_REP).toInt() : -1;
+  int pos = store::has(DP_HEKI_POS) ? store::get(DP_HEKI_POS).toInt() : rep;
+  preset = -1;
+  moving = c == "opening" || c == "closing";
+  known = c == "open" || c == "closed" || moving;
+  if (!known) return "--";
+  if (c == "opening") return "\xC3\x96" "ffnet " + String(pos) + " %";
+  if (c == "closing") return "Schlie\xC3\x9F" "t " + String(pos) + " %";
+  if (rep == 102) { preset = 3; return "L\xC3\xBC" "ften"; }
+  if (c == "closed" || pos == 0) { preset = 1; return "Zu"; }
+  if (rep == 12) { preset = 2; return "Regen"; }
+  if (pos >= 100) preset = 0;
+  return "Offen " + String(pos) + " %";
+}
 
 void onBrightness(lv_event_t*) {
   disp::setBrightness(lv_slider_get_value(sBri));
@@ -966,6 +999,10 @@ void buildOverview(lv_obj_t* tab) {
       lv_obj_t* c = infoCard(tab, ICON_FAN, pageTitle(BP_FAN).c_str(), ovFanVal, ovFanSub, BP_FAN, C_FAN);
       ovFanIcon = badge(c, ICON_FAN, C_FAN);
     }
+    else if (t == "heki") {
+      lv_obj_t* c = infoCard(tab, LV_SYMBOL_EJECT, pageTitle(BP_HEKI).c_str(), ovHekiVal, ovHekiSub, BP_HEKI, C_SLATE);
+      ovHekiIcon = badge(c, LV_SYMBOL_EJECT, C_SLATE);
+    }
     else if (t == "temp")   bigTile(tab, ICON_THERMOMETER, pageTitle(BP_TEMP).c_str(), C_PURPLE, BP_TEMP, ovTempT, false, 4);
     else if (t == "bat")    bigTile(tab, LV_SYMBOL_BATTERY_FULL, pageTitle(BP_BATTERY).c_str(), C_OK, BP_BATTERY, ovBatT, true, 2);
     else if (t == "actors")   listCard(tab, builtinIcon(BP_ACTORS), pageTitle(BP_ACTORS).c_str(), ovAct, BP_ACTORS, C_SLATE);
@@ -1388,6 +1425,41 @@ void buildFan(lv_obj_t* tab) {
   lv_obj_add_event_cb(fSpeed, onFanSpeedDrag, LV_EVENT_VALUE_CHANGED, nullptr);
 
   for (auto& b : row3) button(tab, b.txt, 225, 64, onFanBtn, (void*)b.key, C_CARD, &font_de_18);
+}
+
+void buildHeki(lv_obj_t* tab) {
+  pageContainer(tab);
+  const int CW = PAGE_W - 20;
+  lv_obj_t* c = card(tab, CW, 96);
+  kState = label(c, &font_de_28, C_TEXT, "--");
+  lv_obj_align(kState, LV_ALIGN_TOP_LEFT, 0, 0);
+  kSub = label(c, &font_de_18, C_MUTED, "");
+  lv_obj_set_width(kSub, CW - 24 - 60);
+  lv_label_set_long_mode(kSub, LV_LABEL_LONG_DOT);
+  lv_obj_align(kSub, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+  DotW d = iconDot(c, LV_SYMBOL_EJECT, C_SLATE, BADGE + 12, &font_de_28);
+  lv_obj_align(d.dot, LV_ALIGN_RIGHT_MID, 0, 0);
+
+  // presets of the toolbox (same values as in its web UI: Auf 100, Zu 0, Regen 12, ventilation)
+  struct B { const char* txt; const char* key; };
+  static const B presets[] = {{LV_SYMBOL_UP "  Auf", "auf"}, {LV_SYMBOL_DOWN "  Zu", "zu"},
+                              {"Regen", "regen"}, {"L\xC3\xBC" "ften", "lueften"}};
+  const int bw = (CW - 3 * 10) / 4;
+  for (int i = 0; i < 4; i++)
+    kPreset[i] = button(tab, presets[i].txt, bw, 76, onHekiBtn, (void*)presets[i].key, C_CARD, &font_de_18);
+
+  lv_obj_t* sc = card(tab, CW, 96);
+  kPosLbl = label(sc, &font_de_18, C_MUTED, "Position");
+  lv_obj_align(kPosLbl, LV_ALIGN_TOP_LEFT, 0, 0);
+  kPos = lv_slider_create(sc);
+  lv_slider_set_range(kPos, 0, 100);
+  lv_slider_set_value(kPos, 0, LV_ANIM_OFF);
+  lv_obj_set_size(kPos, PAGE_W - 80, 18);
+  lv_obj_align(kPos, LV_ALIGN_BOTTOM_MID, 0, -8);
+  lv_obj_set_style_bg_color(kPos, C_ACCENT, LV_PART_INDICATOR);
+  lv_obj_set_style_bg_color(kPos, C_ACCENT, LV_PART_KNOB);
+  lv_obj_add_event_cb(kPos, onHekiPos, LV_EVENT_RELEASED, nullptr);
+  lv_obj_add_event_cb(kPos, onHekiPosDrag, LV_EVENT_VALUE_CHANGED, nullptr);
 }
 
 void buildLevel(lv_obj_t* tab) {
@@ -1849,6 +1921,42 @@ void refreshValues() {
     lv_obj_set_style_text_color(ovFanVal, fanOn ? C_TEXT : C_MUTED, 0);
     setBadge(ovFanIcon, C_FAN, fanOn);
     lv_label_set_text(ovFanSub, fanOn ? (store::get(DP_FAN_HOLD) == "ON" ? "Auto-Hold aktiv" : "Tippen zum Steuern") : "offline");
+  }
+
+  // roof hatch (camper-toolbox)
+  if (ovHekiVal || kState) {
+    bool tbOn = store::devOnline(DEV_TOOLBOX);
+    bool bt = store::get(DP_HEKI_CONN) != "OFF";
+    int preset;
+    bool moving, known;
+    String st = hekiState(preset, moving, known);
+    bool live = tbOn && known;
+    bool open = live && preset != 1;
+    String sub = !tbOn ? String("offline") : !known ? String("keine Daten") : !bt ? String("Bluetooth getrennt")
+               : moving ? String("f\xC3\xA4hrt ...") : st.startsWith("Offen ") ? String("offen") : String("Tippen zum Steuern");
+    if (ovHekiVal) {
+      // the value line is short: "Offen 40 %" -> "40 %"
+      String v = st.startsWith("Offen ") ? st.substring(6) : st;
+      lv_label_set_text(ovHekiVal, dispText(v).c_str());
+      lv_obj_set_style_text_color(ovHekiVal, !live ? C_MUTED : open ? C_YELLOW : C_TEXT, 0);
+      setBadge(ovHekiIcon, C_SLATE, open);
+      lv_label_set_text(ovHekiSub, dispText(sub).c_str());
+    }
+    if (kState) {
+      lv_label_set_text(kState, dispText(st).c_str());
+      lv_obj_set_style_text_color(kState, !live ? C_MUTED : open ? C_YELLOW : C_TEXT, 0);
+      String ps = !tbOn ? String("Toolbox offline") : !bt ? String("Bluetooth zur Dachhaube getrennt")
+                : !known ? String("Noch keine Meldung der Dachhaube") : String("Bluetooth verbunden");
+      lv_label_set_text(kSub, dispText(ps).c_str());
+      for (int i = 0; i < 4; i++)
+        if (kPreset[i]) lv_obj_set_style_bg_color(kPreset[i], i == preset && !moving ? C_ACCENT : C_CARD, 0);
+      // slider follows the hatch, but not while touched or right after a command
+      if (store::has(DP_HEKI_POS) && !lv_obj_has_state(kPos, LV_STATE_PRESSED) && millis() - kPosHold > 8000) {
+        int pv = store::get(DP_HEKI_POS).toInt();
+        lv_slider_set_value(kPos, constrain(pv, 0, 100), LV_ANIM_OFF);
+        lv_label_set_text_fmt(kPosLbl, "Position %d %%", constrain(pv, 0, 100));
+      }
+    }
   }
 
   // single batteries
@@ -2516,6 +2624,9 @@ void clearHandles() {
   ovHeatIcon = ovFanIcon = ovOkBadge = nullptr;
   hRoom = hWater = hSet = hPower = hPowerLbl = hFanBm = hWaterBm = hStatus = hDecoke = hDecokeLbl = nullptr;
   fStatus = fSpeed = fSpeedLbl = nullptr;
+  kState = kSub = kPos = kPosLbl = nullptr;
+  for (auto& b : kPreset) b = nullptr;
+  ovHekiVal = ovHekiSub = ovHekiIcon = nullptr;
   lvVan = lvDot = lvRoll = lvPitch = lvState = lvHint = nullptr;
   for (auto& w : lvWedge) w = nullptr;
   for (auto& w : lvWheel) w = nullptr;
@@ -2570,6 +2681,7 @@ const char* builtinIcon(int bp) {
     case BP_SWITCH:   return icons::glyph("plug");
     case BP_EXTRA1:   return icons::glyph("bolt");
     case BP_EXTRA2:   return icons::glyph("box");
+    case BP_HEKI:     return LV_SYMBOL_EJECT;
     case BP_COUNT:    return LV_SYMBOL_SETTINGS;
     default:          return LV_SYMBOL_LIST;
   }
@@ -2674,6 +2786,7 @@ void build() {
       case BP_OVERVIEW: buildOverview(tab); break;
       case BP_HEATER:   buildHeater(tab); break;
       case BP_FAN:      buildFan(tab); break;
+      case BP_HEKI:     buildHeki(tab); break;
       case BP_LEVEL:    buildLevel(tab); break;
       case BP_TEMP:     buildTemp(tab); break;
       case BP_BATTERY:  buildBattery(tab); break;

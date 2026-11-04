@@ -156,6 +156,14 @@ static const FieldDef FIELDS[] = {
     BAT_SLOT(1, "ON", "house", "Bordbatterie", "2", "78", "13.25", "-4.2", "100"),
     BAT_SLOT(2, "OFF", "starter", "Starterbatterie", "3", "90", "12.70", "0", "70"),
 
+    // ---- toolbox (camper-toolbox, roof hatch over the plugin rvtech) ----
+    TXT("tb_pre", D_TOOLBOX, "", FL_SET | FL_TOPIC | FL_ADV, "Basis-Topic", "camper/toolbox"),
+    BOOLF("rv_on", D_TOOLBOX, "Dachhaube (Heki)", FL_SET, "Dachhaube gekoppelt", "ON"),
+    BOOLF("rv_conn", D_TOOLBOX, "Dachhaube (Heki)", 0, "Bluetooth verbunden", "ON"),
+    NUM("rv_pos", D_TOOLBOX, "Dachhaube (Heki)", 0, "Position (102 = Lüften)", "", 0, 102, 1, 0, 0, "0"),
+    NUM("rv_tgt", D_TOOLBOX, "Dachhaube (Heki)", FL_ADV, "Ziel (fährt dorthin)", "", 0, 102, 1, 0, 0, "0"),
+    NUM("rv_speed", D_TOOLBOX, "Dachhaube (Heki)", FL_SET | FL_ADV, "Geschwindigkeit", "%/s", 1, 50, 1, 0, 0, "5"),
+
     // ---- router (RUT956 "Data to Server") ----
     TXT("rut_t", D_ROUTER, "Topics", FL_SET | FL_TOPIC | FL_ADV, "GPS (JSON)", "camper/rut"),
     TXT("door_t", D_ROUTER, "Topics", FL_SET | FL_TOPIC | FL_ADV, "Tür (Digital-Eingang)", "camper/door"),
@@ -197,6 +205,7 @@ const EmuDevDef EMU_DEVS[D_COUNT] = {
     {"battery",   "Batterien",     "bt_pre", true},
     {"router",    "Router", "", false},
     {"zigbee",    "Zigbee", "", false},
+    {"toolbox",   "Toolbox (Dachhaube)", "tb_pre", true},
 };
 
 // ============================================================
@@ -718,7 +727,7 @@ static bool parseScen(JsonObjectConst o, RunScen& r, String& err) {
         k.field = -1;
         const char* d = kv.key().c_str();
         if (!strcmp(d, "$dev")) { k.dev = -1; r.info.dev = true; }
-        else if ((k.dev = devOf(d)) < 0) e = "unbekanntes Gerät (tanklevel, level, heater, maxxfan, temp, battery, router, zigbee oder $dev)";
+        else if ((k.dev = devOf(d)) < 0) e = "unbekanntes Gerät (tanklevel, level, heater, maxxfan, temp, battery, router, zigbee, toolbox oder $dev)";
         if (!e.length()) parseTrack(kv.value(), -1, k, e);
         if (e.length()) { err = pre + "modes „" + d + "“: " + e; return false; }
         r.tracks.push_back(k);
@@ -875,6 +884,22 @@ static void heaterDynamics() {
     if (!isnan(water) && fabsf(water - wt) > 0.5f) setNum("water", water + (wt > water ? 0.25f : -0.05f), false);
 }
 
+// Roof hatch: moves towards the target like the real one (a few % per second).
+// A position typed in the web UI or set by a scenario becomes the new target.
+static float hekiLast = NAN;
+static void hekiDynamics() {
+    if (!B("rv_on")) { hekiLast = NAN; return; }
+    float pos = N("rv_pos"), tgt = N("rv_tgt");
+    if (isnan(pos) || isnan(tgt)) return;
+    if (!isnan(hekiLast) && pos != hekiLast) { setNum("rv_tgt", pos, true); hekiLast = pos; return; }
+    if (B("rv_conn") && pos != tgt) {
+        float st = max(1.0f, N("rv_speed"));
+        pos = pos < tgt ? min(tgt, pos + st) : max(tgt, pos - st);
+        setNum("rv_pos", pos, pos == tgt);   // save only the end position
+    }
+    hekiLast = N("rv_pos");
+}
+
 void emuLoop() {
     uint32_t now = millis();
     if (now - lastTick < 1000) return;
@@ -883,6 +908,7 @@ void emuLoop() {
     if (now - lastNoise >= 10000 || lastNoise == 0) { lastNoise = now; newNoise(); }
     if (run) scenarioStep((now - scenarioStart) / 1000.0f);
     heaterDynamics();
+    hekiDynamics();
     if (saveDue && (int32_t)(now - saveAt) >= 0) { saveDue = false; save(); }
 }
 
@@ -1008,6 +1034,21 @@ static void buildFan(const String& p, EmuEmit emit, void* ctx) {
         emit(p + "/" + k + "/auto_hold", V((k + "_hold").c_str()), ctx);
         emit(p + "/" + k + "/led", V((k + "_led").c_str()), ctx);
     }
+}
+
+// Same topics as plugin_rvtech of camper-toolbox: <prefix>/rvtech/...
+static void buildToolbox(const String& p, EmuEmit emit, void* ctx) {
+    if (!B("rv_on")) return;
+    String r = p + "/rvtech/";
+    bool conn = B("rv_conn");
+    emit(r + "state", conn ? "Verbunden" : "Nicht erreichbar", ctx);
+    emit(r + "connected", conn ? "ON" : "OFF", ctx);
+    emit(r + "release", "OFF", ctx);
+    int pos = (int)lroundf(N("rv_pos")), tgt = (int)lroundf(N("rv_tgt"));
+    const char* cover = pos < tgt ? "opening" : pos > tgt ? "closing" : pos == 0 ? "closed" : "open";
+    emit(r + "cover", cover, ctx);
+    emit(r + "cover_position", String(pos > 100 ? 100 : pos), ctx);
+    emit(r + "reported", String(pos), ctx);
 }
 
 static String comma(float v) {
@@ -1191,6 +1232,7 @@ void emuBuild(uint8_t dev, EmuEmit emit, void* ctx) {
         case D_BATTERY: buildBattery(p, emit, ctx); break;
         case D_ROUTER:  buildRouter(emit, ctx); break;
         case D_ZIGBEE:  buildZigbee(emit, ctx); break;
+        case D_TOOLBOX: buildToolbox(p, emit, ctx); break;
     }
 }
 
@@ -1276,6 +1318,22 @@ static void cmdFan(const String& sub, const String& msg) {
     else if (btn == "auto") setBool(hold.c_str(), !B(hold.c_str()), true);
 }
 
+static void cmdToolbox(const String& sub, const String& msg) {
+    // cmd/rvtech/<key>/set, keys and preset values as in plugin_rvtech
+    if (!sub.startsWith("cmd/rvtech/") || !sub.endsWith("/set") || !B("rv_on")) return;
+    String key = sub.substring(11, sub.length() - 4), v = msg;
+    v.trim();
+    int t = -1;
+    if (key == "cover") t = v.equalsIgnoreCase("OPEN") ? 100 : v.equalsIgnoreCase("CLOSE") ? 0 : -1;
+    else if (key == "cover_position") { t = v.toInt(); if (v.isEmpty() || t < 0 || t > 100) t = -1; }
+    else if (key == "auf") t = 100;
+    else if (key == "zu") t = 0;
+    else if (key == "regen") t = 12;
+    else if (key == "lueften") t = 102;
+    else if (key == "release") { setBool("rv_conn", !(v == "ON" || v == "1"), true); return; }
+    if (t >= 0) setNum("rv_tgt", t, true);
+}
+
 static void cmdZigbee(const String& rest, const String& msg) {
     // <ieee>/1/<cluster>[/<attribute>]
     int a = rest.indexOf('/');
@@ -1298,7 +1356,8 @@ void emuCommand(const char* topic, const char* payload, unsigned int len) {
     if (zb.endsWith("/data")) zb.remove(zb.length() - 5);
     zb += "/cmd/";
     if (t.startsWith(zb)) { cmdZigbee(t.substring(zb.length()), msg); return; }
-    for (int d = 0; d < D_ROUTER; d++) {
+    for (int d = 0; d < D_COUNT; d++) {
+        if (!EMU_DEVS[d].own) continue;
         String p = emuPrefix(d) + "/";
         if (!t.startsWith(p)) continue;
         String sub = t.substring(p.length());
@@ -1307,6 +1366,7 @@ void emuCommand(const char* topic, const char* payload, unsigned int len) {
             case D_LEVEL:  cmdLevel(sub, msg); break;
             case D_HEATER: cmdHeater(sub, msg); break;
             case D_FAN:    cmdFan(sub, msg); break;
+            case D_TOOLBOX: cmdToolbox(sub, msg); break;
             default: break;
         }
         return;
@@ -1462,7 +1522,7 @@ bool emuStartScenario(const char* id, uint8_t dev, String& err) {
     if (!snapshot) snapshot = new String[FIELD_COUNT];
     for (int i = 0; i < FIELD_COUNT; i++) snapshot[i] = vals[i];
     memcpy(snapModes, modes, sizeof(modes));
-    scenarioDev = dev < D_ROUTER ? dev : D_TANK;   // only devices with an own connection can drop out
+    scenarioDev = dev < D_COUNT && EMU_DEVS[dev].own ? dev : D_TANK;   // only devices with an own connection can drop out
     run = r;
     scenarioStart = millis();
     for (const auto& kv : run->start) setRaw(kv.first, kv.second, false);

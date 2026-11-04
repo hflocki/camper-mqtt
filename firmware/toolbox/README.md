@@ -109,23 +109,12 @@ In Home Assistant erscheint ein Gerät „Camper Toolbox“ (WLAN, Status) und j
 
 > Wer die Toolbox schon aus dem alten Repo nutzt: Das Basis-Topic war `camper/tool`, der Hostname `camper-tool`. Ein Gerät mit gespeicherten Einstellungen behält sein altes Topic, bis es in der Web-UI geändert wird. Ändert man es, legt Home Assistant die Entitäten neu an.
 
-### Dachhaube am Display (eigene Kacheln)
+### Dachhaube am Display
 
-Eine feste Heki-Kachel hat das Display noch nicht. Bis dahin geht es mit eigenen Kacheln, ohne Firmware-Änderung: Webseite des Displays → *Einstellungen → Seiten & Kacheln*, z. B. eine eigene Seite „Heki“ anlegen und darauf:
+Ab camper-display 2.10.3 hat das Display eine eigene Seite **Dachhaube** und eine kleine Kachel für die Übersicht (beide ab Werk aus, einschalten unter *Einstellungen → Anzeige*). Sie lesen `camper/toolbox/rvtech/…` und senden die Voreinstellungen und die Position an `camper/toolbox/cmd/rvtech/…`. Eigene Kacheln dafür braucht es nicht mehr; wer sie angelegt hat, kann sie löschen.
 
-| Kachel | Typ | Status-Topic | Befehls-Topic | Payload / Sonstiges |
-| --- | --- | --- | --- | --- |
-| Heki | Wert | `camper/toolbox/rvtech/cover` | – | Anzeige umbenennen: `open=Offen, closed=Zu, opening=Öffnet, closing=Schließt` |
-| Heki Position | Regler 0–100, Schritt 10, Einheit `%` | `camper/toolbox/rvtech/cover_position` | `camper/toolbox/cmd/rvtech/cover_position/set` | leer (= nur die Zahl) |
-| Heki Auf | Taster | – | `camper/toolbox/cmd/rvtech/auf/set` | `1` |
-| Heki Zu | Taster | – | `camper/toolbox/cmd/rvtech/zu/set` | `1` |
-| Heki Regen | Taster | – | `camper/toolbox/cmd/rvtech/regen/set` | `1` |
-| Heki Lüften | Taster | – | `camper/toolbox/cmd/rvtech/lueften/set` | `1` |
-
-- Das **Befehls-Topic von Hand eintragen.** Leer sendet das Display an Status-Topic + `/set`; dort hört die Toolbox nicht.
-- Bei den Tastern ist die Payload egal, die Toolbox wertet nur das Topic aus.
-- Die Topics zeigt auch der Topic-Finder des Displays (Filter `camper/toolbox/#`). Bei einer zweiten Haube heißt das Plugin `rvtech2`.
-- Die Seiten *Schalter*, *Licht* und *Sensoren* und der Abfahrtscheck kennen die Dachhaube noch nicht (sie füllen sich aus der Zigbee-/Bluetooth-Sensorliste). Eine Kachel-Warnung „wenn Wert gleich `open`“ ginge, warnt aber auch im Stand.
+- Basis-Topic am Display: *Einstellungen → Topics der Geräte → Toolbox* (Standard `camper/toolbox`; ein Gerät aus dem alten Repo sendet auf `camper/tool`).
+- Eine zweite Haube (`rvtech2`) kennt das Display noch nicht, ebenso der Abfahrtscheck.
 
 ## Neues Plugin schreiben
 

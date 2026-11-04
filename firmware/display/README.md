@@ -42,8 +42,8 @@ Passt zu den anderen Projekten:
 - **Feste IP abgesichert:** Eine feste IP, die nicht funktionieren kann (Gateway außerhalb des Netzes, falsches Subnetz), wird beim Speichern abgelehnt. Verbindet sich das Display mit fester IP zwar mit dem WLAN, erreicht aber 3 Minuten lang den MQTT-Broker nicht, schaltet es bis zum nächsten Neustart auf DHCP (Hinweis auf der Systemseite). Auf der Systemseite gibt es außerdem den Knopf *Feste IP aus (DHCP)* – lange drücken, das Display startet mit DHCP neu
 - **Geräte-Links (nur Webseite):** Unter *Einstellungen → 🔗 Geräte-Links* Name und Adresse der anderen Geräte eintragen (oder „Camper-Geräte vorschlagen“ für die `.local`-Namen). Die Seite **🔗 Geräte** (über *System*) zeigt sie als Buttons, die die jeweilige Konfigurationsseite in einem neuen Tab öffnen
 - **Anzeigename:** Unter *Einstellungen → Display & Seiten* lässt sich ein Name eintragen (z. B. „Wohnraum“), der oben in der Mitte neben dem Seitentitel steht – am Display und auf der Webseite. Leer = kein Name
-- **Übersicht ohne Scrollen:** 3 × 3 Kacheln, Standard: Frischwasser, Grauwasser, Gas, Truma, Level, MaxxFan, Temperatur (bis 3 Sensoren), Batterie (bis 3), jeweils mit Symbol statt Name (siehe *Symbole* unten) und Status (grün „OK“ oder die Warnungen auf Rot). Antippen öffnet die jeweilige Seite. **Welche Kachel wo steht, ist frei wählbar** (*Einstellungen → Display & Seiten → Kacheln der Übersicht*): zusätzlich einzelne Batterien (Batterie 1–3 groß), Uhr/Datum, eigene MQTT-Kacheln aus *Seiten & Kacheln* oder leer. Die Webseite übernimmt dieselbe Reihenfolge
-- **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie · **Wetter** · **Sensoren** (Fenster, Türen und weitere Sensoren) · **Warnungen** · **Licht** · **Schalter** · **Energie** und **Extra** (zwei freie Seiten für später, ab Werk aus) – einzeln abschaltbar und **System** (Netzwerk, IP, Signal, MQTT, Firmware, Laufzeit, Speicher als Liste, dazu QR-Code und Helligkeit). **Name und Symbol** jeder festen Seite (auch System) lassen sich unter *Einstellungen → 🖥 Anzeige → Seiten & Symbolleiste* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
+- **Übersicht ohne Scrollen:** 3 × 3 Kacheln, Standard: Frischwasser, Grauwasser, Gas, Truma, Level, MaxxFan, Temperatur (bis 3 Sensoren), Batterie (bis 3), jeweils mit Symbol statt Name (siehe *Symbole* unten) und Status (grün „OK“ oder die Warnungen auf Rot). Antippen öffnet die jeweilige Seite. **Welche Kachel wo steht, ist frei wählbar** (*Einstellungen → Display & Seiten → Kacheln der Übersicht*): zusätzlich einzelne Batterien (Batterie 1–3 groß), **Dachhaube**, Uhr/Datum, eigene MQTT-Kacheln aus *Seiten & Kacheln* oder leer. Die Webseite übernimmt dieselbe Reihenfolge
+- **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie · **Wetter** · **Sensoren** (Fenster, Türen und weitere Sensoren) · **Warnungen** · **Licht** · **Schalter** · **Energie** und **Extra** (zwei freie Seiten für später, ab Werk aus) · **Dachhaube** (Heki über die camper-toolbox, ab Werk aus) – einzeln abschaltbar und **System** (Netzwerk, IP, Signal, MQTT, Firmware, Laufzeit, Speicher als Liste, dazu QR-Code und Helligkeit). **Name und Symbol** jeder festen Seite (auch System) lassen sich unter *Einstellungen → 🖥 Anzeige → Seiten & Symbolleiste* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
 - **Kopfzeile:** Seitenname · Anzeigename · Datum · Uhr. Antippen springt zur Übersicht. Bei Verbindungsproblemen steht dort „WLAN“ bzw. „MQTT“
 - **Icon-Leiste unten:** 8 Knöpfe: **Home** und **System** sind immer da, dazu bis zu 6 frei wählbare Seiten (*Einstellungen → Display & Seiten → Symbolleiste*, leer = die ersten 6). Seiten ohne Knopf erreicht man über ihre Kachel auf Home oder durch Wischen, auf der Webseite über *System → Weitere Seiten*. Die aktive Seite ist hervorgehoben. Die Webseite nutzt dieselbe Auswahl
 - **Wetter** von [Open-Meteo](https://open-meteo.com) (kostenlos, ohne Konto): aktuelles Wetter, nächste Stunde, heute und 3 Tage Vorschau. Fester Ort oder GPS per MQTT (z. B. vom Router), siehe [Wetter](#wetter)
@@ -214,6 +214,7 @@ Das Display abonniert `<Basis-Topic>/#` jedes Geräts und die Topics der Kacheln
 | Ausrichtung | `pitch`, `roll`, `is_level`, `tolerance`, `wedge_fl/fr/rl/rr`, `status` |
 | Heizung | `control_status/current_temp_room`, `room_setpoint`, `hvac_mode`, `fan_mode`, `water_mode`, `current_temp_water`, `operating_status_text`, `error_code`, `heater_error`, `decoke`, `decoke_remaining`, `alive`; `status` |
 | MaxxFan | `p<n>/auto_hold`, `p<n>/led`, `status` |
+| Dachhaube (Toolbox) | `rvtech/cover`, `rvtech/cover_position`, `rvtech/reported` (102 = Lüften), `rvtech/connected`, `status` |
 | Temperaturen | `sensors` (JSON-Liste aller Sensoren mit Name, Wert und Alarm), `alarm_text`, `status` |
 | Batterien | `batteries` (JSON-Liste aller Batterien mit Ladestand, Spannung, Leistung, Restlaufzeit, BM2-Zustand), `status`. Seite *Batterien*: je Batterie eine Karte mit Ladestand-Balken, Leistung (▲ lädt / ▼ entlädt), Restlaufzeit; beim BM2 Spannung und Zustand |
 
@@ -230,6 +231,8 @@ Das Display abonniert `<Basis-Topic>/#` jedes Geräts und die Topics der Kacheln
 | Lüfter-Stufe | `<maxxfan>/cmd/p<n>/speed/set` | `1` … `10` |
 | Sync AUS | `<maxxfan>/cmd/sync_off` | `PRESS` |
 | Tara | `<level>/cmd/tare/set` | `PRESS` (am Display lange drücken) |
+| Dachhaube Auf / Zu / Regen / Lüften | `<toolbox>/cmd/rvtech/<auf\|zu\|regen\|lueften>/set` | `PRESS` |
+| Dachhaube Position | `<toolbox>/cmd/rvtech/cover_position/set` | `0` … `100` (beim Loslassen des Reglers) |
 
 **Eigene Topics** (Basis `camper/display`)
 
@@ -248,6 +251,12 @@ Das Display abonniert `<Basis-Topic>/#` jedes Geräts und die Topics der Kacheln
 | `camper/display/cmd/reboot` | beliebig |
 
 Beispiel: `mosquitto_pub -h <broker> -t camper/display/cmd/screen -m OFF`
+
+### Dachhaube (Heki über die camper-toolbox)
+
+Die Seite **Dachhaube** zeigt den Zustand („Zu“, „Offen 40 %“, „Regen“, „Lüften“, „Öffnet …“) und die Bluetooth-Verbindung der Toolbox zur Haube. Darunter die vier Voreinstellungen der Toolbox (**Auf** 100 %, **Zu**, **Regen** 12 %, **Lüften**), die aktive ist hervorgehoben, und ein Regler für die Position. Der Regler folgt der Haube, während sie fährt, aber nicht, solange man ihn anfasst.
+
+Einschalten: *Einstellungen → 🖥 Anzeige → Seiten & Symbolleiste*, Haken bei **Dachhaube** (ab Werk aus). Die kleine Kachel für die Übersicht gibt es unter *Kacheln der Übersicht* → **Dachhaube**; sie zeigt den Zustand bzw. die Öffnung in %, gelb, solange die Haube offen ist. Antippen öffnet die Seite, das geht nur, wenn die Seite eingeschaltet ist. Basis-Topic unter *Topics der Geräte → Toolbox* (Standard `camper/toolbox`, leer = keine Toolbox). Eine zweite Haube (`rvtech2`) zeigt das Display noch nicht.
 
 ## Warnungen
 

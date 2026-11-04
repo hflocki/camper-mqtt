@@ -129,7 +129,7 @@ void onMessage(char* topic, byte* payload, unsigned int len) {
 void subscribeAll() {
   const String* prefixes[] = {&settings.prefixTank, &settings.prefixLevel,
                               &settings.prefixHeater, &settings.prefixFan, &settings.prefixTemp,
-                              &settings.prefixBattery};
+                              &settings.prefixBattery, &settings.prefixToolbox};
   for (auto p : prefixes) {
     if (p->isEmpty()) continue;
     mqtt.subscribe((*p + "/#").c_str());
@@ -348,6 +348,21 @@ bool fan(const String& key, const String& value) {
   if (key == "close")    return publish(port + "close", "PRESS");   // camper-maxxfan 1.4.0+
   if (key == "led")      return publish(port + "led/set", value.length() ? value : "TOGGLE");
   if (key == "sync_off") return publish(settings.prefixFan + "/cmd/sync_off", "PRESS");
+  return false;
+}
+
+bool heki(const String& key, const String& value) {
+  if (settings.prefixToolbox.isEmpty()) return false;
+  String base = settings.prefixToolbox + "/cmd/rvtech/";   // plugin id of the roof hatch
+  if (key == "position") {
+    int p = value.toInt();
+    if (value.isEmpty() || p < 0 || p > 100) return false;
+    return publish(base + "cover_position/set", String(p));
+  }
+  if (key == "open")  return publish(base + "cover/set", "OPEN");
+  if (key == "close") return publish(base + "cover/set", "CLOSE");
+  static const char* presets[] = {"auf", "zu", "regen", "lueften"};
+  for (auto p : presets) if (key == p) return publish(base + key + "/set", "PRESS");
   return false;
 }
 
