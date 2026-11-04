@@ -531,7 +531,7 @@ function pgOverview(){
     if(t==='bat')return `<div class="card wide click" data-go="bat"><h3>🔋 ${esc(ptitle(5))}</h3><div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
     if(/^bat[123]$/.test(t)){const n=t[3];return `<div class="card click" data-go="bat"><h3 id="ob${n}_t">🔋 Batterie ${n}</h3><div class="big" id="ob${n}_v">--</div><div class="mu" id="ob${n}_s"></div></div>`}
     if(/^t\d+$/.test(t)){const i=+t.slice(1),k=(cfg.tiles||[])[i];if(!k)return '';return `<div class="card"><h3>${esc(k.n)}</h3><div class="big" id="t${i}_v">--</div></div>`}
-    if(t==='lights')return `<div class="card click" data-go="light"><h3>${picon(9)} ${esc(ptitle(9))}</h3><div class="big" id="ol_v" style="font-size:20px">--</div><div class="mu" id="ol_s"></div></div>`;
+    if(t==='lights')return `<div class="card click" data-go="light"><h3>${picon(9)} ${esc(ptitle(9))}</h3><div class="big" id="oli_v" style="font-size:20px">--</div><div class="mu" id="oli_s"></div></div>`;
     if(t==='switches')return `<div class="card click" data-go="switch"><h3>${picon(10)} ${esc(ptitle(10))}</h3><div class="big" id="osw_v" style="font-size:20px">--</div><div class="mu" id="osw_s"></div></div>`;
     if(t==='actors')return `<div class="card click" data-go="actors"><h3>${picon(7)} ${esc(ptitle(7))}</h3><div class="big" id="oa_v" style="font-size:20px">--</div><div class="mu" id="oa_s"></div></div>`;
     if(t==='status')return `<div class="card click" id="ost" data-go="warn"><h3>⚠ Status</h3><div class="big" id="ost_v" style="white-space:pre-line">OK</div><div id="ost_i" style="font-size:22px;margin-top:4px"></div></div>`;
@@ -945,7 +945,7 @@ function update(){
    if($('#oa_v')){set('oa_v',!cs.length?'--':op.length?op.slice(0,3).map(x=>`<span class="err">${esc(x.n)}</span>`).join('<br>'):'<span class="okc">Alles zu</span>');
      set('oa_s',!cs.length?'keine Kontakte':op.length>3?'+'+(op.length-3)+' offen':op.length?op.length+' offen':'')}
    updDev();
-   [['ol',2,'keine Lichter'],['osw',3,'keine Schalter']].forEach(([id,k,none])=>{if(!$('#'+id+'_v'))return;
+   [['oli',2,'keine Lichter'],['osw',3,'keine Schalter']].forEach(([id,k,none])=>{if(!$('#'+id+'_v'))return;
      const all=devsOf(4|16|32|64|128).filter(x=>x.k===k),on=all.filter(x=>x.o===1);
      set(id+'_v',!all.length?'--':on.length?on.slice(0,3).map(x=>`<span style="color:var(--gas)">${esc(x.n)}</span>`).join('<br>'):'<span class="mu">Alle aus</span>');
      set(id+'_s',!all.length?none:on.length>3?'+'+(on.length-3)+' an':on.length?on.length+' an':'')})}
