@@ -35,18 +35,25 @@ const char PAGE[] PROGMEM = R"HTML(<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RoadBuddy</title>
 <style>
-:root{--bg:#0B1015;--card:#1A232D;--line:#263241;--text:#E8EDF2;--muted:#8696A6;--ok:#4CC27A;--warn:#F2C94C;--bad:#E5484D;--accent:#5AB0F0}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,sans-serif;padding:16px}
-main{max-width:480px;margin:0 auto}h1{font-size:20px;margin:0 0 12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
-.row{display:flex;justify-content:space-between;gap:12px;padding:4px 0}.row span:first-child{color:var(--muted)}
-.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--muted)}
-input[type=file]{width:100%;color:var(--muted);margin:8px 0}
-button{background:var(--accent);color:#0B1015;border:0;border-radius:999px;padding:9px 18px;font-weight:600;cursor:pointer}
-button:disabled{opacity:.5}
-.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:10px}
+/* same look as all camper-mqtt pages (firmware/_common/web/camper-theme.css) */
+:root{--bg:#0D1115;--card:#151B21;--hi:#1C242C;--line:#222B34;--line2:#2F3A45;--text:#E7ECF0;--text2:#B4BEC8;--muted:#8B98A5;
+ --ok:#46B97C;--warn:#E5A23B;--bad:#E5534B;--accent:#4DA3F0;--acx:#06131F;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+svg.i{width:20px;height:20px;flex:none;vertical-align:-4px}
+header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+header h1{flex:1;display:flex;align-items:center;gap:10px;font-size:1.15rem;font-weight:600;margin:0}header h1 svg.i{color:var(--accent)}
+main{max-width:520px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.card>b{display:block;font-size:.85rem;font-weight:600;color:var(--text2);margin-bottom:10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}
+.row span:first-child{color:var(--muted)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--line2)}
+input[type=file]{width:100%;color:var(--muted);margin:10px 0;padding:10px;border:1px dashed var(--line2);border-radius:10px;background:var(--bg)}
+button{min-height:44px;background:var(--accent);color:var(--acx);border:1px solid var(--accent);border-radius:10px;padding:10px 18px;font:inherit;font-weight:600;cursor:pointer;width:100%}
+.bar{height:6px;background:var(--line);border-radius:999px;overflow:hidden;margin-top:12px}
 .bar div{height:100%;width:0;background:var(--accent);transition:width .2s}
 #msg{margin-top:8px;color:var(--muted)}
+.hint{color:var(--muted);font-size:.85rem}
 :root{--fwu-ok:var(--ok);--fwu-warn:var(--warn);--fwu-bad:var(--bad);--fwu-mute:var(--muted);--fwu-line:var(--line)}
 .fwu-cur{font-size:.8rem;margin:0 0 10px}
 .fwu-chk{font-size:.8rem;margin:8px 0;line-height:1.4}
@@ -56,13 +63,14 @@ button:disabled{opacity:.5}
 .fwu-ev{padding:4px 0;border-bottom:1px solid var(--fwu-line)}.fwu-ev:last-child{border-bottom:0}
 .fwu-ev span{color:var(--fwu-mute);margin-right:8px;white-space:nowrap}.fwu-ev.bad{color:var(--fwu-bad)}
 button:disabled{opacity:.45;cursor:not-allowed}
-</style></head><body><main>
-<h1>RoadBuddy</h1>
+</style></head><body>
+<header><h1><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H4zM9 20h6M12 16v4"/></svg><span>Road Buddy</span></h1></header>
+<main>
 <div class="card" id="st"><div class="row"><span>Status</span><span>...</span></div></div>
 <div class="card">
 <b>Firmware-Update</b>
 <div class="fwu-cur" id="fwu-cur" style="margin-top:6px">Installiert: …</div>
-<div style="color:var(--muted)">Die .bin aus dem Release (camper-roadbuddy-core2.bin) oder aus der Arduino IDE (roadbuddy.ino.bin, nicht die .merged.bin). Die Datei wird vor dem Hochladen geprüft.</div>
+<div class="hint">Die .bin aus dem Release (camper-roadbuddy-core2.bin) oder aus der Arduino IDE (roadbuddy.ino.bin, nicht die .merged.bin). Die Datei wird vor dem Hochladen geprüft.</div>
 <input type="file" id="fwu-file" accept=".bin" onchange="fwChosen(false)">
 <div class="fwu-chk" id="fwu-chk"></div>
 <label class="fwu-force" id="fwu-force-row" style="display:none"><input type="checkbox" id="fwu-force" onchange="fwForce()">Ohne Kennung hochladen</label>
@@ -71,7 +79,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 <div id="msg"></div>
 </div>
 <div class="card"><b>Ereignisse</b><div class="fwu-log" id="fwu-log" style="margin-top:6px">Lade …</div>
-<div style="color:var(--muted);font-size:12px;margin-top:6px">Bleibt bei Neustart, Absturz und Update erhalten, nicht bei Stromausfall. Aufwachen aus dem Schlaf wird nicht eingetragen.</div></div>
+<div class="hint" style="font-size:12px;margin-top:8px">Bleibt bei Neustart, Absturz und Update erhalten, nicht bei Stromausfall. Aufwachen aus dem Schlaf wird nicht eingetragen.</div></div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
@@ -81,13 +89,13 @@ async function load(){
  try{const s=await (await fetch('/status')).json();
   $('st').innerHTML=row('Version',s.version)+row('WLAN',dot(s.wifi)+s.rssi+' dBm')+
    row('MQTT',dot(s.mqtt)+(s.mqtt?'verbunden':'getrennt'))+row('Broker',s.broker)+
-   row('Akku',s.battery+' %'+(s.charging?' (laedt)':''))+row('Laufzeit',s.uptime)+
+   row('Akku',s.battery+' %'+(s.charging?' (lädt)':''))+row('Laufzeit',s.uptime)+
    row('Wach bleibt er noch',s.awake);
  }catch(e){}
 }
 load();setInterval(load,5000);
 $('fwu-btn').onclick=()=>{
- const f=$('fwu-file').files[0];if(!f||!fwPick){$('msg').textContent='Bitte zuerst eine .bin auswaehlen.';return}
+ const f=$('fwu-file').files[0];if(!f||!fwPick){$('msg').textContent='Bitte zuerst eine .bin auswählen.';return}
  const force=!fwPick.ok&&fwPick.force&&$('fwu-force').checked;
  if(fwPick.warn&&!confirm(fwPick.msg+'\nTrotzdem installieren?'))return;
  const fd=new FormData();fd.append('firmware',f,f.name);
