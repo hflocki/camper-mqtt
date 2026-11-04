@@ -65,7 +65,7 @@ arduino-cli compile --fqbn <fqbn> firmware/<gerät>/<sketch>
 
 ### Road Buddy (`firmware/roadbuddy`)
 
-- Zeichnet mit M5GFX (kein LVGL), übernimmt aber Optik und Logik vom Display: Farben `COL_*` und `SEG_COL` sind die `C_*`-Werte aus `display/.../ui.cpp`. Beim Ändern der Palette oder der Schwellen (Tanks, Segmentleiste) beide Geräte anpassen.
+- Zeichnet mit M5GFX (kein LVGL), übernimmt aber Optik und Logik vom Display: Farben `COL_*` und `SEG_COL` sind die `C_*`-Werte aus `display/.../ui.cpp`, und die wiederum die Werte aus `firmware/_common/web/camper-theme.css`. Beim Ändern der Palette oder der Schwellen (Tanks, Segmentleiste) beide Geräte anpassen.
 - Bleibt reiner Empfänger und Kurzblick fürs Ankommen (Level, Wasser, Gas, Temperatur, Batterie, System), keine Steuerung.
 - Arduino-Präprozessor: Typen, die in Funktionsparametern vorkommen (z. B. `enum Glyph`), vor der ersten Funktion deklarieren; keine Default-Argumente.
 - `config.h` darf nur von `roadbuddy.ino` eingebunden werden (definiert Variablen). Zugangsdaten landen zusätzlich im NVS, damit die CI-`.bin` per Update-Seite (`webota.cpp`) installiert werden kann.

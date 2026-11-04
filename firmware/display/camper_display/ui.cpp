@@ -44,32 +44,37 @@ LV_FONT_DECLARE(font_de_56);
 namespace {
 
 // ---- colours ---------------------------------------------------------------
-const lv_color_t C_BG      = lv_color_hex(0x0B1015);
-const lv_color_t C_CARD    = lv_color_hex(0x1A232D);
-const lv_color_t C_CARD_HI = lv_color_hex(0x27323E);
-const lv_color_t C_LINE    = lv_color_hex(0x263241);   // hairline border of cards
-const lv_color_t C_TEXT    = lv_color_hex(0xE8EDF2);
-const lv_color_t C_MUTED   = lv_color_hex(0x8696A6);
-const lv_color_t C_WATER   = lv_color_hex(0x3BA3E8);
-const lv_color_t C_GREY    = lv_color_hex(0xA88B6A);
-const lv_color_t C_GAS     = lv_color_hex(0xF0A030);
-const lv_color_t C_HEAT    = lv_color_hex(0xF06A3B);
-const lv_color_t C_OK      = lv_color_hex(0x4CC27A);
-const lv_color_t C_WARN    = lv_color_hex(0xE5484D);
-const lv_color_t C_ACCENT  = lv_color_hex(0x5AB0F0);
-const lv_color_t C_BANNER  = lv_color_hex(0xF2C94C);   // warning banner (yellow) ...
-const lv_color_t C_ONBANNER = lv_color_hex(0x1A1F24);  // ... and its text
-const lv_color_t C_NAV     = lv_color_hex(0x10161D);
-const lv_color_t C_YELLOW  = lv_color_hex(0xF2C94C);   // "getting low" state
+// camper-mqtt design (same values as firmware/_common/web/camper-theme.css and the Road Buddy):
+// colour means state (green OK, yellow needs a look, red error), blue means control
+const lv_color_t C_BG      = lv_color_hex(0x0D1115);
+const lv_color_t C_CARD    = lv_color_hex(0x151B21);
+const lv_color_t C_CARD_HI = lv_color_hex(0x1C242C);
+const lv_color_t C_LINE    = lv_color_hex(0x222B34);   // hairline border of cards
+const lv_color_t C_TRACK   = lv_color_hex(0x26303A);   // empty part of bars and segment bars
+const lv_color_t C_TEXT    = lv_color_hex(0xE7ECF0);
+const lv_color_t C_MUTED   = lv_color_hex(0x8B98A5);
+const lv_color_t C_WATER   = lv_color_hex(0x3E9BE0);
+const lv_color_t C_GREY    = lv_color_hex(0x8A96A3);
+const lv_color_t C_GAS     = lv_color_hex(0xD9893A);
+const lv_color_t C_HEAT    = lv_color_hex(0xE2704A);
+const lv_color_t C_OK      = lv_color_hex(0x46B97C);
+const lv_color_t C_WARN    = lv_color_hex(0xE5534B);   // red: error / critical
+const lv_color_t C_ACCENT  = lv_color_hex(0x4DA3F0);
+const lv_color_t C_BANNER  = lv_color_hex(0x2A2213);   // warning banner (dark amber) ...
+const lv_color_t C_ONBANNER = lv_color_hex(0xF6D9A3);  // ... and its text
+const lv_color_t C_BANNER_LINE = lv_color_hex(0x4A3A1C);
+const lv_color_t C_DARKGLYPH = lv_color_hex(0x1A1F24); // glyph on light colours (yellow dots, swatches)
+const lv_color_t C_NAV     = lv_color_hex(0x11161B);
+const lv_color_t C_YELLOW  = lv_color_hex(0xE5A23B);   // "needs a look" / getting low
 const lv_color_t C_OUTLINE = lv_color_hex(0x55657A);   // outline of the tank / gas bottle drawings
 const lv_color_t C_LEVEL   = lv_color_hex(0x2BA58A);   // icon colours of the tiles
-const lv_color_t C_FAN     = lv_color_hex(0x3A86C8);
-const lv_color_t C_PURPLE  = lv_color_hex(0x9B7BE0);
-const lv_color_t C_SLATE   = lv_color_hex(0x6F7F94);
+const lv_color_t C_FAN     = lv_color_hex(0x3E9BE0);
+const lv_color_t C_PURPLE  = lv_color_hex(0x9B87E0);
+const lv_color_t C_SLATE   = lv_color_hex(0x8A96A3);
 // segment bar of the batteries: red (empty) to green (full)
 const int SEG_N = 13;
-const uint32_t SEG_COL[SEG_N] = {0xE5484D, 0xEC5F3F, 0xF07A34, 0xF2952B, 0xF2AE2A, 0xF2C94C, 0xE3D24A,
-                                 0xCBD449, 0xAFD24B, 0x92CD52, 0x75C85E, 0x5EC56C, 0x4CC27A};
+const uint32_t SEG_COL[SEG_N] = {0xE5534B, 0xEC5F3F, 0xF07A34, 0xF2952B, 0xF2AE2A, 0xF2C94C, 0xE3D24A,
+                                 0xCBD449, 0xAFD24B, 0x92CD52, 0x75C85E, 0x5EC56C, 0x46B97C};
 // batteries without a state of charge (lead, BM2): voltage range of the segment bar
 const float SEG_VMIN = 11.8f, SEG_VMAX = 12.8f;
 
@@ -107,7 +112,7 @@ uint32_t lastValues = 0;
 // ---- widget handles ------------------------------------------------------
 enum TankKind : uint8_t { TK_WATER, TK_GREY, TK_GAS };
 struct TankW { lv_obj_t* pct = nullptr; lv_obj_t* sub = nullptr; lv_obj_t* fill = nullptr; int fillH = 0;
-               uint8_t kind = TK_WATER; lv_color_t base = lv_color_hex(0x3BA3E8); };
+               uint8_t kind = TK_WATER; lv_color_t base = lv_color_hex(0x3E9BE0); };
 TankW ovWater, ovGrey, ovGas;
 lv_obj_t *ovHeatVal, *ovHeatSub, *ovLvlVal, *ovLvlSub, *ovFanVal, *ovFanSub;
 lv_obj_t *ovLvlRing = nullptr, *ovLvlDot = nullptr;   // small spirit level on the overview tile
@@ -127,7 +132,7 @@ uint32_t kPosHold = 0;   // millis() of the last slider command: do not jump bac
 lv_obj_t *lvVan, *lvDot, *lvRoll, *lvPitch, *lvState, *lvHint, *lvWheel[4], *lvWedge[4];
 const lv_color_t C_VAN    = lv_color_hex(0x6F8FBF);   // outline of the van (same on Road Buddy and web page)
 const lv_color_t C_VAN_IN = lv_color_hex(0x1A2638);   // inside of the van
-const lv_color_t C_LVL_HI = lv_color_hex(0xF0A030);   // wheels that need a wedge, dot while not level
+const lv_color_t C_LVL_HI = lv_color_hex(0xE5A23B);   // wheels that need a wedge, dot while not level
 const int LV_VAN_W = 96, LV_VAN_H = 214, LV_DOT = 20;
 const float LV_RANGE = 3.0f;                         // tilt at which the dot reaches the edge of the van
 lv_obj_t *sIp, *sNet, *sQr, *sQrLbl, *sBri, *sInfo;
@@ -693,7 +698,7 @@ lv_obj_t* shape(lv_obj_t* parent, int w, int h, int radius) {
 
 // White glyph on light colours is hard to read: dark glyph there (yellow)
 lv_color_t onColor(lv_color_t bg) {
-  return (bg.red * 299 + bg.green * 587 + bg.blue * 114) / 1000 > 170 ? C_ONBANNER : lv_color_hex(0xFFFFFF);
+  return (bg.red * 299 + bg.green * 587 + bg.blue * 114) / 1000 > 165 ? C_DARKGLYPH : lv_color_hex(0xFFFFFF);
 }
 
 DotW iconDot(lv_obj_t* parent, const char* glyph, lv_color_t col, int size, const lv_font_t* font) {
@@ -747,7 +752,7 @@ void segDraw(lv_event_t* e) {
     lv_area_t r = a;
     r.x1 = a.x1 + i * (sw + gap);
     r.x2 = r.x1 + sw - 1;
-    dsc.bg_color = i < lit ? (live ? lv_color_hex(SEG_COL[i]) : C_MUTED) : C_CARD_HI;
+    dsc.bg_color = i < lit ? (live ? lv_color_hex(SEG_COL[i]) : C_MUTED) : C_TRACK;
     lv_draw_rect(layer, &dsc, &r);
   }
 }
@@ -1160,7 +1165,7 @@ LightW buildLightCard(lv_obj_t* tab, const sensors::DevOut& li) {
   for (int k = 0; k < SWATCH_N; k++) {
     lv_obj_t* b = button(w.card, SWATCHES[k].text, bw, 34, onLightSwatch,
                          (void*)(intptr_t)(li.idx * 16 + k), lv_color_hex(SWATCHES[k].show), &font_de_14);
-    lv_obj_set_style_text_color(lv_obj_get_child(b, 0), C_ONBANNER, 0);
+    lv_obj_set_style_text_color(lv_obj_get_child(b, 0), C_DARKGLYPH, 0);
     lv_obj_set_style_radius(b, 10, 0);
     lv_obj_align(b, LV_ALIGN_BOTTOM_LEFT, k * (bw + 6), 0);
   }
@@ -2014,11 +2019,12 @@ void refreshValues() {
   String warn = warnings();
   if (ovWarn) {
     bool any = warn.length() > 0;
-    lv_obj_set_style_bg_color(ovWarn, any ? C_WARN : C_CARD, 0);
-    lv_obj_set_style_border_color(ovWarn, any ? C_WARN : C_LINE, 0);
-    lv_obj_set_style_bg_color(ovWarn, any ? C_WARN : C_CARD_HI, LV_STATE_PRESSED);
+    // warnings: dark amber like the banner, not a red alarm
+    lv_obj_set_style_bg_color(ovWarn, any ? C_BANNER : C_CARD, 0);
+    lv_obj_set_style_border_color(ovWarn, any ? C_BANNER_LINE : C_LINE, 0);
+    lv_obj_set_style_bg_color(ovWarn, any ? C_BANNER_LINE : C_CARD_HI, LV_STATE_PRESSED);
     lv_obj_set_style_text_font(ovWarnLbl, any ? &font_de_14 : &font_de_28, 0);
-    lv_obj_set_style_text_color(ovWarnLbl, any ? C_TEXT : C_OK, 0);
+    lv_obj_set_style_text_color(ovWarnLbl, any ? C_ONBANNER : C_OK, 0);
     lv_label_set_text(ovWarnLbl, any ? dispText(warn).c_str() : "OK");
     lv_obj_set_width(ovWarnLbl, any ? TILE_IN : LV_SIZE_CONTENT);
     if (any) lv_obj_align(ovWarnLbl, LV_ALIGN_TOP_LEFT, 0, 20);
@@ -2027,11 +2033,8 @@ void refreshValues() {
       if (any) lv_obj_add_flag(ovOkBadge, LV_OBJ_FLAG_HIDDEN);
       else     lv_obj_remove_flag(ovOkBadge, LV_OBJ_FLAG_HIDDEN);
     }
-    // title icon: green check, on the red tile a white circle with a red warning sign
-    if (ovStatusDot.dot) {
-      setDot(ovStatusDot, any ? LV_SYMBOL_WARNING : LV_SYMBOL_OK, any ? lv_color_hex(0xFFFFFF) : C_OK, true);
-      if (any) lv_obj_set_style_text_color(ovStatusDot.glyph, C_WARN, 0);
-    }
+    // title icon: green check, with warnings a yellow circle with a warning sign
+    if (ovStatusDot.dot) setDot(ovStatusDot, any ? LV_SYMBOL_WARNING : LV_SYMBOL_OK, any ? C_YELLOW : C_OK, true);
     if (ovInd) {
       String ic;
       int open = sensors::openCount();
@@ -2555,7 +2558,7 @@ void refreshHeader() {
     if (bars > 0) lv_obj_remove_flag(hdrSig, LV_OBJ_FLAG_HIDDEN);
     else          lv_obj_add_flag(hdrSig, LV_OBJ_FLAG_HIDDEN);
     for (int i = 0; i < 5; i++)
-      lv_obj_set_style_bg_color(hdrSigBar[i], i < bars ? (banner ? C_ONBANNER : C_TEXT) : (banner ? lv_color_hex(0xC9A93A) : C_CARD_HI), 0);
+      lv_obj_set_style_bg_color(hdrSigBar[i], i < bars ? (banner ? C_ONBANNER : C_TEXT) : (banner ? C_BANNER_LINE : C_CARD_HI), 0);
     if (strcmp(lv_label_get_text(hdrSigLbl), sigTxt) != 0) lv_label_set_text(hdrSigLbl, sigTxt);
     lv_obj_set_style_text_color(hdrSigLbl, banner ? C_ONBANNER : C_MUTED, 0);
   }

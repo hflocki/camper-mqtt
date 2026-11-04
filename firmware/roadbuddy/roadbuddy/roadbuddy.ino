@@ -197,32 +197,32 @@ const float BUBBLE_FULL_SCALE_DEG = 3.0f;   // tilt at which the dot reaches the
 static constexpr uint16_t rgb(uint32_t c) {
   return (uint16_t)(((c >> 8) & 0xF800) | ((c >> 5) & 0x07E0) | ((c >> 3) & 0x001F));
 }
-static const uint16_t COL_BG      = rgb(0x0B1015);
-static const uint16_t COL_NAV     = rgb(0x10161D);   // header and footer
-static const uint16_t COL_PANEL   = rgb(0x1A232D);   // cards
-static const uint16_t COL_GRID    = rgb(0x27323E);   // empty segments, inactive elements
-static const uint16_t COL_LINE    = rgb(0x263241);   // hairline border of cards
+static const uint16_t COL_BG      = rgb(0x0D1115);
+static const uint16_t COL_NAV     = rgb(0x11161B);   // header and footer
+static const uint16_t COL_PANEL   = rgb(0x151B21);   // cards
+static const uint16_t COL_GRID    = rgb(0x26303A);   // empty segments, inactive elements (C_TRACK)
+static const uint16_t COL_LINE    = rgb(0x222B34);   // hairline border of cards
 static const uint16_t COL_OUTLINE = rgb(0x55657A);   // outline of tank / bottle / level circle
-static const uint16_t COL_TEXT    = rgb(0xE8EDF2);
-static const uint16_t COL_DIM     = rgb(0x8696A6);
-static const uint16_t COL_OK      = rgb(0x4CC27A);
-static const uint16_t COL_WARN    = rgb(0xF2C94C);   // yellow: getting low
-static const uint16_t COL_BAD     = rgb(0xE5484D);   // red: critical
-static const uint16_t COL_ACCENT  = rgb(0x5AB0F0);
-static const uint16_t COL_WATER   = rgb(0x3BA3E8);
-static const uint16_t COL_WAVE    = rgb(0x8CCBF2);
-static const uint16_t COL_GAS     = rgb(0xF0A030);
-static const uint16_t COL_GAS_HI  = rgb(0xF7C977);
-static const uint16_t COL_STEEL   = rgb(0x6F7F94);
+static const uint16_t COL_TEXT    = rgb(0xE7ECF0);
+static const uint16_t COL_DIM     = rgb(0x8B98A5);
+static const uint16_t COL_OK      = rgb(0x46B97C);
+static const uint16_t COL_WARN    = rgb(0xE5A23B);   // yellow: getting low / needs a look
+static const uint16_t COL_BAD     = rgb(0xE5534B);   // red: critical
+static const uint16_t COL_ACCENT  = rgb(0x4DA3F0);
+static const uint16_t COL_WATER   = rgb(0x3E9BE0);
+static const uint16_t COL_WAVE    = rgb(0x8CC4EE);
+static const uint16_t COL_GAS     = rgb(0xD9893A);
+static const uint16_t COL_GAS_HI  = rgb(0xF0B46A);
+static const uint16_t COL_STEEL   = rgb(0x8A96A3);
 static const uint16_t COL_LEVEL   = rgb(0x2BA58A);
 static const uint16_t COL_VAN     = rgb(0x6F8FBF);   // outline of the van on the level page
 static const uint16_t COL_VAN_IN  = rgb(0x1A2638);   // inside of the van
-static const uint16_t COL_LVL_HI  = rgb(0xF0A030);   // wheels that need a wedge and the dot while not level
+static const uint16_t COL_LVL_HI  = rgb(0xE5A23B);   // wheels that need a wedge and the dot while not level
 
 // Battery segment bar: 13 fields from red (empty) to green (full), as on the wall display
 const int SEG_N = 13;
-static const uint32_t SEG_COL[SEG_N] = {0xE5484D, 0xEC5F3F, 0xF07A34, 0xF2952B, 0xF2AE2A, 0xF2C94C, 0xE3D24A,
-                                        0xCBD449, 0xAFD24B, 0x92CD52, 0x75C85E, 0x5EC56C, 0x4CC27A};
+static const uint32_t SEG_COL[SEG_N] = {0xE5534B, 0xEC5F3F, 0xF07A34, 0xF2952B, 0xF2AE2A, 0xF2C94C, 0xE3D24A,
+                                        0xCBD449, 0xAFD24B, 0x92CD52, 0x75C85E, 0x5EC56C, 0x46B97C};
 // Batteries without a state of charge (lead, BM2): voltage range of the segment bar
 const float SEG_VMIN = 11.8f, SEG_VMAX = 12.8f;
 
