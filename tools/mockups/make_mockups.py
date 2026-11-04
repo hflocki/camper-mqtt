@@ -33,7 +33,7 @@ DEVICES = [
      "firmware/maxxfan/camper_maxxfan/web/index.html"),
     ("battery", "Batterie", "BLE-Gateway für Daly, Ective und BM2",
      "firmware/battery/camper_battery/web/index.html"),
-    ("toolbox", "Toolbox", "Bluetooth-Geräte als Plugins: Dachhaube RV Tech, Pumpe, Kühlschrank, Gas",
+    ("toolbox", "Toolbox", "Bluetooth-Geräte als Plugins: Dachhaube RV Tech, Pumpe, Kühlschrank",
      "firmware/toolbox/camper_toolbox/web/index.html"),
     ("emulator", "Emulator", "Testgerät: sendet die Topics aller fest verbauten Geräte mit änderbaren Werten, Szenarien",
      "firmware/emulator/camper_emulator/web/index.html"),

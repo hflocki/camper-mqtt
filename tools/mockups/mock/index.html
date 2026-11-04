@@ -35,6 +35,15 @@ h1{font-size:1.4rem;margin-bottom:4px}
     <div class="list">
 <!--DEVICES-->
     </div>
+    <h2 style="font-size:1.1rem;margin:28px 0 4px">Designentwurf</h2>
+    <p class="lead">Die Vorlage für das gemeinsame Design: Farben, Schrift, Symbole und Bausteine, dazu Entwürfe der Display-Webseite und einer Geräteseite. Nur Bilder, nichts lässt sich bedienen.</p>
+    <div class="list">
+      <a class="ds dev" href="design/system.html" target="_blank" rel="noopener"><b>Designsystem</b><span>Farben, Schrift, Symbole, Bausteine</span></a>
+      <a class="ds dev" href="design/home-desktop.html" target="_blank" rel="noopener"><b>Display-Webseite · Home · Desktop</b><span>Seitenleiste, Kopfzeile, Kacheln in Gruppen</span></a>
+      <a class="ds dev" href="design/home-phone.html" target="_blank" rel="noopener"><b>Display-Webseite · Home · Handy</b><span>Kacheln zu zweit, Leiste unten</span></a>
+      <a class="ds dev" href="design/settings-desktop.html" target="_blank" rel="noopener"><b>Display-Webseite · Einstellungen · Desktop</b><span>Bereiche links, Zeilen mit Schaltern</span></a>
+      <a class="ds dev" href="design/device-phone.html" target="_blank" rel="noopener"><b>Geräte-Oberfläche · Handy</b><span>am Beispiel Tanklevel</span></a>
+    </div>
   </div>
   <div class="view">
     <div class="phone"><iframe id="view" title="Vorschau" src="display.html"></iframe></div>
@@ -44,7 +53,7 @@ h1{font-size:1.4rem;margin-bottom:4px}
 <script>
 // Wide screens: show the page in the phone frame. Narrow screens: open it directly.
 const wide = () => matchMedia('(min-width:860px)').matches;
-const links = document.querySelectorAll('.dev');
+const links = document.querySelectorAll('.dev:not(.ds)');
 function show(a) {
   links.forEach(x => x.classList.toggle('on', x === a));
   document.getElementById('view').src = a.getAttribute('href');

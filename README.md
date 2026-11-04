@@ -144,7 +144,7 @@ Every folder is complete on its own: its own README with hardware, board setting
 
 ## Mockups
 
-[`docs/mockups/`](docs/mockups/index.html) has a clickable mockup of every web interface: the real page from the firmware with simulated data. Buttons, settings, saving and uploads react like on the device, but nothing is sent. `index.html` shows all devices side by side in phone size.
+[`docs/mockups/`](docs/mockups/index.html) has a clickable mockup of every web interface: the real page from the firmware with simulated data. Buttons, settings, saving and uploads react like on the device, but nothing is sent. `index.html` shows all devices side by side in phone size. The design draft that all pages follow (colours, type, icons, building blocks, plus drafts of the display page) is in [`docs/mockups/design/`](docs/mockups/design/system.html) and linked from the same index.
 
 To view them, download the folder and open `index.html` in a browser. Regenerate after changing a web interface (Python standard library only, no venv needed):
 

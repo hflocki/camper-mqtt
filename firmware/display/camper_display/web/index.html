@@ -161,6 +161,18 @@ code{font-size:12px;color:var(--mu);font-family:ui-monospace,SFMono-Regular,Menl
 .warnbox{display:flex;gap:12px;align-items:flex-start;background:var(--hbg);border:1px solid var(--hline);color:var(--htx);border-radius:14px;padding:14px 16px;margin-bottom:20px;font-weight:600;cursor:pointer}
 .warnbox[hidden]{display:none}
 .warnbox .wi{color:var(--gas);display:inline-flex}.warnbox .wt{white-space:pre-line;flex:1}
+/* compact sensor tiles: auto-fill on wide screens, 3 per row on phones */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.stile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0;min-height:96px}
+.stile .sh{display:flex;align-items:center;gap:6px;color:var(--mu);min-width:0}
+.stile .sh svg.i{width:18px;height:18px}
+.stile .sv{font-size:24px;font-weight:600;line-height:1.1;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stile .sn{font-size:13px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stile .ss{font-size:11px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:clip;margin-left:auto;min-width:0}
+.stile .ss svg.i{width:12px;height:12px;vertical-align:-2px}
+.stile.open{background:#2A2213;border-color:#4A3A1C}.stile.open .sv,.stile.open .sh{color:#F6D9A3}
+.stile.al .sv{color:var(--warn)}
+@media (max-width:560px){.sgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.stile{padding:9px 9px;min-height:88px}.stile .sv{font-size:19px}.stile .sn{font-size:12px}.stile .ss{font-size:10px;letter-spacing:-.2px}.stile .ss svg.i{width:10px;height:10px}}
 .trow{display:flex;align-items:center;gap:10px}
 .trow .n{flex:1;color:var(--tx2);font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .trow .n svg.i{width:18px;height:18px;color:var(--mu)}
@@ -370,14 +382,17 @@ const contacts=()=>devsOf(4|64|128).filter(x=>x.k===0);
 // same quick colours as on the panel: [key, value, shown colour, text]
 const SWATCH=[['ct','370','#ffc27a','Warm'],['ct','153','#e6f0ff','Kalt'],['color','#ff0000','#ff2020',''],['color','#ff8000','#ff8a00',''],['color','#00ff00','#30d050',''],['color','#0040ff','#2f6bff',''],['color','#a000ff','#a040ff','']];
 let devSig='';
-function pgDev(id){devSig='';return `<div class="grid" id="dv_cards"></div><div class="grid" id="dv_rows" style="margin-top:12px"></div><div class="mu" id="dv_st" style="margin-top:12px"></div>`}
+// one compact tile: icon + small extras (humidity, battery), value, name
+function stile(ic,v,n,h,bat,cls){const ss=[h!=null?svg('water',12)+h+'%':'',bat!=null?svg('bat',12)+bat+'%':''].filter(y=>y).join(' ');
+  return `<div class="stile${cls||''}" title="${esc(n)}"><div class="sh">${ic}${ss?`<span class="ss">${ss}</span>`:''}</div><div class="sv">${v}</div><div class="sn">${esc(n)}</div></div>`}
+function pgDev(id){devSig='';return `<div class="grid" id="dv_cards"></div><div class="sgrid" id="dv_rows" style="margin-top:12px"></div><div class="mu" id="dv_st" style="margin-top:12px"></div>`}
 // device page: cards for lights / switches (built once per list, so sliders keep working), rows for contacts / climate
 function updDev(){
   const box=$('#dv_cards');if(!box)return;
   const bit=DEVPAGE[page],all=devsOf(bit),cs=all.filter(x=>x.k===2||x.k===3).sort((a,b)=>a.k-b.k),rs=all.filter(x=>x.k<2);
   const sig=cs.map(l=>l.di+':'+l.k+l.n).join('|');
   if(sig!==devSig){devSig=sig;
-    box.innerHTML=cs.map(l=>`<div class="card wide" data-ld="${l.di}"><div class="row"><h3 class="grow" style="margin:0;font-size:17px;color:var(--tx)">${svg(l.k===2?'light':'plug')} ${esc(l.n)}</h3><button class="btn" data-lon="${l.di}">⏻</button></div>
+    box.innerHTML=cs.map(l=>`<div class="card${l.k===2?' wide':''}" data-ld="${l.di}"><div class="row"><h3 class="grow" style="margin:0;font-size:17px;color:var(--tx)">${svg(l.k===2?'light':'plug')} ${esc(l.n)}</h3><button class="btn" data-lon="${l.di}">⏻</button></div>
       ${l.k===2?`<div class="row" style="margin-top:10px"><input type="range" min="1" max="254" class="grow" data-llv="${l.di}"><span class="mu" style="min-width:48px;text-align:right" data-llt="${l.di}"></span></div>
       <div class="row" style="gap:6px;margin-top:10px">${SWATCH.map(w=>`<button class="btn sm" data-lsw="${l.di}" data-k="${w[0]}" data-v="${w[1]}" style="background:${w[2]};color:#1a1f24;min-width:44px">${w[3]||'&nbsp;'}</button>`).join('')}
        <input type="color" data-lcol="${l.di}" value="#ffffff" title="Eigene Farbe" style="width:48px;height:36px;border:0;background:none;padding:0"></div>`:''}</div>`).join('');
@@ -392,10 +407,9 @@ function updDev(){
     const r=c.querySelector('[data-llv]');if(r){if(l.lv!=null&&document.activeElement!==r){r.value=l.lv;c.querySelector('[data-llt]').textContent=Math.round(l.lv*100/254)+' %'}r.style.opacity=l.o===1?1:.5}
     const cp=c.querySelector('[data-lcol]');if(cp&&l.col&&l.col[0]==='#'&&document.activeElement!==cp)cp.value=l.col;
     c.classList.toggle('offline',l.age<0||l.age>7200)});
-  set('dv_rows',rs.map(x=>{const old=x.age<0||x.age>7200;
-    const v=x.k===0?`<b class="big ${x.o===1?'err':x.o===0?'okc':'mu'}" style="font-size:24px">${x.o===1?'offen':x.o===0?'zu':'?'}</b>`:`<span class="big">${x.t!=null?cnum(x.t,1)+' °C':'--'}</span>`;
-    const sub=[x.h!=null?svg('water',14)+' '+x.h+' %':'',x.bat!=null?svg('bat',14)+' '+x.bat+' %':''].filter(y=>y).join(' &nbsp;');
-    return `<div class="card wide${old?' offline':''}"><div class="trow"><span class="n">${x.k===0?svg('door'):ico(x.n,true)} ${esc(x.n)}${sub?`<br><span class="mu">${sub}</span>`:''}</span>${v}</div></div>`}).join(''));
+  set('dv_rows',rs.map(x=>{const old=x.age<0||x.age>7200,open=x.k===0&&x.o===1;
+    const v=x.k===0?(x.o===1?'offen':x.o===0?'zu':'?'):(x.t!=null?cnum(x.t,1)+' °C':'--');
+    return stile(x.k===0?svg('door'):ico(x.n,true),v,x.n,x.h,x.bat,(old?' offline':'')+(open?' open':''))}).join(''));
   const pi=BUILTIN.findIndex(b=>b[0]===page);
   set('dv_st',all.length?'':`Noch nichts auf dieser Seite. Unter Einstellungen → Sensoren bei einem Sensor „${esc(ptitle(pi))}“ ankreuzen.`);
 }
@@ -620,13 +634,13 @@ function drawHist(){
       <div class="lg">${ss.map(s=>`<span><i style="background:${s.c}"></i>${esc(s.n)} ${String(lastV(s)).replace('.',',')} ${unit}</span>`).join('')}</div>`;
   });
 }
-function pgTemp(){return `<div class="warnbox" id="t_warn" hidden></div><div class="grid" id="t_list"></div><div class="mu" id="t_st" style="margin-top:12px"></div><div class="card wide hist" id="h_t" hidden><h3>${svg('chart')} Verlauf, letzte 24 h</h3><div class="hc"></div></div>`}
+function pgTemp(){return `<div class="warnbox" id="t_warn" hidden></div><div class="sgrid" id="t_list"></div><div class="mu" id="t_st" style="margin-top:12px"></div><div class="card wide hist" id="h_t" hidden><h3>${svg('chart')} Verlauf, letzte 24 h</h3><div class="hc"></div></div>`}
 // camper-temp: <prefix>/sensors = [{id,name,t,alarm}]
 function temps(){try{const a=JSON.parse(V.temp_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
 // own Zigbee/BLE sensors (S.sen from the display): k 0 = contact, 1 = climate
 const sens=()=>Array.isArray(S.sen)?S.sen:[];
 function allTemps(){return temps().concat(sens().filter(x=>x.k===1&&((x.sh??1)&1)&&x.t!=null).map(x=>({name:x.n,t:x.t,alarm:0,h:x.h,bat:x.bat,own:1,old:x.age>7200})))}
-function tval(t){return t.t===null||t.t===undefined?'--':Number(t.t).toFixed(1)+' °C'}
+function tval(t){return t.t===null||t.t===undefined?'--':cnum(t.t,1)+' °C'}
 function warnings(){
   // the display sends its own list (with tile rules); the local rules below are only the fallback
   if(typeof S.warn==='string')return S.warn.split('\n').map(x=>x.trim()).filter(x=>x);
@@ -783,8 +797,7 @@ function update(){
     $('#ot_v').closest('.card').classList.toggle('offline',!tOn);
   }
   if($('#t_list')){
-    set('t_list',tl.map(t=>`<div class="card wide${(t.own?!t.old:online('temp'))?'':' offline'}"><div class="trow${t.alarm?' al':''}"><span class="n">${ico(t.name,true)} ${esc(t.name)}${t.h!=null||t.bat!=null?`<br><span class="mu">${t.h!=null?svg('water',14)+' '+t.h+' %':''}${t.bat!=null?' &nbsp;'+svg('bat',14)+' '+t.bat+' %':''}</span>`:''}</span><span class="big">${tval(t)}</span></div></div>`).join('')
-      );
+    set('t_list',tl.map(t=>stile(ico(t.name,true),tval(t),t.name,t.h,t.bat,((t.own?!t.old:online('temp'))?'':' offline')+(t.alarm?' al':''))).join(''));
     set('t_st',!tOn?'Temperatursensoren offline':tl.length?'':'Keine Sensoren gemeldet');
   }
   // batteries
