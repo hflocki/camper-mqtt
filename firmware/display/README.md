@@ -192,6 +192,10 @@ Kacheln vom Typ *Wert* und *Schalter* können eine Warnung auslösen. Sie ersche
 
 **Landstrom mit einer Tuya-Zigbee-Messzange** (über Zigbee2MQTT): Kachel *Wert* mit Status-Topic `zigbee2mqtt/<Name der Zange>`, Schlüssel `voltage`, Einheit `V`. Warnung *wenn Wert unter* `180`, Warntext `Landstrom weg`. Viele dieser Zangen hängen selbst am 230-V-Netz und schweigen, wenn der Landstrom fehlt. Deshalb zusätzlich *Warnen, wenn keine Daten seit* `10` Minuten eintragen; im Topic-Finder sieht man, wie oft die Zange sendet. Wer nur die Leistung hat, nimmt den Schlüssel `power` und warnt z. B. unter `1` W.
 
+### Sensorseiten (Sensoren, Energie, Extra)
+
+Lichter und Schalter stehen oben als große Karten zum Bedienen. Kontakte und Klimasensoren folgen als kleine Kacheln, 4 pro Reihe (16 ohne Scrollen): Symbol links oben in der Zustandsfarbe (grün zu, gelb offen, grau keine Daten), rechts oben „zu“/„offen“ bzw. die Temperatur, darunter der Name in bis zu zwei Zeilen. Ein offener Kontakt färbt die ganze Kachel dunkelgelb. 5 pro Reihe: `#define DEV_TILE_COLS 5` in `config_local.h` (Namen brechen dann früher um).
+
 ### Farben in der Übersicht
 
 Panel, Webseite und Road Buddy nutzen dieselbe Palette (ab 2.12.0): dunkle Flächen, Grün = OK, Gelb = bitte ansehen, Rot = Fehler, Blau = Bedienung. Die Werte stehen als `C_*` in `ui.cpp`, in `firmware/_common/web/camper-theme.css` und als `COL_*` im Road Buddy.

@@ -187,7 +187,7 @@ lv_obj_t *bSensCard = nullptr, *bSensLbl = nullptr;   // battery levels of own Z
 // Device pages (Sensoren, Licht, Schalter, Energie, Extra): the same builder for all of them.
 // Lights and switches get a card with a switch, contacts and climate sensors a row with their value.
 struct LightW { lv_obj_t *card, *sw, *slider, *lvl; size_t dev; };
-struct RowW { lv_obj_t *card, *val, *sub; size_t dev; };
+struct RowW { lv_obj_t *card, *val, *sub; size_t dev; lv_obj_t* icon; bool contact; };
 struct DevPageW { int bp; uint8_t bit; lv_obj_t* status; String sig; std::vector<LightW> cards; std::vector<RowW> rows; };
 DevPageW devPages[] = {{BP_ACTORS, sensors::SH_ACT, nullptr, "", {}, {}}, {BP_LIGHT, sensors::SH_LIGHT, nullptr, "", {}, {}},
                        {BP_SWITCH, sensors::SH_SWITCH, nullptr, "", {}, {}}, {BP_EXTRA1, sensors::SH_X1, nullptr, "", {}, {}},
@@ -1172,21 +1172,29 @@ LightW buildLightCard(lv_obj_t* tab, const sensors::DevOut& li) {
   return w;
 }
 
-// Row for a contact or climate sensor: name, small line below, value right
+// Small tile for a contact or climate sensor, DEV_TILE_COLS per row so that many fit on one screen:
+// icon top left (colour = state), state / temperature top right, name below (up to two lines)
 RowW buildDevRow(lv_obj_t* tab, const sensors::DevOut& d) {
   RowW r{};
   r.dev = d.idx;
-  r.card = card(tab, PAGE_W - 20, 58);
-  lv_obj_set_style_pad_ver(r.card, 6, 0);
-  const char* ic = d.kind == sensors::K_CONTACT ? icons::glyph("door") : icons::glyph(icons::autoKey(d.name, true));
-  lv_obj_t* n = label(r.card, &font_de_22, C_TEXT, dispText(String(ic) + "  " + d.name).c_str());
-  lv_obj_set_width(n, 280);
+  r.contact = d.kind == sensors::K_CONTACT;
+  const int cols = DEV_TILE_COLS < 3 ? 3 : DEV_TILE_COLS > 5 ? 5 : DEV_TILE_COLS;
+  const int w = (PAGE_W - 20 - (cols - 1) * 10) / cols;
+  r.card = card(tab, w, cols >= 5 ? 70 : 78);
+  lv_obj_set_style_pad_all(r.card, 8, 0);
+  lv_obj_set_style_radius(r.card, 12, 0);
+  const char* ic = r.contact ? icons::glyph("door") : icons::glyph(icons::autoKey(d.name, true));
+  r.icon = label(r.card, &font_de_18, C_MUTED, ic);
+  lv_obj_align(r.icon, LV_ALIGN_TOP_LEFT, 0, 0);
+  r.val = label(r.card, r.contact ? &font_de_14 : &font_de_18, C_TEXT, "--");
+  lv_obj_align(r.val, LV_ALIGN_TOP_RIGHT, 0, r.contact ? 2 : 0);
+  lv_obj_t* n = label(r.card, &font_de_14, C_TEXT, dispText(d.name).c_str());
+  lv_obj_set_width(n, w - 16);
   lv_label_set_long_mode(n, LV_LABEL_LONG_DOT);
-  lv_obj_align(n, LV_ALIGN_LEFT_MID, 0, -8);
-  r.sub = label(r.card, &font_de_14, C_MUTED, "");
-  lv_obj_align(r.sub, LV_ALIGN_BOTTOM_LEFT, 0, 2);
-  r.val = label(r.card, &font_de_22, C_TEXT, "--");
-  lv_obj_align(r.val, LV_ALIGN_RIGHT_MID, 0, 0);
+  lv_obj_set_height(n, 2 * lv_font_get_line_height(&font_de_14));
+  lv_obj_align(n, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+  r.sub = label(r.card, &font_de_14, C_MUTED, "");   // humidity / battery: no room on the tile
+  lv_obj_add_flag(r.sub, LV_OBJ_FLAG_HIDDEN);
   return r;
 }
 
@@ -1246,9 +1254,9 @@ void refreshDevPage(DevPageW& p) {
       lv_color_t col = C_TEXT;
       if (d.kind == sensors::K_CONTACT) {
         val = d.on == 1 ? "offen" : d.on == 0 ? "zu" : "?";
-        col = d.on == 1 ? C_WARN : d.on == 0 ? C_OK : C_MUTED;
+        col = d.on == 1 ? C_YELLOW : d.on == 0 ? C_OK : C_MUTED;
       } else {
-        val = isnan(d.temp) ? String("--") : commaNum(d.temp, 1) + " \xC2\xB0""C";
+        val = isnan(d.temp) ? String("--") : commaNum(d.temp, 1) + "\xC2\xB0";
         if (!isnan(d.hum)) sub = String((int)lroundf(d.hum)) + " % Luftfeuchte";
       }
       if (!isnan(d.batt)) sub += (sub.length() ? "  \xE2\x80\xA2  " : "") + String("Batterie ") + String((int)lroundf(d.batt)) + " %";
@@ -1256,6 +1264,11 @@ void refreshDevPage(DevPageW& p) {
       lv_label_set_text(r.val, dispText(val).c_str());
       lv_obj_set_style_text_color(r.val, col, 0);
       lv_label_set_text(r.sub, dispText(sub).c_str());
+      // open contact: the whole tile in the dark amber of the warnings
+      bool open = r.contact && d.on == 1 && !d.stale;
+      if (r.icon) lv_obj_set_style_text_color(r.icon, r.contact ? col : (d.stale ? C_MUTED : C_PURPLE), 0);
+      lv_obj_set_style_bg_color(r.card, open ? C_BANNER : C_CARD, 0);
+      lv_obj_set_style_border_color(r.card, open ? C_BANNER_LINE : C_LINE, 0);
     }
   }
   String st = ds.empty() ? "Noch nichts auf dieser Seite. Im Browser unter Einstellungen / Sensoren bei einem Sensor \""
