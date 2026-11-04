@@ -3,21 +3,18 @@
   "files": {
     "wifi_manager.h": [
       "firmware/_template/camper_example",
-      "firmware/emulator/camper_emulator",
       "firmware/temp/camper_temp",
       "firmware/battery/camper_battery",
       "firmware/level/camper_level"
     ],
     "wifi_manager.cpp": [
       "firmware/_template/camper_example",
-      "firmware/emulator/camper_emulator",
       "firmware/temp/camper_temp",
       "firmware/battery/camper_battery",
       "firmware/level/camper_level"
     ],
     "devinfo.h": [
       "firmware/_template/camper_example",
-      "firmware/emulator/camper_emulator",
       "firmware/tanklevel/camper_tanklevel",
       "firmware/temp/camper_temp",
       "firmware/battery/camper_battery",
@@ -30,7 +27,6 @@
     ],
     "devinfo.cpp": [
       "firmware/_template/camper_example",
-      "firmware/emulator/camper_emulator",
       "firmware/tanklevel/camper_tanklevel",
       "firmware/temp/camper_temp",
       "firmware/battery/camper_battery",
@@ -45,7 +41,6 @@
       "firmware/_template/camper_example",
       "firmware/battery/camper_battery",
       "firmware/display/camper_display",
-      "firmware/emulator/camper_emulator",
       "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
@@ -58,7 +53,6 @@
       "firmware/_template/camper_example",
       "firmware/battery/camper_battery",
       "firmware/display/camper_display",
-      "firmware/emulator/camper_emulator",
       "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
@@ -71,7 +65,6 @@
       "firmware/_template/camper_example",
       "firmware/battery/camper_battery",
       "firmware/display/camper_display",
-      "firmware/emulator/camper_emulator",
       "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
@@ -84,7 +77,6 @@
       "firmware/_template/camper_example",
       "firmware/battery/camper_battery",
       "firmware/display/camper_display",
-      "firmware/emulator/camper_emulator",
       "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
@@ -97,7 +89,6 @@
       "firmware/_template/camper_example",
       "firmware/battery/camper_battery",
       "firmware/display/camper_display",
-      "firmware/emulator/camper_emulator",
       "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
@@ -110,7 +101,6 @@
       "firmware/_template/camper_example",
       "firmware/battery/camper_battery",
       "firmware/display/camper_display",
-      "firmware/emulator/camper_emulator",
       "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
@@ -123,7 +113,6 @@
       "firmware/_template/camper_example",
       "firmware/battery/camper_battery",
       "firmware/display/camper_display",
-      "firmware/emulator/camper_emulator",
       "firmware/heater/truma_heater",
       "firmware/level/camper_level",
       "firmware/maxxfan/camper_maxxfan",
@@ -146,7 +135,7 @@
         "firmware/maxxfan/camper_maxxfan/web/index.html",
         "firmware/battery/camper_battery/web/index.html",
         "firmware/toolbox/camper_toolbox/web/index.html",
-        "firmware/emulator/camper_emulator/web/index.html",
+        "tools/emulator/web/index.html",
         "firmware/heater/truma_heater/web/index.html"
       ]
     }

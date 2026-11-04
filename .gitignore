@@ -30,6 +30,10 @@ plan/
 # Own heater PCB (KiCad, Gerber, BOM) stays local, not published
 firmware/heater/pcb/
 
+# Values and own scenarios of the emulator (tools/emulator)
+tools/emulator/data/
+.venv/
+
 # Python caches
 __pycache__/
 *.pyc

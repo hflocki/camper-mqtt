@@ -47,10 +47,10 @@ flowchart LR
 | [`firmware/omg`](firmware/omg) | ESP32 / ESP32-C3 | Bluetooth thermometers (Govee, Ruuvi, Xiaomi …) through OpenMQTTGateway | `camper/OMG` |
 | [`firmware/display`](firmware/display) | Guition ESP32-4848S040 | 4" wall panel + the same page for the phone: shows and controls everything, weather, warnings, Pushover | `camper/display` |
 | [`firmware/roadbuddy`](firmware/roadbuddy) | M5Stack Core2 | small battery display: levelling, water, gas | – (receive only) |
-| [`firmware/emulator`](firmware/emulator) | ESP32-C3 | **Test device:** sends the topics of all devices, the router and Zigbee with editable values and scenarios – test the displays at home | `camper/emulator` |
 
 Not in this repo: **router data (GPS, mobile signal)** is sent by the RUT956 itself over MQTT, see [router data in the display README](firmware/display/README.md#router-daten-rut956).
 
+- **Testing at home:** [`tools/emulator`](tools/emulator) is a Python tool with a local web page. It sends the topics of all devices, the router and Zigbee with values you can change, plus scenarios (tanks running empty, departure, a device dropping out …), so the displays can be tested without the vehicle
 - All topics at a glance: [`docs/TOPICS.md`](docs/TOPICS.md)
 - Clickable mockups of every web interface: [`docs/mockups/`](docs/mockups/index.html)
 - Notes for AI assistants and contributors: [`AGENTS.md`](AGENTS.md)
@@ -170,4 +170,3 @@ Every folder keeps its license:
 | `firmware/tanklevel`, `temp`, `maxxfan`, `display` | MIT |
 | `firmware/toolbox` | MIT (roof hatch protocol ported from the HA integration rvtech-hacs) |
 | `firmware/roadbuddy` | MIT |
-| `firmware/emulator` | MIT |

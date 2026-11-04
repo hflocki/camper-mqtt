@@ -35,8 +35,6 @@ DEVICES = [
      "firmware/battery/camper_battery/web/index.html"),
     ("toolbox", "Toolbox", "Bluetooth-Geräte als Plugins: Dachhaube RV Tech, Pumpe, Kühlschrank",
      "firmware/toolbox/camper_toolbox/web/index.html"),
-    ("emulator", "Emulator", "Testgerät: sendet die Topics aller fest verbauten Geräte mit änderbaren Werten, Szenarien",
-     "firmware/emulator/camper_emulator/web/index.html"),
     ("template", "Vorlage", "Muster für ein neues Gerät (firmware/_template)",
      "firmware/_template/camper_example/web/index.html"),
 ]

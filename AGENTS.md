@@ -30,7 +30,8 @@ Monorepo für Camper-Elektronik: jedes Gerät ist ein ESP8266/ESP32 mit reiner *
 | `firmware/_common/` | Original der gemeinsamen Quelldateien (z. B. `wifi_manager.*`); nur dort ändern, dann `python3 tools/common/sync_common.py` kopiert sie in die Sketches (Liste in `manifest.json`), CI prüft mit `--check` |
 | `firmware/_template/` | Muster-Gerät; neues Gerät mit `python firmware/_template/tools/new_device.py <id> "<Name>"` |
 | `docs/mockups/` | klickbare Mockups aller Web-Oberflächen (erzeugt, nicht von Hand ändern) |
-| `tools/mqtt/` | Simulator `sim.py` (Szenarien für alle Geräte, Wiedergabe von Mitschnitten) und Recorder `record.py`, Python mit venv; dasselbe als Gerät mit Web-Oberfläche: `firmware/emulator` |
+| `tools/mqtt/` | Simulator `sim.py` (Szenarien für alle Geräte, Wiedergabe von Mitschnitten) und Recorder `record.py`, Python mit venv |
+| `tools/emulator/` | Emulator mit lokaler Webseite: sendet die Topics aller fest verbauten Geräte mit änderbaren Werten und Szenarien, Python mit venv |
 | `tools/web/` | `pack_web.py`: packt `web/index.html` → `data/index.html.gz` aller Geräte, `--check` für CI |
 | `tools/mockups/` | Generator der Mockups: `python3 tools/mockups/make_mockups.py`, Beispieldaten je Gerät in `mock/<gerät>.js` |
 | `.github/workflows/build.yml` | baut bei jedem Push alle Geräte; Tag `<gerät>-v<version>` erzeugt ein Release mit `.bin` |
@@ -43,7 +44,7 @@ Board-Paket esp32 **3.3.x**, Bibliotheken und genaue Versionen stehen in der REA
 
 | Gerät | FQBN |
 | --- | --- |
-| tanklevel, battery, temp (C3), heater (C3), maxxfan, emulator, toolbox, template | `esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs` |
+| tanklevel, battery, temp (C3), heater (C3), maxxfan, toolbox, template | `esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs` |
 | heater (ESP32 DevKit) | `esp32:esp32:esp32:PartitionScheme=min_spiffs` |
 | battery (AtomS3) | `esp32:esp32:m5stack_atoms3:CDCOnBoot=cdc,PartitionScheme=default_8MB` |
 | temp (ESP8266) | `esp8266:esp8266:nodemcuv2:eesz=4M1M` |
@@ -70,9 +71,9 @@ arduino-cli compile --fqbn <fqbn> firmware/<gerät>/<sketch>
 - Arduino-Präprozessor: Typen, die in Funktionsparametern vorkommen (z. B. `enum Glyph`), vor der ersten Funktion deklarieren; keine Default-Argumente.
 - `config.h` darf nur von `roadbuddy.ino` eingebunden werden (definiert Variablen). Zugangsdaten landen zusätzlich im NVS, damit die CI-`.bin` per Update-Seite (`webota.cpp`) installiert werden kann.
 
-### Emulator (`firmware/emulator`)
+### Emulator (`tools/emulator`)
 
-Testgerät, das die fest verbauten Geräte nachbildet. Alles Gerätespezifische steht in `emu.cpp`: Feldtabelle `FIELDS[]` (Werte und Einstellungen, daraus baut die Webseite ihre Karten), Builder je Gerät (`build*`, müssen dieselben Topics und Formate senden wie die echte Firmware), Befehle (`cmd*`) und Szenarien (JSON-Format wie beim Upload, Standard-Szenarien in `BUILTIN_SCEN`, hochgeladene als `/scen/<id>.json` im LittleFS; Format in der README des Emulators). `mqtt_ha.cpp` hält eine Broker-Verbindung je Gerät mit eigenem Last Will plus die eigene (Router, Zigbee) und löscht Topics, die ein Gerät nicht mehr sendet. Ändert sich ein Topic oder Format an einem echten Gerät, den Builder hier mitziehen und `firmware/emulator/tests/run.sh` laufen lassen (Host-Test, braucht nur g++ und ArduinoJson). Die Beispieldaten des Mockups (`tools/mockups/mock/emulator.js`) kommen aus `tests/run.sh --schema`.
+Python-Werkzeug mit lokaler Webseite, das die fest verbauten Geräte nachbildet (früher ein ESP32-C3 unter `firmware/emulator`). Alles Gerätespezifische steht in `emu.py`: Feldtabelle `FIELDS` (Werte und Einstellungen, daraus baut die Webseite ihre Karten), Builder je Gerät (`_b_*`, müssen dieselben Topics und Formate senden wie die echte Firmware), Befehle (`_c_*`) und Szenarien (JSON, Standard-Szenarien in `BUILTIN_SCEN`, hochgeladene unter `data/scenarios/`). `emulator.py` hält eine Broker-Verbindung je Gerät mit eigenem Last Will plus die eigene (Router, Zigbee), löscht Topics, die ein Gerät nicht mehr sendet, und liefert die Webseite (`web/index.html`) aus. Ändert sich ein Topic oder Format an einem echten Gerät, den Builder hier mitziehen und `python3 tools/emulator/emulator.py --selftest` laufen lassen (nur Standardbibliothek, läuft auch in CI).
 
 ### Toolbox (`firmware/toolbox`)
 

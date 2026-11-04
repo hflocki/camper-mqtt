@@ -36,6 +36,7 @@ jobs:
       - run: python3 tools/common/sync_common.py --check
       - run: python3 tools/web/pack_web.py --check
       - run: python3 firmware/heater/tools/embed_web.py --check
+      - run: python3 tools/emulator/emulator.py --selftest
 
   build:
     needs: common
@@ -94,11 +95,6 @@ jobs:
             fqbn: esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB
             sketch: firmware/display/camper_display
             libs: https://github.com/moononournation/Arduino_GFX.git#v1.6.0 https://github.com/lvgl/lvgl.git#v9.2.2
-          - device: emulator
-            target: esp32c3
-            fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
-            sketch: firmware/emulator/camper_emulator
-            libs: ''
           - device: toolbox
             target: esp32c3
             fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs

@@ -206,14 +206,6 @@ code { font-family: ui-monospace, Menlo, monospace; }
     .sensor-grid .form-group:last-child { grid-column: span 2; }
 }
 @media (min-width: 600px) { body { display: flex; justify-content: center; } .app-wrap { width: 100%; max-width: 520px; } }
-:root{--fwu-ok:var(--success);--fwu-warn:var(--warning);--fwu-bad:var(--danger);--fwu-mute:var(--text-secondary);--fwu-line:var(--border)}
-.fwu-cur{font-size:.8rem;margin:0 0 10px}
-.fwu-chk{font-size:.8rem;margin:8px 0;line-height:1.4}
-.fwu-chk.ok{color:var(--fwu-ok)}.fwu-chk.warn{color:var(--fwu-warn)}.fwu-chk.bad{color:var(--fwu-bad)}
-.fwu-force{display:flex;gap:8px;align-items:center;font-size:.8rem;margin:0 0 8px}
-.fwu-log{font-size:.75rem;line-height:1.4;max-height:320px;overflow-y:auto}
-.fwu-ev{padding:4px 0;border-bottom:1px solid var(--fwu-line)}.fwu-ev:last-child{border-bottom:0}
-.fwu-ev span{color:var(--fwu-mute);margin-right:8px;white-space:nowrap}.fwu-ev.bad{color:var(--fwu-bad)}
 button:disabled{opacity:.45;cursor:not-allowed}
 /* camper-theme:begin */
 /* camper-mqtt design (same look as the display): calm and technical, colour means state,
@@ -315,7 +307,6 @@ nav button .ico{display:inline-flex}
         <h1><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10H7zM10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg><span>Emulator</span></h1>
         <div class="status-dots">
             <span><span class="status-dot" id="dot-sensor"></span>Geräte</span>
-            <span><span class="status-dot" id="dot-wifi"></span>WiFi</span>
             <span><span class="status-dot" id="dot-mqtt"></span>MQTT</span>
         </div>
     </div>
@@ -323,17 +314,16 @@ nav button .ico{display:inline-flex}
     <div class="tabs">
         <div class="tab active" data-tab="devices"><span class="ico"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3M7.5 15h9"/></svg></span><span>Geräte</span></div>
         <div class="tab" data-tab="scen"><span class="ico"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4l12 8-12 8z"/></svg></span><span>Szenarien</span></div>
-        <div class="tab" data-tab="mqtt"><span class="ico"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4"/></svg></span><span>MQTT</span></div>
-        <div class="tab" data-tab="wifi"><span class="ico"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M12 19h.01"/></svg></span><span>WiFi</span></div>
     </div>
 
     <!-- DEVICES TAB: one card per emulated device, built from /api/emu/schema -->
     <div class="tab-content active" id="tab-devices">
         <div class="card hidden sc-run" id="run-banner"></div>
+        <div class="form-hint" id="broker" style="margin:0 0 10px">--</div>
         <div id="dev-list"><div class="empty">Lade …</div></div>
         <div class="form-hint" style="margin-top:4px">
             <b>An</b> = online, Werte gehen raus · <b>Offline</b> = Verbindung reißt ab wie bei Stromausfall (der Broker meldet <code>offline</code>, die letzten Werte bleiben) · <b>Aus</b> = nichts senden, die Topics werden gelöscht.
-            Änderungen gehen sofort raus und bleiben nach einem Neustart erhalten. ⚙ = Einstellung, kein Messwert.
+            Änderungen gehen sofort raus und bleiben beim nächsten Start erhalten. ⚙ = Einstellung, kein Messwert.
             Läuft das echte Gerät am selben Broker, hier auf <b>Aus</b> stellen.
         </div>
     </div>
@@ -347,7 +337,7 @@ nav button .ico{display:inline-flex}
         </div>
         <div class="card">
             <div class="card-title">Eigene Szenarien</div>
-            <div class="form-hint" style="margin:0 0 8px">Szenarien als JSON herunterladen, als Vorlage ändern (neue <code>id</code>) und wieder hochladen. Neue kommen zur Liste dazu, eigene mit gleicher <code>id</code> werden ersetzt. Die Standard-Szenarien bleiben immer erhalten. Format: README des Emulators, Abschnitt „Eigene Szenarien“.</div>
+            <div class="form-hint" style="margin:0 0 8px">Szenarien als JSON herunterladen, als Vorlage ändern (neue <code>id</code>) und wieder hochladen. Neue kommen zur Liste dazu, eigene mit gleicher <code>id</code> werden ersetzt. Die Standard-Szenarien bleiben immer erhalten. Format: <code>tools/emulator/README.md</code>, Abschnitt „Eigene Szenarien“. Gespeichert in <code>tools/emulator/data/scenarios/</code>.</div>
             <input type="file" id="scen-file" accept=".json,application/json" class="hidden" onchange="uploadScenarios(this)">
             <div class="btn-row">
                 <button class="btn btn-secondary" onclick="downloadScenarios()">⬇ Alle herunterladen</button>
@@ -360,102 +350,12 @@ nav button .ico{display:inline-flex}
         </div>
         <div class="card">
             <div class="card-title">Aufräumen</div>
-            <div class="form-hint" style="margin:0 0 8px">Löscht alle retained Topics, die der Emulator gesendet hat, und sendet danach die eingeschalteten Geräte neu. Vor dem Ausschalten des Emulators nutzen, sonst bleiben die Werte am Broker stehen.</div>
+            <div class="form-hint" style="margin:0 0 8px">Löscht alle retained Topics, die der Emulator gesendet hat, und sendet danach die eingeschalteten Geräte neu. Beim Beenden mit Strg+C passiert das von selbst (außer mit <code>--keep</code>).</div>
             <div class="btn-row">
                 <button class="btn btn-danger" onclick="clearAll()">🧹 Retained Topics löschen</button>
                 <button class="btn btn-secondary" onclick="resetAll()">↺ Alle Beispielwerte</button>
             </div>
         </div>
-    </div>
-
-    <!-- MQTT TAB -->
-    <div class="tab-content" id="tab-mqtt">
-        <div class="card">
-            <div class="card-title">MQTT-Broker</div>
-            <div class="form-row">
-                <div class="form-group"><label>Server</label><input type="text" id="cfg-mqtt-server"></div>
-                <div class="form-group"><label>Port</label><input type="number" id="cfg-mqtt-port" value="1883"></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>Benutzer</label><input type="text" id="cfg-mqtt-user"></div>
-                <div class="form-group"><label>Passwort</label><input type="password" id="cfg-mqtt-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
-            </div>
-            <div class="form-group">
-                <label>Topic des Emulators</label><input type="text" id="cfg-mqtt-prefix" value="camper/emulator">
-                <div class="form-hint">Nur für den Emulator selbst (<code>…/status</code>, <code>…/info</code>). Die Topics der nachgebildeten Geräte stehen bei jedem Gerät unter „Mehr“.</div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-title">Web-Oberfläche Login</div>
-            <div class="form-row">
-                <div class="form-group"><label>Benutzer</label><input type="text" id="cfg-web-user" autocomplete="off" autocapitalize="none"></div>
-                <div class="form-group"><label>Passwort</label><input type="password" id="cfg-web-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
-            </div>
-            <div class="form-hint">Leerer Benutzer = kein Login. Login vergessen: über USB den Befehl <code>noauth</code> im seriellen Monitor senden.</div>
-        </div>
-        <div class="btn-row"><button class="btn btn-primary" onclick="saveSetup()">💾 Speichern</button></div>
-    </div>
-
-    <!-- WIFI TAB -->
-    <div class="tab-content" id="tab-wifi">
-        <div class="card">
-            <div class="card-title">Verbindungsstatus</div>
-            <div class="info-row"><span class="info-label">Status</span><span id="wifi-state">--</span></div>
-            <div class="info-row"><span class="info-label">RSSI</span><span id="wifi-rssi">--</span></div>
-            <div class="info-row"><span class="info-label">Firmware</span><span id="fw-version">--</span></div>
-            <div class="info-row"><span class="info-label">Laufzeit</span><span id="uptime">--</span></div>
-            <div class="info-row"><span class="info-label">Freier Speicher</span><span id="heap">--</span></div>
-            <div class="info-row"><span class="info-label">Letzter Neustart</span><span id="reset-reason">--</span></div>
-            <div class="info-row"><span class="info-label">WLAN-Abbrüche</span><span id="wifi-drops">--</span></div>
-            <div class="info-row"><span class="info-label">Letzter Abbruchgrund</span><span id="wifi-reason" style="text-align:right;word-break:break-all">--</span></div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">WLAN-Verbindung</div>
-            <div class="form-group"><label>SSID</label><input type="text" id="cfg-wifi-ssid"></div>
-            <div class="form-group"><label>Passwort</label><input type="password" id="cfg-wifi-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
-            <div class="form-group">
-                <label>Sendeleistung</label>
-                <select id="cfg-tx-power">
-                    <option value="34">8,5 dBm</option><option value="44">11 dBm</option><option value="52">13 dBm</option>
-                    <option value="60">15 dBm</option><option value="70">17,5 dBm (Standard)</option><option value="78">19,5 dBm (Maximum)</option>
-                </select>
-                <div class="form-hint">Bricht die Verbindung oft ab, zuerst eine niedrigere Stufe probieren.</div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">Access Point</div>
-            <div class="form-group"><label>Name (SSID)</label><input type="text" id="cfg-ap-ssid"></div>
-            <div class="form-group"><label>Passwort (min. 8 Zeichen)</label><input type="password" id="cfg-ap-pass" placeholder="(unverändert)" autocomplete="new-password"></div>
-            <div class="enable-row">
-                <div>
-                    <div style="font-size:0.85rem">Access Point immer an</div>
-                    <div class="form-hint" style="margin-top:2px">Aus = AP nur als Notfall, wenn das WLAN 60 s nicht erreichbar ist. Das Gerät ist dann über seine IP im WLAN oder <code>camper-emulator.local</code> erreichbar.</div>
-                </div>
-                <label class="toggle"><input type="checkbox" id="cfg-ap-always"><span></span></label>
-            </div>
-        </div>
-
-        <div class="btn-row"><button class="btn btn-primary" onclick="saveWifi()">💾 Speichern & Verbinden</button></div>
-        <div class="card" style="margin-top:12px">
-            <div class="card-title">Firmware- &amp; Web-Update</div>
-            <div class="fwu-cur" id="fwu-cur">Installiert: …</div>
-            <div class="form-hint" style="margin:0 0 8px">Firmware: die <code>.bin</code> aus dem Release (<code>camper-emulator-….bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>camper_emulator.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>), danach Neustart.<br>
-                Web-Oberfläche: <code>data/index.html.gz</code>, ohne Neustart. Die Einstellungen bleiben erhalten. Die Datei wird vor dem Hochladen geprüft.</div>
-            <div class="form-group"><input type="file" id="fwu-file" accept=".bin,.gz" onchange="fwChosen(false)"></div>
-            <div class="fwu-chk" id="fwu-chk"></div>
-            <label class="fwu-force" id="fwu-force-row" style="display:none"><input type="checkbox" id="fwu-force" onchange="fwForce()">Ohne Kennung hochladen</label>
-            <progress id="fwu-pr" value="0" max="100" class="hidden" style="width:100%"></progress>
-            <div class="btn-row"><button class="btn btn-secondary" id="fwu-btn" disabled onclick="fwUpload('f', (m, e) => showToast(m, e))">⬆ Hochladen</button></div>
-        </div>
-        <div class="card">
-            <div class="card-title">Ereignisse</div>
-            <div class="fwu-log" id="fwu-log">Lade …</div>
-            <div class="form-hint" style="margin-top:8px">Bleibt bei Neustart, Absturz und Update erhalten, nicht bei Stromausfall.</div>
-        </div>
-
-        <div class="btn-row"><button class="btn btn-danger" onclick="restartDevice()">🔄 Neustart</button></div>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -482,17 +382,6 @@ function connectWS() {
     ws = new WebSocket(proto + '//' + location.host + '/ws');
     ws.onmessage = (evt) => { try { updateLiveData(JSON.parse(evt.data)); } catch (e) {} };
     ws.onclose = () => { setTimeout(connectWS, 3000); };
-}
-
-function formatUptime(s) {
-    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
-    return (d ? d + ' d ' : '') + (d || h ? h + ' h ' : '') + m + ' min';
-}
-function formatAge(s) {
-    if (s < 0) return 'noch kein Wert';
-    if (s < 60) return 'vor ' + s + ' s';
-    if (s < 3600) return 'vor ' + Math.floor(s / 60) + ' min';
-    return 'vor ' + Math.floor(s / 3600) + ' h';
 }
 
 // ---------------- Emulator ----------------
@@ -739,14 +628,8 @@ function applyState(d) {
 function updateLiveData(d) {
     lastState = d;
     if (schema && d.emu) applyState(d);
-    $('dot-wifi').className = 'status-dot ' + (d.rssi ? 'active' : '');
     $('dot-mqtt').className = 'status-dot ' + (d.mqtt ? 'active' : '');
-    $('wifi-state').textContent = d.wifi || '--';
-    $('wifi-rssi').textContent = d.rssi ? d.rssi + ' dBm' : '--';
-    $('uptime').textContent = formatUptime(d.uptime || 0);
-    $('heap').textContent = Math.round((d.heap || 0) / 1024) + ' kB';
-    $('wifi-drops').textContent = d.wifi_drops ?? '--';
-    $('wifi-reason').textContent = d.wifi_reason || '--';
+    $('broker').textContent = (d.mqtt ? 'Verbunden mit ' : 'Keine Verbindung zu ') + d.broker + ' · Emulator ' + d.version;
 }
 
 let schemaTries = 0;
@@ -762,98 +645,12 @@ async function loadSchema() {
     } catch (e) {
         schema = null;
         schemaTries++;
-        // The device may be busy connecting to the broker right after boot: try again
+        // The emulator may still be starting: try again
         const again = schemaTries < 10;
         $('dev-list').innerHTML = '<div class="empty">Fehler beim Laden der Geräte: ' + esc(e.message) +
             (again ? ' – neuer Versuch …' : ' – Seite neu laden') + '</div>';
         if (again) setTimeout(loadSchema, 3000);
     }
-}
-
-// POST a (partial) config object; throws with the device's error message if rejected
-async function postConfig(obj) {
-    const resp = await fetch('/api/config', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(obj)
-    });
-    if (!resp.ok) {
-        let msg = 'HTTP ' + resp.status;
-        try { msg = (await resp.json()).error || msg; } catch (e) {}
-        throw new Error(msg);
-    }
-}
-
-async function loadSetup() {
-    try {
-        const resp = await fetch('/api/config');
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        const cfg = await resp.json();
-        // Passwords are never sent by the device; the fields stay empty on purpose
-        $('cfg-mqtt-server').value = cfg.mqtt_server || '';
-        $('cfg-mqtt-port').value = cfg.mqtt_port || 1883;
-        $('cfg-mqtt-user').value = cfg.mqtt_user || '';
-        $('cfg-mqtt-prefix').value = cfg.mqtt_prefix || 'camper/emulator';
-        $('cfg-wifi-ssid').value = cfg.wifi_ssid || '';
-        $('cfg-ap-ssid').value = cfg.ap_ssid || '';
-        $('cfg-tx-power').value = String(cfg.wifi_tx_power || 70);
-        $('cfg-ap-always').checked = !!cfg.ap_always;
-        $('cfg-web-user').value = cfg.web_user || '';
-        $('fw-version').textContent = cfg.version || '--';
-        $('reset-reason').textContent = cfg.reset_reason || '--';
-    } catch (e) {
-        showToast('Fehler beim Laden der Einstellungen', true);
-    }
-}
-
-async function saveSetup() {
-    const cfg = {
-        mqtt_server: $('cfg-mqtt-server').value.trim(),
-        mqtt_port: parseInt($('cfg-mqtt-port').value) || 1883,
-        mqtt_user: $('cfg-mqtt-user').value.trim(),
-        mqtt_prefix: $('cfg-mqtt-prefix').value.trim().replace(/\/+$/, '')
-    };
-    const pass = $('cfg-mqtt-pass').value;
-    if (pass) cfg.mqtt_pass = pass;
-    cfg.web_user = $('cfg-web-user').value.trim();
-    const webPass = $('cfg-web-pass').value;
-    if (webPass) cfg.web_pass = webPass;
-    try {
-        await postConfig(cfg);
-        showToast('Gespeichert – Neustart...');
-        setTimeout(restartDevice, 800);
-    } catch (e) {
-        showToast('Fehler: ' + e.message, true);
-    }
-}
-
-async function saveWifi() {
-    const cfg = {
-        wifi_ssid: $('cfg-wifi-ssid').value.trim(),
-        ap_ssid: $('cfg-ap-ssid').value.trim(),
-        wifi_tx_power: parseInt($('cfg-tx-power').value),
-        ap_always: $('cfg-ap-always').checked
-    };
-    const pass = $('cfg-wifi-pass').value;
-    if (pass) cfg.wifi_pass = pass;
-    const apPass = $('cfg-ap-pass').value;
-    if (apPass) {
-        if (apPass.length < 8) { showToast('AP-Passwort: mindestens 8 Zeichen', true); return; }
-        cfg.ap_pass = apPass;
-    }
-    try {
-        await postConfig(cfg);
-        showToast('Gespeichert – Neustart...');
-        setTimeout(restartDevice, 800);
-    } catch (e) {
-        showToast('Fehler: ' + e.message, true);
-    }
-}
-
-async function restartDevice() {
-    try { await fetch('/api/restart', {method: 'POST'}); } catch (e) {}
-    showToast('Neustart... Seite lädt in 10 s neu');
-    setTimeout(() => location.reload(), 10000);
 }
 
 function showToast(msg, isErr) {
@@ -865,100 +662,8 @@ function showToast(msg, isErr) {
     t._timer = setTimeout(() => t.classList.remove('show'), Math.min(10000, 2500 + msg.length * 40));   // long errors stay longer
 }
 
-loadSetup();
 loadSchema();
 connectWS();
-// ---- Firmware update with checks, event log (same checks as fwcheck.cpp on the device) ----
-// Elements: fwu-cur, fwu-file, fwu-chk, fwu-force-row, fwu-force, fwu-btn, fwu-pr, fwu-log
-let FWI = null;   // running firmware: {dev, ver, chip, chip_id, max}
-const FW_CHIPS = {'-1': 'ESP8266', 0: 'ESP32', 2: 'ESP32-S2', 5: 'ESP32-C3', 9: 'ESP32-S3', 12: 'ESP32-C2', 13: 'ESP32-C6', 16: 'ESP32-H2'};
-const fwEl = id => document.getElementById(id);
-const fwEsc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
-function fwVerCmp(a, b) {
-    const x = String(a).split('.').map(n => parseInt(n) || 0), y = String(b).split('.').map(n => parseInt(n) || 0);
-    for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d; }
-    return 0;
-}
-function fwAgo(s) { return s < 90 ? s + ' s' : s < 5400 ? Math.round(s / 60) + ' min' : s < 172800 ? Math.round(s / 3600) + ' h' : Math.round(s / 86400) + ' d'; }
-async function fwLoad() {
-    try {
-        const r = await fetch('/api/system', {cache: 'no-store'});
-        if (!r.ok) return;
-        const d = await r.json();
-        FWI = d.fw || null;
-        if (FWI && fwEl('fwu-cur')) fwEl('fwu-cur').innerHTML = `Installiert: <b>${fwEsc(FWI.dev)} v${fwEsc(FWI.ver)}</b> · ${FW_CHIPS[FWI.chip_id] || fwEsc(FWI.chip)} · Platz ${Math.round(FWI.max / 1024)} kB`;
-        const box = fwEl('fwu-log');
-        if (box) box.innerHTML = (d.log || []).length ? d.log.map(e => {
-            const when = e.b === 0 ? 'vor ' + fwAgo(Math.max(0, (d.up || 0) - e.t)) : (e.b === 1 ? 'vorheriger Start' : e.b + ' Starts zuvor') + ', nach ' + fwAgo(e.t);
-            const bad = /abgelehnt|fehlgeschlagen|nicht gespeichert|zurück auf|Absturz|Watchdog|Spannungseinbruch/.test(e.m);
-            return `<div class="fwu-ev${bad ? ' bad' : ''}"><span>${fwEsc(when)}</span>${fwEsc(e.m)}</div>`;
-        }).join('') : '<div class="fwu-ev">Noch keine Einträge.</div>';
-    } catch (e) {}
-}
-// Checks the chosen file in the browser: {ok, kind, msg, warn, force}
-async function fwInspect(file, fsImages) {
-    const n = file.name.toLowerCase(), kb = Math.round(file.size / 1024) + ' kB';
-    if (n.endsWith('.gz')) return {ok: true, kind: 'web', msg: 'Web-Oberfläche (' + kb + '), ersetzt nur die Seite, ohne Neustart'};
-    if (fsImages && /littlefs|spiffs/.test(n)) return {ok: true, kind: 'fs', warn: true, msg: 'Dateisystem-Abbild (' + kb + ') – ersetzt die Web-Oberfläche, danach Neustart'};
-    if (!n.endsWith('.bin')) return {ok: false, msg: 'Nur .bin (Firmware) oder .gz (Web-Oberfläche)'};
-    const merged = 'Das ist die .merged.bin (komplettes Flash-Abbild für USB). Bitte die .bin ohne „merged“ nehmen.';
-    if (n.includes('merged')) return {ok: false, msg: merged};
-    const u = new Uint8Array(await file.arrayBuffer());
-    if (u.length < 64 || u[0] !== 0xE9) return {ok: false, msg: 'Keine ESP-Firmware'};
-    const esp32 = !FWI || FWI.chip_id >= 0;   // ESP8266 images have no chip id and no .merged.bin
-    if (esp32 && u.length > 0x8001 && u[0x8000] === 0xAA && u[0x8001] === 0x50) return {ok: false, msg: merged};
-    const chip = u[12] | (u[13] << 8);
-    if (FWI && esp32 && chip !== FWI.chip_id) return {ok: false, msg: `Firmware für ${FW_CHIPS[chip] || 'einen unbekannten Chip'}, dieses Gerät ist ein ${FW_CHIPS[FWI.chip_id] || FWI.chip}`};
-    if (FWI && FWI.max && u.length > FWI.max) return {ok: false, msg: `Datei zu groß (${kb}, Platz ${Math.round(FWI.max / 1024)} kB)`};
-    const m = new TextDecoder('latin1').decode(u).match(/CAMPER-FW:([A-Za-z0-9_.-]{1,24}):([A-Za-z0-9_.-]{1,24}):([A-Za-z0-9_.-]{1,24});/);
-    if (!m) return {ok: false, force: true, msg: 'Keine Gerätekennung in der Datei: fremde Firmware oder eine Version vor der Kennung. Nur hochladen, wenn sicher ist, dass sie für dieses Gerät ist.'};
-    if (FWI && m[1] !== FWI.dev) return {ok: false, msg: `Firmware für „${m[1]}“, dieses Gerät ist „${FWI.dev}“`};
-    if (FWI && m[3] !== FWI.chip) return {ok: false, msg: `Firmware für ${m[3]}, dieses Gerät ist ein ${FWI.chip}`};
-    const c = FWI ? fwVerCmp(m[2], FWI.ver) : 1;
-    return {ok: true, kind: 'fw', warn: c <= 0, msg: `Firmware ${m[1]} v${m[2]} (${kb}) – ` +
-        (c > 0 ? 'neuer als die installierte' : c === 0 ? 'gleiche Version wie installiert' : 'ÄLTER als die installierte (Downgrade)')};
-}
-let fwPick = null;
-async function fwChosen(fsImages) {
-    const f = fwEl('fwu-file').files[0], chk = fwEl('fwu-chk');
-    fwPick = null;
-    fwEl('fwu-force-row').style.display = 'none';
-    fwEl('fwu-force').checked = false;
-    if (!f) { chk.textContent = ''; fwEl('fwu-btn').disabled = true; return; }
-    chk.className = 'fwu-chk'; chk.textContent = 'Prüfe …';
-    const r = await fwInspect(f, fsImages);
-    fwPick = r;
-    chk.textContent = (r.ok ? (r.warn ? '⚠ ' : '✓ ') : '✕ ') + r.msg;
-    chk.className = 'fwu-chk ' + (r.ok ? (r.warn ? 'warn' : 'ok') : 'bad');
-    if (r.force) fwEl('fwu-force-row').style.display = '';
-    fwEl('fwu-btn').disabled = !r.ok;
-}
-function fwForce() { fwEl('fwu-btn').disabled = !(fwPick && (fwPick.ok || (fwPick.force && fwEl('fwu-force').checked))); }
-function fwUpload(field, toast) {
-    const f = fwEl('fwu-file').files[0];
-    if (!f || !fwPick) { toast('Erst eine Datei wählen', true); return; }
-    if (fwPick.warn && fwPick.kind === 'fw' && !confirm(fwPick.msg + '\nTrotzdem installieren?')) return;
-    const force = !fwPick.ok && fwPick.force && fwEl('fwu-force').checked;
-    const fd = new FormData();
-    fd.append(field, f);
-    const x = new XMLHttpRequest(), pr = fwEl('fwu-pr');
-    pr.classList.remove('hide', 'hidden'); pr.style.display = ''; pr.value = 0;
-    fwEl('fwu-btn').disabled = true;
-    x.upload.onprogress = e => { if (e.lengthComputable) pr.value = e.loaded / e.total * 100; };
-    x.onload = () => {
-        if (x.status === 200 && x.responseText === 'OK web') { toast('Web-Oberfläche ersetzt – lädt neu …'); setTimeout(() => location.reload(), 1500); return; }
-        if (x.status === 200) { toast('Update ok – Neustart …'); setTimeout(() => location.reload(), 15000); return; }
-        toast(x.responseText || ('Fehler HTTP ' + x.status), true);
-        const chk = fwEl('fwu-chk'); chk.textContent = '✕ ' + (x.responseText || 'Fehler HTTP ' + x.status); chk.className = 'fwu-chk bad';
-        fwEl('fwu-btn').disabled = false;
-        fwLoad();
-    };
-    x.onerror = () => { toast('Verbindung abgebrochen', true); fwEl('fwu-btn').disabled = false; fwLoad(); };
-    x.open('POST', '/api/update' + (force ? '?force=1' : ''));
-    x.send(fd);
-}
-fwLoad();
-setInterval(fwLoad, 15000);
 </script>
 </body>
 </html>

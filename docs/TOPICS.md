@@ -28,7 +28,7 @@ Das Display liest `camper/+/status` und `camper/+/info` für die Geräteliste au
 | Toolbox (Bluetooth-Geräte als Plugins: Dachhaube, Pumpe, Kühlschrank) | `camper/toolbox` | toolbox | [firmware/toolbox](../firmware/toolbox/README.md) |
 | Display (Wandpanel) | `camper/display` | display | [firmware/display](../firmware/display/README.md) |
 | Road Buddy (M5Stack Core2) | `camper/roadbuddy` | roadbuddy | [firmware/roadbuddy](../firmware/roadbuddy/README.md) |
-| Emulator (Testgerät) | `camper/emulator` (+ die Topics der nachgebildeten Geräte) | emulator | [firmware/emulator](../firmware/emulator/README.md) |
+| Emulator (Werkzeug am PC) | `camper/emulator` (+ die Topics der nachgebildeten Geräte) | – | [tools/emulator](../tools/emulator/README.md) |
 | Muster-Gerät | `camper/example` | template | [firmware/_template](../firmware/_template/README.md) |
 | Router RUT956 | `camper/rut`, `camper/door` | Teltonika „Data to Server“ | – |
 | Zigbee-Gateway (SMLIGHT) | `camper/zigbee/data`, `camper/zigbee/cmd` | Gateway | [firmware/display](../firmware/display/README.md#sensoren-zigbee--bluetooth) |
@@ -166,7 +166,7 @@ Kommt vom Router selbst („Data to Server“), nicht aus diesem Repo.
 
 ## Werkzeuge
 
-Der **Emulator** (`firmware/emulator`, ESP32-C3 mit Web-Oberfläche) sendet die Topics von tanklevel, level, heater, maxxfan, temp, battery, Router und Zigbee-Gateway in denselben Formaten wie die echten Geräte, jedes Gerät über eine eigene Verbindung mit Last Will. Er selbst meldet sich unter `camper/emulator/status` und `camper/emulator/info`; die `info` der nachgebildeten Geräte trägt die Version `emu-…`. Befehle (`…/cmd/…`, `…/set/…`, Zigbee `camper/zigbee/cmd/…`) setzt er wie das echte Gerät um. Home-Assistant-Discovery sendet er nicht.
+Der **Emulator** (`tools/emulator`, Python mit lokaler Webseite) sendet die Topics von tanklevel, level, heater, maxxfan, temp, battery, Router und Zigbee-Gateway in denselben Formaten wie die echten Geräte, jedes Gerät über eine eigene Verbindung mit Last Will. Er selbst meldet sich unter `camper/emulator/status` und `camper/emulator/info`; die `info` der nachgebildeten Geräte trägt die Version `emu-py-…`. Befehle (`…/cmd/…`, `…/set/…`, Zigbee `camper/zigbee/cmd/…`) setzt er wie das echte Gerät um. Home-Assistant-Discovery sendet er nicht.
 
 Der Simulator `tools/mqtt/sim.py` sendet dieselben Topics wie die Firmware (retained), dazu `camper/rut`, `camper/door` und `camper/router/mobile` wie der Router und mit `--contact`, `--fridge`, `--outdoor` Zigbee-Werte. Beim Szenario `depart` schickt er `camper/display/cmd/awning`. Mit `--cleanup` löscht er beim Beenden alle retained Topics, die er gesendet hat.
 

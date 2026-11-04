@@ -47,10 +47,10 @@ flowchart LR
 | [`firmware/omg`](firmware/omg) | ESP32 / ESP32-C3 | Bluetooth-Thermometer (Govee, Ruuvi, Xiaomi …) über OpenMQTTGateway | `camper/OMG` |
 | [`firmware/display`](firmware/display) | Guition ESP32-4848S040 | 4"-Wandpanel + gleiche Webseite fürs Handy, zeigt und steuert alles, Wetter, Warnungen, Pushover | `camper/display` |
 | [`firmware/roadbuddy`](firmware/roadbuddy) | M5Stack Core2 | kleines Akku-Display: Ausrichtung, Wasser, Gas | – (nur Empfänger) |
-| [`firmware/emulator`](firmware/emulator) | ESP32-C3 | **Testgerät:** sendet die Topics aller Geräte, des Routers und von Zigbee mit änderbaren Werten und Szenarien – Displays zu Hause testen | `camper/emulator` |
 
 Nicht in diesem Repo: **Router-Daten (GPS, Mobilfunk)** sendet der RUT956 selbst per MQTT, siehe [Router-Daten im Display-README](firmware/display/README.md#router-daten-rut956).
 
+- **Zu Hause testen:** [`tools/emulator`](tools/emulator) ist ein Python-Werkzeug mit lokaler Webseite. Es sendet die Topics aller Geräte, des Routers und von Zigbee mit änderbaren Werten, dazu Szenarien (Tanks laufen leer, Abfahrt, ein Gerät fällt aus …), so lassen sich die Displays ohne Fahrzeug testen
 - Alle Topics auf einen Blick: [`docs/TOPICS.md`](docs/TOPICS.md)
 - Klickbare Mockups aller Web-Oberflächen: [`docs/mockups/`](docs/mockups/index.html)
 - Hinweise für KI-Assistenten und Mitwirkende: [`AGENTS.md`](AGENTS.md)
@@ -170,4 +170,3 @@ Jeder Ordner behält seine Lizenz:
 | `firmware/tanklevel`, `temp`, `maxxfan`, `display` | MIT |
 | `firmware/toolbox` | MIT (Dachhauben-Protokoll portiert aus der HA-Integration rvtech-hacs) |
 | `firmware/roadbuddy` | MIT |
-| `firmware/emulator` | MIT |
