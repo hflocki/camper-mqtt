@@ -13,9 +13,6 @@
 //           pump 0 + hatch 2 + fridge 1 = 3 ok
 //           pump 1 + hatch 2 + fridge 1 = 4 too many
 // Each name appears only once - change the number, do not add a second line.
-// #define PLUGIN_DIMES      1      // (P) gas bottle, Rotarex DIMES / SRG WAVE
-// #define PLUGIN_MOPEKA_PRO    0   // (P) gas bottle, Mopeka Pro family
-// #define PLUGIN_MOPEKA_STD    0   // (P) gas bottle, Mopeka Standard
 // #define PLUGIN_CARAWATER  1      // (C) water pump CaraWater   - counts towards the 3
 // #define PLUGIN_RVTECH     1      // (C) roof hatch RV Tech     - counts towards the 3, 2 = two hatches (default 1)
 // #define PLUGIN_WCS_FRIDGE 1      // (C) WCS fridge             - counts towards the 3

@@ -532,7 +532,7 @@ nav button .ico{display:inline-flex}
       };
       // stroke icons as in all camper-mqtt pages (no emoji)
       const svg = (k) => `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SVGP[k] || SVGP.plug}"/></svg>`;
-      const ICONS = { rvtech: "hatch", pump: "pump", fridge: "snow", dimes: "fire", mopeka: "fire", mopeka_std: "fire" };
+      const ICONS = { rvtech: "hatch", pump: "pump", fridge: "snow" };
       function tabs() {
         const t = [["live", "Live", "chart"]];
         // Disabled plugins get no tab; they are switched on in System -> Plugins

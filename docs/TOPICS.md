@@ -25,7 +25,7 @@ Das Display liest `camper/+/status` und `camper/+/info` für die Geräteliste au
 | Dachlüfter (MaxxFan) | `camper/maxxfan` | maxxfan | [firmware/maxxfan](../firmware/maxxfan/README.md) |
 | Temperaturen (Kühlschrank …) | `camper/temp` | temp | [firmware/temp](../firmware/temp/README.md) |
 | Batterien (BMS) | `camper/battery` | battery | [firmware/battery](../firmware/battery/README.md) |
-| Toolbox (Bluetooth-Geräte als Plugins: Dachhaube, Pumpe, Kühlschrank, Gas) | `camper/toolbox` | toolbox | [firmware/toolbox](../firmware/toolbox/README.md) |
+| Toolbox (Bluetooth-Geräte als Plugins: Dachhaube, Pumpe, Kühlschrank) | `camper/toolbox` | toolbox | [firmware/toolbox](../firmware/toolbox/README.md) |
 | Display (Wandpanel) | `camper/display` | display | [firmware/display](../firmware/display/README.md) |
 | Road Buddy (M5Stack Core2) | `camper/roadbuddy` | roadbuddy | [firmware/roadbuddy](../firmware/roadbuddy/README.md) |
 | Emulator (Testgerät) | `camper/emulator` (+ die Topics der nachgebildeten Geräte) | emulator | [firmware/emulator](../firmware/emulator/README.md) |
@@ -107,7 +107,7 @@ Unterstruktur wie bei inetbox2mqtt. Vollständige Liste der Keys in der [README 
 
 ## Toolbox `camper/toolbox`
 
-Jedes Plugin hat eine eigene ID: `rvtech` (Dachhaube), `pump` (CaraWater), `fridge` (WCS), `dimes`, `mopeka`, `mopeka_std` (Gas). Die zweite Instanz desselben Plugins bekommt eine `2` angehängt (`rvtech2`). Befehle haben die Form `…/cmd/<plugin>/<key>/set`.
+Jedes Plugin hat eine eigene ID: `rvtech` (Dachhaube), `pump` (CaraWater), `fridge` (WCS). Gas liest camper-tanklevel. Die zweite Instanz desselben Plugins bekommt eine `2` angehängt (`rvtech2`). Befehle haben die Form `…/cmd/<plugin>/<key>/set`.
 
 | Topic | Inhalt |
 | --- | --- |
@@ -123,7 +123,6 @@ Jedes Plugin hat eine eigene ID: `rvtech` (Dachhaube), `pump` (CaraWater), `frid
 | `…/cmd/<plugin>/release/set` | `ON` / `OFF`: Bluetooth für die App freigeben |
 | `…/pump/running`, `pressure`, `flow`, `voltage`, `current`, `temperature`, `daily_liters`, `total_liters`, `leak` … | Wasserpumpe; Befehle `enable`, `leak`, `pressure_level` |
 | `…/fridge/temp1`, `set1`, `temp2`, `set2`, `voltage`, `battery`, `message` | Kühlschrank |
-| `…/<gas>/level`, `content`, `battery`, `raw` | Gasflasche (Füllstand %, Inhalt in Litern) |
 
 ## Display `camper/display`
 

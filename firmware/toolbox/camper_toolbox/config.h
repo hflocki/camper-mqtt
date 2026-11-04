@@ -20,7 +20,7 @@
 // can additionally be switched on / off in the web UI (the device then restarts).
 //
 // Bluetooth limits of one ESP32:
-//   - passive sensors (DIMES, Mopeka) only listen, any number works
+//   - passive sensors (none at the moment; gas and tanks are read by camper-tanklevel) only listen
 //   - connecting devices (pump, roof hatch, fridge) keep a BLE connection each:
 //     PLUGIN_CARAWATER + PLUGIN_RVTECH + PLUGIN_WCS_FRIDGE <= 3
 //     (NimBLE default CONFIG_BT_NIMBLE_MAX_CONNECTIONS), e.g.
@@ -28,15 +28,6 @@
 //       pump 0 + hatch 2 + fridge 1 = 3 ok
 //       pump 1 + hatch 2 + fridge 1 = 4 -> build error
 // ============================================================
-#ifndef PLUGIN_DIMES
-#define PLUGIN_DIMES          0      // Gas: Rotarex DIMES / SRG WAVE (passive BLE)
-#endif
-#ifndef PLUGIN_MOPEKA_PRO
-#define PLUGIN_MOPEKA_PRO     0      // Gas: Mopeka Pro family (Pro Check, Pro Plus, Universal ...)
-#endif
-#ifndef PLUGIN_MOPEKA_STD
-#define PLUGIN_MOPEKA_STD     0      // Gas: Mopeka Standard / Std Check (older model)
-#endif
 #ifndef PLUGIN_CARAWATER
 #define PLUGIN_CARAWATER      0      // Water pump: CaraWater (e.g. ISP 15), BLE connection (counts towards 3)
 #endif
@@ -48,7 +39,7 @@
 #endif
 
 // Derived switches (do not edit)
-#define CT_BLE_PASSIVE  (PLUGIN_DIMES + PLUGIN_MOPEKA_PRO + PLUGIN_MOPEKA_STD)
+#define CT_BLE_PASSIVE  0   // passive plugins (only listen to advertisements); none at the moment
 #define CT_BLE_LINKS    (PLUGIN_CARAWATER + PLUGIN_RVTECH + PLUGIN_WCS_FRIDGE)
 #define CT_USE_BLE      ((CT_BLE_PASSIVE + CT_BLE_LINKS) > 0)
 #define CT_PLUGIN_COUNT (CT_BLE_PASSIVE + CT_BLE_LINKS)
@@ -66,7 +57,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.0.2"
+#define FW_VERSION            "1.1.0"
 #define FW_DEVICE             "toolbox"   // device id in the firmware marker (fwcheck.h)
 
 // Network upload from the Arduino IDE (port in the IDE, password DEFAULT_OTA_PASSWORD).
@@ -185,105 +176,6 @@
 #endif
 #ifndef BLE_RELEASE_MS
 #define BLE_RELEASE_MS        (30UL * 60UL * 1000UL) // "Release for the app" ends after 30 min (0 = never)
-#endif
-
-// ============================================================
-// PLUGIN: GAS (DIMES, Mopeka Pro, Mopeka Standard)
-// ============================================================
-#ifndef DEFAULT_CAPACITY
-#define DEFAULT_CAPACITY      22.0f  // Gross bottle volume in liters (web UI)
-#endif
-#ifndef DEFAULT_FILL_STOP_ON
-#define DEFAULT_FILL_STOP_ON  true   // Bottle has a mechanical fill stop (web UI)
-#endif
-#ifndef DEFAULT_FILL_STOP
-#define DEFAULT_FILL_STOP     80.0f  // Fill stop in % (web UI)
-#endif
-#ifndef GAS_DATA_TIMEOUT_MS
-#define GAS_DATA_TIMEOUT_MS   (30UL * 60UL * 1000UL) // Gas values older than this are "no data"
-#endif
-#ifndef MQTT_GAS_MS
-#define MQTT_GAS_MS           30000  // Periodic publish (also published immediately on new data)
-#endif
-
-// ---- DIMES / SRG WAVE: value mapping -------------------------------------
-// Each value is decoded as:
-//   value = unsigned integer (LEN bytes at OFFSET, little or big endian) * FACTOR + ADD
-// LEVEL must give the raw fill level in % (0-100), BATTERY the battery in %.
-// Offsets refer to:
-//   SRC_MANUFACTURER : manufacturer data WITHOUT the 2 company ID bytes
-//                      (same view as nRF Connect / Home Assistant)
-//   SRC_SERVICE_DATA : service data of DIMES_UUID
-// The web UI shows the received bytes with their offsets, so other passive BLE
-// level sensors can be added by changing this block (e.g. in config_local.h).
-#define SRC_MANUFACTURER      0
-#define SRC_SERVICE_DATA      1
-#define COMPANY_ANY           -1
-
-#ifndef DIMES_MODEL
-#define DIMES_MODEL           "DIMES / SRG WAVE"
-#endif
-#ifndef DIMES_SOURCE
-#define DIMES_SOURCE          SRC_MANUFACTURER
-#endif
-#ifndef DIMES_COMPANY_ID
-#define DIMES_COMPANY_ID      0xFFFF   // SRC_MANUFACTURER only (COMPANY_ANY = any)
-#endif
-#ifndef DIMES_UUID
-#define DIMES_UUID            ""       // SRC_SERVICE_DATA only: service data UUID
-#endif
-#ifndef DIMES_LEVEL_OFFSET
-#define DIMES_LEVEL_OFFSET    2
-#endif
-#ifndef DIMES_LEVEL_LEN
-#define DIMES_LEVEL_LEN       1        // 1, 2 or 4 bytes
-#endif
-#ifndef DIMES_LEVEL_BIG_ENDIAN
-#define DIMES_LEVEL_BIG_ENDIAN false
-#endif
-#ifndef DIMES_LEVEL_FACTOR
-#define DIMES_LEVEL_FACTOR    1.0f
-#endif
-#ifndef DIMES_LEVEL_ADD
-#define DIMES_LEVEL_ADD       0.0f
-#endif
-#ifndef DIMES_BATTERY_ENABLED
-#define DIMES_BATTERY_ENABLED true     // false if the sensor does not report a battery level
-#endif
-#ifndef DIMES_BATTERY_OFFSET
-#define DIMES_BATTERY_OFFSET  1
-#endif
-#ifndef DIMES_BATTERY_LEN
-#define DIMES_BATTERY_LEN     1
-#endif
-#ifndef DIMES_BATTERY_BIG_ENDIAN
-#define DIMES_BATTERY_BIG_ENDIAN false
-#endif
-#ifndef DIMES_BATTERY_FACTOR
-#define DIMES_BATTERY_FACTOR  1.0f
-#endif
-#ifndef DIMES_BATTERY_ADD
-#define DIMES_BATTERY_ADD     0.0f
-#endif
-
-// ---- Mopeka ---------------------------------------------------------------
-// The sensor measures the liquid height in mm. Level % = (height - empty) / (full - empty).
-// Typical values: Europe 6 kg 38/336, 11 kg 38/366, 14 kg 38/467, US 20 lb 38/254 mm.
-#ifndef DEFAULT_MOPEKA_EMPTY_MM
-#define DEFAULT_MOPEKA_EMPTY_MM  38     // Europe 11 kg bottle
-#endif
-#ifndef DEFAULT_MOPEKA_FULL_MM
-#define DEFAULT_MOPEKA_FULL_MM   366
-#endif
-// Readings below this quality are ignored (0 = none, 1 = low, 2 = medium, 3 = high)
-#ifndef MOPEKA_MIN_QUALITY
-#define MOPEKA_MIN_QUALITY       2
-#endif
-#define MOPEKA_COMPANY_ID        0x0059 // Nordic Semiconductor (used by all Mopeka Pro sensors)
-#define MOPEKA_STD_COMPANY_ID    0x000D // Texas Instruments (Mopeka Standard)
-// Mopeka Standard: the speed of sound depends on the gas mix (web UI, % propane, rest butane)
-#ifndef DEFAULT_LPG_PROPANE
-#define DEFAULT_LPG_PROPANE      100
 #endif
 
 // ============================================================

@@ -2,7 +2,6 @@
  * Camper Toolbox - one ESP32, several camper devices as plugins
  * ==============================================================
  * Which plugins are built in is chosen in config.h (PLUGIN_xxx = number of instances):
- *   - Gas: Rotarex DIMES / SRG WAVE, Mopeka Pro, Mopeka Standard (passive BLE)
  *   - Water pump: CaraWater (e.g. ISP 15), BLE connection (status + control)
  *   - Roof hatch: RV Tech skylight motor, BLE connection (position, presets)
  *   - Fridge: WCS compressor fridge, BLE connection (temperatures, voltage)

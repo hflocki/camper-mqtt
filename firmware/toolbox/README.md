@@ -20,14 +20,11 @@ Zahl = Anzahl der Geräte, `0` = nicht einkompiliert. Ab Werk (und in der Releas
 | `PLUGIN_RVTECH` | Dachhaube RV Tech (Heki-Motorsteuerung) | Verbindung, ggf. mit PIN | **1** | MAC, PIN |
 | `PLUGIN_CARAWATER` | Wasserpumpe CaraWater (ISP 15) | Verbindung | 0 | MAC |
 | `PLUGIN_WCS_FRIDGE` | WCS Kompressor-Kühlschrank | Verbindung, ggf. mit PIN | 0 | MAC, PIN, optional UUIDs / Abfrage |
-| `PLUGIN_DIMES` | Gas: Rotarex DIMES / SRG WAVE | passiv (nur mithören) | 0 | MAC, Flaschengröße, Füllstopp |
-| `PLUGIN_MOPEKA_PRO` | Gas: Mopeka Pro (Pro Check, Universal …) | passiv | 0 | MAC, Leer-/Voll-Höhe |
-| `PLUGIN_MOPEKA_STD` | Gas: Mopeka Standard / Std Check | passiv | 0 | MAC, Leer-/Voll-Höhe, Propan-Anteil |
 
 - Passive Sensoren: beliebig viele. Geräte mit Verbindung: höchstens **3** pro ESP32 (sonst bricht der Build mit einer Meldung ab).
 - Zweite Instanz, z. B. zwei Dachhauben: `#define PLUGIN_RVTECH 2` → „Dachhaube“ und „Dachhaube 2“ mit eigener MAC und PIN.
 - Jedes einkompilierte Plugin lässt sich zusätzlich in der Web-UI (Tab **System**) aus- und einschalten.
-- Gas ist im camper-mqtt-System schon Teil von [`tanklevel`](../tanklevel). Die Gas-Plugins hier sind für alle, die nur Bluetooth-Geräte ohne Tankgeber haben.
+- Gas (DIMES, Mopeka) und Tanks liest im camper-mqtt-System [`tanklevel`](../tanklevel). Die Toolbox hat deshalb nur noch Geräte mit Bluetooth-Verbindung.
 
 Beispiel `config_local.h` mit Pumpe und Kühlschrank zusätzlich:
 
@@ -149,6 +146,7 @@ Ein Update ersetzt nur das Programm: WLAN, MQTT, Login, Plugin-Einstellungen (MA
 
 | Version | Änderungen |
 | --- | --- |
+| 1.1.0 | Gas-Plugins entfernt (DIMES, Mopeka Pro, Mopeka Standard, gemeinsamer Gas-Teil): Gasflasche und Tanks liest camper-tanklevel. Übrig: Dachhaube, Wasserpumpe, Kühlschrank |
 | 1.0.1 | Web-Oberfläche im Aussehen der übrigen camper-mqtt-Geräte (Farben, Kopfzeile mit Statuspunkten, Tab-Leiste mit Symbolen, Werte als Kacheln, Schalter statt Häkchen) |
 | 1.0.0 | Ins camper-mqtt-Repo übernommen: sicheres Update (Kennung, Prüfung im Browser und im Gerät), Ereignis-Log, Rückfall und WLAN-Rückweg, Topic `info`; Basis-Topic `camper/toolbox`, Hostname `camper-toolbox`; ab Werk nur die Dachhaube (RV Tech) |
 | 0.1.x | Eigenes Repo `camper_toolbox`: Plugins Gas (DIMES, Mopeka), Wasserpumpe, Dachhaube, Kühlschrank |

@@ -5,15 +5,6 @@
 // To add a plugin type: declare its factory here, add a PLUGIN_xxx switch to
 // config.h and one ADD_PLUGINS line in registryCreate().
 // ============================================================
-#if PLUGIN_DIMES
-Plugin* createDimes(uint8_t index);
-#endif
-#if PLUGIN_MOPEKA_PRO
-Plugin* createMopekaPro(uint8_t index);
-#endif
-#if PLUGIN_MOPEKA_STD
-Plugin* createMopekaStd(uint8_t index);
-#endif
 #if PLUGIN_CARAWATER
 Plugin* createCaraWater(uint8_t index);
 #endif
@@ -37,15 +28,6 @@ static void add(Plugin* p) {
 
 void registryCreate() {
     if (count) return;
-#if PLUGIN_DIMES
-    ADD_PLUGINS(PLUGIN_DIMES, createDimes);
-#endif
-#if PLUGIN_MOPEKA_PRO
-    ADD_PLUGINS(PLUGIN_MOPEKA_PRO, createMopekaPro);
-#endif
-#if PLUGIN_MOPEKA_STD
-    ADD_PLUGINS(PLUGIN_MOPEKA_STD, createMopekaStd);
-#endif
 #if PLUGIN_CARAWATER
     ADD_PLUGINS(PLUGIN_CARAWATER, createCaraWater);
 #endif

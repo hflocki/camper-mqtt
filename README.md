@@ -40,7 +40,7 @@ flowchart LR
 | [`firmware/tanklevel`](firmware/tanklevel) | ESP32-C3 | Fresh and grey water (Votronic), gas bottle (BLE) | `camper/tanklevel` |
 | [`firmware/temp`](firmware/temp) | ESP8266 / ESP32-C3 | up to 8 DS18B20 (fridge, freezer …) with alarm limits | `camper/temp` |
 | [`firmware/battery`](firmware/battery) | ESP32-C3 | Battery BMS over Bluetooth (Daly, Ective BM X): state of charge, current, cells | `camper/battery` |
-| [`firmware/toolbox`](firmware/toolbox) | ESP32-C3 | Bluetooth devices as plugins: RV Tech roof hatch (Heki), CaraWater pump, WCS fridge, gas (DIMES, Mopeka) | `camper/toolbox` |
+| [`firmware/toolbox`](firmware/toolbox) | ESP32-C3 | Bluetooth devices as plugins: RV Tech roof hatch (Heki), CaraWater pump, WCS fridge | `camper/toolbox` |
 | [`firmware/heater`](firmware/heater) | ESP32 + LIN transceiver | Truma Combi / Vario Heat as an iNet Box on the CP Plus | `camper/heater` |
 | [`firmware/maxxfan`](firmware/maxxfan) | ESP32-C3 + VanTurtle | MaxxFan roof fan | `camper/maxxfan` |
 | [`firmware/level`](firmware/level) | ESP32 + BNO085 | Pitch, roll and wedge height for every wheel (fork of the level sensor by klehnst) | `camper/level` |

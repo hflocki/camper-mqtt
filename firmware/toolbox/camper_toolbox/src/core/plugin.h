@@ -101,8 +101,8 @@ public:
 // ============================================================
 class Plugin {
 public:
-    // type     : short id of the plugin type ("dimes"); instance ids are "dimes", "dimes2" ...
-    // typeName : human readable type ("DIMES / SRG WAVE")
+    // type     : short id of the plugin type ("rvtech"); instance ids are "rvtech", "rvtech2" ...
+    // typeName : human readable type ("RV Tech roof hatch")
     // title    : default display name ("Gas"); instances 2+ get " 2", " 3" appended
     Plugin(const char* type, const char* typeName, const char* title, uint8_t index);
     virtual ~Plugin() {}
