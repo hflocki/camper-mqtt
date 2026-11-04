@@ -10,7 +10,7 @@ const M = {
     prefixSelf: 'camper/display', prefixTank: 'camper/tanklevel', prefixLevel: 'camper/level', prefixHeater: 'camper/heater',
     prefixFan: 'camper/maxxfan', prefixTemp: 'camper/temp', prefixBattery: 'camper/battery', fanPort: 1,
     ntpServer: 'pool.ntp.org', tz: 'CET-1CEST,M3.5.0,M10.5.0/3',
-    poOn: true, poClear: true, poPrio: 0, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
+    poOn: true, poClear: true, poPrio: 0, poCat: {temp: 2, heater: 1, bat: 1, water: 3, gas: 1, frost: 1, weather: 1, depart: 1, tile: 3, rule: 3, contact: -3}, poRetry: 300, poExpire: 3600, poToken: '********', poUser: '********', poTitle: 'Camper', poStatus: 'OK 14:02',
     brightness: 80, dimBrightness: 10, screenTimeout: 120, warnWake: false,
     wxOn: true, wxLat: '47.6600', wxLon: '9.1750', wxName: 'Stellplatz am See', wxTopic: '', wxGust: 60, wxEvery: 60, wxGustHyst: 10, wnWater: 10, wnGas: 15, wnBat: 20, wnHystPct: 3, wnFrostOn: false, wnFrost: 3, wnHystT: 1, poQuiet: 30, outName: '', awnSrc: '', awnGust: 40, dpOn: true, dpTopic: 'camper/rut', dpDoor: 'camper/door', dpDoorInv: false, dpSpeed: 5, dpSecs: 10, dpCont: true, ovTempSel: '', ovBatSel: '',
     builtin: [true, true, true, true, true, true, true, true, true, true, true, false, false],

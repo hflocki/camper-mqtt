@@ -77,7 +77,7 @@ std::vector<LightOut> lights(uint8_t pages, uint8_t kind = K_LIGHT);   // lights
 // Topic and payload for a light or switch command; key: on ("ON"/"OFF"/"TOGGLE"), lights also level (1..254),
 // color ("#rrggbb"), ct (mireds). Updates the shown state at once. false = unknown light / no IEEE address.
 bool lightCommand(size_t idx, const String& key, const String& value, String& topic, String& payload);
-String warnings();                     // "Heki offen" ... one per line
+String warnings(std::vector<uint8_t>* cats = nullptr);   // "Heki offen" ... one per line, cats: WarnCat per line
 bool changed();                        // something new since the last call (UI refresh)
 
 }  // namespace sensors

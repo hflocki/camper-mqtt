@@ -554,27 +554,36 @@ String runtimeText(long min) {
   return String(min) + " min";
 }
 
-// All active warnings, one per line ("" = none)
-String warnings() {
+// All active warnings, one per line. cats (optional) gets the kind (WarnCat) of each line,
+// so the push messages can use a priority per kind.
+String warnings(std::vector<uint8_t>* cats = nullptr) {
   String w;
-  auto add = [&](const String& s) { if (s.isEmpty()) return; if (w.length()) w += "\n"; w += s; };
+  // s may hold several lines, all of the same kind
+  auto add = [&](const String& s, uint8_t cat) {
+    if (s.isEmpty()) return;
+    if (w.length()) w += "\n";
+    w += s;
+    if (!cats) return;
+    cats->push_back(cat);
+    for (int i = s.indexOf('\n'); i >= 0; i = s.indexOf('\n', i + 1)) cats->push_back(cat);
+  };
   if (store::devOnline(DEV_TEMP)) {
     String a = store::get(DP_TEMP_ALARM);
     a.replace("; ", "\n");
-    add(a);
+    add(a, WC_TEMP);
   }
   if (store::devOnline(DEV_HEATER) && store::get(DP_HEAT_ERROR) == "ON")
-    add("Heizung: Fehler " + store::get(DP_HEAT_ERRCODE));
+    add("Heizung: Fehler " + store::get(DP_HEAT_ERRCODE), WC_HEATER);
   // Batteries: the text before ':' identifies a warning for the push messages
   if (store::devOnline(DEV_BATTERY)) {
     for (auto& b : batItems()) {
       if (!b.ok) continue;
-      if (b.problem) add(b.name + " BMS: " + (b.ptext.length() ? b.ptext : String("Fehler, bitte pr\xC3\xBC" "fen")));
+      if (b.problem) add(b.name + " BMS: " + (b.ptext.length() ? b.ptext : String("Fehler, bitte pr\xC3\xBC" "fen")), WC_BATTERY);
       if (b.state == "Kritisch" || b.state == "Schwach")
-        add(b.name + " " + (b.state == "Kritisch" ? "kritisch" : "schwach") + ": " + commaNum(b.v, 2) + " V");
+        add(b.name + " " + (b.state == "Kritisch" ? "kritisch" : "schwach") + ": " + commaNum(b.v, 2) + " V", WC_BATTERY);
       else if (b.state.isEmpty() && alerts::below("bat:" + b.name, b.soc, settings.wnBat, settings.wnHystPct))
         add(b.name + " niedrig: " + String((int)lroundf(b.soc)) + " %" +
-            (b.rt >= 0 ? ", noch " + runtimeText(b.rt) : String("")));
+            (b.rt >= 0 ? ", noch " + runtimeText(b.rt) : String("")), WC_BATTERY);
     }
   }
   // own tiles with a warning rule (e.g. shore power from a Zigbee clamp)
@@ -583,14 +592,14 @@ String warnings() {
     if (!t.warnMode && !t.warnStale) continue;
     String head = t.warnText.length() ? t.warnText : t.name;
     if (t.warnStale && store::tileAgeMs(i) > (uint32_t)t.warnStale * 60000UL) {
-      add(head + ": keine Daten seit " + String(store::tileAgeMs(i) / 60000UL) + " min");
+      add(head + ": keine Daten seit " + String(store::tileAgeMs(i) / 60000UL) + " min", WC_TILE);
       continue;
     }
     if (!t.warnMode || !store::tileHas(i)) continue;
     if (t.warnMode == WARN_EQUAL) {
       // text states like a door contact: "open" (received) or "Offen" (shown)
       if (t.warnEq.length() && (store::tileRaw(i).equalsIgnoreCase(t.warnEq) || store::tile(i).equalsIgnoreCase(t.warnEq)))
-        add(t.warnText.length() ? t.warnText : t.name + ": " + store::tile(i));
+        add(t.warnText.length() ? t.warnText : t.name + ": " + store::tile(i), WC_TILE);
       continue;
     }
     const String& raw = store::tile(i);
@@ -600,18 +609,29 @@ String warnings() {
     bool hit = t.warnMode == WARN_BELOW ? v < t.warnVal : v > t.warnVal;
     if (!hit) continue;
     if (!t.warnText.length()) head = t.name + (t.warnMode == WARN_BELOW ? " zu niedrig" : " zu hoch");
-    add(head + ": " + raw + (t.unit.length() ? " " + t.unit : String("")));
+    add(head + ": " + raw + (t.unit.length() ? " " + t.unit : String("")), WC_TILE);
   }
-  // water, gas, frost (limits in the settings)
-  add(alerts::warnings());
+  // these modules report several kinds: they fill the kinds themselves
+  auto addMixed = [&](const String& s, const std::vector<uint8_t>& k) {
+    if (s.isEmpty()) return;
+    if (w.length()) w += "\n";
+    w += s;
+    if (cats) cats->insert(cats->end(), k.begin(), k.end());
+  };
+  std::vector<uint8_t> k;
+  // water, gas, frost, awning in gusts (limits in the settings)
+  String aw = alerts::warnings(cats ? &k : nullptr);
+  addMixed(aw, k);
   // departure check: driving with the door open, the awning out, a window open
-  add(depart::warnings());
-  // automation rules marked as warning, open Zigbee contacts
-  add(rules::warnings());
-  add(sensors::warnings());
+  add(depart::warnings(), WC_DEPART);
+  // automation rules marked as warning
+  add(rules::warnings(), WC_RULE);
+  // fridge / freezer too warm, open Zigbee contacts
+  k.clear();
+  String sw = sensors::warnings(cats ? &k : nullptr);
+  addMixed(sw, k);
   // weather: gusts above the limit, thunderstorm
-  String ww = wx::warning();
-  if (ww.length()) add(ww);
+  add(wx::warning(), WC_WEATHER);
   return w;
 }
 
@@ -2836,5 +2856,10 @@ void showPageByName(const String& nameOrIndex) {
 }
 
 String warningText() { return warnings(); }
+String warningText(std::vector<uint8_t>& cats) {
+  cats.clear();
+  String w = warnings(&cats);
+  return w;
+}
 
 } // namespace ui

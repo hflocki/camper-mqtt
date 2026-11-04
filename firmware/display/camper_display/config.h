@@ -11,7 +11,7 @@
 // =====================================================================
 
 #define FW_NAME                 "camper-display"
-#define FW_VERSION              "2.10.1"
+#define FW_VERSION              "2.10.2"
 #define FW_DEVICE               "display"   // device id in the firmware marker (fwcheck.h)
 #ifndef WIFI_TRIAL_MS
 #define WIFI_TRIAL_MS           50000   // a changed WiFi must connect this fast, else the old one returns
@@ -194,6 +194,9 @@
 #endif
 #ifndef PUSHOVER_URL
 #define PUSHOVER_URL            "https://api.pushover.net/1/messages.json"
+#endif
+#ifndef PUSHOVER_CANCEL_URL
+#define PUSHOVER_CANCEL_URL     "https://api.pushover.net/1/receipts/cancel_by_tag/"   // + tag + ".json"
 #endif
 #ifndef PUSHOVER_HOST
 #define PUSHOVER_HOST           "api.pushover.net"   // must match PUSHOVER_URL

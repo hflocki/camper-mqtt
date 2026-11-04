@@ -300,6 +300,13 @@ void getSettings(AsyncWebServerRequest* r) {
   d["poOn"] = settings.poOn;
   d["poClear"] = settings.poClear;
   d["poPrio"] = settings.poPrio;
+  {
+    // priority per warning kind: {"temp": 3, "gas": 1, ...} (3 = general priority, -3 = not sent)
+    JsonObject pc = d["poCat"].to<JsonObject>();
+    for (int i = 0; i < WC_COUNT; i++) pc[WARN_CAT_IDS[i]] = settings.poCat[i];
+  }
+  d["poRetry"] = settings.poRetry;
+  d["poExpire"] = settings.poExpire;
   d["poToken"] = settings.poToken.isEmpty() ? "" : MASK;
   d["poUser"] = settings.poUser.isEmpty() ? "" : MASK;
   d["poTitle"] = settings.poTitle;
@@ -432,7 +439,17 @@ bool applySettings(JsonObject o, bool apply) {
   if (settings.poTitle.isEmpty()) settings.poTitle = DEFAULT_PUSHOVER_TITLE;
   if (o["poOn"].is<bool>()) settings.poOn = o["poOn"];
   if (o["poClear"].is<bool>()) settings.poClear = o["poClear"];
-  if (o["poPrio"].is<int>()) settings.poPrio = constrain(o["poPrio"].as<int>(), -1, 1);
+  if (o["poPrio"].is<int>()) settings.poPrio = constrain(o["poPrio"].as<int>(), -1, 2);
+  if (o["poCat"].is<JsonObject>()) {
+    JsonObject pc = o["poCat"];
+    for (int i = 0; i < WC_COUNT; i++) {
+      if (!pc[WARN_CAT_IDS[i]].is<int>()) continue;
+      int p = pc[WARN_CAT_IDS[i]];
+      settings.poCat[i] = (p == PRIO_OFF || p == PRIO_DEFAULT || (p >= -1 && p <= 2)) ? p : PRIO_DEFAULT;
+    }
+  }
+  if (o["poRetry"].is<int>()) settings.poRetry = constrain(o["poRetry"].as<int>(), 30, 10800);
+  if (o["poExpire"].is<int>()) settings.poExpire = constrain(o["poExpire"].as<int>(), 60, 10800);
   // weather
   if (o["wxOn"].is<bool>()) settings.wxOn = o["wxOn"];
   auto coord = [&](const char* key, String& dst, float lim) {

@@ -512,7 +512,7 @@ std::vector<String> activeIcons() {
   return out;
 }
 
-String warnings() {
+String warnings(std::vector<uint8_t>* cats) {
   Lock lock;
   String w;
   for (size_t i = 0; i < devs.size(); i++) {
@@ -525,12 +525,14 @@ String warnings() {
         v.replace('.', ',');
         if (w.length()) w += "\n";
         w += devs[i].name + " zu warm: " + v + " \xC2\xB0" "C";
+        if (cats) cats->push_back(WC_TEMP);
       }
       continue;
     }
     if (devs[i].kind != K_CONTACT || !devs[i].warn || vals[i].open != 1) continue;
     if (w.length()) w += "\n";
     w += devs[i].name + " offen";
+    if (cats) cats->push_back(WC_CONTACT);
   }
   return w;
 }

@@ -51,19 +51,23 @@ bool above(const String& key, float value, float limit, float hyst) {
   return latch(key, value > limit, value <= limit - hyst);
 }
 
-String warnings() {
+String warnings(std::vector<uint8_t>* cats) {
   String w;
-  auto add = [&](const String& s) { if (w.length()) w += "\n"; w += s; };
+  auto add = [&](const String& s, uint8_t cat) {
+    if (w.length()) w += "\n";
+    w += s;
+    if (cats) cats->push_back(cat);
+  };
   const float hp = settings.wnHystPct;
 
   // tanks: only while the tank firmware is online (old retained values are not a warning)
   bool tank = store::devOnline(DEV_TANK);
   float water = tank && store::has(DP_WATER_PCT) ? store::getf(DP_WATER_PCT) : NAN;
   if (below("water", water, settings.wnWater, hp))
-    add("Frischwasser niedrig: " + String((int)lroundf(water)) + " %");
+    add("Frischwasser niedrig: " + String((int)lroundf(water)) + " %", WC_WATER);
   float gas = tank && store::has(DP_GAS_PCT) ? store::getf(DP_GAS_PCT) : NAN;
   if (below("gas", gas, settings.wnGas, hp))
-    add("Gas niedrig: " + String((int)lroundf(gas)) + " %");
+    add("Gas niedrig: " + String((int)lroundf(gas)) + " %", WC_GAS);
 
   // frost: measured outside temperature first, otherwise the current weather
   float out = NAN;
@@ -82,7 +86,7 @@ String warnings() {
   if (!settings.wnFrostOn) latch("frost", false, true);
   else if (latch("frost", !isnan(out) && out < settings.wnFrost,
                  isnan(out) || out >= settings.wnFrost + settings.wnHystT / 10.0f))
-    add("Frostgefahr: " + (isnan(out) ? String("--") : comma1(out)) + " \xC2\xB0" "C " + src);
+    add("Frostgefahr: " + (isnan(out) ? String("--") : comma1(out)) + " \xC2\xB0" "C " + src, WC_FROST);
 
   // awning out and gusts above its own (lower) limit
   float gust = NAN;
@@ -92,7 +96,7 @@ String warnings() {
   }
   if (latch("awning", !isnan(gust) && gust >= settings.awnGust,
             isnan(gust) || gust < settings.awnGust - settings.wxGustHyst))
-    add("Markise einfahren: B\xC3\xB6" "en bis " + (isnan(gust) ? String("--") : String((int)lroundf(gust))) + " km/h");
+    add("Markise einfahren: B\xC3\xB6" "en bis " + (isnan(gust) ? String("--") : String((int)lroundf(gust))) + " km/h", WC_WEATHER);
   return w;
 }
 

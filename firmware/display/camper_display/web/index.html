@@ -715,6 +715,9 @@ function update(){
 // ---------- settings ----------
 let ST={},PG={pages:[],tiles:[]};
 const TYPES=['Wert','Schalter','Taster','Regler'];
+// Pushover priorities; with def also "like the default" (3) and "off" (-3), as in settings.h
+const PO_CATS=[['temp','Kühlschrank / Temperatur'],['heater','Heizung'],['bat','Batterie'],['water','Frischwasser'],['gas','Gas'],['frost','Frost'],['weather','Wetter / Markise'],['depart','Abfahrtscheck'],['tile','Eigene Kacheln'],['rule','Regeln'],['contact','Kontakte']];
+function prioOpts(def){return (def?'<option value="3">wie Standard</option>':'')+'<option value="-1">Leise</option><option value="0">Normal</option><option value="1">Hoch</option><option value="2">Notfall</option>'+(def?'<option value="-3">Aus</option>':'')}
 function inp(id,lbl,type='text',ph=''){return `<div><label for="${id}">${lbl}</label><input type="${type}" id="${id}" placeholder="${esc(ph)}"></div>`}
 function pgSettings(){
   const g=SET_GROUPS.some(x=>x[0]===setGroup)?setGroup:'view';
@@ -788,7 +791,11 @@ function pgSettings(){
    <label class="chk"><input type="checkbox" id="poOn"> Warnungen senden</label>
    <label class="chk"><input type="checkbox" id="poClear"> Nachricht, wenn eine Warnung vorbei ist</label>
    <div class="f2">${inp('poToken','API-Token (Anwendung)','password')}${inp('poUser','User-Key','password')}</div>
-   <div class="f2">${inp('poTitle','Titel der Nachricht')}<div><label>Priorität</label><select id="poPrio"><option value="0">Normal</option><option value="1">Hoch (auch in Ruhezeiten)</option><option value="-1">Leise</option></select></div></div>
+   <div class="f2">${inp('poTitle','Titel der Nachricht')}<div><label>Priorität (Standard)</label><select id="poPrio">${prioOpts(false)}</select></div></div>
+   <label style="margin-top:6px">Dringlichkeit je Warnungsart</label>
+   <div class="f2" id="poCats">${PO_CATS.map(c=>`<div><label for="pc_${c[0]}">${c[1]}</label><select id="pc_${c[0]}">${prioOpts(true)}</select></div>`).join('')}</div>
+   <div class="f2">${inp('poRetry','Notfall: wiederholen alle (s)','number')}${inp('poExpire','Notfall: höchstens für (s)','number')}</div>
+   <p class="mu" style="margin-top:-4px"><b>Leise</b> ohne Ton, <b>Hoch</b> klingelt auch in den Pushover-Ruhezeiten, <b>Notfall</b> klingelt in der Pushover-App so lange wieder, bis du ihn bestätigst (Wiederholung mindestens 30 s, höchstens 3 h). Ist die Warnung vorbei, stoppt das Display die Wiederholung selbst. <b>Aus</b> zeigt die Warnung nur am Display.</p>
    <div class="row"><button class="btn" id="potest">Testnachricht</button><span class="mu grow" id="postat"></span></div>
    <p class="mu">Erst speichern, dann testen.</p></details>
   <details data-g="svc"><summary>⚠️ Warnungen</summary>
@@ -855,7 +862,7 @@ async function loadSettings(){
     LINKS=(ST.links||[]).map(x=>({n:x.n,u:x.u}));renderLinks();
     $('#warnWake').checked=!!ST.warnWake;$('#wxOn').checked=!!ST.wxOn;$('#wxEvery').value=String(ST.wxEvery||60);
     $('#slt').innerHTML=$('#slb').innerHTML='';renderSlots();
-    $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#wnFrostOn').checked=!!ST.wnFrostOn;$('#dpOn').checked=ST.dpOn!==false;$('#dpDoorInv').checked=!!ST.dpDoorInv;$('#dpCont').checked=ST.dpCont!==false;fillOutAwn();$('#wnHystT').value=cnum(ST.wnHystT??1,1);$('#poPrio').value=String(ST.poPrio||0);
+    $('#poOn').checked=!!ST.poOn;$('#poClear').checked=ST.poClear!==false;$('#wnFrostOn').checked=!!ST.wnFrostOn;$('#dpOn').checked=ST.dpOn!==false;$('#dpDoorInv').checked=!!ST.dpDoorInv;$('#dpCont').checked=ST.dpCont!==false;fillOutAwn();$('#wnHystT').value=cnum(ST.wnHystT??1,1);$('#poPrio').value=String(ST.poPrio||0);PO_CATS.forEach(c=>{const v=(ST.poCat||{})[c[0]];$('#pc_'+c[0]).value=String(v??3)});$('#poRetry').value=ST.poRetry??300;$('#poExpire').value=ST.poExpire??3600;
     $('#postat').textContent=ST.poStatus?'Zuletzt: '+ST.poStatus:'';
     $('#sysinfo').textContent=`Firmware ${ST.fw} · MAC ${ST.mac} · IP ${S.ip||''}`;
     const p=await fetch('/api/pages');PG=await p.json();PG.pages=PG.pages||[];PG.tiles=PG.tiles||[];renderPages();
@@ -998,7 +1005,7 @@ function saveSettings(){
   o.pageNames=[...BUILTIN.map((b,i)=>$('#pn'+i).value.trim()),$('#pn'+BUILTIN.length).value.trim()];
   o.pageIcons=[...BUILTIN.keys(),BUILTIN.length].map(i=>$('#pi'+i).value);
   readLinks();o.links=LINKS.filter(x=>x.n.trim()&&x.u.trim());
-  o.poOn=$('#poOn').checked;o.poClear=$('#poClear').checked;o.poPrio=+$('#poPrio').value;
+  o.poOn=$('#poOn').checked;o.poClear=$('#poClear').checked;o.poPrio=+$('#poPrio').value;o.poCat={};PO_CATS.forEach(c=>o.poCat[c[0]]=+$('#pc_'+c[0]).value);o.poRetry=parseInt($('#poRetry').value)||300;o.poExpire=parseInt($('#poExpire').value)||3600;
   post('/api/settings',o);
 }
 // Place search in the browser (Open-Meteo geocoding), fills position and name

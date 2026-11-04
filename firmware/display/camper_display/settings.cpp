@@ -9,6 +9,8 @@ const char* const DEFAULT_PAGE_NAMES[BP_COUNT + 1] = {"Home", "Truma", "MaxxFan"
                                                        "Sensoren", "Warnungen", "Licht", "Schalter", "Energie", "Extra", "System"};
 const char* const PAGE_IDS[BP_COUNT] = {"overview", "heater", "fan", "level", "temp", "bat", "weather", "actors", "warn", "light",
                                         "switch", "extra1", "extra2"};
+const char* const WARN_CAT_IDS[WC_COUNT] = {"temp", "heater", "bat", "water", "gas", "frost", "weather",
+                                            "depart", "tile", "rule", "contact"};
 
 String pageTitle(int idx) {
   if (idx < 0 || idx > BP_COUNT) return "";
@@ -59,6 +61,14 @@ void load() {
   settings.poOn         = prefs.getBool  ("pon",    false);
   settings.poClear      = prefs.getBool  ("pclr",   true);
   settings.poPrio       = prefs.getChar  ("pprio",  0);
+  {
+    // priority per warning kind; kinds added later (shorter stored list) start with the default
+    for (auto& p : settings.poCat) p = PRIO_DEFAULT;
+    size_t n = prefs.getBytesLength("ppcat");
+    if (n) prefs.getBytes("ppcat", settings.poCat, min(n, sizeof(settings.poCat)));
+  }
+  settings.poRetry      = prefs.getUShort("pretry", 300);
+  settings.poExpire     = prefs.getUShort("pexp",   3600);
   settings.poToken      = prefs.getString("ptok",   DEFAULT_PUSHOVER_TOKEN);
   settings.poUser       = prefs.getString("pusr",   DEFAULT_PUSHOVER_USER);
   settings.poTitle      = prefs.getString("ptitle", DEFAULT_PUSHOVER_TITLE);
@@ -129,7 +139,11 @@ void load() {
   if (settings.apPass.length() < 8) settings.apPass = DEFAULT_AP_PASSWORD;
   if (settings.brightness < 5) settings.brightness = 5;
   if (settings.fanPort > 1) settings.fanPort = 1;
-  if (settings.poPrio < -1 || settings.poPrio > 1) settings.poPrio = 0;
+  if (settings.poPrio < -1 || settings.poPrio > 2) settings.poPrio = 0;
+  for (auto& p : settings.poCat)
+    if (p != PRIO_OFF && p != PRIO_DEFAULT && (p < -1 || p > 2)) p = PRIO_DEFAULT;
+  settings.poRetry  = constrain(settings.poRetry, 30, 10800);
+  settings.poExpire = constrain(settings.poExpire, 60, 10800);
   if (settings.poTitle.isEmpty()) settings.poTitle = DEFAULT_PUSHOVER_TITLE;
   if (settings.wxEvery < 10 || settings.wxEvery > 180) settings.wxEvery = 60;
   if (settings.heaterSrc > HEAT_SRC_CAMPMATIC) settings.heaterSrc = HEAT_SRC_OWN;
@@ -180,6 +194,9 @@ void save() {
   prefs.putBool  ("pon",    settings.poOn);
   prefs.putBool  ("pclr",   settings.poClear);
   prefs.putChar  ("pprio",  settings.poPrio);
+  prefs.putBytes ("ppcat",  settings.poCat, sizeof(settings.poCat));
+  prefs.putUShort("pretry", settings.poRetry);
+  prefs.putUShort("pexp",   settings.poExpire);
   prefs.putString("ptok",   settings.poToken);
   prefs.putString("pusr",   settings.poUser);
   prefs.putString("ptitle", settings.poTitle);

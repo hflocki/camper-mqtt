@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include <vector>
 
 // Built-in limit warnings (fresh water, gas, frost) and the hysteresis helper used by all
 // threshold warnings, so a value hovering around a limit does not switch a warning on and off.
@@ -16,7 +17,9 @@ bool below(const String& key, float value, float limit, float hyst);
 // "value above limit": on above `limit`, off at or below `limit - hyst`
 bool above(const String& key, float value, float limit, float hyst);
 
-String warnings();   // one line per active warning, "Frischwasser niedrig: 8 %" ...
+// One line per active warning, "Frischwasser niedrig: 8 %" ...; cats (optional) gets the
+// warning kind (WarnCat) of each line
+String warnings(std::vector<uint8_t>* cats = nullptr);
 
 // Awning: a switch on the display / web page / MQTT, or an own contact sensor (settings.awnSrc)
 bool   awningIsSwitch();      // true = switch, false = contact sensor

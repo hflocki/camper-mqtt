@@ -9,6 +9,16 @@ enum BuiltinPage : uint8_t { BP_OVERVIEW, BP_HEATER, BP_FAN, BP_LEVEL, BP_TEMP, 
 // Short ids of the fixed pages (web page, nav selection), BP_* order
 extern const char* const PAGE_IDS[BP_COUNT];
 
+// Kinds of warnings, each with its own Pushover priority. New kinds are appended:
+// the index is the position in the stored priority list (NVS "ppcat").
+enum WarnCat : uint8_t { WC_TEMP, WC_HEATER, WC_BATTERY, WC_WATER, WC_GAS, WC_FROST, WC_WEATHER,
+                         WC_DEPART, WC_TILE, WC_RULE, WC_CONTACT, WC_COUNT };
+// Short ids of the warning kinds (web page, JSON), WC_* order
+extern const char* const WARN_CAT_IDS[WC_COUNT];
+// Special values of Settings::poCat besides the Pushover priorities -1 .. 2
+const int8_t PRIO_DEFAULT = 3;    // use the general priority (poPrio)
+const int8_t PRIO_OFF     = -3;   // shown on the display, but no push message
+
 // User tile types
 enum TileType : uint8_t { TILE_VALUE = 0, TILE_SWITCH = 1, TILE_BUTTON = 2, TILE_SLIDER = 3 };
 
@@ -63,7 +73,10 @@ struct Settings {
   // pushover
   bool   poOn = false;          // send warnings as push messages
   bool   poClear = true;        // also send a message when a warning is gone
-  int8_t poPrio = 0;            // Pushover priority: 0 normal, 1 high (bypasses quiet hours)
+  int8_t poPrio = 0;            // Pushover priority: -1 quiet, 0 normal, 1 high (bypasses quiet hours), 2 emergency
+  int8_t poCat[WC_COUNT];       // priority per warning kind, PRIO_DEFAULT = poPrio, PRIO_OFF = not sent
+  uint16_t poRetry = 300;       // emergency (2): repeat every this many seconds (min. 30) ...
+  uint16_t poExpire = 3600;     // ... until confirmed in the app or this many seconds passed (max. 10800)
   String poToken, poUser, poTitle;
   // weather (Open-Meteo)
   bool     wxOn = false;

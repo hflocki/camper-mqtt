@@ -23,6 +23,9 @@ struct Msg {
   char title[48];
   char text[256];
   int8_t prio;
+  uint16_t retry, expire;    // only used for emergency messages (prio 2)
+  char tag[12];              // emergency: tag to stop the repeats later; with cancel = that request
+  bool cancel;               // stop the repeats of the emergency message with this tag
 };
 
 QueueHandle_t queue = nullptr;
@@ -36,10 +39,12 @@ char lastDetail[80] = "";   // reason of the last failed request (DNS, TLS error
 struct Active {
   String key;
   String text;
+  uint8_t cat;               // kind of warning (WarnCat), decides the priority
   unsigned long since;
   unsigned long goneSince;   // 0 = still reported
   bool sent;
   bool quiet;                // came back within the quiet time: neither warning nor "done" message
+  int8_t prio;               // priority it was sent with (2 = emergency, repeats must be stopped)
 };
 std::vector<Active> active;
 // key -> millis() of the last message for it, for the quiet time (settings.poQuiet)
@@ -82,11 +87,20 @@ int post(const Msg& m) {
   client.setCACertBundle(x509_crt_bundle_start, x509_crt_bundle_end - x509_crt_bundle_start);
   client.setTimeout(10000);
   HTTPClient http;
-  if (!http.begin(client, PUSHOVER_URL)) return -1;
+  String body = "token=" + urlEncode(m.token);
+  if (m.cancel) {
+    // stop the repeats of an emergency message whose warning is over
+    String url = String(PUSHOVER_CANCEL_URL) + m.tag + ".json";
+    if (!http.begin(client, url)) return -1;
+  } else {
+    if (!http.begin(client, PUSHOVER_URL)) return -1;
+    body += "&user=" + urlEncode(m.user) + "&title=" + urlEncode(m.title) +
+            "&message=" + urlEncode(m.text) + "&priority=" + String((int)m.prio);
+    // Emergency messages repeat until confirmed in the app; Pushover requires retry and expire
+    if (m.prio == 2)
+      body += "&retry=" + String(m.retry) + "&expire=" + String(m.expire) + "&tags=" + m.tag;
+  }
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-  String body = "token=" + urlEncode(m.token) + "&user=" + urlEncode(m.user) +
-                "&title=" + urlEncode(m.title) + "&message=" + urlEncode(m.text) +
-                "&priority=" + String((int)m.prio);
   int code = http.POST(body);
   if (code < 0) {
     char err[64] = "";
@@ -108,7 +122,7 @@ void senderTask(void*) {
     for (int attempt = 0; attempt < PUSHOVER_RETRIES; attempt++) {
       if (WiFi.status() == WL_CONNECTED) {
         int code = post(m);
-        Serial.printf("[push] \"%s\" -> %d\n", m.text, code);
+        Serial.printf("[push] %s\"%s\" -> %d\n", m.cancel ? "cancel " : "", m.cancel ? m.tag : m.text, code);
         if (code == 200) { setStatus("OK"); break; }
         char s[100];
         if (lastDetail[0]) snprintf(s, sizeof(s), "Fehler %d \xE2\x80\x93 %s", code, lastDetail);
@@ -123,15 +137,32 @@ void senderTask(void*) {
   }
 }
 
-void enqueue(const String& title, const String& text, int8_t prio) {
+// Tag of an emergency message: short hash of the warning key (only letters and digits allowed)
+void tagOf(const String& key, char* out, size_t len) {
+  uint32_t h = 2166136261u;   // FNV-1a
+  for (size_t i = 0; i < key.length(); i++) { h ^= (uint8_t)key[i]; h *= 16777619u; }
+  snprintf(out, len, "w%08lx", (unsigned long)h);
+}
+
+void enqueue(const String& title, const String& text, int8_t prio, const String& key = String(), bool cancel = false) {
   if (!queue || settings.poToken.isEmpty() || settings.poUser.isEmpty()) return;
   Msg m = {};
+  m.cancel = cancel;
+  if (key.length()) tagOf(key, m.tag, sizeof(m.tag));
   strlcpy(m.token, settings.poToken.c_str(), sizeof(m.token));
   strlcpy(m.user, settings.poUser.c_str(), sizeof(m.user));
   strlcpy(m.title, title.c_str(), sizeof(m.title));
   strlcpy(m.text, text.c_str(), sizeof(m.text));
   m.prio = prio;
+  m.retry = settings.poRetry;
+  m.expire = settings.poExpire;
   if (xQueueSend(queue, &m, 0) != pdTRUE) Serial.println("[push] queue full, message dropped");
+}
+
+// Priority of a warning kind: its own setting, or the general one. PRIO_OFF = do not send.
+int8_t prioOf(uint8_t cat) {
+  int8_t p = cat < WC_COUNT ? settings.poCat[cat] : PRIO_DEFAULT;
+  return p == PRIO_DEFAULT ? settings.poPrio : p;
 }
 
 String keyOf(const String& line) {
@@ -169,28 +200,36 @@ void loop() {
 
   if (!settings.poOn) { active.clear(); return; }
 
-  // Current warning lines
-  String all = ui::warningText();
+  // Current warning lines and their kinds (one kind per line, empty lines included)
+  std::vector<uint8_t> cats;
+  String all = ui::warningText(cats);
   std::vector<String> lines;
+  std::vector<uint8_t> lineCat;
   int start = 0;
+  size_t idx = 0;
   while (start < (int)all.length()) {
     int nl = all.indexOf('\n', start);
     if (nl < 0) nl = all.length();
     String l = all.substring(start, nl);
     l.trim();
-    if (l.length()) lines.push_back(l);
+    if (l.length()) {
+      lines.push_back(l);
+      lineCat.push_back(idx < cats.size() ? cats[idx] : (uint8_t)WC_COUNT);
+    }
+    idx++;
     start = nl + 1;
   }
 
   unsigned long now = millis();
   // New or still active warnings
-  for (auto& l : lines) {
+  for (size_t n = 0; n < lines.size(); n++) {
+    const String& l = lines[n];
     String k = keyOf(l);
     bool found = false;
     for (auto& a : active) {
-      if (a.key == k) { a.text = l; a.goneSince = 0; found = true; break; }
+      if (a.key == k) { a.text = l; a.cat = lineCat[n]; a.goneSince = 0; found = true; break; }
     }
-    if (!found) active.push_back({k, l, now, 0, false, false});
+    if (!found) active.push_back({k, l, lineCat[n], now, 0, false, false, 0});
   }
   // Gone warnings, and warnings that stayed long enough to be sent
   for (size_t i = 0; i < active.size();) {
@@ -209,6 +248,7 @@ void loop() {
       }
       if (a.goneSince == 0) a.goneSince = now;
       if (now - a.goneSince < PUSHOVER_STABLE_MS) { i++; continue; }
+      if (a.sent && !a.quiet && a.prio == 2) enqueue("", "", 0, a.key, true);   // stop the repeats
       if (a.sent && !a.quiet && settings.poClear) enqueue(settings.poTitle, "\xE2\x9C\x93 Erledigt: " + a.key, -1);
       active.erase(active.begin() + i);
       continue;
@@ -216,8 +256,11 @@ void loop() {
     if (!a.sent && now - a.since >= PUSHOVER_STABLE_MS) {
       auto it = lastSent.find(a.key);
       a.quiet = it != lastSent.end() && now - it->second < (unsigned long)settings.poQuiet * 60000UL;
+      int8_t prio = prioOf(a.cat);
+      if (prio == PRIO_OFF) a.quiet = true;   // this kind is not sent: no "done" message either
       if (!a.quiet) {
-        enqueue(settings.poTitle, "\xE2\x9A\xA0 " + a.text, settings.poPrio);
+        a.prio = prio;
+        enqueue(settings.poTitle, "\xE2\x9A\xA0 " + a.text, prio, a.key);
         lastSent[a.key] = now;
       }
       a.sent = true;
