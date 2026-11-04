@@ -344,7 +344,7 @@ Vorbelegen in `config_local.h`: `DEFAULT_WX_LAT`, `DEFAULT_WX_LON`, `DEFAULT_WX_
 
 ## Einstellungen (Webseite)
 
-**Aussehen der Webseite (ab 2.11.0):** dunkel und ruhig, Farbe nur für Zustände (grün OK, gelb Hinweis, rot Fehler) und Blau für Bedienung, Symbole als SVG statt Emojis. Am Handy unten die Symbolleiste wie am Panel, ab 1000 px Breite links eine Seitenleiste mit allen Seiten. Home gruppiert die Kacheln der Übersicht nach Vorräte, Klima, Energie, Fahrzeug und eigene Kacheln; Warnungen stehen als gelbes Band oben. Die Einstellungen haben links eine Liste aller Bereiche mit Suchfeld und unten eine Leiste „Änderungen nicht gespeichert · Speichern“.
+**Aussehen der Webseite (ab 2.11.0):** dunkel und ruhig, Farbe nur für Zustände (grün OK, gelb Hinweis, rot Fehler) und Blau für Bedienung, Symbole als SVG statt Emojis. Am Handy unten die Symbolleiste wie am Panel, ab 1000 px Breite links eine Seitenleiste mit allen Seiten. Home gruppiert die Kacheln der Übersicht nach Tanks, Klima, Energie, Fahrzeug und eigene Kacheln; Warnungen stehen als gelbes Band oben. Die Einstellungen haben links eine Liste aller Bereiche mit Suchfeld und unten eine Leiste „Änderungen nicht gespeichert · Speichern“.
 
 
 Die Einstellungen sind in Gruppen geteilt, oben umschaltbar (die letzte Wahl merkt sich der Browser):

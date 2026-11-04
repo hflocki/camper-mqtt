@@ -626,7 +626,7 @@ const th=(k,col,title,tid,did)=>`<h3><span class="ti" style="color:${col}">${svg
 function tank(id,k,col,title){return `<div class="card tile">${th(k,col,title,'',id)}<span class="big" id="${id}_v">--</span><div class="bar"><i id="${id}_b" style="background:${col}"></i></div><div class="mu" id="${id}_l"></div></div>`}
 function info(id,k,col,title,go){return `<div class="card tile click" data-go="${go}">${th(k,col,title,'',id)}<div class="big" id="${id}_v">--</div><div class="mu" id="${id}_s"></div></div>`}
 // the web page groups the tiles chosen for the panel by topic, keeping their order inside a group
-const OV_GROUPS=[['Vorräte',['water','grey','gas']],['Klima',['heater','fan','heki','temp','weather']],['Energie',['bat','bat1','bat2','bat3']],['Fahrzeug',['level','actors','lights','switches']],['Eigene Kacheln',null]];
+const OV_GROUPS=[['Tanks',['water','grey','gas']],['Klima',['heater','fan','heki','temp','weather']],['Energie',['bat','bat1','bat2','bat3']],['Fahrzeug',['level','actors','lights','switches']],['Eigene Kacheln',null]];
 function ovTile(t){
   if(t==='water')return tank('w','water','var(--water)','Frischwasser');
   if(t==='grey')return tank('g','grey','var(--grey)','Grauwasser');
