@@ -1,127 +1,130 @@
 # camper-mqtt
 
-Elektronik für den Camper, die über **MQTT** zusammenspielt: Tanks, Temperaturen, Batterien, Heizung, Dachlüfter, Ausrichtung und zwei Displays. Jedes Gerät ist ein ESP8266/ESP32 mit reiner **Arduino**-Firmware (kein ESPHome), eigener Web-Oberfläche und Home-Assistant-Discovery. Home Assistant ist optional: Die Geräte und Displays reden direkt über den Broker miteinander, z. B. den MQTT-Broker des LTE-Routers.
+🇬🇧 English · 🇩🇪 [Deutsch](README.de.md)
+
+Electronics for a camper van that work together over **MQTT**: tanks, temperatures, batteries, heater, roof fan, roof hatch, levelling and two displays. Every device is an ESP8266/ESP32 with its own **Arduino** firmware, its own web interface and Home Assistant discovery. Devices and displays talk to each other directly through the broker, e.g. the MQTT broker of the LTE router. Home Assistant can listen in, but it does not have to run.
+
+## Why?
+
+It all started with Home Assistant and ESPHome. For the camper, that became too much over time: a server that has to run before anything shows up, a YAML configuration per device, updates that change things on the side, and many parts that all have to fit together. A vehicle is often off-grid for days and runs on battery, so I wanted something simpler and more robust.
+
+So the rules here are:
+
+- **Every device works on its own** – with its own web interface for settings and values, even without a display and without a server.
+- **MQTT is the only link.** The broker runs on the router anyway. The displays read straight from the broker.
+- **Home Assistant is an option, not a requirement.** Discovery is built in; if you use HA, all devices show up automatically.
+- **Updates in the browser**, with a check of the file and a fallback to the previous firmware if something goes wrong.
+
+This is not criticism of ESPHome or Home Assistant – both are great. For this one vehicle a leaner setup simply fit better.
 
 ```mermaid
 flowchart LR
-  broker(("MQTT-Broker<br/>z. B. RUT956"))
-  tank["tanklevel<br/>Wasser, Grau, Gas"] --> broker
-  temp["temp<br/>DS18B20 + Alarme"] --> broker
-  bat["battery<br/>BMS per Bluetooth"] --> broker
-  tool["toolbox<br/>Bluetooth-Plugins: Dachhaube …"] <--> broker
+  broker(("MQTT broker<br/>e.g. RUT956"))
+  tank["tanklevel<br/>fresh, grey, gas"] --> broker
+  temp["temp<br/>DS18B20 + alarms"] --> broker
+  bat["battery<br/>BMS over Bluetooth"] --> broker
+  tool["toolbox<br/>Bluetooth plugins: roof hatch …"] <--> broker
   heater["heater<br/>Truma Combi (LIN)"] <--> broker
   fan["maxxfan<br/>VanTurtle"] <--> broker
-  level["level<br/>BNO085 + Keile"] <--> broker
-  broker <--> display["display<br/>4-Zoll-Wandpanel + Webseite"]
+  level["level<br/>BNO085 + wedges"] <--> broker
+  omg["omg<br/>BLE thermometers"] -.-> broker
+  broker <--> display["display<br/>4-inch wall panel + web page"]
   broker --> rb["roadbuddy<br/>M5Stack Core2"]
   broker -.- ha["Home Assistant<br/>(optional)"]
 ```
 
-## Geräte
+## Devices
 
-| Ordner | Hardware | Aufgabe | Basis-Topic |
+| Folder | Hardware | Purpose | Base topic |
 | --- | --- | --- | --- |
-| [`firmware/tanklevel`](firmware/tanklevel) | ESP32-C3 | Frischwasser + Grauwasser (Votronic), Gasflasche (BLE) | `camper/tanklevel` |
-| [`firmware/temp`](firmware/temp) | ESP8266 / ESP32-C3 | bis zu 8 DS18B20 (Kühlschrank, Gefrierfach …) mit Alarm-Grenzwerten | `camper/temp` |
-| [`firmware/battery`](firmware/battery) | ESP32-C3 | Batterie-BMS per Bluetooth (Daly, Ective BM X): Ladestand, Strom, Zellen | `camper/battery` |
-| [`firmware/toolbox`](firmware/toolbox) | ESP32-C3 | Bluetooth-Geräte als Plugins: Dachhaube RV Tech (Heki), Wasserpumpe CaraWater, WCS-Kühlschrank, Gas (DIMES, Mopeka); neue Geräte kommen als Plugin dazu | `camper/toolbox` |
-| [`firmware/heater`](firmware/heater) | ESP32 + LIN-Transceiver | Truma Combi / Vario Heat als iNet Box am CP Plus | `camper/heater` |
-| [`firmware/maxxfan`](firmware/maxxfan) | ESP32-C3 + VanTurtle | MaxxFan-Dachlüfter | `camper/maxxfan` |
-| [`firmware/level`](firmware/level) | ESP32 + BNO085 | Längs-/Querneigung und Keilhöhe für jedes Rad (Fork des Levelsensors von klehnst) | `camper/level` |
-| [`firmware/omg`](firmware/omg) | ESP32 / ESP32-C3 | Bluetooth-Thermometer (Govee, Ruuvi, Xiaomi …) über OpenMQTTGateway | `camper/OMG` |
-| [`firmware/display`](firmware/display) | Guition ESP32-4848S040 | 4"-Wandpanel + gleiche Webseite fürs Handy, zeigt und steuert alles, Wetter, Warnungen | `camper/display` |
-| [`firmware/roadbuddy`](firmware/roadbuddy) | M5Stack Core2 | kleines Akku-Display: Ausrichtung, Wasser, Gas | – (nur Empfänger) |
-| [`firmware/emulator`](firmware/emulator) | ESP32-C3 | **Testgerät:** sendet die Topics aller fest verbauten Geräte, Router und Zigbee mit änderbaren Beispielwerten und Szenarien – Display und Road Buddy zu Hause testen | `camper/emulator` |
+| [`firmware/tanklevel`](firmware/tanklevel) | ESP32-C3 | Fresh and grey water (Votronic), gas bottle (BLE) | `camper/tanklevel` |
+| [`firmware/temp`](firmware/temp) | ESP8266 / ESP32-C3 | up to 8 DS18B20 (fridge, freezer …) with alarm limits | `camper/temp` |
+| [`firmware/battery`](firmware/battery) | ESP32-C3 | Battery BMS over Bluetooth (Daly, Ective BM X): state of charge, current, cells | `camper/battery` |
+| [`firmware/toolbox`](firmware/toolbox) | ESP32-C3 | Bluetooth devices as plugins: RV Tech roof hatch (Heki), CaraWater pump, WCS fridge, gas (DIMES, Mopeka) | `camper/toolbox` |
+| [`firmware/heater`](firmware/heater) | ESP32 + LIN transceiver | Truma Combi / Vario Heat as an iNet Box on the CP Plus | `camper/heater` |
+| [`firmware/maxxfan`](firmware/maxxfan) | ESP32-C3 + VanTurtle | MaxxFan roof fan | `camper/maxxfan` |
+| [`firmware/level`](firmware/level) | ESP32 + BNO085 | Pitch, roll and wedge height for every wheel (fork of the level sensor by klehnst) | `camper/level` |
+| [`firmware/omg`](firmware/omg) | ESP32 / ESP32-C3 | Bluetooth thermometers (Govee, Ruuvi, Xiaomi …) through OpenMQTTGateway | `camper/OMG` |
+| [`firmware/display`](firmware/display) | Guition ESP32-4848S040 | 4" wall panel + the same page for the phone: shows and controls everything, weather, warnings, Pushover | `camper/display` |
+| [`firmware/roadbuddy`](firmware/roadbuddy) | M5Stack Core2 | small battery display: levelling, water, gas | – (receive only) |
+| [`firmware/emulator`](firmware/emulator) | ESP32-C3 | **Test device:** sends the topics of all devices, the router and Zigbee with editable values and scenarios – test the displays at home | `camper/emulator` |
 
-Dazu, nicht in diesem Repo:
+Not in this repo: **router data (GPS, mobile signal)** is sent by the RUT956 itself over MQTT, see [router data in the display README](firmware/display/README.md#router-daten-rut956).
 
-- **Router-Daten (GPS, Mobilfunk):** Der RUT956 sendet sie selbst per MQTT, siehe [Router-Daten im Display-README](firmware/display/README.md#router-daten-rut956).
+- All topics at a glance: [`docs/TOPICS.md`](docs/TOPICS.md)
+- Clickable mockups of every web interface: [`docs/mockups/`](docs/mockups/index.html)
+- Notes for AI assistants and contributors: [`AGENTS.md`](AGENTS.md)
 
-Alle Topics aller Geräte auf einen Blick: [`docs/TOPICS.md`](docs/TOPICS.md).
+The documentation of the individual devices and the web interfaces are in German.
 
-Hinweise für KI-Assistenten und Mitwirkende (Arbeitsweise, Bauen, Patches): [`AGENTS.md`](AGENTS.md).
+## Quick start
 
-Jeder Ordner ist für sich vollständig: eigene README mit Hardware, Board-Einstellungen, Bibliotheken und Topics, Arduino-Sketch im Unterordner mit dem Namen der `.ino` (z. B. `camper_temp/`, Heizung `truma_heater/`). Gebaut wird nur mit Arduino (IDE oder `arduino-cli`), PlatformIO nur beim Bluetooth-Gateway `firmware/omg`, weil OpenMQTTGateway ein fremdes PlatformIO-Projekt ist.
+1. **Get the firmware:** download the device's `.bin` from [Releases](https://github.com/hflocki/camper-mqtt/releases) – or build it yourself (Arduino IDE or `arduino-cli`; board and libraries are listed in the device README).
+2. **Flash once over USB.** After that, updates go through the web interface.
+3. **Set up:** without WiFi credentials the device opens an access point `Camper-<device>-XXXXXX`. Connect, open `http://192.168.4.1`, enter WiFi and MQTT broker.
+4. The device appears under `camper/<device>/…` on the broker; the display finds it by itself.
 
-## Mockups
+## Common rules
 
-Unter [`docs/mockups/`](docs/mockups/index.html) liegt von jeder Weboberfläche ein klickbares Mockup: die echte Seite aus der Firmware mit simulierten Daten. Knöpfe, Einstellungen, Speichern und Upload reagieren wie am Gerät, es wird aber nichts gesendet. `index.html` zeigt alle Geräte nebeneinander in Handygröße; die Geräte-Links im Display-Mockup führen zu den anderen Mockups.
+All devices follow the same scheme, so the displays and Home Assistant understand them without special cases:
 
-Zum Ansehen den Ordner herunterladen und `index.html` im Browser öffnen. Nach Änderungen an einer Weboberfläche neu erzeugen (nur Python-Standardbibliothek, kein venv nötig):
-
-```bash
-python3 tools/mockups/make_mockups.py
-```
-
-Die Beispieldaten und das simulierte Verhalten stehen je Gerät in `tools/mockups/mock/<gerät>.js`, der gemeinsame Teil (fetch, WebSocket, Upload) in `core.js`. Bei einem neuen Gerät dort eine Datei anlegen und es in `make_mockups.py` eintragen. Der Road Buddy hat nur eine kleine Update-Seite und fehlt deshalb.
-
-## Neues Gerät
-
-[`firmware/_template`](firmware/_template) ist ein lauffähiges Muster-Gerät mit allem Gemeinsamen (WLAN mit Setup-WLAN, Web-Oberfläche, Einstellungen, MQTT mit Home-Assistant-Discovery, Updates ohne USB). Ein Befehl kopiert es als neues Gerät, danach füllst du nur noch den Sensor-Teil (`sensor.cpp`). Anleitung: [`firmware/_template/ANLEITUNG.md`](firmware/_template/ANLEITUNG.md).
-
-```bash
-python firmware/_template/tools/new_device.py waste "Abwasser"
-```
-
-## Gemeinsame Regeln
-
-Alle Geräte halten sich an dasselbe Schema, damit Displays und Home Assistant sie ohne Sonderfälle verstehen:
-
-| Was | Wie |
+| What | How |
 | --- | --- |
-| Topics | `camper/<gerät>/…`, Werte **retained** |
-| Verfügbarkeit | `camper/<gerät>/status` = `online` / `offline` als Last Will (retained, QoS 1) |
-| Befehle | `…/cmd/…` bzw. `…/set/…`, nicht retained |
-| Home Assistant | Auto-Discovery unter `homeassistant/…`, ein Gerät pro Firmware |
-| Einrichtung | Ohne WLAN-Daten startet ein Access Point `Camper-<Gerät>-XXXXXX`, Einstellungen im Browser unter `http://192.168.4.1` |
-| Web-Oberfläche | Gleiche Optik auf allen Geräten, optionaler Login (HTTP Basic Auth); Login vergessen → `noauth` im seriellen Monitor bzw. Werkseinstellungen |
-| Firmware-Version | `FW_VERSION` in der `config.h` des Geräts, sichtbar im Web-UI und in HA |
+| Topics | `camper/<device>/…`, values **retained** |
+| Availability | `camper/<device>/status` = `online` / `offline` as last will (retained, QoS 1) |
+| Diagnostics | `camper/<device>/info`: JSON with version, IP, signal, uptime |
+| Commands | `…/cmd/…` or `…/set/…`, not retained |
+| Home Assistant | auto discovery under `homeassistant/…`, one device per firmware |
+| Setup | access point `Camper-<device>-XXXXXX`, settings in the browser at `http://192.168.4.1` |
+| Web interface | same look on every device, optional login (HTTP basic auth); forgot the login → `noauth` in the serial monitor or factory reset |
+| Updates | in the browser, with checks (wrong device, `.merged.bin`, too large), event log and fallback to the previous firmware |
+| Firmware version | `FW_VERSION` in the device's `config.h`, shown in the web UI and in HA |
 
-## Eigene Einstellungen (`config_local.h`)
+## Your own settings (`config_local.h`)
 
-Passwörter, WLAN und Broker gehören nicht ins Repo. Jedes Gerät hat dafür neben seiner `config.h` eine Vorlage `config_local.h.example`:
+Passwords, WiFi and broker do not belong in the repo. Next to its `config.h`, every device has a template `config_local.h.example`:
 
 ```bash
 cd firmware/temp/camper_temp
 cp config_local.h.example config_local.h   # then edit
 ```
 
-Alles, was in `config_local.h` steht, gilt statt des Standardwerts aus `config.h`. Die Datei ist per `.gitignore` ausgeschlossen, landet also nie auf GitHub, und Updates oder Patches überschreiben sie nicht. Typisch:
+Everything in `config_local.h` replaces the default from `config.h`. The file is excluded by `.gitignore`, so it never ends up on GitHub, and updates or patches do not overwrite it. Typical values:
 
-| Wert | Wirkung |
+| Value | Effect |
 | --- | --- |
-| `DEFAULT_AP_PASSWORD` | Passwort des Setup-Access-Points |
-| `DEFAULT_OTA_PASSWORD` | Passwort für Updates über den Netzwerk-Port der Arduino IDE |
-| `DEFAULT_WIFI_SSID` / `DEFAULT_WIFI_PASSWORD` | WLAN, mit dem sich ein frisch geflashtes Gerät sofort verbindet |
-| `DEFAULT_MQTT_SERVER`, `_USER`, `_PASSWORD` | Broker ab Werk |
-| `DEFAULT_WEB_USER` / `DEFAULT_WEB_PASSWORD` | Login für die Web-Oberfläche ab Werk |
+| `DEFAULT_AP_PASSWORD` | password of the setup access point |
+| `DEFAULT_OTA_PASSWORD` | password for updates through the network port of the Arduino IDE |
+| `DEFAULT_WIFI_SSID` / `DEFAULT_WIFI_PASSWORD` | WiFi a freshly flashed device joins right away |
+| `DEFAULT_MQTT_SERVER`, `_USER`, `_PASSWORD` | factory broker |
+| `DEFAULT_WEB_USER` / `DEFAULT_WEB_PASSWORD` | factory login for the web interface |
 
-Außerdem lässt sich jeder andere Wert aus `config.h` überschreiben (Pins, Prefix, Tankgröße …).
+Any other value from `config.h` can be overridden as well (pins, prefix, tank size …).
 
-Wichtig: WLAN, MQTT und Login ab Werk wirken nur, solange auf dem Gerät noch nichts gespeichert ist. Ein normales Update über bestehende Einstellungen ändert sie nicht. Neu übernommen werden sie nach **Werkseinstellungen** im Web-UI, nach dem Flashen mit **Erase All Flash Before Sketch Upload: Enabled** (Arduino IDE, Menü Werkzeuge) bzw. bei temp, tanklevel, level und battery nach dem Hochladen des LittleFS-Images. Die Passwörter für Access Point und OTA gelten dagegen immer sofort.
+Note: factory WiFi, MQTT and login only apply while nothing is stored on the device yet. A normal update over existing settings does not change them. They are taken over again after a **factory reset** in the web UI, after flashing with **Erase All Flash Before Sketch Upload: Enabled** (Arduino IDE, Tools menu), or for temp, tanklevel, level and battery after uploading the LittleFS image. The access point and OTA passwords always apply immediately.
 
-Der Road Buddy hat keine Einstellungsseite, nur eine Update-Seite; dort ist die ganze `config.h` die persönliche Datei (Vorlage `config.example.h`). Eine Firmware mit eigener `config.h` speichert die Zugangsdaten im Flash, damit die Actions-Firmware danach per Update-Seite installiert werden kann.
+The Road Buddy has no settings page, only an update page; there the whole `config.h` is the personal file (template `config.example.h`). A firmware built with your own `config.h` stores the credentials in flash, so the Actions firmware can be installed through the update page afterwards.
 
-## Warnungen
+## Warnings
 
-`firmware/temp` meldet überschrittene Grenzwerte (z. B. „Kühlschrank über 8 °C seit 15 min“) unter `camper/temp/alarm_text`. Das Wandpanel zeigt diese, Heizungsfehler, Batterie- und Wetter-Warnungen in der Status-Kachel und als gelbes Band in der Kopfzeile, auf Wunsch auch per Pushover. Den Bildschirm weckt eine Warnung nur, wenn das in den Display-Einstellungen eingeschaltet ist. In Home Assistant gibt es dieselben Alarme als Binärsensoren.
+`firmware/temp` reports exceeded limits (e.g. "fridge above 8 °C for 15 min") under `camper/temp/alarm_text`. The wall panel shows these, heater errors and battery, tank, frost and weather warnings in the status tile and as a yellow banner in the header – optionally also as a **Pushover** message on the phone, with its own priority per kind of warning, up to an emergency that keeps ringing until it is confirmed. Home Assistant gets the same alarms as binary sensors.
 
-## Fertige Firmware
+## Ready-made firmware
 
-Jeder Push baut alle Geräte per GitHub Actions ([`.github/workflows/build.yml`](.github/workflows/build.yml)), mit genau den Board-Paket- und Bibliotheksversionen aus den Geräte-READMEs. Die `.bin` liegt beim jeweiligen Lauf im Reiter **Actions** zum Download.
+Every push builds all devices with GitHub Actions ([`.github/workflows/build.yml`](.github/workflows/build.yml)), using exactly the board package and library versions from the device READMEs. The `.bin` files are available in the **Actions** tab of each run.
 
-Ein Release für **ein** Gerät entsteht mit einem Tag `<gerät>-v<version>`:
+A release for **one** device is made with a tag `<device>-v<version>`:
 
 ```bash
 git tag temp-v1.1.0
 git push origin temp-v1.1.0
 ```
 
-Dann wird nur dieses Gerät gebaut und die `.bin` ans Release gehängt. Alle Geräte spielen sie über ihre Web-Oberfläche ein (Road Buddy über seine Update-Seite). Bei temp, tanklevel, level, battery, maxxfan und toolbox liegt die Web-Oberfläche außerdem als `data/index.html.gz` im Sketch-Ordner und wird nach einem Update separat hochgeladen.
+Then only this device is built and the `.bin` is attached to the release. All devices install it through their web interface (Road Buddy through its update page). For temp, tanklevel, level, battery, maxxfan and toolbox the web interface also lives as `data/index.html.gz` in the sketch folder and is uploaded separately after an update.
 
-## Nur ein Gerät nachbauen
+## Build just one device
 
-Einfach den Ordner des Geräts nehmen und dessen README folgen. Wer nicht das ganze Repo laden will:
+Take the device folder and follow its README. If you do not want the whole repo:
 
 ```bash
 git clone --filter=blob:none --sparse https://github.com/hflocki/camper-mqtt.git
@@ -129,20 +132,42 @@ cd camper-mqtt
 git sparse-checkout set firmware/temp
 ```
 
-## Herkunft
+## New device
 
-Die Geräte waren vorher einzelne Repos (`camper-tanklevel`, `camper-temp`, `camper-heater`, `camper-maxxfan`, `camper-display`, `m5core2-roadbuddy`). Sie wurden mit ihrer kompletten Git-Historie hierher übernommen; die alten Repos sind archiviert.
+[`firmware/_template`](firmware/_template) is a working sample device with everything shared (WiFi with setup access point, web interface, settings, MQTT with Home Assistant discovery, updates without USB). One command copies it as a new device; then you only fill in the sensor part (`sensor.cpp`). Guide (German): [`firmware/_template/ANLEITUNG.md`](firmware/_template/ANLEITUNG.md).
 
-## Lizenzen
+```bash
+python firmware/_template/tools/new_device.py waste "Abwasser"
+```
 
-Jeder Ordner behält seine Lizenz:
+Every folder is complete on its own: its own README with hardware, board settings, libraries and topics, the Arduino sketch in a subfolder named like the `.ino` (e.g. `camper_temp/`, heater `truma_heater/`). Everything is built with Arduino (IDE or `arduino-cli`); PlatformIO is only used for the Bluetooth gateway `firmware/omg`, because OpenMQTTGateway is a third-party PlatformIO project.
 
-| Ordner | Lizenz |
+## Mockups
+
+[`docs/mockups/`](docs/mockups/index.html) has a clickable mockup of every web interface: the real page from the firmware with simulated data. Buttons, settings, saving and uploads react like on the device, but nothing is sent. `index.html` shows all devices side by side in phone size.
+
+To view them, download the folder and open `index.html` in a browser. Regenerate after changing a web interface (Python standard library only, no venv needed):
+
+```bash
+python3 tools/mockups/make_mockups.py
+```
+
+Sample data and simulated behaviour per device are in `tools/mockups/mock/<device>.js`, the shared part (fetch, WebSocket, upload) in `core.js`. For a new device, add a file there and register it in `make_mockups.py`. The Road Buddy only has a small update page and is therefore missing.
+
+## Origin
+
+The devices used to be separate repos (`camper-tanklevel`, `camper-temp`, `camper-heater`, `camper-maxxfan`, `camper-display`, `m5core2-roadbuddy`, `camper_toolbox`). They were moved here; the old repos are or will be archived.
+
+## Licenses
+
+Every folder keeps its license:
+
+| Folder | License |
 | --- | --- |
-| `firmware/battery` | Apache-2.0 (Protokolle portiert aus [aiobmsble](https://github.com/patman15/aiobmsble)) |
-| `firmware/heater` | GPL-3.0 (Protokoll-Logik portiert aus GPL-Projekten, siehe dortige README) |
-| `firmware/level` | MIT [klehnst](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT), |
+| `firmware/battery` | Apache-2.0 (protocols ported from [aiobmsble](https://github.com/patman15/aiobmsble)) |
+| `firmware/heater` | GPL-3.0 (protocol logic ported from GPL projects, see its README) |
+| `firmware/level` | MIT ([klehnst](https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT)) |
 | `firmware/tanklevel`, `temp`, `maxxfan`, `display` | MIT |
-| `firmware/toolbox` | MIT (Dachhauben-Protokoll portiert aus der HA-Integration rvtech-hacs) |
+| `firmware/toolbox` | MIT (roof hatch protocol ported from the HA integration rvtech-hacs) |
 | `firmware/roadbuddy` | MIT |
 | `firmware/emulator` | MIT |
