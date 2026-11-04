@@ -2,6 +2,10 @@
 """Copy the shared sources from firmware/_common into every sketch listed in
 firmware/_common/manifest.json, so each sketch folder stays self-contained.
 
+"blocks" in the manifest are pasted INTO a file instead (e.g. the shared CSS of the web
+pages into web/index.html), between a begin and an end marker. A file without the markers
+gets the block in front of "before" (e.g. "</style>").
+
   python3 tools/common/sync_common.py           copy changed files, list affected devices
   python3 tools/common/sync_common.py --check   only compare, exit code 1 on any difference (CI)
 """
@@ -45,6 +49,37 @@ def main() -> int:
             differing.append((name, sketch))
             if not args.check:
                 dst.write_bytes(data)
+
+    for name, spec in manifest.get("blocks", {}).items():
+        src = COMMON / name
+        if not src.is_file():
+            missing.append(str(src.relative_to(ROOT)))
+            continue
+        begin, end, before = spec["begin"], spec["end"], spec["before"]
+        block = begin + "\n" + src.read_text(encoding="utf-8").rstrip("\n") + "\n" + end + "\n"
+        for target in spec["files"]:
+            dst = ROOT / target
+            if not dst.is_file():
+                missing.append(target)
+                continue
+            text = dst.read_text(encoding="utf-8")
+            if begin in text and end in text:
+                a = text.index(begin)
+                b = text.index(end, a) + len(end)
+                if b < len(text) and text[b] == "\n":
+                    b += 1
+                new = text[:a] + block + text[b:]
+            elif before in text:
+                i = text.index(before)
+                new = text[:i] + block + text[i:]
+            else:
+                missing.append(f"{target} (no {before!r})")
+                continue
+            if new == text:
+                continue
+            differing.append((name, str(Path(target).parent.parent)))
+            if not args.check:
+                dst.write_text(new, encoding="utf-8")
 
     for m in missing:
         print(f"missing: {m}", file=sys.stderr)

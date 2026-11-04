@@ -29,3 +29,7 @@ Hier liegt das **Original** von Quelldateien, die mehrere Geräte benutzen. Jede
 | `devinfo.h/.cpp` | Diagnose-JSON für `<prefix>/info` (Version, IP, MAC, RSSI, Laufzeit, Reset-Grund, freier Speicher) und Zeitsteuerung `devinfoDue()` | alle Geräte |
 
 Beim `wifi_manager` haben tanklevel, maxxfan, heater, display und toolbox noch eigene, abweichende Fassungen. Sie werden einzeln umgestellt, jeweils mit Test am Gerät.
+
+## Web-Design (`web/camper-theme.css`)
+
+Gemeinsame Farben und Bausteine aller Geräte-Webseiten im Stil des Displays. Wird nicht als Datei kopiert, sondern von `tools/common/sync_common.py` zwischen den Markern `/* camper-theme:begin */` und `/* camper-theme:end */` am Ende des `<style>`-Blocks jeder `web/index.html` eingefügt (Liste unter `blocks` in `manifest.json`). Danach `python3 tools/web/pack_web.py`.

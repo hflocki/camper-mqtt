@@ -20,6 +20,7 @@ Monorepo für Camper-Elektronik: jedes Gerät ist ein ESP8266/ESP32 mit reiner *
 - **Nur Arduino:** Firmware wird mit der Arduino IDE bzw. `arduino-cli` gebaut, keine `platformio.ini` für eigene Geräte. Einzige Ausnahme ist `firmware/omg` (OpenMQTTGateway, fremdes PlatformIO-Projekt).
 - **Firmware-Kennung:** Alle Geräte haben `fwcheck.*`, `evlog.*` und `safeguard.*` und brauchen `FW_DEVICE` in `config.h` (Road Buddy: `fw_id.h`), gleich der Geräte-ID im Tag. Die Prüfung im Browser (`fwInspect()`) und im Gerät (`fwcheck.cpp`) müssen dieselben Regeln haben.
 - **Web-Oberflächen:** `web/index.html` ist die Quelle, nach jeder Änderung `python3 tools/web/pack_web.py` (packt nach `data/index.html.gz`); CI prüft mit `--check`. Das Display bettet seine Seite stattdessen per `embed_web.py` ein.
+- **Gemeinsames Aussehen:** Farben und Bausteine aller Geräte-Webseiten (Kopfzeile, Tabs, Karten, Formulare, Schalter, Knöpfe) stehen in `firmware/_common/web/camper-theme.css`. `sync_common.py` fügt die Datei zwischen `/* camper-theme:begin */` und `/* camper-theme:end */` in jede `web/index.html` ein (Liste unter `blocks` in `manifest.json`), danach `pack_web.py`. Nur dort ändern. Symbole sind Strich-SVGs (`svg.i`), keine Emojis. Das Display hat dieselben Farben in seiner eigenen Seite.
 
 ## Aufbau
 

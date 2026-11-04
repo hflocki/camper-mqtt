@@ -13,7 +13,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.4.0"
+#define FW_VERSION            "1.4.1"
 #define FW_DEVICE            "battery"   // device id in the firmware marker (fwcheck.h)
 
 #ifndef DEFAULT_AP_SSID

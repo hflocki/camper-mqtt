@@ -305,12 +305,104 @@ code { font-family: ui-monospace, Menlo, monospace; }
 .fwu-ev{padding:4px 0;border-bottom:1px solid var(--fwu-line)}.fwu-ev:last-child{border-bottom:0}
 .fwu-ev span{color:var(--fwu-mute);margin-right:8px;white-space:nowrap}.fwu-ev.bad{color:var(--fwu-bad)}
 button:disabled{opacity:.45;cursor:not-allowed}
+/* camper-theme:begin */
+/* camper-mqtt design (same look as the display): calm and technical, colour means state,
+   blue means control. Shared block, edit firmware/_common/web/camper-theme.css and run
+   tools/common/sync_common.py; it overrides the page's own styles above it. */
+:root{
+ --bg-primary:#0D1115;--bg-secondary:#11161B;--bg-card:#151B21;--bg-input:#0D1115;--border:#222B34;--radius:14px;
+ --accent:#4DA3F0;--accent-glow:rgba(77,163,240,.25);--success:#46B97C;--warning:#E5A23B;--danger:#E5534B;
+ --text-primary:#E7ECF0;--text-secondary:#B4BEC8;--text-muted:#8B98A5;
+ --water:#3E9BE0;--water-glow:rgba(62,155,224,.25);--gas:#D9893A;--grey:#8A96A3;
+ --cold:#3E9BE0;--mild:#46B97C;--warm:#E5A23B;--hot:#E5534B;
+ --bg:#0D1115;--bg2:#11161B;--card:#151B21;--input:#0D1115;--acc:#4DA3F0;--acc-glow:rgba(77,163,240,.25);--warn:#E5A23B;
+ --ok:#46B97C;--ink:#E7ECF0;--mute:#8B98A5;--dim:#6F7C89;--line:#222B34;--r:14px;--bad:#E5534B;
+ --cm-line2:#2F3A45;--cm-hi:#1C242C;--cm-acx:#06131F;color-scheme:dark}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:15px;line-height:1.4}
+svg.i{width:20px;height:20px;flex:none;vertical-align:-4px}
+.header{background:var(--bg-primary);padding:14px 16px;border-bottom:1px solid var(--border);gap:12px}
+.header h1{font-size:1.15rem;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:10px;min-width:0}
+.header h1 svg.i{color:var(--accent)}
+.status-dots{gap:6px;font-size:.75rem;color:var(--text-primary);flex-wrap:wrap;justify-content:flex-end}
+.status-dots>span{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;background:var(--cm-hi)}
+.status-dot{width:8px;height:8px;margin-right:6px;background:var(--cm-line2);box-shadow:none}
+.status-dot.active{background:var(--success);box-shadow:none}
+.status-dot.warning{background:var(--warning)}
+.tabs{background:var(--bg-primary);border-bottom:1px solid var(--border);padding:8px 8px 0;gap:4px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{font-size:.72rem;color:var(--text-muted);border-bottom:2px solid transparent;border-radius:10px 10px 0 0;padding:8px 2px 8px;gap:4px}
+.tab .ico{display:inline-flex;font-size:1.05rem}
+.tab .ico svg.i{width:20px;height:20px}
+.tab.active,.tab.gas.active,.tab.grey.active{color:var(--text-primary);border-bottom-color:var(--accent);background:var(--cm-hi);font-weight:600}
+.tab.active .ico{color:var(--accent)}
+.tab-content{padding:16px}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+.card-title,.card-title.accent,.card-title.water,.card-title.gas{font-size:.85rem;font-weight:600;text-transform:none;letter-spacing:0;color:var(--text-secondary);margin-bottom:12px}
+.values-grid{gap:10px}
+.value-item{background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:left}
+.value-label{font-size:.75rem;color:var(--text-muted)}
+.value-num{font-size:1.35rem;font-weight:600}
+.info-row{padding:10px 0;font-size:.9rem}
+.info-label{color:var(--text-muted)}
+.form-group label{font-size:.8rem;color:var(--text-muted);margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{min-height:40px;padding:9px 12px;background:var(--bg-input);border:1px solid var(--cm-line2);border-radius:10px;font-size:.95rem;color:var(--text-primary)}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:-1px}
+.form-hint{font-size:.78rem;color:var(--text-muted)}
+.btn{min-height:44px;border-radius:10px;font-size:.95rem;font-weight:600;gap:8px}
+.btn-primary{background:var(--accent);color:var(--cm-acx);border:1px solid var(--accent)}
+.btn-secondary{background:var(--cm-hi);color:var(--text-primary);border:1px solid var(--cm-line2)}
+.btn-danger{background:transparent;color:#F08A84;border:1px solid #5A2A2A}
+.btn-small{min-height:34px;padding:6px 12px;font-size:.85rem;border-radius:9px}
+.btn-row{gap:10px}
+.enable-row{padding:4px 0}
+.toggle{width:44px;height:26px}
+.toggle span{background:var(--cm-line2);border-radius:999px}
+.toggle span::before{width:20px;height:20px;left:3px;top:3px;background:#fff}
+.toggle input:checked+span{background:var(--accent)}
+.toggle input:checked+span::before{transform:translateX(18px)}
+.badge{border-radius:999px;padding:2px 8px;background:rgba(77,163,240,.15);color:var(--accent)}
+.badge.err{background:rgba(229,83,75,.15);color:var(--danger)}
+.badge.new{background:rgba(229,162,59,.15);color:var(--warning)}
+.dev{background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.empty{color:var(--text-muted)}
+.toast{background:var(--text-primary);color:var(--bg-primary);border:0;border-radius:10px}
+.toast.err{background:var(--danger);color:#fff}
+.alarm-banner{background:#2A2213;border-color:#4A3A1C;color:#F6D9A3}
+a{color:var(--accent)}
+@media (min-width:600px){.app-wrap{max-width:560px}}
+/* the same parts under other names (toolbox: header/nav, maxxfan: .dots/.dot/.ct) */
+header{background:var(--bg-primary);border-bottom:1px solid var(--border)}
+header h1{color:var(--text-primary);display:flex;align-items:center;gap:10px}
+header h1 svg.i{color:var(--accent)}
+nav{background:var(--bg-primary);border-bottom:1px solid var(--border);padding:8px 8px 0;gap:4px;scrollbar-width:none}
+nav button{color:var(--text-muted);border-radius:10px 10px 0 0;font-size:.72rem}
+nav button.on{color:var(--text-primary);border-bottom-color:var(--accent);background:var(--cm-hi);font-weight:600}
+nav button.on .ico{color:var(--accent)}
+nav button .ico{display:inline-flex}
+.dots{gap:6px;font-size:.75rem;color:var(--text-primary)}
+.dots>span{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;background:var(--cm-hi)}
+.dot{background:var(--cm-line2);margin-right:6px;box-shadow:none}
+.dot.on{background:var(--ok);box-shadow:none}
+/* labels in sentence case instead of capitals, no coloured side stripes, flat fills */
+.ct,.temp-name,.bat-name,.gauge-title,.grp,.wedge .wl{text-transform:none;letter-spacing:0;font-size:.85rem}
+.ct{font-weight:600;color:var(--text-secondary)}
+.temp-tile::before{display:none}
+.temp-tile{padding:14px}
+.tank-fill{background:var(--water)}
+.bat::before{display:none}
+.bat{padding-left:16px}
+.ct.acc{color:var(--text-secondary)}
+.header h1,header h1{white-space:normal}
+.header h1 span,header h1 span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card h2{text-transform:none;letter-spacing:0;font-size:.85rem;font-weight:600}
+.card.dev-card::before{display:none}
+/* camper-theme:end */
 </style>
 </head>
 <body>
 <div class="app-wrap">
     <div class="header">
-        <h1>🚐 Camper Example</h1>
+        <h1><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8"/></svg><span>Example</span></h1>
         <div class="status-dots">
             <span><span class="status-dot" id="dot-sensor"></span>Sensor</span>
             <span><span class="status-dot" id="dot-wifi"></span>WiFi</span>
@@ -319,10 +411,10 @@ button:disabled{opacity:.45;cursor:not-allowed}
     </div>
 
     <div class="tabs">
-        <div class="tab active" data-tab="live"><span class="ico">📊</span><span>Live</span></div>
-        <div class="tab" data-tab="settings"><span class="ico">🎛️</span><span>Einstellungen</span></div>
-        <div class="tab" data-tab="mqtt"><span class="ico">⚙️</span><span>MQTT</span></div>
-        <div class="tab" data-tab="wifi"><span class="ico">📶</span><span>WiFi</span></div>
+        <div class="tab active" data-tab="live"><span class="ico"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16M8 15l3-4 3 3 5-6"/></svg></span><span>Live</span></div>
+        <div class="tab" data-tab="settings"><span class="ico"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4"/></svg></span><span>Einstellungen</span></div>
+        <div class="tab" data-tab="mqtt"><span class="ico"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4"/></svg></span><span>MQTT</span></div>
+        <div class="tab" data-tab="wifi"><span class="ico"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0M12 19h.01"/></svg></span><span>WiFi</span></div>
     </div>
 
     <!-- LIVE TAB: one tile per value, built from the list the device sends (VALUES[] in sensor.cpp) -->
