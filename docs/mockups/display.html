@@ -306,6 +306,7 @@ const M = {
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
 svg.i{width:20px;height:20px;flex:none;vertical-align:-4px}
+a{color:var(--ac)}a:hover{color:#7DBDF5}
 header{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 16px;border-bottom:1px solid var(--line)}
 .top{display:flex;align-items:center;gap:10px;min-height:40px}
 .top h1{font-size:20px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -354,7 +355,8 @@ main{padding:16px 16px calc(96px + env(safe-area-inset-bottom));max-width:880px;
 .card.wide{grid-column:1/-1}
 .card.w2{grid-column:span 2}
 .card h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:13px;font-weight:500;color:var(--tx2)}
-.card h3 .ti{display:inline-flex}.card h3 .ti svg.i{width:18px;height:18px}
+.card h3 .ti{display:inline-flex}.card h3 .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sd{width:8px;height:8px;border-radius:50%;background:var(--line2);flex:none}.card h3 .ti svg.i{width:18px;height:18px}
 .tile{display:flex;flex-direction:column;min-height:132px}
 .tile .mu{margin-top:auto;padding-top:8px}
 .sec{margin:0 0 24px}
@@ -454,6 +456,9 @@ code{font-size:12px;color:var(--mu);font-family:ui-monospace,SFMono-Regular,Menl
 .trow .n{flex:1;color:var(--tx2);font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .trow .n svg.i{width:18px;height:18px;color:var(--mu)}
 .trow.al .big{color:var(--warn)}
+#x_i svg.i{width:72px;height:72px;stroke-width:1.4}#owx_v svg.i{width:26px;height:26px}[id^=x_di] svg.i{width:28px;height:28px}
+.sysrow svg.i,.card h3 svg.i{color:var(--mu)}
+.card h3 .ti svg.i{color:inherit}
 :root{--fwu-ok:var(--ok);--fwu-warn:#f0a030;--fwu-bad:var(--warn);--fwu-mute:var(--mu);--fwu-line:var(--hi)}
 .fwu-cur{font-size:.8rem;margin:0 0 10px}
 .fwu-chk{font-size:.8rem;margin:8px 0;line-height:1.4}
@@ -496,8 +501,17 @@ const SVGP={home:'M4 11l8-7 8 7v9H4zM10 20v-6h4v6',water:'M12 3c3 4 6 7.5 6 11a6
  tree:'M12 3l6 9h-4l4 6H6l4-6H6zM12 18v3',bed:'M3 18V7M3 13h18v5M21 18v-3a3 3 0 0 0-3-3h-8v1M7 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z',
  shower:'M4 20L15 9M12 6a5 5 0 0 1 6 6zM16 15v1M19 15v1M16 18v1M19 18v1',awning:'M3 8h18l-2 5H5zM5 13v7M19 13v7M3 8l2-3h14l2 3',lock:'M6 11h12v9H6zM9 11V7a3 3 0 0 1 6 0',
  link:'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',power:'M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0',
- grey:'M4 20L15 9M12 6a5 5 0 0 1 6 6zM16 15v1M19 15v1M16 18v1M19 18v1',search:'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4'};
+ grey:'M4 20L15 9M12 6a5 5 0 0 1 6 6zM16 15v1M19 15v1M16 18v1M19 18v1',search:'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4',
+ moon:'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z',partly:'M8 3v1.5M3.5 8H2M4.8 4.8l1 1M12 6.5A4 4 0 0 0 5 9.3M8 19h9a3.5 3.5 0 0 0 .4-7A5 5 0 0 0 8 13.2 3 3 0 0 0 8 19z',
+ rain:'M7 15h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 15zM8 18l-1 3M12 18l-1 3M16 18l-1 3',
+ snowc:'M7 15h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 15zM8 19h.01M12 19h.01M16 19h.01M10 21h.01M14 21h.01',
+ fog:'M4 9h16M3 13h18M5 17h14',storm:'M7 15h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 15zM12 15l-2 4h4l-2 4',
+ pin:'M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',wind:'M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8',
+ umbrella:'M12 3a9 9 0 0 1 9 9H3a9 9 0 0 1 9-9zM12 12v7a2 2 0 0 0 4 0',chart:'M4 4v16h16M8 15l3-4 3 3 5-6',
+ list:'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',radio:'M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0M12 12v8',
+ ok:'M20 6L9 17l-5-5',x:'M6 6l12 12M18 6L6 18',q:'M9 9a3 3 0 1 1 4 2.8c-.6.3-1 .9-1 1.6V14M12 17h.01'};
 const svg=(k,sz)=>`<svg class="i" viewBox="0 0 24 24"${sz?` style="width:${sz}px;height:${sz}px"`:''} fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SVGP[k]||SVGP.box}"/></svg>`;
+const svgc=(k,c,sz)=>`<span style="color:${c};display:inline-flex;vertical-align:-4px">${svg(k,sz)}</span>`;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let ws,cfg=null,V={},S={},WX={},page=localStorage.getItem('page')||'',finder={on:false,l:{}};
 let pendingSet=null,setTimer=null,setHold=0;
@@ -608,9 +622,9 @@ function render(){
 }
 
 // tile: icon in its domain colour, name, value, optional bar, one sub line
-const th=(k,col,title,tid)=>`<h3><span class="ti" style="color:${col}">${svg(k)}</span><span${tid?` id="${tid}"`:''}>${title}</span></h3>`;
-function tank(id,k,col,title){return `<div class="card tile">${th(k,col,title)}<span class="big" id="${id}_v">--</span><div class="bar"><i id="${id}_b" style="background:${col}"></i></div><div class="mu" id="${id}_l"></div></div>`}
-function info(id,k,col,title,go){return `<div class="card tile click" data-go="${go}">${th(k,col,title)}<div class="big" id="${id}_v">--</div><div class="mu" id="${id}_s"></div></div>`}
+const th=(k,col,title,tid,did)=>`<h3><span class="ti" style="color:${col}">${svg(k)}</span><span class="grow"${tid?` id="${tid}"`:''}>${title}</span>${did?`<i class="sd" id="${did}_d"></i>`:''}</h3>`;
+function tank(id,k,col,title){return `<div class="card tile">${th(k,col,title,'',id)}<span class="big" id="${id}_v">--</span><div class="bar"><i id="${id}_b" style="background:${col}"></i></div><div class="mu" id="${id}_l"></div></div>`}
+function info(id,k,col,title,go){return `<div class="card tile click" data-go="${go}">${th(k,col,title,'',id)}<div class="big" id="${id}_v">--</div><div class="mu" id="${id}_s"></div></div>`}
 // the web page groups the tiles chosen for the panel by topic, keeping their order inside a group
 const OV_GROUPS=[['Vorräte',['water','grey','gas']],['Klima',['heater','fan','heki','temp','weather']],['Energie',['bat','bat1','bat2','bat3']],['Fahrzeug',['level','actors','lights','switches']],['Eigene Kacheln',null]];
 function ovTile(t){
@@ -622,8 +636,8 @@ function ovTile(t){
   if(t==='level')return info('ol','level','var(--grey)',esc(ptitle(3)),'level');
   if(t==='fan')return info('of','fan','var(--water)',esc(ptitle(2)),'fan');
   if(t==='heki')return info('ok','hatch','var(--grey)',esc(ptitle(13)),'heki');
-  if(t==='temp')return `<div class="card tile w2 click" data-go="temp">${th('therm','var(--klima)',esc(ptitle(4)))}<div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>`;
-  if(t==='bat')return `<div class="card tile w2 click" data-go="bat">${th('bat','var(--ok)',esc(ptitle(5)))}<div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
+  if(t==='temp')return `<div class="card tile w2 click" data-go="temp">${th('therm','var(--klima)',esc(ptitle(4)),'','ot')}<div class="big" id="ot_v" style="font-size:22px">--</div><div class="mu" id="ot_s"></div></div>`;
+  if(t==='bat')return `<div class="card tile w2 click" data-go="bat">${th('bat','var(--ok)',esc(ptitle(5)),'','ob')}<div class="big" id="ob_v" style="font-size:22px">--</div><div class="mu" id="ob_s"></div></div>`;
   if(/^bat[123]$/.test(t)){const n=t[3];return `<div class="card tile click" data-go="bat"><h3 id="ob${n}_t">Batterie ${n}</h3><div class="big" id="ob${n}_v">--</div><div class="mu" id="ob${n}_s"></div></div>`}
   if(/^t\d+$/.test(t)){const i=+t.slice(1),k=(cfg.tiles||[])[i];if(!k)return '';return `<div class="card tile"><h3>${esc(k.n)}</h3><div class="big" id="t${i}_v">--</div></div>`}
   if(t==='lights')return `<div class="card tile click" data-go="light">${th(PICON_DEF[9],'#E5C24B',esc(ptitle(9)))}<div class="big" id="oli_v" style="font-size:20px">--</div><div class="mu" id="oli_s"></div></div>`;
@@ -654,7 +668,7 @@ function updDev(){
   const bit=DEVPAGE[page],all=devsOf(bit),cs=all.filter(x=>x.k===2||x.k===3).sort((a,b)=>a.k-b.k),rs=all.filter(x=>x.k<2);
   const sig=cs.map(l=>l.di+':'+l.k+l.n).join('|');
   if(sig!==devSig){devSig=sig;
-    box.innerHTML=cs.map(l=>`<div class="card wide" data-ld="${l.di}"><div class="row"><h3 class="grow" style="margin:0;font-size:17px;color:var(--tx)">${l.k===2?'💡':'🔌'} ${esc(l.n)}</h3><button class="btn" data-lon="${l.di}">⏻</button></div>
+    box.innerHTML=cs.map(l=>`<div class="card wide" data-ld="${l.di}"><div class="row"><h3 class="grow" style="margin:0;font-size:17px;color:var(--tx)">${svg(l.k===2?'light':'plug')} ${esc(l.n)}</h3><button class="btn" data-lon="${l.di}">⏻</button></div>
       ${l.k===2?`<div class="row" style="margin-top:10px"><input type="range" min="1" max="254" class="grow" data-llv="${l.di}"><span class="mu" style="min-width:48px;text-align:right" data-llt="${l.di}"></span></div>
       <div class="row" style="gap:6px;margin-top:10px">${SWATCH.map(w=>`<button class="btn sm" data-lsw="${l.di}" data-k="${w[0]}" data-v="${w[1]}" style="background:${w[2]};color:#1a1f24;min-width:44px">${w[3]||'&nbsp;'}</button>`).join('')}
        <input type="color" data-lcol="${l.di}" value="#ffffff" title="Eigene Farbe" style="width:48px;height:36px;border:0;background:none;padding:0"></div>`:''}</div>`).join('');
@@ -671,22 +685,22 @@ function updDev(){
     c.classList.toggle('offline',l.age<0||l.age>7200)});
   set('dv_rows',rs.map(x=>{const old=x.age<0||x.age>7200;
     const v=x.k===0?`<b class="big ${x.o===1?'err':x.o===0?'okc':'mu'}" style="font-size:24px">${x.o===1?'offen':x.o===0?'zu':'?'}</b>`:`<span class="big">${x.t!=null?cnum(x.t,1)+' °C':'--'}</span>`;
-    const sub=[x.h!=null?'💧 '+x.h+' %':'',x.bat!=null?'🔋 '+x.bat+' %':''].filter(y=>y).join(' &nbsp;');
-    return `<div class="card wide${old?' offline':''}"><div class="trow"><span class="n">${x.k===0?'🚪':ico(x.n,true)} ${esc(x.n)}${sub?`<br><span class="mu">${sub}</span>`:''}</span>${v}</div></div>`}).join(''));
+    const sub=[x.h!=null?svg('water',14)+' '+x.h+' %':'',x.bat!=null?svg('bat',14)+' '+x.bat+' %':''].filter(y=>y).join(' &nbsp;');
+    return `<div class="card wide${old?' offline':''}"><div class="trow"><span class="n">${x.k===0?svg('door'):ico(x.n,true)} ${esc(x.n)}${sub?`<br><span class="mu">${sub}</span>`:''}</span>${v}</div></div>`}).join(''));
   const pi=BUILTIN.findIndex(b=>b[0]===page);
-  set('dv_st',all.length?'':`Noch nichts auf dieser Seite. Unter ⚙ Einstellungen → 📡 Sensoren bei einem Sensor „${esc(ptitle(pi))}“ ankreuzen.`);
+  set('dv_st',all.length?'':`Noch nichts auf dieser Seite. Unter Einstellungen → Sensoren bei einem Sensor „${esc(ptitle(pi))}“ ankreuzen.`);
 }
 function pgWarn(){return `<div class="card" id="wn_box"><div id="wn_l" style="white-space:pre-line;font-size:18px;font-weight:600">--</div></div>
- <div class="card" id="dp_box" style="margin-top:12px"><h3 id="dp_h">🚐 Abfahrtscheck</h3><div id="dp_l" class="mu">--</div></div>`}
+ <div class="card" id="dp_box" style="margin-top:12px"><h3 id="dp_h">Abfahrtscheck</h3><div id="dp_l" class="mu">--</div></div>`}
 // departure check list (state "dp" from the display)
 function updDepart(){
   if(!$('#dp_l'))return;
   const d=S.dp;
-  if(!d){set('dp_h','🚐 Abfahrtscheck');set('dp_l','Aus. Einschalten unter ⚙ Einstellungen → 🌦 Dienste → ⚠️ Warnungen.');$('#dp_l').className='mu';return}
-  set('dp_h','🚐 Abfahrtscheck <span class="mu" style="font-weight:400">· '+(d.drv?'Fahrt'+(d.spd!=null?' '+Math.round(d.spd)+' km/h':''):d.gps?'steht':'kein GPS')+'</span>');
+  if(!d){set('dp_h',svg('car')+' Abfahrtscheck');set('dp_l','Aus. Einschalten unter Einstellungen → Warnungen.');$('#dp_l').className='mu';return}
+  set('dp_h',svg('car')+' Abfahrtscheck <span class="mu" style="font-weight:400">· '+(d.drv?'Fahrt'+(d.spd!=null?' '+Math.round(d.spd)+' km/h':''):d.gps?'steht':'kein GPS')+'</span>');
   const it=d.it||[];
   $('#dp_l').className='';
-  set('dp_l',it.length?it.map(x=>`<div class="sysrow"><span>${x.ok===1?'✅':x.ok===0?'❌':'❔'} ${esc(x.n)}</span><b class="${x.ok===0?'err':x.ok===1?'okc':'mu'}" style="font-weight:600">${esc(x.s)}</b></div>`).join(''):'<span class="mu">Nichts zu prüfen</span>');
+  set('dp_l',it.length?it.map(x=>`<div class="sysrow"><span>${x.ok===1?svgc('ok','var(--ok)'):x.ok===0?svgc('x','var(--warn)'):svgc('q','var(--mu)')} ${esc(x.n)}</span><b class="${x.ok===0?'err':x.ok===1?'okc':'mu'}" style="font-weight:600">${esc(x.s)}</b></div>`).join(''):'<span class="mu">Nichts zu prüfen</span>');
 }
 // Links to the web pages of the other devices (Einstellungen -> Geräte-Links)
 // System page: connection, display brightness, and everything that is not in the icon bar
@@ -701,12 +715,12 @@ function pgSystem(){
    <div class="sysrow"><span class="mu">MQTT</span><b id="sy_mqtt">--</b></div>
    <div class="sysrow"><span class="mu">Firmware</span><b>${esc(cfg.fw||'--')}</b></div></div>
   <div class="card wide"><h3>Display</h3><div class="row"><span class="mu">Helligkeit</span>
-   <input type="range" id="sy_bri" min="5" max="100" class="grow"><button class="btn" id="sy_scr">💤 Aus</button></div></div>
-  <div class="card wide"><h3>📡 Geräte im Netz</h3><div id="sy_dev" class="mu">Lade …</div></div>
-  <div class="card wide"><h3>📋 Ereignisse</h3><div id="fwu-log" class="fwu-log">Lade …</div><div class="mu" style="font-size:12px;margin-top:8px">Bleibt bei Neustart, Absturz und Update erhalten, nicht bei Stromausfall.</div></div>
+   <input type="range" id="sy_bri" min="5" max="100" class="grow"><button class="btn" id="sy_scr">Aus</button></div></div>
+  <div class="card wide"><h3>${svg('radio')} Geräte im Netz</h3><div id="sy_dev" class="mu">Lade …</div></div>
+  <div class="card wide"><h3>${svg('list')} Ereignisse</h3><div id="fwu-log" class="fwu-log">Lade …</div><div class="mu" style="font-size:12px;margin-top:8px">Bleibt bei Neustart, Absturz und Update erhalten, nicht bei Stromausfall.</div></div>
   <div class="card wide"><h3>Einstellungen &amp; Geräte</h3><div class="syslist">
-   ${b('settings','⚙','Einstellungen')}<button class="btn" id="sy_rules">⚡ Automationen</button>${b('links','🔗','Geräte')}</div></div>
-  ${more.length?`<div class="card wide"><h3>Weitere Seiten</h3><div class="syslist">${more.map(p=>b(p.id,p.icon||'📄',p.title)).join('')}</div></div>`:''}
+   ${b('settings',svg('sliders'),'Einstellungen')}<button class="btn" id="sy_rules">${svg('bolt')} Automationen</button>${b('links',svg('link'),'Geräte')}</div></div>
+  ${more.length?`<div class="card wide"><h3>Weitere Seiten</h3><div class="syslist">${more.map(p=>b(p.id,p.icon||svg('box'),p.title)).join('')}</div></div>`:''}
   </div>`;
 }
 function bindSystem(){
@@ -727,7 +741,7 @@ async function loadDevices(){
   if(!l.length){b.textContent='Noch keine Meldung. Geräte ab dieser Firmware-Version senden <prefix>/info.';return}
   b.classList.remove('mu');
   // left-overs (offline, or "online" without info from an old firmware) can be removed from the broker
-  b.innerHTML=l.map(d=>{const old=d.age==null||d.age>180,dot=d.on===1?(d.v==null?'🟡':'🟢'):d.on===0?'🔴':'⚪';
+  b.innerHTML=l.map(d=>{const old=d.age==null||d.age>180,dot=`<span class="dot" style="background:${d.on===1?(d.v==null?'var(--gas)':'var(--ok)'):d.on===0?'var(--warn)':'var(--line2)'}"></span>`;
     const v=d.on===0?'offline':d.v==null?'keine Info':`v${esc(d.v)}${d.rssi?' · '+d.rssi+' dBm':''}${!old?' · '+upTxt(d.up):' · keine Info'}`;
     const t=(d.v!=null?`IP ${d.ip||'?'} · letzter Neustart: ${d.rst||'?'} · `:'')+'Topic: …/'+d.id+'/status';
     const del=d.on!==1||old?`<button class="devdel" data-id="${esc(d.id)}" data-n="${esc(d.n)}" title="Eintrag vom Broker löschen">✕</button>`:'';
@@ -739,11 +753,11 @@ async function loadDevices(){
 }
 function pgLinks(){
   const l=(cfg&&cfg.links)||[];
-  if(!l.length)return `<div class="card mu">Noch keine Geräte-Links. Unter ⚙ Einstellungen → 🔗 Geräte-Links eintragen.</div>`;
-  return `<div class="grid">${l.map(x=>`<a class="card click" href="${esc(x.u)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><h3>🔗 ${esc(x.u.replace(/^https?:\/\//,'').replace(/\/$/,''))}</h3><div class="big" style="font-size:20px">${esc(x.n)}</div><div class="mu">Konfiguration öffnen ↗</div></a>`).join('')}</div>`;
+  if(!l.length)return `<div class="card mu">Noch keine Geräte-Links. Unter Einstellungen → Geräte-Links eintragen.</div>`;
+  return `<div class="grid">${l.map(x=>`<a class="card click" href="${esc(x.u)}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><h3>${svg('link')} ${esc(x.u.replace(/^https?:\/\//,'').replace(/\/$/,''))}</h3><div class="big" style="font-size:20px">${esc(x.n)}</div><div class="mu">Konfiguration öffnen ↗</div></a>`).join('')}</div>`;
 }
 // ---------- weather (Open-Meteo via the display) ----------
-const WXI=(c,day)=>c===0?(day?'☀️':'🌙'):c<=2?(day?'⛅':'☁️'):c===3?'☁️':c<=48?'🌫':c<=67?'🌧':c<=77?'❄️':c<=82?'🌦':c<=86?'🌨':'⛈';
+const WXI=(c,day)=>svg(c===0?(day?'sun':'moon'):c<=2?(day?'partly':'cloud'):c===3?'cloud':c<=48?'fog':c<=67?'rain':c<=77?'snowc':c<=82?'rain':c<=86?'snowc':'storm');
 const WDAYS=['So','Mo','Di','Mi','Do','Fr','Sa'];
 const n0=v=>v==null||isNaN(v)?'--':Math.round(v);
 const n1=v=>v==null||isNaN(v)?'--':cnum(v,1);
@@ -751,11 +765,11 @@ function pgWeather(){
   const sm=(id,t)=>`<div class="card"><h3>${t}</h3><div class="row"><span class="big grow" style="white-space:nowrap" id="${id}_v">--</span><span class="mu" style="white-space:nowrap" id="${id}_s"></span></div></div>`;
   return `<div class="grid"><div class="card wide"><div class="row"><span style="font-size:56px;line-height:1" id="x_i"></span><span class="huge grow" id="x_t" style="margin-left:12px">--</span>
    <div style="text-align:right"><div class="big" id="x_txt" style="font-size:22px"></div><div class="mu" id="x_f"></div><div class="mu" id="x_p"></div></div></div></div>
-   <div class="card"><h3>📍 Standort</h3><div class="big" id="x_l_v" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">--</div><div class="mu" id="x_l_c" style="white-space:nowrap"></div><div class="mu" id="x_l_s"></div></div>
-   <div class="card wide" id="x_o" hidden><div class="row"><span class="mu grow" id="x_o_n">🌡️ Außen (Sensor)</span><span class="big" id="x_o_v">--</span><span class="mu" id="x_o_h"></span></div></div>
-   ${sm('x_w','💨 Wind')}${sm('x_h','💧 Luftfeuchte')}${sm('x_n','☂️ Nächste Stunde')}${sm('x_r','☂️ Regen heute')}
+   <div class="card"><h3>${svg('pin')} Standort</h3><div class="big" id="x_l_v" style="font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">--</div><div class="mu" id="x_l_c" style="white-space:nowrap"></div><div class="mu" id="x_l_s"></div></div>
+   <div class="card wide" id="x_o" hidden><div class="row"><span class="mu grow" id="x_o_n">Außen (Sensor)</span><span class="big" id="x_o_v">--</span><span class="mu" id="x_o_h"></span></div></div>
+   ${sm('x_w',svg('wind')+' Wind')}${sm('x_h',svg('water')+' Luftfeuchte')}${sm('x_n',svg('umbrella')+' Nächste Stunde')}${sm('x_r',svg('umbrella')+' Regen heute')}
    ${[1,2,3].map(i=>`<div class="card"><h3 id="x_d${i}">--</h3><div class="row"><span style="font-size:30px" id="x_di${i}"></span><span class="big grow" style="text-align:right;font-size:20px" id="x_dt${i}"></span></div><div class="mu" style="text-align:right" id="x_dr${i}"></div></div>`).join('')}
-   <div class="card wide" id="x_aw"><div class="row"><span class="grow">⛱️ Markise <b id="x_aw_v">--</b></span><button class="btn" id="x_aw_b" hidden>umschalten</button></div><div class="mu" id="x_aw_s"></div></div>
+   <div class="card wide" id="x_aw"><div class="row"><span class="grow">${svg('awning')} Markise <b id="x_aw_v">--</b></span><button class="btn" id="x_aw_b" hidden>umschalten</button></div><div class="mu" id="x_aw_s"></div></div>
    </div><div class="mu" id="x_st" style="margin-top:12px"></div>`;
 }
 // first own sensor marked for the weather page: measured outside temperature
@@ -763,16 +777,16 @@ function outdoor(){const o=S.outd;if(o&&o.t!=null)return {n:o.n,t:o.t,h:o.h,age:
 function updWeather(){
   const ok=WX.on&&WX.t!=null,od=outdoor(),odTxt=od?'Außen '+cnum(od.t,1)+'°'+(od.h!=null?' · '+od.h+' %':''):'';
   if($('#owx_v')){set('owx_v',ok?WXI(WX.c,WX.day)+' '+n0(WX.t)+'°':'--');set('owx_s',od&&od.age<7200?esc(odTxt):!WX.on?'aus':ok?esc(WX.txt||''):esc(WX.status||''))}
-  if($('#x_o')){$('#x_o').hidden=!od;if(od){set('x_o_n','🌡️ Außen · '+esc(od.n));set('x_o_v',cnum(od.t,1)+' °C');set('x_o_h',od.h!=null?'💧 '+od.h+' %':'');$('#x_o').classList.toggle('offline',od.age>7200)}}
+  if($('#x_o')){$('#x_o').hidden=!od;if(od){set('x_o_n',svg('tree')+' Außen · '+esc(od.n));set('x_o_v',cnum(od.t,1)+' °C');set('x_o_h',od.h!=null?svg('water',14)+' '+od.h+' %':'');$('#x_o').classList.toggle('offline',od.age>7200)}}
   if($('#x_aw')){const a=S.awn;set('x_aw_v',a===1?'ausgefahren':a===0?'eingefahren':'unbekannt');
     const b=$('#x_aw_b');b.hidden=!S.awnSw;b.textContent=a===1?'Eingefahren':'Ausgefahren';
     if(!b.onclick)b.onclick=()=>send({c:'awning',v:'toggle'});
     set('x_aw_s',S.awnSw?'Von Hand setzen, solange es keinen Kontakt gibt. Bei Böen über der Grenze kommt eine Warnung.':'Zustand vom Kontakt-Sensor.')}
   if(!$('#x_t'))return;
   set('x_i',ok?WXI(WX.c,WX.day):'');set('x_t',ok?n0(WX.t)+'°':'--');set('x_txt',ok?esc(WX.txt):(WX.on?'Keine Daten':'Wetter aus'));
-  set('x_f',ok&&WX.d?`Gefühlt ${n0(WX.f)}° · ${n0(WX.d[0].hi)}° / ${n0(WX.d[0].lo)}°`:(WX.on?'':'Unter ⚙ Einstellungen → 🌦 Wetter einrichten'));
+  set('x_f',ok&&WX.d?`Gefühlt ${n0(WX.f)}° · ${n0(WX.d[0].hi)}° / ${n0(WX.d[0].lo)}°`:(WX.on?'':'Unter Einstellungen → Wetter einrichten'));
   const pl=WX.gps&&WX.place?WX.place:(!WX.gps&&WX.name?WX.name:'');
-  set('x_p',pl?'📍 '+esc(pl)+(WX.gps?' (GPS)':''):'');
+  set('x_p',pl?svg('pin',14)+' '+esc(pl)+(WX.gps?' (GPS)':''):'');
   const deg=(v,p,n)=>v==null?'':Math.abs(v).toFixed(4).replace('.',',')+'° '+(v>=0?p:n);
   set('x_l_v',ok?esc(pl||(WX.gps?'GPS-Position':'Fester Ort')):'--');
   set('x_l_c',ok&&WX.lat!=null?`<a href="https://www.openstreetmap.org/?mlat=${WX.lat}&mlon=${WX.lon}#map=12/${WX.lat}/${WX.lon}" target="_blank" rel="noopener">${deg(WX.lat,'N','S')} · ${deg(WX.lon,'O','W')}</a>`:'');
@@ -784,7 +798,7 @@ function updWeather(){
     set('x_d'+i,i===1?'Morgen':WDAYS[t.getDay()]);set('x_di'+i,d?WXI(d.c,true):'');set('x_dt'+i,d?n0(d.hi)+'° / '+n0(d.lo)+'°':'--');set('x_dr'+i,d?n1(d.r)+' mm · '+n0(d.p)+' %':'')}
   set('x_st',esc(WX.status||'')+' · Daten: Open-Meteo');
 }
-function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div><div class="card wide" id="b_sens" hidden style="margin-top:12px"><h3>🔋 Sensor-Batterien</h3><div id="b_sens_l"></div></div><div class="card wide hist" id="h_b" hidden><h3>📈 Ladestand, letzte 24 h</h3><div class="hc"></div></div><div class="card wide hist" id="h_v" hidden><h3>📈 Spannung, letzte 24 h</h3><div class="hc"></div></div>`}
+function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div><div class="card wide" id="b_sens" hidden style="margin-top:12px"><h3>${svg('bat')} Sensor-Batterien</h3><div id="b_sens_l"></div></div><div class="card wide hist" id="h_b" hidden><h3>${svg('chart')} Ladestand, letzte 24 h</h3><div class="hc"></div></div><div class="card wide hist" id="h_v" hidden><h3>${svg('chart')} Spannung, letzte 24 h</h3><div class="hc"></div></div>`}
 // camper-battery: <prefix>/batteries = [{name,ok,soc,v,w,rt,st,p}]
 // icons of batteries and temperature sensors; keys as in icons.cpp
 const ICONS=[['bat','🔋','Batterie'],['carbat','🚙','Starterbatterie'],['home','🏠','Wohnraum / Aufbau'],['sun','☀️','Sonne'],['solar','🔆','Solarpanel'],['car','🚗','Fahrzeug'],['plug','🔌','Landstrom'],['bolt','⚡','Strom'],['therm','🌡️','Thermometer'],['fridge','🧊','Kühlschrank'],['snow','❄️','Gefrierfach'],['couch','🛋️','Innenraum'],['tree','🌳','Außen'],['bed','🛏️','Schlafen'],['water','💧','Wasser'],['fire','🔥','Heizung'],['shower','🚿','Bad'],['box','📦','Stauraum'],['door','🚪','Tür / Fenster offen'],['light','💡','Licht'],['awning','⛱️','Markise'],['lock','🔓','Schloss offen']];
@@ -809,7 +823,7 @@ function batBad(b){return b.ok&&(b.p||b.st==='Kritisch'||b.st==='Schwach'||(!b.s
 let RULES=[],ruleTimer=null;
 const CONDS=[['=','gleich'],['≠','ungleich'],['<','kleiner als'],['>','größer als']];
 const WHENS=['immer','nur von … bis … Uhr','nur wenn dunkel (Sonnenuntergang bis -aufgang)'];
-function pgRules(){return `<p class="mu" style="margin-top:0">Eine Regel reagiert nur, wenn sich der Zustand ändert. Licht lässt sich daher weiter von Hand schalten. Mit „nur ausschalten, was diese Regel eingeschaltet hat“ bleibt ein von Hand eingeschaltetes Licht an. Topics und Schlüssel findest du im 🔎 Topic-Finder unter 📡 Sensoren &amp; Geräte.</p>
+function pgRules(){return `<p class="mu" style="margin-top:0">Eine Regel reagiert nur, wenn sich der Zustand ändert. Licht lässt sich daher weiter von Hand schalten. Mit „nur ausschalten, was diese Regel eingeschaltet hat“ bleibt ein von Hand eingeschaltetes Licht an. Topics und Schlüssel findest du im Topic-Finder unter Sensoren &amp; Geräte.</p>
   <div id="rlist"></div>
   <div class="row" style="margin-top:12px"><button class="btn" id="radd">+ Regel</button><button class="btn" id="rtpl">+ Vorlage Eingangslicht (Tür)</button></div>
   <div class="actions"><button class="btn pri" id="rsave" style="flex:1">Automationen speichern</button></div>`}
@@ -897,7 +911,7 @@ function drawHist(){
       <div class="lg">${ss.map(s=>`<span><i style="background:${s.c}"></i>${esc(s.n)} ${String(lastV(s)).replace('.',',')} ${unit}</span>`).join('')}</div>`;
   });
 }
-function pgTemp(){return `<div class="warnbox" id="t_warn" hidden></div><div class="grid" id="t_list"></div><div class="mu" id="t_st" style="margin-top:12px"></div><div class="card wide hist" id="h_t" hidden><h3>📈 Verlauf, letzte 24 h</h3><div class="hc"></div></div>`}
+function pgTemp(){return `<div class="warnbox" id="t_warn" hidden></div><div class="grid" id="t_list"></div><div class="mu" id="t_st" style="margin-top:12px"></div><div class="card wide hist" id="h_t" hidden><h3>${svg('chart')} Verlauf, letzte 24 h</h3><div class="hc"></div></div>`}
 // camper-temp: <prefix>/sensors = [{id,name,t,alarm}]
 function temps(){try{const a=JSON.parse(V.temp_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
 // own Zigbee/BLE sensors (S.sen from the display): k 0 = contact, 1 = climate
@@ -1037,7 +1051,12 @@ function update(){
   const warn=warnings();
   ['warn','t_warn'].forEach(id=>{const e=document.getElementById(id);if(e){e.hidden=!warn.length;const t=document.getElementById(id+'_t');(t||e).textContent=(t?'':'⚠ ')+warn.join('\n')}});
   {const w=$('#wpill');w.hidden=!warn.length;$('#wpill_t').textContent=warn.length+(warn.length===1?' Warnung':' Warnungen')}
-  if($('#ost')){const c=$('#ost'),v=$('#ost_v');c.classList.toggle('alarm',!!warn.length);v.textContent=warn.length?warn.join('\n'):'OK';v.style.fontSize=warn.length?'17px':'';v.classList.toggle('okc',!warn.length);$('#ost_i').textContent=((S.open>0?S.open+' 🚪 ':'')+(S.ind||[]).map(k=>(ICONS.find(x=>x[0]===k)||['','•'])[1]).join(' ')).trim()}
+  if($('#ost')){const c=$('#ost'),v=$('#ost_v');c.classList.toggle('alarm',!!warn.length);v.textContent=warn.length?warn.join('\n'):'OK';v.style.fontSize=warn.length?'17px':'';v.classList.toggle('okc',!warn.length);$('#ost_i').textContent=((S.open>0?S.open+' offen ':'')+(S.ind||[]).map(k=>(ICONS.find(x=>x[0]===k)||['','•'])[1]).join(' ')).trim()}
+  {const D={w:'tank',g:'tank',gas:'tank',oh:'heat',ol:'lvl',of:'fan',ok:'tb',ot:'temp',ob:'bat'};
+   const hint={ok:()=>V.heki_cover&&V.heki_cover!=='closed',ol:()=>V.lvl_ok==='OFF',ot:()=>allTemps().some(t=>t.alarm),ob:()=>bats().some(b=>batBad(b))};
+   Object.keys(D).forEach(k=>{const e=document.getElementById(k+'_d');if(!e)return;const on=online(D[k]);
+     e.style.background=!on?'var(--line2)':hint[k]&&hint[k]()?'var(--gas)':'var(--ok)';e.title=on?'online':'offline'});
+   const wd=$('#owx_d');if(wd)wd.style.background=WX.on&&WX.t!=null?'var(--ok)':'var(--line2)'}
   updDepart();
   if($('#wn_l')){$('#wn_l').textContent=warn.length?'⚠ '+warn.join('\n\n⚠ '):'Keine Warnungen';$('#wn_l').className=warn.length?'err':'okc'}
   {const cs=contacts(),op=cs.filter(x=>x.o===1);
@@ -1055,7 +1074,7 @@ function update(){
     $('#ot_v').closest('.card').classList.toggle('offline',!tOn);
   }
   if($('#t_list')){
-    set('t_list',tl.map(t=>`<div class="card wide${(t.own?!t.old:online('temp'))?'':' offline'}"><div class="trow${t.alarm?' al':''}"><span class="n">${ico(t.name,true)} ${esc(t.name)}${t.h!=null||t.bat!=null?`<br><span class="mu">${t.h!=null?'💧 '+t.h+' %':''}${t.bat!=null?' &nbsp;🔋 '+t.bat+' %':''}</span>`:''}</span><span class="big">${tval(t)}</span></div></div>`).join('')
+    set('t_list',tl.map(t=>`<div class="card wide${(t.own?!t.old:online('temp'))?'':' offline'}"><div class="trow${t.alarm?' al':''}"><span class="n">${ico(t.name,true)} ${esc(t.name)}${t.h!=null||t.bat!=null?`<br><span class="mu">${t.h!=null?svg('water',14)+' '+t.h+' %':''}${t.bat!=null?' &nbsp;'+svg('bat',14)+' '+t.bat+' %':''}</span>`:''}</span><span class="big">${tval(t)}</span></div></div>`).join('')
       );
     set('t_st',!tOn?'Temperatursensoren offline':tl.length?'':'Keine Sensoren gemeldet');
   }
@@ -1102,7 +1121,7 @@ function update(){
     const err=V.heat_errflag==='ON';set('h_st',(err?`<span class="err">Fehler ${esc(V.heat_err)}</span><br>`:'')+`<span class="mu">${esc(V.heat_op||'')}</span>`);
     const dc=V.heat_decoke==='ON';const de=$('#h_dec');de.textContent=dc?`Stop (${V.heat_drem||'?'} min)`:'Freibrennen';de.classList.toggle('on',dc);
   }
-  if($('#f_st'))set('f_st','🌀 '+(online('fan')?'Online':'Offline')+(V.fan_hold==='ON'?' · Auto-Hold':''));
+  if($('#f_st'))set('f_st',svg('fan')+' '+(online('fan')?'Online':'Offline')+(V.fan_hold==='ON'?' · Auto-Hold':''));
   if($('#l_bub')){
     const pitch=num(V.lvl_pitch),roll=num(V.lvl_roll),tol=num(V.lvl_tol)??0.5,have=pitch!==null&&roll!==null,on=online('lvl');
     const lvl=V.lvl_ok?V.lvl_ok==='ON':(have&&Math.abs(pitch)<=tol&&Math.abs(roll)<=tol),live=on&&have;
@@ -1141,32 +1160,32 @@ function prioOpts(def){return (def?'<option value="3">wie Standard</option>':'')
 function inp(id,lbl,type='text',ph=''){return `<div><label for="${id}">${lbl}</label><input type="${type}" id="${id}" placeholder="${esc(ph)}"></div>`}
 function pgSettings(){
   const g=SET_GROUPS.some(x=>x[0]===setGroup)?setGroup:'view';
-  return `${cfg&&cfg.setup?'<div class="banner">Ersteinrichtung: unter 🔌 Verbindung WLAN und MQTT-Broker eintragen und speichern.</div>':''}
+  return `${cfg&&cfg.setup?'<div class="banner">Ersteinrichtung: unter Verbindung WLAN und MQTT-Broker eintragen und speichern.</div>':''}
   <div class="setwrap"><div class="setnav"><label class="search" for="setq">${svg('search',16)}<input type="text" id="setq" placeholder="Einstellung suchen"></label><div class="navl" id="setl"></div></div>
   <div class="setmain"><div id="sets" class="single" data-cur="${g}">
-  <details data-g="view" open><summary>🖥 Display</summary>
+  <details data-g="view" open><summary>Display</summary>
 
    <label>Helligkeit</label><input type="range" id="brightness" min="5" max="100">
    <div class="f2">${inp('dimBrightness','Helligkeit gedimmt (%, 0 = aus)','number')}${inp('screenTimeout','Dimmen nach (s, 0 = nie)','number')}</div>
    <label class="chk"><input type="checkbox" id="warnWake"> Neue Warnung schaltet das Display ein</label>
-   <p class="mu" style="margin-top:-4px">Aus: Das Display geht immer nach der eingestellten Zeit aus und nur Berühren weckt es. Zum sofortigen Ausschalten: Kopfzeile am Display lange drücken, Knopf auf der Systemseite oder 💤 auf der Webseite.</p>
+   <p class="mu" style="margin-top:-4px">Aus: Das Display geht immer nach der eingestellten Zeit aus und nur Berühren weckt es. Zum sofortigen Ausschalten: Kopfzeile am Display lange drücken, Knopf auf der Systemseite oder der Aus-Knopf oben auf der Webseite.</p>
    ${inp('displayName','Anzeigename (oben in der Mitte, z. B. Wohnraum)')}
 </details>
-  <details data-g="view"><summary>📑 Seiten &amp; Symbolleiste</summary>
+  <details data-g="view"><summary>Seiten &amp; Symbolleiste</summary>
    <label>Feste Seiten: Haken = anzeigen, dazu Symbol und Name frei wählbar</label>${[...BUILTIN,['system','System']].map((b,i)=>`<div class="row" style="gap:6px;margin:4px 0;flex-wrap:nowrap">${i<BUILTIN.length?`<input type="checkbox" id="bp${i}" style="width:auto">`:'<span style="width:20px;flex:none"></span>'}<select id="pi${i}" style="width:74px;flex:none;padding:8px 4px"><option value="">${PICON_DEF[i]}</option>${ICONS.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('')}</select><input id="pn${i}" placeholder="${b[1]}" maxlength="24" style="flex:1;min-width:0"></div>`).join('')}
-   <p class="mu" style="margin-top:4px">„Energie“ und „Extra“ sind freie Seiten für später: einschalten, umbenennen, Symbol wählen und unter 📡 Sensoren Geräte zuordnen.</p>
+   <p class="mu" style="margin-top:4px">„Energie“ und „Extra“ sind freie Seiten für später: einschalten, umbenennen, Symbol wählen und unter Sensoren Geräte zuordnen.</p>
    <label>Symbolleiste unten am Display: Home und System sind immer da, dazu bis zu ${NAV_FREE} Seiten (leer = die ersten ${NAV_FREE})</label>
    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px" id="navsel"></div>
    <p class="mu" style="margin-top:4px">Seiten ohne Symbol erreichst du über ihre Kachel auf Home oder durch Wischen.</p>
 </details>
-  <details data-g="view" id="dsd" ontoggle="if(this.open)renderSlots()"><summary>🏠 Kacheln auf Home</summary>
+  <details data-g="view" id="dsd" ontoggle="if(this.open)renderSlots()"><summary>Kacheln auf Home</summary>
    <label>Kacheln der Übersicht (3 × 3, von links oben nach rechts unten)</label>
    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${[0,1,2,3,4,5,6,7,8].map(i=>`<select id="ov${i}" style="padding:8px 4px;font-size:13px">${ovChoices().map(c=>`<option value="${c[0]}">${esc(c[1])}</option>`).join('')}</select>`).join('')}</div>
    <label>Temperatur-Kachel: bis zu ${SLOTS_T} Sensoren mit Symbol (leer = alle). Der erste wird groß angezeigt, bis zu 4 weitere klein darunter. Alle stehen auf der Seite Temperatur.</label><div id="slt"></div>
    <label>Batterie-Kachel: Die erste Batterie wird groß mit Segmentanzeige gezeigt, die anderen klein darunter.</label><div id="slb"></div></details>
-  <details data-g="view"><summary>🧩 Eigene Seiten &amp; MQTT-Kacheln <span class="mu" style="font-weight:400">· eigener Speichern-Knopf</span></summary><p class="mu">Für Werte, die keine Sensoren sind, z. B. ein beliebiges MQTT-Topic, Landstrom-Messzange, Router-Daten.</p><div id="pged"></div></details>
-  <details data-g="dev" id="snd" ontoggle="if(this.open)loadSensors()"><summary>📡 Sensoren (Zigbee &amp; Bluetooth) <span class="mu" style="font-weight:400">· eigener Speichern-Knopf</span></summary>
-   <p class="mu">Eigene Sensoren direkt per MQTT: Zigbee-Gateway mit Cluster-Topics (z. B. SMLIGHT: <code>&lt;Basis&gt;/&lt;Adresse&gt;/1/0006/0000</code>) und Bluetooth über OpenMQTTGateway (<code>&lt;Basis&gt;/&lt;MAC&gt;</code>, Govee, Ruuvi, Xiaomi …). Je Sensor wählst du, auf welchen Seiten er erscheint. Offene Kontakte auf den Geräteseiten werden auf Home in der Status-Kachel gezählt (z. B. 2 🚪).</p>
+  <details data-g="view"><summary>Eigene Seiten &amp; MQTT-Kacheln <span class="mu" style="font-weight:400">· eigener Speichern-Knopf</span></summary><p class="mu">Für Werte, die keine Sensoren sind, z. B. ein beliebiges MQTT-Topic, Landstrom-Messzange, Router-Daten.</p><div id="pged"></div></details>
+  <details data-g="dev" id="snd" ontoggle="if(this.open)loadSensors()"><summary>Sensoren (Zigbee &amp; Bluetooth) <span class="mu" style="font-weight:400">· eigener Speichern-Knopf</span></summary>
+   <p class="mu">Eigene Sensoren direkt per MQTT: Zigbee-Gateway mit Cluster-Topics (z. B. SMLIGHT: <code>&lt;Basis&gt;/&lt;Adresse&gt;/1/0006/0000</code>) und Bluetooth über OpenMQTTGateway (<code>&lt;Basis&gt;/&lt;MAC&gt;</code>, Govee, Ruuvi, Xiaomi …). Je Sensor wählst du, auf welchen Seiten er erscheint. Offene Kontakte auf den Geräteseiten werden auf Home in der Status-Kachel gezählt.</p>
    <div class="f2">${inp('zbBase','Zigbee-Basis-Topic','text','camper/zigbee/data')}${inp('bleBase','Bluetooth-Basis-Topic (OMG)','text','camper/OMG/BTtoMQTT')}
     <div><label>Zigbee-Temperatur geteilt durch (nur Rohwerte, „report_raw“)</label><select id="tempDiv"><option value="10">10</option><option value="100">100 (ZCL-Standard)</option><option value="1">1</option></select></div>
     <div><label>Zigbee-Luftfeuchte geteilt durch</label><select id="humDiv"><option value="1">1</option><option value="100">100 (ZCL-Standard)</option></select></div></div>
@@ -1174,28 +1193,28 @@ function pgSettings(){
    <div class="row"><button class="btn sm" type="button" id="snadd">+ Sensor</button><label class="btn sm" style="cursor:pointer">device.json einlesen<input type="file" id="snfile" accept=".json" hidden></label></div>
    <div id="snnew" style="margin-top:10px"></div>
    <div class="actions"><button class="btn pri" type="button" id="snsave" style="flex:1">Sensoren speichern</button></div></details>
-  <details data-g="dev"><summary>🏷 Topics der Geräte</summary>
+  <details data-g="dev"><summary>Topics der Geräte</summary>
    <p class="mu">Basis-Topic je Gerät. Leer lassen, wenn das Gerät nicht vorhanden ist.</p>
    ${inp('prefixTank','Tanks (Wasser/Gas)')}${inp('prefixLevel','Ausrichtung (Levelsensor)')}
    <div class="f2"><div><label>Heizung: Steuerung über</label><select id="heaterSrc"><option value="0">eigene Firmware (camper-heater)</option><option value="1">CampMatic-Box</option></select></div>${inp('prefixHeater','Heizung: Basis-Topic','text','camper/heater')}</div>
    <p class="mu" style="margin-top:-4px">CampMatic: Basis-Topic <code>campmatic/&lt;Gerätenummer&gt;</code>, z. B. <code>campmatic/003</code>. Die Box muss per Bridge auf deinem Broker ankommen (siehe README). Freibrennen gibt es dort nicht.</p>${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (camper-temp)')}${inp('prefixBattery','Batterien (camper-battery)')}${inp('prefixToolbox','Toolbox (Dachhaube Heki)','text','camper/toolbox')}
    <div class="f2"><div><label>MaxxFan-Port</label><select id="fanPort"><option value="0">0 (RJ11)</option><option value="1">1 (RJ45)</option></select></div>${inp('prefixSelf','Eigenes Topic (Display)')}</div></details>
-  <details data-g="dev"><summary>🔗 Geräte-Links</summary>
-   <p class="mu" style="margin:4px 0 8px">Buttons auf der Seite „🔗 Geräte“, die die Web-Oberfläche des jeweiligen Geräts öffnen. Adresse z. B. <code>192.168.8.13</code> oder <code>camper-tanklevel.local</code>.</p>
+  <details data-g="dev"><summary>Geräte-Links</summary>
+   <p class="mu" style="margin:4px 0 8px">Buttons auf der Seite „Geräte“, die die Web-Oberfläche des jeweiligen Geräts öffnen. Adresse z. B. <code>192.168.8.13</code> oder <code>camper-tanklevel.local</code>.</p>
    <div id="lnk"></div>
    <div class="row" style="gap:8px;margin-top:8px"><button class="btn" type="button" id="lnkadd">+ Link</button><button class="btn" type="button" id="lnksug">Camper-Geräte vorschlagen</button></div></details>
-  <details data-g="dev" id="fd"><summary>🔎 Topic-Finder</summary>
+  <details data-g="dev" id="fd"><summary>Topic-Finder</summary>
    <p class="mu">Hört kurz auf einem Topic-Filter mit und zeigt, was ankommt. Aus jedem Wert lässt sich direkt eine Kachel machen.</p>
    <div class="row"><input type="text" id="ffilter" class="grow" value="camper/zigbee/data/#" style="flex:1"><button class="btn pri" id="fstart">Start</button></div>
    <div id="flist" style="margin:10px 0 14px"></div></details>
-  <details data-g="net" ${cfg&&cfg.setup?'open':''}><summary>📶 WLAN</summary>
+  <details data-g="net" ${cfg&&cfg.setup?'open':''}><summary>WLAN</summary>
    <div class="row"><div class="grow">${inp('wifiSsid','SSID')}</div><button class="btn sm" id="scan" style="margin-top:28px">Suchen</button></div>
    <div id="nets"></div>${inp('wifiPass','Passwort','password')}
    <label class="chk"><input type="checkbox" id="staticIp"> Feste IP-Adresse</label>
    <div class="f2">${inp('ip','IP')}${inp('gateway','Gateway')}${inp('subnet','Subnetz')}${inp('dns','DNS')}</div></details>
-  <details data-g="net" ${cfg&&cfg.setup?'open':''}><summary>🛰 MQTT-Broker</summary>
+  <details data-g="net" ${cfg&&cfg.setup?'open':''}><summary>MQTT-Broker</summary>
    <div class="f2">${inp('mqttHost','Broker (IP/Name)','text','192.168.1.1')}${inp('mqttPort','Port','number')}${inp('mqttUser','Benutzer')}${inp('mqttPass','Passwort','password')}</div></details>
-  <details data-g="svc"><summary>🌦 Wetter</summary>
+  <details data-g="svc"><summary>Wetter</summary>
    <p class="mu">Wetter von <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> (kostenlos, ohne Anmeldung). Das Display braucht dafür Internet über den Router. Warnungen (Böen, Gewitter) erscheinen oben im Display und gehen auch per Pushover raus.</p>
    <label class="chk"><input type="checkbox" id="wxOn"> Wetter abrufen</label>
    <label>Ort suchen</label><div class="row"><input type="text" id="wxq" class="grow" placeholder="z. B. Leipzig" style="flex:1"><button class="btn sm" type="button" id="wxsearch">Suchen</button></div>
@@ -1206,7 +1225,7 @@ function pgSettings(){
    ${inp('rtTopic','Mobilfunk-Signal per MQTT (Balken in der Kopfzeile, leer = WLAN-Signal)','text','camper/router/mobile')}
    <p class="mu" style="margin-top:-4px">Mit Topic folgt das Wetter dem Fahrzeug. Inhalt: JSON mit <code>lat</code>/<code>lon</code> (auch <code>latitude</code>/<code>longitude</code>, auch verschachtelt wie beim RUT956) oder <code>52.52,13.40</code>. Ohne Position gilt der feste Ort oben.</p>
    <div class="f2">${inp('wxGust','Warnung ab Böen (km/h, 0 = aus)','number')}<div><label>Aktualisieren</label><select id="wxEvery"><option value="15">alle 15 min</option><option value="30">alle 30 min</option><option value="60">stündlich</option><option value="120">alle 2 h</option></select></div></div></details>
-  <details data-g="svc"><summary>📲 Pushover</summary>
+  <details data-g="svc"><summary>Pushover</summary>
    <p class="mu">Schickt die Warnungen der Übersicht (Temperatur-Alarme, Heizungsfehler, Batterie, Tanks, Frost, Wetter) als Push-Nachricht aufs Handy. Token einer eigenen Pushover-Anwendung und User-Key von <a href="https://pushover.net" target="_blank" rel="noopener">pushover.net</a>. Eine Warnung wird gesendet, wenn sie 30 s besteht.</p>
    <label class="chk"><input type="checkbox" id="poOn"> Warnungen senden</label>
    <label class="chk"><input type="checkbox" id="poClear"> Nachricht, wenn eine Warnung vorbei ist</label>
@@ -1218,27 +1237,27 @@ function pgSettings(){
    <p class="mu" style="margin-top:-4px"><b>Leise</b> ohne Ton, <b>Hoch</b> klingelt auch in den Pushover-Ruhezeiten, <b>Notfall</b> klingelt in der Pushover-App so lange wieder, bis du ihn bestätigst (Wiederholung mindestens 30 s, höchstens 3 h). Ist die Warnung vorbei, stoppt das Display die Wiederholung selbst. <b>Aus</b> zeigt die Warnung nur am Display.</p>
    <div class="row"><button class="btn" id="potest">Testnachricht</button><span class="mu grow" id="postat"></span></div>
    <p class="mu">Erst speichern, dann testen.</p></details>
-  <details data-g="svc"><summary>⚠️ Warnungen</summary>
-   <p class="mu">Grenzwerte für die eingebauten Warnungen. Sie erscheinen oben im Display und gehen per Pushover raus. 0 schaltet eine Warnung ab. Die Hysterese verhindert, dass eine Warnung bei einem Wert knapp an der Grenze ständig kommt und geht. Kühl- und Gefrierschrank stellst du beim jeweiligen Sensor ein (📡 Sensoren, „Warnung über °C“) bzw. im camper-temp.</p>
+  <details data-g="svc"><summary>Warnungen</summary>
+   <p class="mu">Grenzwerte für die eingebauten Warnungen. Sie erscheinen oben im Display und gehen per Pushover raus. 0 schaltet eine Warnung ab. Die Hysterese verhindert, dass eine Warnung bei einem Wert knapp an der Grenze ständig kommt und geht. Kühl- und Gefrierschrank stellst du beim jeweiligen Sensor ein (Sensoren, „Warnung über °C“) bzw. im camper-temp.</p>
    <div class="f2">${inp('wnWater','Frischwasser unter (%)','number')}${inp('wnGas','Gas unter (%)','number')}</div>
    <div class="f2">${inp('wnBat','Batterie unter (% Ladung)','number')}${inp('wnHystPct','Hysterese Füllstände/Batterie (%)','number')}</div>
    <div><label for="outName">Sensor für die Außentemperatur (Wetter-Seite, Frost)</label><select id="outName"></select></div>
    <label class="chk"><input type="checkbox" id="wnFrostOn"> Frostwarnung (Außensensor, sonst Wetter)</label>
    <div class="f2">${inp('wnFrost','Frost unter (°C)','number')}${inp('wnHystT','Hysterese Temperaturen (°C)','text','1,0')}</div>
    <div class="f2">${inp('wxGustHyst','Hysterese Böen (km/h)','number')}${inp('poQuiet','Ruhezeit Pushover (min)','number')}</div>
-   <p class="mu" style="margin-top:-4px">Ruhezeit: Kommt eine Warnung innerhalb dieser Zeit wieder, wird sie nicht noch einmal gesendet. Die Böen-Grenze selbst steht unter 🌦 Wetter.</p>
-   <label style="margin-top:12px"><b>⛱️ Markise</b></label>
+   <p class="mu" style="margin-top:-4px">Ruhezeit: Kommt eine Warnung innerhalb dieser Zeit wieder, wird sie nicht noch einmal gesendet. Die Böen-Grenze selbst steht unter Wetter.</p>
+   <label style="margin-top:12px"><b>Markise</b></label>
    <div class="f2"><div><label for="awnSrc">Zustand kommt von</label><select id="awnSrc"></select></div>${inp('awnGust','Warnung bei ausgefahrener Markise ab Böen (km/h, 0 = aus)','number')}</div>
    <p class="mu" style="margin-top:-4px">Ohne Kontakt setzt du den Zustand von Hand auf der Wetter-Seite (Display und Webseite) oder per MQTT <code>&lt;display&gt;/cmd/awning</code> = <code>ON</code>/<code>OFF</code>/<code>TOGGLE</code>. Braucht das Wetter (Böen von Open-Meteo).</p>
-   <label style="margin-top:12px"><b>🚐 Abfahrtscheck</b></label>
+   <label style="margin-top:12px"><b>Abfahrtscheck</b></label>
    <label class="chk"><input type="checkbox" id="dpOn"> Warnen, wenn beim Losfahren etwas offen ist</label>
    <div class="f2">${inp('dpTopic','GPS des Routers (JSON mit speed und fix_status)','text','camper/rut')}${inp('dpDoor','Tür (Topic, leer = keine)','text','camper/door')}</div>
    <div class="f2">${inp('dpSpeed','Fahrt ab (km/h)','number')}${inp('dpSecs','… für (Sekunden)','number')}</div>
    <label class="chk"><input type="checkbox" id="dpDoorInv"> Tür-Topic umkehren (meldet „open“ bei geschlossener Tür)</label>
-   <label class="chk"><input type="checkbox" id="dpCont"> Eigene Kontakte prüfen (Fenster, Dachhauben aus 📡 Sensoren)</label>
+   <label class="chk"><input type="checkbox" id="dpCont"> Eigene Kontakte prüfen (Fenster, Dachhauben aus Sensoren)</label>
    <p class="mu" style="margin-top:-4px">Geprüft werden Tür, Markise und die Kontakte. Fährt der Camper schneller als die Grenze, kommt für jedes offene Teil eine Warnung (Display und Pushover). Die Fahrt endet nach 2 Minuten Stillstand oder ohne GPS. Die Liste steht auf der Seite Warnungen. Per MQTT: <code>&lt;display&gt;/driving</code> = <code>ON</code>/<code>OFF</code>, <code>&lt;display&gt;/depart</code> = <code>OK</code> oder die offenen Teile.</p></details>
   <section data-g="rules">${pgRules()}</section>
-  <details data-g="sys" class="fixed" open><summary>🔧 System</summary>
+  <details data-g="sys" class="fixed" open><summary>System</summary>
    ${inp('hostname','Gerätename (Hostname)')}${inp('apPass','Passwort Setup-WLAN (min. 8 Zeichen)','password')}
    <div class="f2">${inp('webUser','Web-Benutzer')}${inp('webPass','Web-Passwort (leer = kein Schutz)','password')}</div>
    <div class="f2">${inp('ntpServer','Zeitserver')}${inp('tz','Zeitzone (POSIX)')}</div>
@@ -1279,7 +1298,7 @@ function showSec(id){
 }
 function setDirty(on){const d=$('#dirty');if(!d)return;d.classList.toggle('on',on);$('#dirty_t').textContent=on?'Änderungen nicht gespeichert':'Alles gespeichert'}
 // settings groups: [id, label]; the chosen one is remembered in the browser
-const SET_GROUPS=[['view','🖥 Anzeige'],['dev','📡 Sensoren & Geräte'],['rules','⚡ Automationen'],['net','🔌 Verbindung'],['svc','🌦 Dienste'],['sys','🔧 System']];
+const SET_GROUPS=[['view','Anzeige'],['dev','Sensoren & Geräte'],['rules','Automationen'],['net','Verbindung'],['svc','Dienste'],['sys','System']];
 let rulesLoaded=false;   // the automations tab loads its rules on first show (own save button)
 let setGroup=(()=>{try{return localStorage.getItem('setGroup')||'view'}catch(e){return'view'}})();
 function showGroup(g,fromSec){setGroup=g;try{localStorage.setItem('setGroup',g)}catch(e){}
@@ -1394,7 +1413,7 @@ function renderSensors(){
   const live=sens();
   b.innerHTML=SN.devices.map((d,i)=>{const v=live.find(x=>x.n===d.name);
     const val=!v?'':v.k>=2?(v.o===1?'an':v.o===0?'aus':'–'):v.k===0?(v.o===1?'offen':v.o===0?'zu':'–'):(v.t!=null?String(v.t).replace('.',',')+' °C':'–')+(v.h!=null?' · '+v.h+' %':'');
-    const ty=d.bus==1?'📶':d.kind==0?'🚪':d.kind==2?'💡':d.kind==3?'🔌':'🌡️';
+    const ty=svg(d.bus==1?'radio':d.kind==0?'door':d.kind==2?'light':d.kind==3?'plug':'therm',16);
     return `<details class="tileed sn"${!d.name||!d.addr||SN_OPEN.has(i)?' open':''} data-si="${i}"><summary class="row"><span>${ty}</span><b class="grow">${esc(d.name||'Neuer Sensor')}</b><span class="mu">${esc(val)}${v&&v.age>=0?' · vor '+(v.age<120?v.age+' s':Math.round(v.age/60)+' min'):''}</span><button class="btn sm danger" data-sd="${i}" title="Entfernen">✕</button></summary>
     <div class="f2"><div><label>Name</label><input type="text" data-s="${i}" data-sf="name" value="${esc(d.name)}" placeholder="z. B. Heki"></div>
      <div><label>Funk / Typ</label><select data-s="${i}" data-sf="type"><option value="0-0"${d.bus==0&&d.kind==0?' selected':''}>Zigbee · Tür-/Fensterkontakt</option><option value="0-1"${d.bus==0&&d.kind==1?' selected':''}>Zigbee · Klima (Temp./Feuchte)</option><option value="0-2"${d.bus==0&&d.kind==2?' selected':''}>Zigbee · Licht / LED-Leiste</option><option value="0-3"${d.bus==0&&d.kind==3?' selected':''}>Zigbee · Schalter / Steckdose</option><option value="1-1"${d.bus==1?' selected':''}>Bluetooth · Klima (Govee, Ruuvi …)</option></select></div>
