@@ -42,7 +42,8 @@ Board-Paket esp32 **3.3.x**, Bibliotheken und genaue Versionen stehen in der REA
 
 | Gerät | FQBN |
 | --- | --- |
-| tanklevel, battery, temp (C3), heater, maxxfan, emulator, toolbox, template | `esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs` |
+| tanklevel, battery, temp (C3), heater (C3), maxxfan, emulator, toolbox, template | `esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs` |
+| heater (ESP32 DevKit) | `esp32:esp32:esp32:PartitionScheme=min_spiffs` |
 | battery (AtomS3) | `esp32:esp32:m5stack_atoms3:CDCOnBoot=cdc,PartitionScheme=default_8MB` |
 | temp (ESP8266) | `esp8266:esp8266:nodemcuv2:eesz=4M1M` |
 | level | `esp32:esp32:esp32s3:CDCOnBoot=cdc,PartitionScheme=min_spiffs` |

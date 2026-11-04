@@ -73,6 +73,11 @@ jobs:
             fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs
             sketch: firmware/heater/truma_heater
             libs: ''
+          - device: heater
+            target: esp32
+            fqbn: esp32:esp32:esp32:PartitionScheme=min_spiffs
+            sketch: firmware/heater/truma_heater
+            libs: ''
           - device: maxxfan
             target: esp32c3
             fqbn: esp32:esp32:esp32c3:CDCOnBoot=cdc,PartitionScheme=min_spiffs

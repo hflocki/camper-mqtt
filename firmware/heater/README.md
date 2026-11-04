@@ -20,11 +20,12 @@ Protokoll-Logik portiert aus [skrebber/esphome-truma_inetbox](https://github.com
 
 ## Unterstützte Boards
 
-In `truma_heater/config.h` ganz oben genau ein Board aktivieren:
+In `truma_heater/config.h` ganz oben genau ein Board aktivieren. Ist keins aktiv, nimmt die Firmware das Standard-Board des Chips, für den gebaut wird. Die fertigen Releases gibt es deshalb für beide: `camper-heater-esp32c3.bin` (Super Mini) und `camper-heater-esp32.bin` (ESP32 DevKit, TX 16 / RX 17).
 
 | Profil | Board | LIN TX / RX | Arduino-Board |
 |---|---|---|---|
-| `BOARD_ESP32C3_SUPERMINI` (Standard) | ESP32-C3 Super Mini + LIN-Modul (Lochraster-Aufbau, siehe HARDWARE.md) | 4 / 3 | ESP32C3 Dev Module |
+| `BOARD_ESP32C3_SUPERMINI` (Standard beim C3) | ESP32-C3 Super Mini + LIN-Modul (Lochraster-Aufbau, siehe HARDWARE.md) | 4 / 3 | ESP32C3 Dev Module |
+| `BOARD_ESP32_DEVKIT` (Standard beim ESP32) | ESP32 DevKit V4 (WROOM-32) + LIN-Modul (z. B. FST T151), 5 V vom Step-down | 16 / 17 | ESP32 Dev Module |
 | `BOARD_SMARTAVAN` | smartavan heater controller | 16 / 17 | ESP32 Dev Module |
 | `BOARD_ESP32_GENERIC` | ESP32 DevKit + LIN-Modul (Verdrahtung wie inetbox2mqtt, LEDs 4/15) | 17 / 16 | ESP32 Dev Module |
 | `BOARD_ESP32S3_GENERIC` | ESP32-S3 + LIN-Modul | 17 / 18 | ESP32S3 Dev Module |

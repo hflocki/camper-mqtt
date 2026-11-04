@@ -16,17 +16,25 @@
 // >>> BOARD SELECTION <<<
 // ---------------------------------------------------------------------------------------------
 #if !defined(BOARD_SMARTAVAN) && !defined(BOARD_ESP32_GENERIC) && !defined(BOARD_ESP32S3_GENERIC) && \
-    !defined(BOARD_ESP32C3_GENERIC) && !defined(BOARD_ESP32C3_SUPERMINI) && !defined(BOARD_CAMPER_LIN_C3)
+    !defined(BOARD_ESP32C3_GENERIC) && !defined(BOARD_ESP32C3_SUPERMINI) && !defined(BOARD_CAMPER_LIN_C3) && \
+    !defined(BOARD_ESP32_DEVKIT)
 // #define BOARD_SMARTAVAN       // smartavan heater controller (Arduino board: "ESP32 Dev Module")
-// #define BOARD_ESP32_GENERIC   // ESP32 DevKit + TJA1020/1021 module (Arduino board: "ESP32 Dev Module")
+// #define BOARD_ESP32_GENERIC   // ESP32 DevKit + TJA1020/1021 module, inetbox2mqtt wiring (Arduino board: "ESP32 Dev Module")
+// #define BOARD_ESP32_DEVKIT    // ESP32 DevKit (WROOM-32) + LIN module, TX 16 / RX 17 (Arduino board: "ESP32 Dev Module")
 // #define BOARD_ESP32S3_GENERIC // ESP32-S3 DevKit + LIN module (Arduino board: "ESP32S3 Dev Module")
 // #define BOARD_ESP32C3_GENERIC // ESP32-C3 + LIN module (Arduino board: "ESP32C3 Dev Module")
-#define BOARD_ESP32C3_SUPERMINI  // ESP32-C3 Super Mini + LIN module (Arduino board: "ESP32C3 Dev Module")
+// #define BOARD_ESP32C3_SUPERMINI  // ESP32-C3 Super Mini + LIN module (Arduino board: "ESP32C3 Dev Module")
 // #define BOARD_CAMPER_LIN_C3   // own LIN board with ESP32-C3-WROOM-02 + TJA1021 (Arduino board: "ESP32C3 Dev Module")
+// Nothing selected: the default board of the chip the sketch is built for (also what CI builds)
+#if CONFIG_IDF_TARGET_ESP32
+#define BOARD_ESP32_DEVKIT
+#else
+#define BOARD_ESP32C3_SUPERMINI
+#endif
 #endif
 
 #define FW_NAME "camper-heater"
-#define FW_VERSION "1.4.0"
+#define FW_VERSION "1.5.0"
 #define FW_DEVICE "heater"   // device id in the firmware marker (fwcheck.h)
 #ifndef WIFI_TRIAL_MS
 #define WIFI_TRIAL_MS 50000   // a changed WiFi must connect this fast, else the old one returns
@@ -65,6 +73,20 @@
 #endif
 #ifndef LIN_LED_PIN
 #define LIN_LED_PIN 15
+#endif
+
+#elif defined(BOARD_ESP32_DEVKIT)
+// ESP32 DevKit V4 (ESP32-WROOM-32) + TJA1020 module (e.g. FST T151), supplied with 5 V from a buck converter.
+// ESP TX GPIO16 -> module TX (TXD), module RX (RXD) -> ESP RX GPIO17. Module SLP to 3V3.
+#define BOARD_NAME "Camper Heater (ESP32 DevKit + LIN module)"
+#ifndef LIN_UART_NUM
+#define LIN_UART_NUM UART_NUM_2
+#endif
+#ifndef LIN_TX_PIN
+#define LIN_TX_PIN 16
+#endif
+#ifndef LIN_RX_PIN
+#define LIN_RX_PIN 17
 #endif
 
 #elif defined(BOARD_ESP32S3_GENERIC)

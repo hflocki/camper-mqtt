@@ -71,6 +71,23 @@ Vom RJ12-Kabel werden nur **LIN** und **GND** gebraucht. Die Aderfarben und die 
 - **GND:** 0 V gegen Fahrzeugmasse.
 - **LIN:** im Ruhezustand etwa Bordspannung (≈ 12 V). Mit dem Multimeter springt der Wert leicht, sobald das CP Plus sendet.
 
+## Aufbau: ESP32 DevKit V4 (WROOM-32) + FST-T151-Modul
+
+Profil `BOARD_ESP32_DEVKIT` (Standard, wenn für „ESP32 Dev Module“ gebaut wird; Release `camper-heater-esp32.bin`). Versorgung mit einem Step-down 12 V → 5 V auf den **5V**-Pin des DevKits.
+
+| Von | Nach |
+| --- | --- |
+| DevKit **GPIO16** (TX) | LIN-Modul **TX** |
+| LIN-Modul **RX** | DevKit **GPIO17** (RX) |
+| DevKit **3V3** | LIN-Modul **SLP** – nicht 5 V, sonst kann das Modul RX auf 5 V hochziehen |
+| Step-down **+5V** | DevKit **5V** |
+| +12 V | Step-down **IN+**, LIN-Modul **12V** |
+| LIN-Modul **LIN** | LIN-Ader des CP Plus |
+| GND | Step-down, beide GND des Moduls, DevKit GND, Masse der Heizung |
+| LIN-Modul **INH** | frei lassen |
+
+Vor dem ersten Anschluss an den Bus: Spannung an GPIO17 gegen GND messen, wenn alles läuft. Im Ruhezustand müssen dort etwa 3,3 V anliegen, nicht 5 V.
+
 ## Referenzaufbau: ESP32-S3-DevKitC-1 + TJA1020-Modul auf Lochraster
 
 Konkreter Aufbau aus fertigen Modulen, der zum Profil `BOARD_ESP32S3_GENERIC` passt. Die Firmware muss dafür nicht angepasst werden.
