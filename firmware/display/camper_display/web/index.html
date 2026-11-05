@@ -970,7 +970,7 @@ function pgSettings(){
    <label class="chk"><input type="checkbox" id="poOn"> Warnungen senden</label>
    <label class="chk"><input type="checkbox" id="poClear"> Nachricht, wenn eine Warnung vorbei ist</label>
    <div class="f2">${inp('poToken','API-Token (Anwendung)','password')}${inp('poUser','User-Key','password')}</div>
-   <div class="f2">${inp('poTitle','Titel der Nachricht')}<div><label>Priorität (Standard)</label><select id="poPrio">${prioOpts(false)}</select></div></div>
+   <div class="f2"><div><label>Priorität (Standard)</label><select id="poPrio">${prioOpts(false)}</select></div><div></div></div>
    <label style="margin-top:6px">Dringlichkeit je Warnungsart</label>
    <div class="f2" id="poCats">${PO_CATS.map(c=>`<div><label for="pc_${c[0]}">${c[1]}</label><select id="pc_${c[0]}">${prioOpts(true)}</select></div>`).join('')}</div>
    <div class="f2">${inp('poRetry','Notfall: wiederholen alle (s)','number')}${inp('poExpire','Notfall: höchstens für (s)','number')}</div>
@@ -1046,7 +1046,7 @@ function showGroup(g,fromSec){setGroup=g;try{localStorage.setItem('setGroup',g)}
   const sb=$('.savebar');if(sb)sb.style.display=g==='rules'?'none':'';   // automations have their own save button
   if(g==='rules'){if(!rulesLoaded){rulesLoaded=true;loadRules()}else ruleState()}
   const sd=$('#snd');if(g==='dev'&&sd&&!sd.open){sd.open=true}}
-const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixToolbox','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','poTitle','wxLat','wxLon','wxName','wxTopic','rtTopic','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet','awnGust','dpTopic','dpDoor','dpSpeed','dpSecs'];
+const FIELDS=['wifiSsid','wifiPass','ip','gateway','subnet','dns','mqttHost','mqttPort','mqttUser','mqttPass','prefixTank','prefixLevel','prefixHeater','prefixFan','prefixTemp','prefixBattery','prefixToolbox','prefixSelf','dimBrightness','screenTimeout','displayName','hostname','apPass','webUser','webPass','ntpServer','tz','poToken','poUser','wxLat','wxLon','wxName','wxTopic','rtTopic','wxGust','wxGustHyst','wnWater','wnGas','wnBat','wnHystPct','wnFrost','poQuiet','awnGust','dpTopic','dpDoor','dpSpeed','dpSecs'];
 async function loadSettings(){
   rulesLoaded=false;
   try{

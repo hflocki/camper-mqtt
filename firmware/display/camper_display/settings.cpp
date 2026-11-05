@@ -72,7 +72,6 @@ void load() {
   settings.poExpire     = prefs.getUShort("pexp",   3600);
   settings.poToken      = prefs.getString("ptok",   DEFAULT_PUSHOVER_TOKEN);
   settings.poUser       = prefs.getString("pusr",   DEFAULT_PUSHOVER_USER);
-  settings.poTitle      = prefs.getString("ptitle", DEFAULT_PUSHOVER_TITLE);
   settings.brightness   = prefs.getUChar ("bri",    DEFAULT_BRIGHTNESS);
   settings.dimBrightness= prefs.getUChar ("dim",    DEFAULT_DIM_BRIGHTNESS);
   settings.screenTimeout= prefs.getUShort("sto",    DEFAULT_SCREEN_TIMEOUT);
@@ -148,7 +147,6 @@ void load() {
     if (p != PRIO_OFF && p != PRIO_DEFAULT && (p < -1 || p > 2)) p = PRIO_DEFAULT;
   settings.poRetry  = constrain(settings.poRetry, 30, 10800);
   settings.poExpire = constrain(settings.poExpire, 60, 10800);
-  if (settings.poTitle.isEmpty()) settings.poTitle = DEFAULT_PUSHOVER_TITLE;
   if (settings.wxEvery < 10 || settings.wxEvery > 180) settings.wxEvery = 60;
   if (settings.heaterSrc > HEAT_SRC_CAMPMATIC) settings.heaterSrc = HEAT_SRC_OWN;
 
@@ -204,7 +202,6 @@ void save() {
   prefs.putUShort("pexp",   settings.poExpire);
   prefs.putString("ptok",   settings.poToken);
   prefs.putString("pusr",   settings.poUser);
-  prefs.putString("ptitle", settings.poTitle);
   prefs.putUChar ("bri",    settings.brightness);
   prefs.putUChar ("dim",    settings.dimBrightness);
   prefs.putUShort("sto",    settings.screenTimeout);

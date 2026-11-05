@@ -77,7 +77,7 @@ struct Settings {
   int8_t poCat[WC_COUNT];       // priority per warning kind, PRIO_DEFAULT = poPrio, PRIO_OFF = not sent
   uint16_t poRetry = 300;       // emergency (2): repeat every this many seconds (min. 30) ...
   uint16_t poExpire = 3600;     // ... until confirmed in the app or this many seconds passed (max. 10800)
-  String poToken, poUser, poTitle;
+  String poToken, poUser;
   // weather (Open-Meteo)
   bool     wxOn = false;
   String   wxLat, wxLon;        // fixed position, decimal degrees

@@ -312,7 +312,6 @@ void getSettings(AsyncWebServerRequest* r) {
   d["poExpire"] = settings.poExpire;
   d["poToken"] = settings.poToken.isEmpty() ? "" : MASK;
   d["poUser"] = settings.poUser.isEmpty() ? "" : MASK;
-  d["poTitle"] = settings.poTitle;
   d["wxOn"] = settings.wxOn;
   d["wxLat"] = settings.wxLat;
   d["wxLon"] = settings.wxLon;
@@ -440,8 +439,6 @@ bool applySettings(JsonObject o, bool apply) {
   str("prefixToolbox", settings.prefixToolbox, false);
   str("poToken", settings.poToken, false, true);
   str("poUser", settings.poUser, false, true);
-  str("poTitle", settings.poTitle, false);
-  if (settings.poTitle.isEmpty()) settings.poTitle = DEFAULT_PUSHOVER_TITLE;
   if (o["poOn"].is<bool>()) settings.poOn = o["poOn"];
   if (o["poClear"].is<bool>()) settings.poClear = o["poClear"];
   if (o["poPrio"].is<int>()) settings.poPrio = constrain(o["poPrio"].as<int>(), -1, 2);

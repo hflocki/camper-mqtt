@@ -20,7 +20,7 @@ namespace {
 struct Msg {
   char token[40];
   char user[40];
-  char title[48];
+  char title[96];
   char text[256];
   int8_t prio;
   uint16_t retry, expire;    // only used for emergency messages (prio 2)
@@ -170,6 +170,49 @@ String keyOf(const String& line) {
   return i > 0 ? line.substring(0, i) : line;
 }
 
+// Emoji in front of the title, per warning kind (like the Home Assistant messages)
+const char* emojiOf(uint8_t cat, const String& key) {
+  if (key.startsWith("Wind") || key.startsWith("Markise")) return "\xF0\x9F\x92\xA8";   // dash (gusts)
+  switch (cat) {
+    case WC_TEMP:    return "\xF0\x9F\x8C\xA1\xEF\xB8\x8F";   // thermometer
+    case WC_HEATER:  return "\xF0\x9F\x94\xA5";               // fire
+    case WC_BATTERY: return "\xF0\x9F\x94\x8B";               // battery
+    case WC_WATER:   return "\xF0\x9F\x92\xA7";               // droplet
+    case WC_GAS:     return "\xE2\x9B\xBD";                   // fuel pump
+    case WC_FROST:   return "\xE2\x9D\x84\xEF\xB8\x8F";       // snowflake
+    case WC_WEATHER: return "\xE2\x9B\x88\xEF\xB8\x8F";       // thunder cloud
+    case WC_DEPART:  return "\xF0\x9F\x9A\x90";               // minibus
+    case WC_TILE:    return "\xF0\x9F\x94\x94";               // bell
+    case WC_RULE:    return "\xE2\x9A\x99\xEF\xB8\x8F";       // gear
+    case WC_CONTACT: return "\xF0\x9F\x9A\xAA";               // door
+    default:         return "\xE2\x9A\xA0\xEF\xB8\x8F";       // warning sign
+  }
+}
+
+// Message text: the part after ':' (the current value), or a short sentence per kind
+String bodyOf(const String& line, uint8_t cat) {
+  int i = line.indexOf(':');
+  String v = i > 0 ? line.substring(i + 1) : String();
+  v.trim();
+  if (v.length()) {
+    char c = v[0];
+    if (isdigit((uint8_t)c) || c == '-' || c == '+') return "Aktuell " + v;
+    if (c >= 'a' && c <= 'z') v.setCharAt(0, c - 32);
+    return v;
+  }
+  switch (cat) {
+    case WC_TEMP:    return "Bitte die Temperatur pr\xC3\xBC" "fen";
+    case WC_HEATER:  return "Bitte die Heizung pr\xC3\xBC" "fen";
+    case WC_BATTERY: return "Bitte die Batterie pr\xC3\xBC" "fen";
+    case WC_WATER:   return "Bitte den Tank pr\xC3\xBC" "fen";
+    case WC_GAS:     return "Bitte die Gasflasche pr\xC3\xBC" "fen";
+    case WC_WEATHER: return "Laut Wettervorhersage";
+    case WC_DEPART:  return "Der Camper f\xC3\xA4hrt gerade";
+    case WC_RULE:    return "Regel ausgel\xC3\xB6st";
+    default:         return "Bitte pr\xC3\xBC" "fen";
+  }
+}
+
 } // namespace
 
 namespace notify {
@@ -192,7 +235,7 @@ void loop() {
   if (testRequested) {
     testRequested = false;
     if (settings.poToken.isEmpty() || settings.poUser.isEmpty()) setStatus("Token/User fehlt");
-    else enqueue(settings.poTitle, "Testnachricht vom Display", 0);
+    else enqueue("\xF0\x9F\x94\x94 Testnachricht", "Pushover ist eingerichtet. So kommen die Warnungen vom Display an.", 0);
   }
 
   if (millis() - lastCheck < 2000) return;
@@ -249,7 +292,7 @@ void loop() {
       if (a.goneSince == 0) a.goneSince = now;
       if (now - a.goneSince < PUSHOVER_STABLE_MS) { i++; continue; }
       if (a.sent && !a.quiet && a.prio == 2) enqueue("", "", 0, a.key, true);   // stop the repeats
-      if (a.sent && !a.quiet && settings.poClear) enqueue(settings.poTitle, "\xE2\x9C\x93 Erledigt: " + a.key, -1);
+      if (a.sent && !a.quiet && settings.poClear) enqueue("\xE2\x9C\x85 " + a.key, "Wieder in Ordnung", -1);
       active.erase(active.begin() + i);
       continue;
     }
@@ -260,7 +303,7 @@ void loop() {
       if (prio == PRIO_OFF) a.quiet = true;   // this kind is not sent: no "done" message either
       if (!a.quiet) {
         a.prio = prio;
-        enqueue(settings.poTitle, "\xE2\x9A\xA0 " + a.text, prio, a.key);
+        enqueue(String(emojiOf(a.cat, a.key)) + " " + a.key, bodyOf(a.text, a.cat), prio, a.key);
         lastSent[a.key] = now;
       }
       a.sent = true;

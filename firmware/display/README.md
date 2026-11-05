@@ -309,12 +309,13 @@ Das Display kann jede Warnung zusätzlich aufs Handy schicken, auch wenn niemand
 | Einstellung | Wirkung |
 | --- | --- |
 | Warnungen senden | Eine Warnung wird gesendet, sobald sie 30 s ununterbrochen besteht (`PUSHOVER_STABLE_MS`) |
-| Nachricht, wenn eine Warnung vorbei ist | „✓ Erledigt: Kühlschrank zu warm“, leise (Priorität −1) |
+| Nachricht, wenn eine Warnung vorbei ist | „✅ Kühlschrank zu warm – Wieder in Ordnung“, leise (Priorität −1) |
 | Priorität (Standard) | Leise, Normal, Hoch (klingelt auch in den Pushover-Ruhezeiten) oder Notfall – gilt für alle Arten auf „wie Standard“ |
 | Dringlichkeit je Warnungsart | Eigene Priorität für Kühlschrank/Temperatur, Heizung, Batterie, Frischwasser, Gas, Frost, Wetter/Markise, Abfahrtscheck, eigene Kacheln, Regeln und Kontakte. Zusätzlich **Aus (nur Display)**: Die Warnung erscheint am Display, geht aber nicht aufs Handy |
 | Notfall: wiederholen alle / höchstens für | Ein Notfall (Priorität 2) klingelt alle 300 s erneut, bis er in der App bestätigt ist, höchstens 3600 s lang (Grenzen von Pushover: ab 30 s, bis 3 h). Ist die Warnung vorbei, stoppt das Display die Wiederholung (`cancel_by_tag`) |
-| Titel | Überschrift der Nachricht, Standard „Camper“ |
 | Ruhezeit (unter ⚠️ Warnungen) | Kommt eine Warnung innerhalb dieser Zeit wieder (Standard 30 min), wird sie nicht noch einmal gesendet – auch kein „Erledigt“ |
+
+**Aufbau einer Nachricht** (wie bei Home Assistant): Die Überschrift ist die Warnung selbst mit einem Symbol je Art (🌡️ Temperatur, 🔥 Heizung, 🔋 Batterie, 💧 Wasser, ⛽ Gas, ❄️ Frost, ⛈️ Wetter, 💨 Wind/Markise, 🚐 Abfahrtscheck, 🔔 eigene Kacheln, ⚙️ Regeln, 🚪 Kontakte), der Text der aktuelle Wert oder ein kurzer Hinweis. Beispiel: „💧 Frischwasser niedrig“ / „Aktuell 8 %“. Der Absender („Camper“) und das Symbol links kommen von der Pushover-Anwendung (Name und Icon unter *Your Applications*).
 
 Eine Warnung wird pro Ereignis nur einmal gesendet. Ändert sich nur der Wert („9,2 °C“ → „9,8 °C“), kommt keine neue Nachricht. Geht ein Gerät offline, gilt seine Warnung nicht als erledigt. Ohne WLAN oder bei einem Serverfehler versucht das Display es bis zu 5-mal im Minutenabstand. Token und User-Key lassen sich auch in `config_local.h` vorbelegen (`DEFAULT_PUSHOVER_TOKEN`, `DEFAULT_PUSHOVER_USER`).
 
