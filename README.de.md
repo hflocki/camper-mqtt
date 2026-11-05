@@ -1,4 +1,4 @@
-# camper-mqtt
+# VanNode
 
 🇬🇧 [English](README.md) · 🇩🇪 Deutsch
 
@@ -59,7 +59,7 @@ Die Doku der einzelnen Geräte ist auf Deutsch.
 
 ## Schnellstart
 
-1. **Firmware holen:** Unter [Releases](https://github.com/hflocki/camper-mqtt/releases) die `.bin` des Geräts laden – oder selbst bauen (Arduino IDE oder `arduino-cli`, Board und Bibliotheken stehen in der README des Geräts).
+1. **Firmware holen:** Unter [Releases](https://github.com/hflocki/vannode/releases) die `.bin` des Geräts laden – oder selbst bauen (Arduino IDE oder `arduino-cli`, Board und Bibliotheken stehen in der README des Geräts).
 2. **Einmal per USB flashen.** Danach gehen Updates über die Web-Oberfläche.
 3. **Einrichten:** Ohne WLAN-Daten startet ein Access Point `Camper-<Gerät>-XXXXXX`. Verbinden, `http://192.168.4.1` öffnen, WLAN und MQTT-Broker eintragen.
 4. Das Gerät meldet sich unter `camper/<gerät>/…` am Broker, das Display findet es von selbst.
@@ -127,8 +127,8 @@ Dann wird nur dieses Gerät gebaut und die `.bin` ans Release gehängt. Alle Ger
 Einfach den Ordner des Geräts nehmen und dessen README folgen. Wer nicht das ganze Repo laden will:
 
 ```bash
-git clone --filter=blob:none --sparse https://github.com/hflocki/camper-mqtt.git
-cd camper-mqtt
+git clone --filter=blob:none --sparse https://github.com/hflocki/vannode.git
+cd vannode
 git sparse-checkout set firmware/temp
 ```
 

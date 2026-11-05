@@ -2,7 +2,7 @@
 
 > TODO: Ein Satz, was das Gerät misst oder steuert.
 
-ESP32-Firmware für das Wohnmobil im Verbund [camper-mqtt](../../README.md): Werte per **MQTT** mit Home-Assistant-Discovery, eigene **Web-Oberfläche** zum Einrichten, Updates ohne USB.
+ESP32-Firmware für das Wohnmobil im Verbund [VanNode](../../README.md): Werte per **MQTT** mit Home-Assistant-Discovery, eigene **Web-Oberfläche** zum Einrichten, Updates ohne USB.
 
 ## Funktionen
 
@@ -72,7 +72,7 @@ TODO: Tabelle der eigenen Werte und Befehle.
 
 ## Sicheres Update, Ereignisse und Rückfall
 
-Seit 1.1.0 hat jede Firmware eine Kennung (`CAMPER-FW:example:<version>:<chip>;`) und dieselbe Absicherung wie alle camper-mqtt-Geräte (`fwcheck.*`, `evlog.*`, `safeguard.*` aus `firmware/_common`):
+Seit 1.1.0 hat jede Firmware eine Kennung (`CAMPER-FW:example:<version>:<chip>;`) und dieselbe Absicherung wie alle VanNode-Geräte (`fwcheck.*`, `evlog.*`, `safeguard.*` aus `firmware/_common`):
 
 - **Prüfung beim Update** (Web-UI unter **WiFi → Firmware- & Web-Update**): Die installierte Version steht dabei. Eine gewählte Datei wird schon im Browser und beim Hochladen im Gerät noch einmal geprüft, bevor etwas aktiviert wird. Abgelehnt werden eine `.merged.bin` (komplettes Flash-Abbild für USB), Firmware für ein anderes Gerät oder einen anderen Chip und zu große Dateien. Eine Datei ohne Kennung (Version vor 1.1.0) geht nur mit „Ohne Kennung hochladen“. Fehler stehen im Klartext da statt „Update failed“.
 - **Ereignisse:** Die letzten Ereignisse (Start mit Grund, WLAN und MQTT verbunden/getrennt, Uploads mit Ergebnis, Rückfall, gespeicherte Einstellungen) stehen in der Web-Oberfläche. Sie bleiben bei Neustart, Absturz und Update erhalten, nach einem Stromausfall ist das Log leer.
@@ -84,7 +84,7 @@ Seit 1.1.0 hat jede Firmware eine Kennung (`CAMPER-FW:example:<version>:<chip>;`
 | Version | Änderungen |
 |---|---|
 | 1.1.0 | Sicheres Update (Kennung, Prüfung im Browser und im Gerät, Fehler im Klartext), Ereignis-Log, Rückfall auf die vorherige Firmware und WLAN-Änderung mit Rückweg |
-| 1.0.0 | Erste Version aus der camper-mqtt-Vorlage |
+| 1.0.0 | Erste Version aus der VanNode-Vorlage |
 
 ## Lizenz
 

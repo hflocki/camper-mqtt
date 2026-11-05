@@ -235,7 +235,7 @@ python3 firmware/heater/tools/embed_web.py   # web/index.html -> web_ui.h
 python3 firmware/heater/docs/gen_mockup.py   # Mockup aktualisieren
 ```
 
-CI prüft mit `embed_web.py --check`, dass `web_ui.h` zur Seite passt. Seit 1.5.1 im gemeinsamen Design aller camper-mqtt-Geräte.
+CI prüft mit `embed_web.py --check`, dass `web_ui.h` zur Seite passt. Seit 1.5.1 im gemeinsamen Design aller VanNode-Geräte.
 
 ## Aufbau des Codes
 
@@ -264,7 +264,7 @@ Der LIN-Teil läuft in einem eigenen Task mit hoher Priorität, damit Antworten 
 
 ## Sicheres Update, Ereignisse und Rückfall
 
-Seit 1.4.0 hat jede Firmware eine Kennung (`CAMPER-FW:heater:<version>:<chip>;`) und dieselbe Absicherung wie alle camper-mqtt-Geräte (`fwcheck.*`, `evlog.*`, `safeguard.*` aus `firmware/_common`):
+Seit 1.4.0 hat jede Firmware eine Kennung (`CAMPER-FW:heater:<version>:<chip>;`) und dieselbe Absicherung wie alle VanNode-Geräte (`fwcheck.*`, `evlog.*`, `safeguard.*` aus `firmware/_common`):
 
 - **Prüfung beim Update** (Web-UI unter **System → Firmware-Update**): Die installierte Version steht dabei. Eine gewählte Datei wird schon im Browser und beim Hochladen im Gerät noch einmal geprüft, bevor etwas aktiviert wird. Abgelehnt werden eine `.merged.bin` (komplettes Flash-Abbild für USB), Firmware für ein anderes Gerät oder einen anderen Chip und zu große Dateien. Eine Datei ohne Kennung (Version vor 1.4.0) geht nur mit „Ohne Kennung hochladen“. Fehler stehen im Klartext da statt „Update failed“.
 - **Ereignisse:** Die letzten Ereignisse (Start mit Grund, WLAN und MQTT verbunden/getrennt, Uploads mit Ergebnis, Rückfall, gespeicherte Einstellungen) stehen in der Web-Oberfläche. Sie bleiben bei Neustart, Absturz und Update erhalten, nach einem Stromausfall ist das Log leer.

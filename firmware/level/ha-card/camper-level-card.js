@@ -1,7 +1,7 @@
 /**
  * 🚐 Camper Level Card v6.0 – Home Assistant Custom Card
  *
- * For the camper-level firmware (firmware/level in hflocki/camper-mqtt).
+ * For the camper-level firmware (firmware/level in hflocki/vannode).
  * Based on the WoWa Level Card by klehnst:
  * https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT
  *

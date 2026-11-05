@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 // =====================================================================
-//  Camper Example - template for a new camper-mqtt device
+//  Camper Example - template for a new VanNode device
 //  Copy with tools/new_device.py, then fill the places marked "TODO".
 // =====================================================================
 

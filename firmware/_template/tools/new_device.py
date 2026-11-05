@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a new camper-mqtt device from firmware/_template.
+"""Create a new VanNode device from firmware/_template.
 
 Usage (from the repo root, inside a venv - see ../ANLEITUNG.md):
     python firmware/_template/tools/new_device.py <id> "<Name>"
@@ -42,7 +42,7 @@ def replacements(dev_id: str, name: str) -> list[tuple[str, str]]:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="New camper-mqtt device from the template")
+    ap = argparse.ArgumentParser(description="New VanNode device from the template")
     ap.add_argument("id", help="short name, a-z 0-9 _ (e.g. waste)")
     ap.add_argument("name", help='display name (e.g. "Abwasser")')
     args = ap.parse_args()

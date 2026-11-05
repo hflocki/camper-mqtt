@@ -7,7 +7,7 @@ Ein ESP32 als **Bluetooth-Gateway mit Plugins**: Er liest Bluetooth-Geräte im C
 
 Jedes Gerät ist ein **Plugin**. Welche in die Firmware kommen, legst du in `config.h` bzw. `config_local.h` fest. Neue Bluetooth-Geräte kommen als weiteres Plugin dazu und nutzen den fertigen Rahmen (WLAN, MQTT, Web-Oberfläche, Bluetooth-Verbindung, Updates).
 
-Früher ein eigenes Repo (`hflocki/camper_toolbox`), jetzt Teil von camper-mqtt mit derselben Update-Absicherung wie die übrigen Geräte.
+Früher ein eigenes Repo (`hflocki/camper_toolbox`), jetzt Teil von VanNode mit derselben Update-Absicherung wie die übrigen Geräte.
 
 Wie die Web-Oberfläche aussieht, zeigt das klickbare Mockup [`docs/mockups/toolbox.html`](../../docs/mockups/toolbox.html) (herunterladen und im Browser öffnen).
 
@@ -24,7 +24,7 @@ Zahl = Anzahl der Geräte, `0` = nicht einkompiliert. Ab Werk (und in der Releas
 - Passive Sensoren: beliebig viele. Geräte mit Verbindung: höchstens **3** pro ESP32 (sonst bricht der Build mit einer Meldung ab).
 - Zweite Instanz, z. B. zwei Dachhauben: `#define PLUGIN_RVTECH 2` → „Dachhaube“ und „Dachhaube 2“ mit eigener MAC und PIN.
 - Jedes einkompilierte Plugin lässt sich zusätzlich in der Web-UI (Tab **System**) aus- und einschalten.
-- Gas (DIMES, Mopeka) und Tanks liest im camper-mqtt-System [`tanklevel`](../tanklevel). Die Toolbox hat deshalb nur noch Geräte mit Bluetooth-Verbindung.
+- Gas (DIMES, Mopeka) und Tanks liest im VanNode-System [`tanklevel`](../tanklevel). Die Toolbox hat deshalb nur noch Geräte mit Bluetooth-Verbindung.
 
 Beispiel `config_local.h` mit Pumpe und Kühlschrank zusätzlich:
 
@@ -131,7 +131,7 @@ Für eine Fehlermeldung den Monitor vom Einschalten an mitschneiden, bis das Pro
 
 ## Sicheres Update, Ereignisse und Rückfall
 
-Jede Firmware hat eine Kennung (`CAMPER-FW:toolbox:<version>:<chip>;`) und dieselbe Absicherung wie alle camper-mqtt-Geräte (`fwcheck.*`, `evlog.*`, `safeguard.*` aus `firmware/_common`):
+Jede Firmware hat eine Kennung (`CAMPER-FW:toolbox:<version>:<chip>;`) und dieselbe Absicherung wie alle VanNode-Geräte (`fwcheck.*`, `evlog.*`, `safeguard.*` aus `firmware/_common`):
 
 - **Prüfung beim Update** (Tab **System → Firmware- & Web-Update**): Die installierte Version steht dabei. Eine gewählte Datei wird schon im Browser und beim Hochladen im Gerät geprüft. Abgelehnt werden eine `.merged.bin`, Firmware für ein anderes Gerät oder einen anderen Chip und zu große Dateien. Firmware aus dem alten Repo (ohne Kennung) geht nur mit „Ohne Kennung hochladen“.
 - **Ereignisse:** Start mit Grund, WLAN und MQTT, Uploads mit Ergebnis, Rückfall, gespeicherte Einstellungen. Bleibt bei Neustart, Absturz und Update erhalten, nicht bei Stromausfall.
@@ -147,8 +147,8 @@ Ein Update ersetzt nur das Programm: WLAN, MQTT, Login, Plugin-Einstellungen (MA
 | Version | Änderungen |
 | --- | --- |
 | 1.1.0 | Gas-Plugins entfernt (DIMES, Mopeka Pro, Mopeka Standard, gemeinsamer Gas-Teil): Gasflasche und Tanks liest camper-tanklevel. Übrig: Dachhaube, Wasserpumpe, Kühlschrank |
-| 1.0.1 | Web-Oberfläche im Aussehen der übrigen camper-mqtt-Geräte (Farben, Kopfzeile mit Statuspunkten, Tab-Leiste mit Symbolen, Werte als Kacheln, Schalter statt Häkchen) |
-| 1.0.0 | Ins camper-mqtt-Repo übernommen: sicheres Update (Kennung, Prüfung im Browser und im Gerät), Ereignis-Log, Rückfall und WLAN-Rückweg, Topic `info`; Basis-Topic `camper/toolbox`, Hostname `camper-toolbox`; ab Werk nur die Dachhaube (RV Tech) |
+| 1.0.1 | Web-Oberfläche im Aussehen der übrigen VanNode-Geräte (Farben, Kopfzeile mit Statuspunkten, Tab-Leiste mit Symbolen, Werte als Kacheln, Schalter statt Häkchen) |
+| 1.0.0 | Ins VanNode-Repo übernommen: sicheres Update (Kennung, Prüfung im Browser und im Gerät), Ereignis-Log, Rückfall und WLAN-Rückweg, Topic `info`; Basis-Topic `camper/toolbox`, Hostname `camper-toolbox`; ab Werk nur die Dachhaube (RV Tech) |
 | 0.1.x | Eigenes Repo `camper_toolbox`: Plugins Gas (DIMES, Mopeka), Wasserpumpe, Dachhaube, Kühlschrank |
 
 ## Fertige Firmware

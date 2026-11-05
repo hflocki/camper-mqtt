@@ -10,7 +10,7 @@ const char WEB_UI[] PROGMEM = R"WEBUI(<!DOCTYPE html>
 <meta name="theme-color" content="#0D1115">
 <title>Camper Display</title>
 <style>
-/* camper-mqtt design: calm, technical; colour means state, blue means control */
+/* VanNode design: calm, technical; colour means state, blue means control */
 :root{--bg:#0D1115;--side:#11161B;--card:#151B21;--hi:#1C242C;--line:#222B34;--line2:#2F3A45;--tx:#E7ECF0;--tx2:#B4BEC8;--mu:#8B98A5;
  --ok:#46B97C;--gas:#E5A23B;--warn:#E5534B;--ac:#4DA3F0;--acx:#06131F;--water:#3E9BE0;--grey:#8A96A3;--heat:#E2704A;--klima:#9B87E0;--track:#26303A;
  --hbg:#2A2213;--hline:#4A3A1C;--htx:#F6D9A3;--hmu:#C9B38A;color-scheme:dark}

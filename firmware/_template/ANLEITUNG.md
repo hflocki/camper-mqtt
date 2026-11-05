@@ -1,4 +1,4 @@
-# Vorlage für ein neues camper-mqtt-Gerät
+# Vorlage für ein neues VanNode-Gerät
 
 `firmware/_template` ist ein fertiges, lauffähiges Muster-Gerät („Camper Example“). Es enthält alles, was alle Geräte im Projekt gemeinsam haben: WLAN mit Setup-WLAN, Web-Oberfläche, Einstellungen, MQTT mit Home-Assistant-Discovery und Updates ohne USB. Für ein neues Gerät kopierst du es mit einem Befehl und füllst nur noch den Sensor-Teil.
 
@@ -9,7 +9,7 @@ Das Muster misst als Beispiel eine Spannung an einem Analog-Pin. So kannst du es
 Im Repo-Ordner, in einer virtuellen Umgebung (das Skript braucht nur die Python-Standardbibliothek):
 
 ```bash
-cd ~/projekte/github/camper-mqtt
+cd ~/projekte/github/vannode
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r firmware/_template/tools/requirements.txt
 

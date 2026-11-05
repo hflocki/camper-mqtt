@@ -8,7 +8,7 @@
  *
  * Values are published via MQTT (Home Assistant discovery) and shown in the web UI.
  * Core: src/core (WiFi, MQTT, web server, BLE), plugins: src/plugins.
- * Shared modules of all camper-mqtt devices (sketch root, copies of firmware/_common):
+ * Shared modules of all VanNode devices (sketch root, copies of firmware/_common):
  * fwcheck (upload checks), evlog (event log), safeguard (rollback, WiFi fallback), devinfo.
  */
 

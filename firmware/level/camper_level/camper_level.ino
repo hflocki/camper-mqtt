@@ -6,7 +6,7 @@
  * Based on the caravan level sensor by klehnst:
  * https://github.com/klehnst/ESP32-Adrafruit-BNO085-HomeAssistant-Caravan-Levelsensor-MQTT
  * This version only supports motorhomes levelled with four wedges and follows the
- * conventions of the other camper-mqtt devices (topics, web UI, login, config_local.h).
+ * conventions of the other VanNode devices (topics, web UI, login, config_local.h).
  */
 
 #include <Arduino.h>

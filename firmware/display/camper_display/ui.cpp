@@ -44,7 +44,7 @@ LV_FONT_DECLARE(font_de_56);
 namespace {
 
 // ---- colours ---------------------------------------------------------------
-// camper-mqtt design (same values as firmware/_common/web/camper-theme.css and the Road Buddy):
+// VanNode design (same values as firmware/_common/web/camper-theme.css and the Road Buddy):
 // colour means state (green OK, yellow needs a look, red error), blue means control
 const lv_color_t C_BG      = lv_color_hex(0x0D1115);
 const lv_color_t C_CARD    = lv_color_hex(0x151B21);

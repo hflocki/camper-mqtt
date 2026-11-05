@@ -1,9 +1,9 @@
 /*
- * Camper Example - template for a new camper-mqtt device
+ * Camper Example - template for a new VanNode device
  * =======================================================
  * Hardware: ESP32-C3 / ESP32-S3 (Arduino-ESP32 3.3.x)
  *
- * What the template already does (shared by all camper-mqtt devices):
+ * What the template already does (shared by all VanNode devices):
  *   - WiFi with setup access point (first start / WiFi gone for 60 s), reconnect on its own
  *   - Web UI from LittleFS (data/index.html.gz) with live values, settings, WiFi/MQTT, login
  *   - Firmware (.bin) and web page (.gz) upload in the web UI, Arduino OTA
