@@ -61,6 +61,7 @@ Die Seiten werden mit den beiden äußeren Touch-Tasten (links/rechts) umgeschal
 
 | Seite | Inhalt |
 | ----- | ------ |
+| Start | VanNode-Logo. Erste Seite nach dem Einschalten, rechts davon folgen Level und die übrigen Seiten |
 | Level | Fahrzeug von oben mit „vorne“ oben: an jedem Rad die Keilhöhe in cm, Räder mit Keil orange. In der Mitte ein Zielring, der Punkt wandert zur tiefen Seite (grün, wenn eben). Rechts „Eben“ oder „Nicht eben“, darunter Li/Re („0,9° rechts tief“) und Vo/Hi („eben“) und der größte Keil. Gleiche Darstellung wie am Wandpanel |
 | Wassertank | Füllstand groß in %, Liter darunter, Sensor-Status; rechts ein Tank mit animierter Oberfläche. Unter 25 % gelb, unter 10 % rot (Tank und Zahl) |
 | Gas | Füllstand groß in %, Restmenge darunter, Status und Akku des Gassensors; rechts die Gasflasche. Unter 15 % rot |
@@ -68,7 +69,7 @@ Die Seiten werden mit den beiden äußeren Touch-Tasten (links/rechts) umgeschal
 | Batterien | Bis zu 3 Batterien von battery-node: Name, Ladestand (rot unter 20 %, gelb unter 40 %), Spannung, Leistung (+ = lädt, z. B. Solar), Restlaufzeit beim Entladen mit Uhr-Symbol („3,2 Tage“, „5 h 20 min“). Darunter eine Segmentanzeige mit 13 Feldern von Rot nach Grün nach dem Ladezustand, ohne Ladezustand (z. B. BM2) nach der Spannung von 11,8 bis 12,8 V. Der BM2 an der Starterbatterie zeigt statt Leistung seinen Zustand (Normal, Schwach, Kritisch, Lädt, Erhaltungsladung). Fehler oder schwache Starterbatterie = roter Rahmen |
 | System | WLAN, Mobilfunk des Routers, MQTT-Broker, Akku, Firmware-Version und Laufzeit, IP-Adresse für die Update-Seite. Solange diese Seite offen ist, bleibt der RoadBuddy bis zu 15 Minuten wach (Update-Modus) |
 
-Welche Seiten es gibt, steht in `config.h` (`USE_LEVEL`, `USE_WATER`, `USE_GAS`, `USE_TEMP`, `USE_BATTERY`).
+Welche Seiten es gibt, steht in `config.h` (`USE_LEVEL`, `USE_WATER`, `USE_GAS`, `USE_TEMP`, `USE_BATTERY`). Start- und System-Seite gibt es immer. Das Logo kommt aus `logo_img.h`, erzeugt mit `tools/logo/make_logo.py`.
 
 In der Kopfzeile stehen links Signalbalken: mit Router-Daten die Mobilfunkstärke (5 Balken nach RSRP bzw. RSSI, dazu das Netz, z. B. „LTE“), sonst die WLAN-Stärke des RoadBuddy (4 Balken). Grün = WLAN und MQTT ok, gelb = MQTT fehlt, rotes Kreuz = kein WLAN. In der Mitte die Seitenanzeige (aktive Seite als Pille), rechts der Akku des Core2 (blau mit „+“ beim Laden).
 
@@ -186,6 +187,7 @@ m5core2-roadbuddy/
 ├── .gitignore
 └── roadbuddy/
     ├── roadbuddy.ino            – Sketch (Seiten, MQTT, Stromsparen)
+    ├── logo_img.h               – Logo der Startseite (erzeugt, nicht von Hand ändern)
     ├── webota.cpp / .h          – Update-Webseite
     └── config.example.h         – Vorlage für WLAN- und MQTT-Daten
 ```

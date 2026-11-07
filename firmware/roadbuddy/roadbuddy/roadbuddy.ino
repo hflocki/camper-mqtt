@@ -11,6 +11,7 @@
 #include "evlog.h"
 #include "webota.h"
 #include "devinfo.h"
+#include "logo_img.h"
 
 // Own topics: <prefix>/status (online/offline as last will) and <prefix>/info
 #ifndef SELF_TOPIC
@@ -85,9 +86,10 @@ const uint64_t SLEEP_SAFETY_TIMER_US   = 24ULL * 3600ULL * 1000000ULL;
 
 // ---------- State ----------
 
-// Pages in display order; the system page is always present
-enum PageId { PAGE_LEVEL, PAGE_WATER, PAGE_GAS, PAGE_TEMP1, PAGE_TEMP2, PAGE_BATTERY, PAGE_SYSTEM };
+// Pages in display order; start page (logo) and system page are always present
+enum PageId { PAGE_LOGO, PAGE_LEVEL, PAGE_WATER, PAGE_GAS, PAGE_TEMP1, PAGE_TEMP2, PAGE_BATTERY, PAGE_SYSTEM };
 static const PageId PAGES[] = {
+  PAGE_LOGO,
 #if USE_LEVEL
   PAGE_LEVEL,
 #endif
@@ -554,6 +556,15 @@ void drawDegrees(int x, int cy, float t, uint16_t col, const lgfx::IFont* font, 
   canvas.setTextColor(col);
   canvas.drawString(s, x0, cy);
   canvas.drawCircle(x0 + w + ring + 3, cy - (int)(canvas.fontHeight() * 0.22f), ring, col);
+}
+
+// ---------- Start page ----------
+// Project logo, centered in the content area (RGB565 from logo_img.h, already on COL_BG)
+void drawPageLogo() {
+  drawHeader();
+  int x = (canvas.width() - LOGO_W) / 2;
+  int y = TOP + (BOTTOM - TOP - LOGO_H) / 2;
+  canvas.pushImage(x, y, LOGO_W, LOGO_H, (const lgfx::rgb565_t*)LOGO_IMG);
 }
 
 // ---------- Level page ----------
@@ -1141,6 +1152,7 @@ void render() {
   if (!display_on) return;
   canvas.fillSprite(COL_BG);
   switch (PAGES[page_index]) {
+    case PAGE_LOGO:   drawPageLogo();   break;
 #if USE_LEVEL
     case PAGE_LEVEL:  drawPageLevel();  break;
 #endif
