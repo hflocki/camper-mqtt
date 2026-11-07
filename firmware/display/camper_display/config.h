@@ -6,12 +6,12 @@
 #include "config_local.h"
 #endif
 // =====================================================================
-//  Camper Display - Guition ESP32-4848S040 (4", 480x480, ESP32-S3)
+//  Display Node - Guition ESP32-4848S040 (4", 480x480, ESP32-S3)
 //  Wall panel + web page, both fed live from the MQTT broker
 // =====================================================================
 
-#define FW_NAME                 "camper-display"
-#define FW_VERSION              "2.14.0"
+#define FW_NAME                 "display-node"
+#define FW_VERSION              "2.15.0"
 #define FW_DEVICE               "display"   // device id in the firmware marker (fwcheck.h)
 #ifndef WIFI_TRIAL_MS
 #define WIFI_TRIAL_MS           50000   // a changed WiFi must connect this fast, else the old one returns
@@ -38,10 +38,10 @@
 #define DEFAULT_DISPLAY_NAME    ""                  // name shown in the header (web UI: Einstellungen)
 #endif
 #ifndef DEFAULT_HOSTNAME
-#define DEFAULT_HOSTNAME        "camper-display"
+#define DEFAULT_HOSTNAME        "display-node"
 #endif
 #ifndef AP_SSID_PREFIX
-#define AP_SSID_PREFIX          "Camper-Display-"   // + last 6 hex digits of the MAC
+#define AP_SSID_PREFIX          "Display-Node-"   // + last 6 hex digits of the MAC
 #endif
 #ifndef DEFAULT_AP_PASSWORD
 #define DEFAULT_AP_PASSWORD     "display1234"       // min. 8 characters - CHANGE ME
@@ -73,7 +73,7 @@
 #define DEFAULT_PREFIX_FAN      "camper/maxxfan"
 #endif
 #ifndef DEFAULT_PREFIX_TOOLBOX
-#define DEFAULT_PREFIX_TOOLBOX  "camper/toolbox"   // camper-toolbox (BLE gateway), roof hatch: <prefix>/rvtech/...
+#define DEFAULT_PREFIX_TOOLBOX  "camper/toolbox"   // toolbox-node (BLE gateway), roof hatch: <prefix>/rvtech/...
 #endif
 #ifndef DEFAULT_PREFIX_TEMP
 #define DEFAULT_PREFIX_TEMP     "camper/temp"
@@ -82,7 +82,7 @@
 #define DEFAULT_PREFIX_BATTERY  "camper/battery"
 #endif
 
-// ---- Battery warnings (camper-battery) ------------------------------------
+// ---- Battery warnings (battery-node) ------------------------------------
 #ifndef BAT_WARN_SOC
 #define BAT_WARN_SOC            20      // warn below this state of charge in % (monitors with current sensor)
 #endif

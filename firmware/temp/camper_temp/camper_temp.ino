@@ -1,5 +1,5 @@
 /*
- * Camper Temp - DS18B20 temperature sensors on one ESP8266 / ESP32
+ * Temp Node - DS18B20 temperature sensors on one ESP8266 / ESP32
  * ==================================================================
  * Hardware: ESP8266 (ESP-12E / NodeMCU / Wemos D1 mini) or ESP32 / ESP32-C3
  *   - Up to MAX_SENSORS DS18B20 on one 1-Wire bus at ONEWIRE_PIN (default GPIO4 = D2)
@@ -92,7 +92,7 @@ void setup() {
 
     Serial.println();
     Serial.println("========================================");
-    Serial.println("  Camper Temp v" FW_VERSION);
+    Serial.println("  Temp Node v" FW_VERSION);
     Serial.println("========================================");
     Serial.println();
 

@@ -31,10 +31,10 @@
 #define USE_GAS 1     // gas bottle
 #endif
 #ifndef USE_TEMP
-#define USE_TEMP 1    // temperatures from camper-temp (1-4 sensors on one page, 5-8 on a second)
+#define USE_TEMP 1    // temperatures from temp-node (1-4 sensors on one page, 5-8 on a second)
 #endif
 #ifndef USE_BATTERY
-#define USE_BATTERY 1 // batteries from camper-battery (up to 3 on one page)
+#define USE_BATTERY 1 // batteries from battery-node (up to 3 on one page)
 #endif
 
 // Mobile signal of the router for the header (JSON with rsrp / rssi, as on the wall display). "" = WiFi bars only
@@ -54,14 +54,14 @@ PubSubClient client(espClient);
 M5Canvas canvas(&M5.Display);  // off-screen buffer, avoids flicker
 
 // ---------- Topics ----------
-// camper-tanklevel firmware: <prefix>/water/..., <prefix>/gas/..., one <prefix>/status for both
+// tanklevel-node firmware: <prefix>/water/..., <prefix>/gas/..., one <prefix>/status for both
 const char* TOPIC_TANK_WATER      = "camper/tanklevel/water/";
 const char* TOPIC_TANK_GAS        = "camper/tanklevel/gas/";   // level, content, battery, ble_state
 const char* TOPIC_TANK_STATUS     = "camper/tanklevel/status";
-// camper-temp firmware: all sensors as one JSON list [{"id","name","t","alarm"}, ...]
+// temp-node firmware: all sensors as one JSON list [{"id","name","t","alarm"}, ...]
 const char* TOPIC_TEMP_SENSORS    = "camper/temp/sensors";
 const char* TOPIC_TEMP_STATUS     = "camper/temp/status";
-// camper-battery firmware: all batteries as one JSON list [{"id","name","ok","soc","v","w","rt","st"}, ...]
+// battery-node firmware: all batteries as one JSON list [{"id","name","ok","soc","v","w","rt","st"}, ...]
 const char* TOPIC_BAT_LIST        = "camper/battery/batteries";
 const char* TOPIC_BAT_STATUS      = "camper/battery/status";
 String levelPrefix;   // level topic without the trailing '#', e.g. "camper/level/"
@@ -99,7 +99,7 @@ static const PageId PAGES[] = {
 #endif
 #if USE_TEMP
   PAGE_TEMP1,
-  PAGE_TEMP2,   // only shown when camper-temp reports more than 4 sensors
+  PAGE_TEMP2,   // only shown when temp-node reports more than 4 sensors
 #endif
 #if USE_BATTERY
   PAGE_BATTERY,
@@ -145,7 +145,7 @@ bool gasBleOk = true;        // false if the gas ESP reports a BLE problem
 bool gasOnline = false;
 bool gasStatusKnown = false;
 
-// Temperatures (camper-temp)
+// Temperatures (temp-node)
 const int TEMP_MAX = 8;
 const int TEMP_PER_PAGE = 4;
 struct TempEntry {
@@ -158,7 +158,7 @@ RTC_DATA_ATTR int tempCount = -1;   // -1 = no list received yet
 bool tempOnline = false;
 bool tempStatusKnown = false;
 
-// Batteries (camper-battery)
+// Batteries (battery-node)
 const int BAT_MAX = 3;
 struct BatEntry {
   char name[20];
@@ -936,7 +936,7 @@ void drawPageTemp(int page) {
     }
   }
 
-  // camper-temp offline: values are drawn dimmed, plus a red dot in the first tile
+  // temp-node offline: values are drawn dimmed, plus a red dot in the first tile
   if (offline && n > 0) canvas.fillCircle(right - 12, top + 12, 4, COL_BAD);
 }
 
@@ -1234,7 +1234,7 @@ void handleGas(const String& t, const String& message) {
   }
 }
 
-// Level sensor (camper-level): pitch, roll, is_level, tolerance, status; everything else is ignored
+// Level sensor (level-node): pitch, roll, is_level, tolerance, status; everything else is ignored
 void handleLevel(const String& sub, const String& message) {
   if (sub == "pitch") {
     pitch = message.toFloat();

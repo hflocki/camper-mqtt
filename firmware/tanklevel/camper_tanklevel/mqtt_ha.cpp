@@ -16,7 +16,7 @@
 //   <prefix>/cmd/water/filter/set   ON / OFF / TOGGLE (fresh water filter)
 //   <prefix>/cmd/grey/filter/set    ON / OFF / TOGGLE (grey water filter)
 //
-// Home Assistant: one device "Camper Tanklevel" with all entities.
+// Home Assistant: one device "Tanklevel Node" with all entities.
 
 #define HA_NODE_ID  "camper_tanklevel"
 
@@ -69,7 +69,7 @@ void mqttLoop() {
             lastReconnect = millis();
             Serial.println("[MQTT] Connection attempt...");
 
-            String clientId = "camper-tanklevel-" + WiFi.macAddress();
+            String clientId = "tanklevel-node-" + WiFi.macAddress();
             clientId.replace(":", "");
 
             String willTopic = topic("status");
@@ -286,7 +286,7 @@ void mqttPublishDiscovery() {
 static void addDeviceBlock(JsonDocument& doc, bool withAvailability) {
     JsonObject device = doc["device"].to<JsonObject>();
     device["identifiers"][0] = HA_NODE_ID;
-    device["name"] = "Camper Tanklevel";
+    device["name"] = "Tanklevel Node";
     device["model"] = "ESP32 Tank Level (" SENSOR_MODEL ")";
     device["manufacturer"] = "DIY";
     device["sw_version"] = FW_VERSION;

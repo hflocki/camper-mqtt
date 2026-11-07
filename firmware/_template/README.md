@@ -1,4 +1,4 @@
-# Camper Example
+# Example Node
 
 > TODO: Ein Satz, was das Gerät misst oder steuert.
 
@@ -8,7 +8,7 @@ ESP32-Firmware für das Wohnmobil im Verbund [VanNode](../../README.md): Werte p
 
 - Werte per MQTT unter `camper/example/<key>`, Home Assistant legt die Entitäten automatisch an
 - Web-Oberfläche: Live-Werte, Einstellungen, MQTT, WLAN, optionaler Login
-- Setup-WLAN `Camper-Example-XXXXXX` (192.168.4.1) beim ersten Start und wenn das WLAN 60 s fehlt
+- Setup-WLAN `Example-Node-XXXXXX` (192.168.4.1) beim ersten Start und wenn das WLAN 60 s fehlt
 - Firmware (`.bin`) und Web-Oberfläche (`index.html.gz`) im Web-UI hochladbar, dazu Arduino-OTA
 - TODO: gerätespezifische Funktionen
 
@@ -83,6 +83,7 @@ Seit 1.1.0 hat jede Firmware eine Kennung (`CAMPER-FW:example:<version>:<chip>;`
 
 | Version | Änderungen |
 |---|---|
+| 1.2.0 | Neue Namen: Hostname `example-node`, Setup-WLAN, Gerätename und Release-Datei `example-node-….bin`. Topics `camper/…` und Home-Assistant-IDs bleiben |
 | 1.1.0 | Sicheres Update (Kennung, Prüfung im Browser und im Gerät, Fehler im Klartext), Ereignis-Log, Rückfall auf die vorherige Firmware und WLAN-Änderung mit Rückweg |
 | 1.0.0 | Erste Version aus der VanNode-Vorlage |
 

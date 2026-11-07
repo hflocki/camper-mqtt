@@ -6,18 +6,18 @@
 #include "config_local.h"
 #endif
 // =====================================================================
-//  Camper MaxxFan - VanTurtle board (TCA9555) -> MQTT / Home Assistant
+//  MaxxFan Node - VanTurtle board (TCA9555) -> MQTT / Home Assistant
 // =====================================================================
 
-#define FW_VERSION              "1.7.2"
+#define FW_VERSION              "1.8.0"
 #define FW_DEVICE               "maxxfan"   // device id in the firmware marker (fwcheck.h)
 
 // ---- Device / access point ------------------------------------------
 #ifndef DEFAULT_HOSTNAME
-#define DEFAULT_HOSTNAME        "camper-maxxfan"
+#define DEFAULT_HOSTNAME        "maxxfan-node"
 #endif
 #ifndef AP_SSID_PREFIX
-#define AP_SSID_PREFIX          "Camper-MaxxFan-"   // + last 6 hex digits of the MAC
+#define AP_SSID_PREFIX          "MaxxFan-Node-"   // + last 6 hex digits of the MAC
 #endif
 #ifndef DEFAULT_AP_PASSWORD
 #define DEFAULT_AP_PASSWORD     "maxxfan1234"       // min. 8 characters - CHANGE ME

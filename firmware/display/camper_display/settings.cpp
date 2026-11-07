@@ -84,7 +84,7 @@ void load() {
   for (int i = 0; i < BP_COUNT; i++) settings.builtin[i] = bmask & (1u << i);
   // the spare pages start switched off
   if (bknown <= BP_EXTRA1) settings.builtin[BP_EXTRA1] = settings.builtin[BP_EXTRA2] = false;
-  // the roof hatch page (camper-toolbox) too: not every camper has one
+  // the roof hatch page (toolbox-node) too: not every camper has one
   if (bknown <= BP_HEKI) settings.builtin[BP_HEKI] = false;
   // page icons: fixed pages by index, the system page under its own key (does not move when pages are added)
   for (int i = 0; i < BP_COUNT; i++) settings.pageIcon[i] = prefs.getString((String("pgi") + i).c_str(), "");

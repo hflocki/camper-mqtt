@@ -6,8 +6,8 @@ Usage (from the repo root, inside a venv - see ../ANLEITUNG.md):
 
     <id>    short name, a-z 0-9 _ (e.g. "waste"); becomes the folder firmware/<id>,
             the sketch camper_<id>, the MQTT prefix camper/<id> and the host name camper-<id>
-    <Name>  display name (e.g. "Abwasser"); becomes "Camper Abwasser" in the web UI and in
-            Home Assistant and "Camper-Abwasser-XXXXXX" for the setup access point
+    <Name>  display name (e.g. "Abwasser"); becomes "Abwasser Node" in the web UI and in
+            Home Assistant and "Abwasser-Node-XXXXXX" for the setup access point
 
 Only the Python standard library is used. Nothing is overwritten: the script stops if
 firmware/<id> already exists.
@@ -33,10 +33,10 @@ def replacements(dev_id: str, name: str) -> list[tuple[str, str]]:
     return [
         ('FW_DEVICE            "example"', f'FW_DEVICE            "{dev_id}"'),   # firmware marker (fwcheck.h)
         ("camper_example", f"camper_{dev_id}"),
-        ("camper-example", f"camper-{dash}"),
+        ("example-node", f"{dash}-node"),
         ("camper/example", f"camper/{dev_id}"),
-        ("Camper-Example", f"Camper-{compact}"),
-        ("Camper Example", f"Camper {name}"),
+        ("Example-Node", f"{compact}-Node"),
+        ("Example Node", f"{name} Node"),
         ("example1234", f"{dash.replace('-', '')}1234"),
     ]
 

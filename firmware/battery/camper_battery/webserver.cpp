@@ -205,7 +205,7 @@ void webserverInit() {
         } else {
                     request->send(200, "text/html",
                 "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'>"
-                "<h2>Camper Battery</h2><p>Die Web-Oberfl&auml;che fehlt. Hier <code>data/index.html.gz</code> "
+                "<h2>Battery Node</h2><p>Die Web-Oberfl&auml;che fehlt. Hier <code>data/index.html.gz</code> "
                 "oder eine Firmware (.bin) hochladen:</p><form method=POST action=/api/update enctype=multipart/form-data>"
                 "<input type=file name=f accept='.bin,.gz'> <button>Hochladen</button></form>");
         }

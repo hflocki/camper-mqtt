@@ -124,7 +124,7 @@ const int LVL_RING = BADGE, LVL_DOT = 10;
 
 lv_obj_t *hRoom, *hWater, *hSet, *hPower, *hPowerLbl, *hFanBm, *hWaterBm, *hStatus, *hDecoke, *hDecokeLbl;
 lv_obj_t *fStatus, *fSpeed, *fSpeedLbl;
-// roof hatch (camper-toolbox, plugin rvtech): page and overview tile
+// roof hatch (toolbox-node, plugin rvtech): page and overview tile
 lv_obj_t *kState, *kSub, *kPos, *kPosLbl, *kPreset[4];
 lv_obj_t *ovHekiVal = nullptr, *ovHekiSub = nullptr, *ovHekiIcon = nullptr;
 uint32_t kPosHold = 0;   // millis() of the last slider command: do not jump back while the hatch moves
@@ -157,7 +157,7 @@ time_t wShown = -1;                     // data time shown on the weather page /
 String wShownStatus;
 lv_obj_t *ovWxIcon = nullptr, *ovWxVal = nullptr, *ovWxSub = nullptr;
 
-// warnings (overview banner) and temperatures (camper-temp)
+// warnings (overview banner) and temperatures (temp-node)
 lv_obj_t *ovWarn, *ovWarnLbl, *ovInd = nullptr;
 // overview tiles with up to three single lines (temperatures, batteries)
 struct ListW { lv_obj_t* line[3] = {nullptr, nullptr, nullptr}; lv_obj_t* sub = nullptr; };
@@ -535,7 +535,7 @@ std::vector<TempItem> tempItems() {
   return out;
 }
 
-// camper-temp sensors plus own Zigbee/BLE climate sensors (sensors.cpp)
+// temp-node sensors plus own Zigbee/BLE climate sensors (sensors.cpp)
 std::vector<TempItem> allTempItems() {
   std::vector<TempItem> out = tempItems();
   for (auto& c : sensors::climate()) {
@@ -550,7 +550,7 @@ std::vector<TempItem> allTempItems() {
 
 void refreshTempTile();
 
-// ---- batteries (camper-battery) ---------------------------------------------
+// ---- batteries (battery-node) ---------------------------------------------
 struct BatItem { String name; String state; String ptext; float soc, v, w; long rt; bool ok, problem; };
 
 // icon of the overview slot, or picked from the name (living area, solar, starter ...)
@@ -573,7 +573,7 @@ std::vector<BatItem> batItems() {
     b.w = o["w"].is<float>() ? o["w"].as<float>() : NAN;
     b.rt = o["rt"].is<long>() ? o["rt"].as<long>() : -1;
     b.problem = o["p"] | false;
-    b.ptext = (const char*)(o["pt"] | "");   // camper-battery 1.3.1+: readable BMS problem
+    b.ptext = (const char*)(o["pt"] | "");   // battery-node 1.3.1+: readable BMS problem
     out.push_back(b);
   }
   return out;
@@ -1422,7 +1422,7 @@ void buildFan(lv_obj_t* tab) {
   lv_obj_align(fStatus, LV_ALIGN_LEFT_MID, 0, 0);
 
   struct B { const char* txt; const char* key; };
-  // On/Off only opens the lid; "close" presses Slower until the lid shuts (camper-maxxfan 1.4.0+)
+  // On/Off only opens the lid; "close" presses Slower until the lid shuts (maxxfan-node 1.4.0+)
   static const B row1[] = {{LV_SYMBOL_POWER "  Ein", "on_off"}, {"Schließen", "close"}, {"Auto", "auto"}};
   static const B row2[] = {{LV_SYMBOL_DOWN "  Langsamer", "slower"}, {LV_SYMBOL_UP "  Schneller", "faster"}};
   static const B row3[] = {{LV_SYMBOL_REFRESH "  Richtung", "direction"}, {"Sync AUS", "sync_off"}};
@@ -1941,7 +1941,7 @@ void refreshValues() {
     lv_label_set_text(ovFanSub, fanOn ? (store::get(DP_FAN_HOLD) == "ON" ? "Auto-Hold aktiv" : "Tippen zum Steuern") : "offline");
   }
 
-  // roof hatch (camper-toolbox)
+  // roof hatch (toolbox-node)
   if (ovHekiVal || kState) {
     bool tbOn = store::devOnline(DEV_TOOLBOX);
     bool bt = store::get(DP_HEKI_CONN) != "OFF";

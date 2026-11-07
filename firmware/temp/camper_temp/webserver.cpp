@@ -232,7 +232,7 @@ void webserverInit() {
             request->send(LittleFS, "/index.html", "text/html");   // Uncompressed (older filesystem image)
         } else {
             request->send(200, "text/html",
-                "<h1>Camper Temp</h1><p>Web page missing. Upload <code>data/index.html.gz</code> "
+                "<h1>Temp Node</h1><p>Web page missing. Upload <code>data/index.html.gz</code> "
                 "or a firmware (.bin):</p><form method=POST action=/api/update enctype=multipart/form-data>"
                 "<input type=file name=f accept='.bin,.gz'> <button>Upload</button></form>");
         }

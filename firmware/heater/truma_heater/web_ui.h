@@ -7,7 +7,7 @@ static const char INDEX_HTML[] = R"rawliteral(<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Camper Heater</title>
+<title>Heater Node</title>
 <style>
 :root{--bg:#0f1419;--bg2:#1a2332;--card:#1e2d3d;--input:#0d1b2a;--heat:#ff7a3d;--heat-glow:rgba(255,122,61,.3);--water:#00d4aa;
 --warn:#ffb800;--danger:#ff4757;--ok:#00d4aa;--ink:#e8f0f8;--mute:#8899aa;--dim:#556677;--line:#2a3a4a;--r:12px}
@@ -90,7 +90,7 @@ input[type=file]{font-size:.8rem;color:var(--mute);width:100%}
 .fwu-ev span{color:var(--fwu-mute);margin-right:8px;white-space:nowrap}.fwu-ev.bad{color:var(--fwu-bad)}
 button:disabled{opacity:.45;cursor:not-allowed}
 /* camper-theme:begin */
-/* camper-mqtt design (same look as the display): calm and technical, colour means state,
+/* VanNode design (same look as the display): calm and technical, colour means state,
    blue means control. Shared block, edit firmware/_common/web/camper-theme.css and run
    tools/common/sync_common.py; it overrides the page's own styles above it. */
 :root{
@@ -330,7 +330,7 @@ nav button .ico{display:inline-flex}
     <div class="fg"><label>Name (SSID)</label><input data-cfg="ap_ssid"></div>
     <div class="fg"><label>Passwort (min. 8 Zeichen)</label><input data-cfg="ap_pass" type="password" placeholder="(unverändert)" autocomplete="new-password"></div>
     <div class="sw"><div><div class="t">Access Point immer an</div>
-      <div class="hint">Aus = AP nur als Notfall, wenn das WLAN 60 s nicht erreichbar ist. Stabilere WLAN-Verbindung; das Gerät ist dann über seine IP im WLAN oder <code id="w-mdns">truma-heater.local</code> erreichbar.</div></div>
+      <div class="hint">Aus = AP nur als Notfall, wenn das WLAN 60 s nicht erreichbar ist. Stabilere WLAN-Verbindung; das Gerät ist dann über seine IP im WLAN oder <code id="w-mdns">heater-node.local</code> erreichbar.</div></div>
       <label class="toggle"><input type="checkbox" data-cfg="ap_always"><span></span></label></div>
   </div>
   </div>
@@ -375,7 +375,7 @@ nav button .ico{display:inline-flex}
   <div class="card">
     <div class="ct">Firmware-Update</div>
     <div class="fwu-cur" id="fwu-cur">Installiert: …</div>
-    <div class="sub" style="margin:0 0 8px">Die <code>.bin</code> aus dem Release (<code>camper-heater-esp32c3.bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>truma_heater.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>). Die Datei wird vor dem Hochladen geprüft.</div>
+    <div class="sub" style="margin:0 0 8px">Die <code>.bin</code> aus dem Release (<code>heater-node-esp32c3.bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>truma_heater.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>). Die Datei wird vor dem Hochladen geprüft.</div>
     <input type="file" id="fwu-file" accept=".bin" onchange="fwChosen(false)">
     <div class="fwu-chk" id="fwu-chk"></div>
     <label class="fwu-force" id="fwu-force-row" style="display:none"><input type="checkbox" id="fwu-force" onchange="fwForce()">Ohne Kennung hochladen</label>
@@ -474,7 +474,7 @@ function logLive(){clearInterval(logTimer);logTimer=null;if($('loglive').checked
 async function loadCfg(){const r=await fetch('/api/config');const c=await r.json();
   document.querySelectorAll('[data-cfg]').forEach(e=>{const v=c[e.dataset.cfg];if(e.type==='password')return;
     if(e.type==='checkbox')e.checked=!!v;else if(v!==undefined)e.value=v});
-  $('loglvl').value=c.log_level;setTxt('logtopic',c.mqtt_base+'/log');setTxt('w-mdns',(c.hostname||'truma-heater')+'.local')}
+  $('loglvl').value=c.log_level;setTxt('logtopic',c.mqtt_base+'/log');setTxt('w-mdns',(c.hostname||'heater-node')+'.local')}
 // Each tab saves only its own fields. Empty password fields keep the stored value. The device restarts.
 async function save(id,btn){const p=new URLSearchParams();
   for(const e of $(id).querySelectorAll('[data-cfg]')){const k=e.dataset.cfg;
@@ -504,7 +504,7 @@ $('sync').onclick=()=>{cmd('sync_clock');toast('Uhrzeit wird gesendet')};
 $('reboot').onclick=e=>ask(e.target,'Wirklich neu starten? Nochmal tippen',async()=>{await fetch('/api/reboot',{method:'POST'});toast('Neustart …')});
 $('loglive').onchange=logLive;
 $('logclear').onclick=()=>{logLines=[];$('log').textContent=''};
-$('logsave').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([logLines.join('\n')],{type:'text/plain'}));a.download='camper-heater-log.txt';a.click()};
+$('logsave').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([logLines.join('\n')],{type:'text/plain'}));a.download='heater-node-log.txt';a.click()};
 $('loglvl').onchange=e=>cmd('log_level',e.target.value);
 $('sniff').onchange=e=>cmd('sniffer',e.target.checked?'1':'0');
 $('rawd').onchange=e=>cmd('rawdump',e.target.checked?'1':'0');

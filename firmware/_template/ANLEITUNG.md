@@ -1,6 +1,6 @@
 # Vorlage für ein neues VanNode-Gerät
 
-`firmware/_template` ist ein fertiges, lauffähiges Muster-Gerät („Camper Example“). Es enthält alles, was alle Geräte im Projekt gemeinsam haben: WLAN mit Setup-WLAN, Web-Oberfläche, Einstellungen, MQTT mit Home-Assistant-Discovery und Updates ohne USB. Für ein neues Gerät kopierst du es mit einem Befehl und füllst nur noch den Sensor-Teil.
+`firmware/_template` ist ein fertiges, lauffähiges Muster-Gerät („Example Node“). Es enthält alles, was alle Geräte im Projekt gemeinsam haben: WLAN mit Setup-WLAN, Web-Oberfläche, Einstellungen, MQTT mit Home-Assistant-Discovery und Updates ohne USB. Für ein neues Gerät kopierst du es mit einem Befehl und füllst nur noch den Sensor-Teil.
 
 Das Muster misst als Beispiel eine Spannung an einem Analog-Pin. So kannst du es direkt flashen und ausprobieren, bevor du etwas änderst.
 
@@ -21,10 +21,10 @@ Das legt `firmware/waste/` an und ersetzt dabei überall die Platzhalter:
 | In der Vorlage | Wird zu (Beispiel) | Wo |
 |---|---|---|
 | `camper_example` | `camper_waste` | Sketch-Ordner, `.ino`, HA-Geräte-ID |
-| `camper-example` | `camper-waste` | Hostname, `camper-waste.local`, OTA |
+| `example-node` | `waste-node` | Hostname, `waste-node.local`, OTA |
 | `camper/example` | `camper/waste` | MQTT-Prefix |
-| `Camper-Example` | `Camper-Abwasser` | Setup-WLAN `Camper-Abwasser-XXXXXX` |
-| `Camper Example` | `Camper Abwasser` | Titel der Web-Oberfläche, Gerät in HA |
+| `Example-Node` | `Abwasser-Node` | Setup-WLAN `Abwasser-Node-XXXXXX` |
+| `Example Node` | `Abwasser Node` | Titel der Web-Oberfläche, Gerät in HA |
 
 Gibt es den Ordner schon, bricht das Skript ab und ändert nichts.
 

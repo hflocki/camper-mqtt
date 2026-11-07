@@ -1,6 +1,6 @@
-# Camper MaxxFan – VanTurtle-Board per MQTT
+# MaxxFan Node – VanTurtle-Board per MQTT
 
-Firmware für einen **ESP32-C3** mit dem **VanTurtle**-Board (TCA9555-Port-Expander), die eine MaxxFan-Dachhaube per **MQTT** steuert – reines **Arduino**, ohne ESPHome. Aufbau wie [camper-tanklevel](../tanklevel) und [camper-heater](../heater):
+Firmware für einen **ESP32-C3** mit dem **VanTurtle**-Board (TCA9555-Port-Expander), die eine MaxxFan-Dachhaube per **MQTT** steuert – reines **Arduino**, ohne ESPHome. Aufbau wie [tanklevel-node](../tanklevel) und [heater-node](../heater):
 
 - Tastendrücke der MaxxFan-Bedienung (Auto, Richtung, Ein/Aus, Schneller, Langsamer, Piep) für **Port 0 (RJ11)** und **Port 1 (RJ45)**
 - Eingang **Auto Hold** und **Controller-LED** je Port
@@ -94,11 +94,11 @@ Ohne das Repo-Werkzeug geht es auch so (im Sketch-Ordner `camper_maxxfan`): `gzi
 | `data/index.html.gz` | nur die Web-Oberfläche wird ersetzt, ohne Neustart |
 | LittleFS-Image (Dateiname enthält `littlefs` oder `spiffs`) | ganzes Dateisystem, danach Neustart |
 
-Alternativ per Arduino-OTA (`camper-maxxfan` unter Netzwerk-Ports); auch ein Dateisystem-Upload über `espota -s` wird angenommen. Ändert sich nur die Firmware, muss die Web-Oberfläche nicht neu hochgeladen werden.
+Alternativ per Arduino-OTA (`maxxfan-node` unter Netzwerk-Ports); auch ein Dateisystem-Upload über `espota -s` wird angenommen. Ändert sich nur die Firmware, muss die Web-Oberfläche nicht neu hochgeladen werden.
 
 ## Web-Oberfläche
 
-Gleicher Aufbau und gleiche Optik wie bei camper-tanklevel, camper-temp und camper-heater: Kopfzeile mit Statuspunkten (Board, WiFi, MQTT), Reiter mit Symbolen.
+Gleicher Aufbau und gleiche Optik wie bei tanklevel-node, temp-node und heater-node: Kopfzeile mit Statuspunkten (Board, WiFi, MQTT), Reiter mit Symbolen.
 
 - **Live:** Ein/Öffnen, Schließen, Auto, Richtung, Langsamer, Schneller, Stufe 1–10 setzen, Auto-Hold-Anzeige, Sync auf AUS
 - **MaxxFan:** Bedienteil je Port (Controller-LED, Piep als Verbindungstest), Ports ein/aus, Tastendruck-Dauer, Sync-Port
@@ -133,7 +133,7 @@ Der Schutz greift erst bei Updates, die von dieser Version **aus** gemacht werde
 
 ## Erstbenutzung
 
-1. Beim ersten Start läuft nur der Access Point **`Camper-MaxxFan-XXXXXX`** (Passwort aus `config.h`, `XXXXXX` = MAC-Endung).
+1. Beim ersten Start läuft nur der Access Point **`MaxxFan-Node-XXXXXX`** (Passwort aus `config.h`, `XXXXXX` = MAC-Endung).
 2. Verbinden, `http://192.168.4.1` öffnen (öffnet sich meist automatisch).
 3. **Einstellungen**: WLAN (optional feste IP), MQTT-Broker, aktive Ports → Speichern & Neustart.
 4. Ab Werk ist nur **Port 1 (RJ45)** aktiv. Wer RJ11 nutzt, schaltet Port 0 ein.
@@ -174,7 +174,7 @@ mosquitto_sub -h <broker> -t 'camper/maxxfan/#' -v
 
 ### Home Assistant
 
-Mit Discovery erscheint ein Gerät **„Camper MaxxFan“** mit Tasten-Entitäten je aktivem Port (Piep und LED unter *Konfiguration*), Stufen-Regler (0–10, 0 = zu), Taste „Close Lid“, LED-Schalter, Auto-Hold-Sensor, „Sync to OFF“, Neustart und Diagnose (WLAN, Port-Expander). Deaktivierte Ports werden aus HA entfernt.
+Mit Discovery erscheint ein Gerät **„MaxxFan Node“** mit Tasten-Entitäten je aktivem Port (Piep und LED unter *Konfiguration*), Stufen-Regler (0–10, 0 = zu), Taste „Close Lid“, LED-Schalter, Auto-Hold-Sensor, „Sync to OFF“, Neustart und Diagnose (WLAN, Port-Expander). Deaktivierte Ports werden aus HA entfernt.
 
 **Umstieg von ESPHome:** Das alte ESPHome-Gerät in HA unter *Einstellungen → Geräte & Dienste → ESPHome* löschen. Die Entity-IDs ändern sich, Automationen und Dashboards (z. B. Display-Panels) müssen auf die neuen Entitäten oder direkt auf die MQTT-Topics umgestellt werden.
 
@@ -184,6 +184,7 @@ Mit Discovery erscheint ein Gerät **„Camper MaxxFan“** mit Tasten-Entitäte
 
 | Version | Änderungen |
 | --- | --- |
+| 1.8.0 | Neue Namen: Standard-Hostname `maxxfan-node` (ein gespeicherter Hostname bleibt), Setup-WLAN, Gerätename und Release-Datei `maxxfan-node-….bin`. Topics `camper/…` und Home-Assistant-IDs bleiben |
 | 1.7.1 | Update-Prüfung vergleicht auch den Chip in der Kennung (gleich wie im Browser); ein Update über den Setup-AP löst keinen WLAN-Rückfall mehr aus |
 | 1.7.0 | Sichere Updates: Firmware-Kennung, Prüfung der Datei im Browser und im Gerät (falsches Gerät, falscher Chip, .merged.bin, zu groß), Fehlergrund im Klartext, installierte Version und Ereignis-Log im Web-UI |
 | 1.6.0 | Absicherung gegen Aussperren: Rückfall auf die vorherige Firmware, wenn ein Update kein WLAN bekommt; geänderte WLAN-Daten werden zurückgesetzt, wenn sie nicht funktionieren |

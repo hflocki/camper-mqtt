@@ -33,7 +33,7 @@ python3 tools/mqtt/sim.py --host 192.168.8.1 drive --contact 0x00158d0000000001
 | `tilt` | schräg geparkt, nach 90 s eben |
 | `empty` | Frischwasser 30 → 5 %, Gas 25 → 8 % in 3 Minuten |
 | `offline` | `--device` geht nach 30 s offline und kommt nach 2 Minuten wieder |
-| `fridge` | Kühlschrank erwärmt sich von 5 auf 11 °C (Alarm von camper-temp, mit `--fridge` auch ein Zigbee-Sensor) |
+| `fridge` | Kühlschrank erwärmt sich von 5 auf 11 °C (Alarm von temp-node, mit `--fridge` auch ein Zigbee-Sensor) |
 | `battery` | Batterie entlädt von 40 auf 12 % |
 | `frost` | Außentemperatur fällt unter 0 °C (braucht `--outdoor`: Zigbee-Sensor, der am Display für die Wetter-Seite markiert ist) |
 | `replay DATEI` | spielt einen Mitschnitt von `record.py` ab, `--speed 10` zehnmal schneller |

@@ -1,13 +1,13 @@
 > [!WARNING]
 > **IN ENTWICKLUNG – kein fertiges Projekt.** Am echten LIN-Bus noch nicht getestet. Nutzung auf eigenes Risiko.
 
-# camper-heater
+# heater-node
 
 Truma-Heizung (Combi / Combi D, Vario Heat) per **MQTT** steuern – mit einem ESP32 am LIN-Bus, reines **Arduino**, ohne ESPHome.
 
 - Der ESP ist **LIN-Slave** und meldet sich am CP Plus als **iNet Box** (T23.70.0) an.
 - Das **CP Plus bleibt LIN-Master** und voll bedienbar. Änderungen am CP Plus erscheinen in MQTT, MQTT-Befehle erscheinen am CP Plus.
-- Topics unter `camper/heater/...` wie bei den anderen Camper-Geräten, dazu Home-Assistant-Auto-Discovery (Klima-Entität zum Bedienen). Die Unterstruktur `control_status/...` und `set/...` folgt [mc0110/inetbox2mqtt](https://github.com/mc0110/inetbox2mqtt); wer dessen Topics braucht, stellt das Basis-Topic auf `service/truma`.
+- Topics unter `camper/heater/...` wie bei den anderen VanNode-Geräten, dazu Home-Assistant-Auto-Discovery (Klima-Entität zum Bedienen). Die Unterstruktur `control_status/...` und `set/...` folgt [mc0110/inetbox2mqtt](https://github.com/mc0110/inetbox2mqtt); wer dessen Topics braucht, stellt das Basis-Topic auf `service/truma`.
 - Web-Oberfläche für Bedienung, Einstellungen, Log und Firmware-Update.
 
 Protokoll-Logik portiert aus [skrebber/esphome-truma_inetbox](https://github.com/skrebber/esphome-truma_inetbox) (Fork von Fabian-Schmidt), basierend auf der Vorarbeit von [danielfett/inetbox.py](https://github.com/danielfett/inetbox.py) und [WomoLIN](https://github.com/muccc/WomoLIN).
@@ -20,7 +20,7 @@ Protokoll-Logik portiert aus [skrebber/esphome-truma_inetbox](https://github.com
 
 ## Unterstützte Boards
 
-In `truma_heater/config.h` ganz oben genau ein Board aktivieren. Ist keins aktiv, nimmt die Firmware das Standard-Board des Chips, für den gebaut wird. Die fertigen Releases gibt es deshalb für beide: `camper-heater-esp32c3.bin` (Super Mini) und `camper-heater-esp32.bin` (ESP32 DevKit, TX 16 / RX 17).
+In `truma_heater/config.h` ganz oben genau ein Board aktivieren. Ist keins aktiv, nimmt die Firmware das Standard-Board des Chips, für den gebaut wird. Die fertigen Releases gibt es deshalb für beide: `heater-node-esp32c3.bin` (Super Mini) und `heater-node-esp32.bin` (ESP32 DevKit, TX 16 / RX 17).
 
 | Profil | Board | LIN TX / RX | Arduino-Board |
 |---|---|---|---|
@@ -53,7 +53,7 @@ Spätere Updates gehen ohne USB: In der Arduino IDE *Sketch → Kompilierte Bin�
 
 ## Inbetriebnahme
 
-1. Nach dem ersten Start öffnet der ESP den Access Point **`truma-heater-XXXX`** (Passwort `truma1234`). Verbinden, die Seite öffnet sich automatisch (sonst `http://192.168.4.1`).
+1. Nach dem ersten Start öffnet der ESP den Access Point **`heater-node-XXXX`** (Passwort `truma1234`). Verbinden, die Seite öffnet sich automatisch (sonst `http://192.168.4.1`).
 2. Im Reiter **WiFi** WLAN (optional feste IP) eintragen → **Speichern & Verbinden**, danach im Reiter **MQTT** den Broker → **Speichern**. Der ESP32 kann nur **2,4-GHz-WLAN**.
    - Der Access Point läuft nur, solange kein WLAN eingerichtet ist oder das WLAN 60 s nicht erreichbar ist (Reiter **WiFi**: Name, Passwort und „Access Point immer an“ einstellbar). Im Notfall-Modus versucht der ESP alle 30 s für 10 s das WLAN, aber nie, solange ein Handy am Access Point hängt.
    - Bricht das WLAN oft ab: im Reiter **WiFi** die Sendeleistung auf 8,5 dBm stellen. Dort stehen auch Abbrüche, letzter Abbruchgrund und der Grund des letzten Neustarts.
@@ -65,7 +65,7 @@ Spätere Updates gehen ohne USB: In der Arduino IDE *Sketch → Kompilierte Bin�
 
 ## Weboberfläche
 
-Aufbau und Optik wie bei [camper-tanklevel](../tanklevel): Heizung, Timer, MQTT, WiFi, System.
+Aufbau und Optik wie bei [tanklevel-node](../tanklevel): Heizung, Timer, MQTT, WiFi, System.
 
 | Heizung | Timer | WiFi |
 | --- | --- | --- |

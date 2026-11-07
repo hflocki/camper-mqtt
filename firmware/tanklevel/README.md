@@ -1,4 +1,4 @@
-# Camper Tanklevel – Frischwasser, Grauwasser + Gas auf einem ESP32
+# Tanklevel Node – Frischwasser, Grauwasser + Gas auf einem ESP32
 
 Eine Firmware für **einen** ESP32-C3 (oder klassischen ESP32), die zwei Projekte zusammenfasst und um Grauwasser erweitert:
 
@@ -135,7 +135,7 @@ Die Arduino IDE 2.x kann von sich aus kein Dateisystem hochladen. Dafür braucht
 4. Sketch hochladen.
 5. **Serial Monitor schließen** (sonst ist der Port belegt).
 6. `Cmd+Shift+P` → **Upload LittleFS to Pico/ESP8266/ESP32**.
-7. ESP neu starten, Access Point `Camper-Tanklevel-XXXXXX` erscheint.
+7. ESP neu starten, Access Point `Tanklevel-Node-XXXXXX` erscheint.
 
 Der LittleFS-Upload überschreibt die gespeicherte Konfiguration (WLAN, MQTT, Matrix). Nach einem reinen Firmware-Update ist er nicht nötig, nur wenn sich die Web-Oberfläche geändert hat.
 
@@ -148,11 +148,11 @@ python3 tools/web/pack_web.py tanklevel      # im Repo-Hauptordner
 
 Ohne das Repo-Werkzeug geht es auch so (im Sketch-Ordner `camper_tanklevel`): `gzip -9 -n -c web/index.html > data/index.html.gz`. Die GitHub Action prüft bei jedem Push, ob die gepackte Seite zur `index.html` passt.
 
-Spätere Firmware-Updates gehen auch per OTA (`camper-tanklevel` unter Netzwerk-Ports) oder über die Web-Oberfläche.
+Spätere Firmware-Updates gehen auch per OTA (`tanklevel-node` unter Netzwerk-Ports) oder über die Web-Oberfläche.
 
 ## Erstbenutzung
 
-1. Beim ersten Start läuft nur der Access Point **`Camper-Tanklevel-XXXXXX`** (Passwort aus `config.h`). `XXXXXX` sind die letzten 6 Stellen der WLAN-MAC des ESP, so lassen sich mehrere Geräte auseinanderhalten. Der Name ist im Tab WiFi änderbar.
+1. Beim ersten Start läuft nur der Access Point **`Tanklevel-Node-XXXXXX`** (Passwort aus `config.h`). `XXXXXX` sind die letzten 6 Stellen der WLAN-MAC des ESP, so lassen sich mehrere Geräte auseinanderhalten. Der Name ist im Tab WiFi änderbar.
 2. Verbinden und `http://192.168.4.1` öffnen.
 3. Tab **WiFi**: WLAN eintragen → Neustart.
 4. Tab **MQTT**: Broker eintragen → Neustart.
@@ -198,7 +198,7 @@ esptool --chip esp32c3 --port /dev/cu.usbmodemXXXX write-flash 0x3D0000 mklittle
 
 | Problem | Lösung |
 | --- | --- |
-| Netzwerk-Port `camper-tanklevel` erscheint nicht | Rechner und ESP müssen im selben Netz sein. mDNS wird manchmal von Routern oder Gastnetzen blockiert. Unter macOS beim ersten Mal die Firewall-Abfrage für die Arduino IDE erlauben. |
+| Netzwerk-Port `tanklevel-node` erscheint nicht | Rechner und ESP müssen im selben Netz sein. mDNS wird manchmal von Routern oder Gastnetzen blockiert. Unter macOS beim ersten Mal die Firewall-Abfrage für die Arduino IDE erlauben. |
 | Passwortabfrage schlägt fehl | Es gilt `DEFAULT_OTA_PASSWORD` aus `config.h` in der Firmware, die **gerade auf dem ESP läuft**. |
 | LittleFS per WLAN | Geht mit dem Arduino-Plugin nicht. Die Web-Oberfläche (`data/index.html.gz`) lässt sich aber im Web-UI unter **WiFi → Firmware- & Web-Update** hochladen. |
 
@@ -222,7 +222,7 @@ Prefix (Web-UI) Standard `camper/tanklevel`:
 | `<prefix>/gas/battery`, `ble_rssi`, `ble_state` | Gassensor |
 | `<prefix>/gas/distance`, `temperature`, `quality` | nur Mopeka: Füllhöhe in mm, Sensortemperatur in °C, Messqualität 0–3 |
 
-In Home Assistant erscheint **ein** Gerät „Camper Tanklevel“ mit allen Entitäten.
+In Home Assistant erscheint **ein** Gerät „Tanklevel Node“ mit allen Entitäten.
 
 **Umstieg von den Einzelprojekten:** Die alten Geräte „Camper Wasserlevel Sensor“ und „Camper Gaslevel Sensor“ bleiben in HA stehen, weil ihre Discovery-Nachrichten retained sind. Zum Entfernen in HA unter *Einstellungen → Geräte* löschen oder die Topics `homeassistant/sensor/camper_water/#`, `homeassistant/switch/camper_water/#` und `homeassistant/sensor/camper_gaslevel/#` mit leerer Nachricht (retained) überschreiben.
 
@@ -238,7 +238,7 @@ Im Tab **WiFi** stehen Laufzeit, Grund des letzten Neustarts und die Zahl der WL
 | Abbrüche mit `NO_AP_FOUND` | Router nicht sichtbar / Kanal gewechselt | Router-Kanal fest einstellen, Mesh/Band-Steering prüfen |
 | Abbrüche mit `AUTH_EXPIRE`, `4WAY_HANDSHAKE_TIMEOUT` | Anmeldung scheitert | Passwort prüfen, WPA2 statt WPA3 |
 
-**Sendeleistung** (Standard 17,5 dBm) und **Access Point immer an** (Standard an) sind im Tab WiFi einstellbar. Mit „AP nur als Notfall“ bleibt der eigene Access Point aus, solange das WLAN steht. Erst nach 60 s ohne WLAN geht er an. Das Gerät ist dann über seine IP oder `http://camper-tanklevel.local` erreichbar.
+**Sendeleistung** (Standard 17,5 dBm) und **Access Point immer an** (Standard an) sind im Tab WiFi einstellbar. Mit „AP nur als Notfall“ bleibt der eigene Access Point aus, solange das WLAN steht. Erst nach 60 s ohne WLAN geht er an. Das Gerät ist dann über seine IP oder `http://tanklevel-node.local` erreichbar.
 
 ## Sensoren ein- und ausschalten
 
@@ -332,6 +332,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 | --- | --- |
+| 1.9.0 | Neue Namen: Hostname `tanklevel-node`, Setup-WLAN, Gerätename und Release-Datei `tanklevel-node-….bin`. Topics `camper/…` und Home-Assistant-IDs bleiben |
 | 1.8.1 | Update-Prüfung vergleicht auch den Chip in der Kennung (gleich wie im Browser); ein Update über den Setup-AP löst keinen WLAN-Rückfall mehr aus |
 | 1.8.0 | Sichere Updates: Firmware-Kennung, Prüfung der Datei im Browser und im Gerät (falsches Gerät, falscher Chip, .merged.bin, zu groß), Fehlergrund im Klartext, installierte Version und Ereignis-Log im Web-UI |
 | 1.7.0 | Absicherung gegen Aussperren: Rückfall auf die vorherige Firmware, wenn ein Update kein WLAN bekommt; geänderte WLAN-Daten werden zurückgesetzt, wenn sie nicht funktionieren |

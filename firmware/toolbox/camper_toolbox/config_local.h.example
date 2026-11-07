@@ -38,6 +38,6 @@
 // Enter them in the web UI (plugin settings, "Suchen" picks the MAC).
 
 // ---- Device ----------------------------------------------------------
-// #define DEVICE_NAME          "Camper Toolbox"
+// #define DEVICE_NAME          "Toolbox Node"
 // #define DEFAULT_MQTT_PREFIX  "camper/toolbox"
-// #define OTA_HOSTNAME         "camper-toolbox"
+// #define OTA_HOSTNAME         "toolbox-node"

@@ -1,7 +1,7 @@
 > [!WARNING]
 > **IN ENTWICKLUNG.** Die Plugins sind teils mangels Hardware noch nicht am echten Gerät getestet, auch die Dachhaube (RV Tech) noch nicht.
 
-# Camper Toolbox
+# Toolbox Node
 
 Ein ESP32 als **Bluetooth-Gateway mit Plugins**: Er liest Bluetooth-Geräte im Camper aus bzw. steuert sie und stellt alles über eine Web-Oberfläche und MQTT (mit Home-Assistant-Discovery) bereit. Es wird nichts verdrahtet, nur ein ESP32 mit Strom.
 
@@ -66,7 +66,7 @@ Board-Paket: esp32 von Espressif Systems, 3.3.x (CI: 3.3.2).
 3. `http://<ip>/` öffnen. Solange die Web-Oberfläche fehlt, steht dort ein Upload-Formular: `data/index.html.gz` hochladen.
 4. Ab dann Updates nur noch über die Web-UI (Tab **System → Firmware- & Web-Update**).
 
-Ohne eingetragenes WLAN öffnet der ESP das Setup-WLAN `Camper-Toolbox-XXXXXX`, die Seite liegt dann unter `http://192.168.4.1`.
+Ohne eingetragenes WLAN öffnet der ESP das Setup-WLAN `Toolbox-Node-XXXXXX`, die Seite liegt dann unter `http://192.168.4.1`.
 
 Nach einer Änderung an `web/index.html` im Repo-Hauptordner `python3 tools/web/pack_web.py toolbox` ausführen (packt nach `data/index.html.gz`).
 
@@ -102,13 +102,13 @@ Basis-Topic `camper/toolbox` (in der Web-UI änderbar). Jedes Plugin hat eigene 
 | `camper/toolbox/cmd/rvtech/cover_position/set` | `0` … `100` |
 | `camper/toolbox/cmd/rvtech/regen/set` | Voreinstellung Regen (ebenso `auf`, `zu`, `lueften`) |
 
-In Home Assistant erscheint ein Gerät „Camper Toolbox“ (WLAN, Status) und je Plugin ein eigenes Gerät, die Dachhaube als Abdeckung (`cover`).
+In Home Assistant erscheint ein Gerät „Toolbox Node“ (WLAN, Status) und je Plugin ein eigenes Gerät, die Dachhaube als Abdeckung (`cover`).
 
 > Wer die Toolbox schon aus dem alten Repo nutzt: Das Basis-Topic war `camper/tool`, der Hostname `camper-tool`. Ein Gerät mit gespeicherten Einstellungen behält sein altes Topic, bis es in der Web-UI geändert wird. Ändert man es, legt Home Assistant die Entitäten neu an.
 
 ### Dachhaube am Display
 
-Ab camper-display 2.10.3 hat das Display eine eigene Seite **Dachhaube** und eine kleine Kachel für die Übersicht (beide ab Werk aus, einschalten unter *Einstellungen → Anzeige*). Sie lesen `camper/toolbox/rvtech/…` und senden die Voreinstellungen und die Position an `camper/toolbox/cmd/rvtech/…`. Eigene Kacheln dafür braucht es nicht mehr; wer sie angelegt hat, kann sie löschen.
+Ab display-node 2.10.3 hat das Display eine eigene Seite **Dachhaube** und eine kleine Kachel für die Übersicht (beide ab Werk aus, einschalten unter *Einstellungen → Anzeige*). Sie lesen `camper/toolbox/rvtech/…` und senden die Voreinstellungen und die Position an `camper/toolbox/cmd/rvtech/…`. Eigene Kacheln dafür braucht es nicht mehr; wer sie angelegt hat, kann sie löschen.
 
 - Basis-Topic am Display: *Einstellungen → Topics der Geräte → Toolbox* (Standard `camper/toolbox`; ein Gerät aus dem alten Repo sendet auf `camper/tool`).
 - Eine zweite Haube (`rvtech2`) kennt das Display noch nicht, ebenso der Abfahrtscheck.
@@ -140,12 +140,13 @@ Jede Firmware hat eine Kennung (`CAMPER-FW:toolbox:<version>:<chip>;`) und diese
 
 Ein Update ersetzt nur das Programm: WLAN, MQTT, Login, Plugin-Einstellungen (MAC, PIN …) und Bluetooth-Kopplungen bleiben erhalten.
 
-**Umstieg vom alten Repo:** Die alte Firmware (0.1.x) prüft nichts und meldet bei Fehlern nur „Update failed“. Die neue `.bin` (`camper-toolbox-esp32c3.bin`) über das alte Update-Feld hochladen, danach `data/index.html.gz`. Die `-full.bin` bzw. `.merged.bin` nur per USB.
+**Umstieg vom alten Repo:** Die alte Firmware (0.1.x) prüft nichts und meldet bei Fehlern nur „Update failed“. Die neue `.bin` (`toolbox-node-esp32c3.bin`) über das alte Update-Feld hochladen, danach `data/index.html.gz`. Die `-full.bin` bzw. `.merged.bin` nur per USB.
 
 ## Versionen
 
 | Version | Änderungen |
 | --- | --- |
+| 1.2.0 | Neue Namen: Hostname `toolbox-node`, Setup-WLAN, Gerätename und Release-Datei `toolbox-node-….bin`. Topics `camper/…` und Home-Assistant-IDs bleiben |
 | 1.1.0 | Gas-Plugins entfernt (DIMES, Mopeka Pro, Mopeka Standard, gemeinsamer Gas-Teil): Gasflasche und Tanks liest camper-tanklevel. Übrig: Dachhaube, Wasserpumpe, Kühlschrank |
 | 1.0.1 | Web-Oberfläche im Aussehen der übrigen VanNode-Geräte (Farben, Kopfzeile mit Statuspunkten, Tab-Leiste mit Symbolen, Werte als Kacheln, Schalter statt Häkchen) |
 | 1.0.0 | Ins VanNode-Repo übernommen: sicheres Update (Kennung, Prüfung im Browser und im Gerät), Ereignis-Log, Rückfall und WLAN-Rückweg, Topic `info`; Basis-Topic `camper/toolbox`, Hostname `camper-toolbox`; ab Werk nur die Dachhaube (RV Tech) |
@@ -153,7 +154,7 @@ Ein Update ersetzt nur das Programm: WLAN, MQTT, Login, Plugin-Einstellungen (MA
 
 ## Fertige Firmware
 
-Wird im Haupt-Repo per GitHub Actions gebaut, Tag `toolbox-v<version>`, Datei `camper-toolbox-esp32c3.bin`. Siehe [Fertige Firmware](../../README.md#fertige-firmware).
+Wird im Haupt-Repo per GitHub Actions gebaut, Tag `toolbox-v<version>`, Datei `toolbox-node-esp32c3.bin`. Siehe [Fertige Firmware](../../README.md#fertige-firmware).
 
 ## Lizenz
 

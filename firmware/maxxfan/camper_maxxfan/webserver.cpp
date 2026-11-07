@@ -35,10 +35,10 @@ const char* WEB_FILE = "/index.html.gz";
 // Shown when the LittleFS image (data/index.html.gz) has not been uploaded yet.
 // Keeps the firmware update working, so the device can always be recovered from the browser.
 const char FALLBACK_PAGE[] = R"HTML(<!doctype html><html lang="de"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Camper MaxxFan</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>MaxxFan Node</title>
 <style>body{font-family:system-ui,sans-serif;background:#0f1419;color:#e8f0f8;max-width:520px;margin:40px auto;padding:0 16px}
 code{background:#1e2d3d;padding:2px 6px;border-radius:4px}button{padding:10px 16px;margin-top:10px}</style></head><body>
-<h2>Camper MaxxFan</h2><p>Die Web-Oberfl&auml;che fehlt. Bitte das LittleFS-Image hochladen
+<h2>MaxxFan Node</h2><p>Die Web-Oberfl&auml;che fehlt. Bitte das LittleFS-Image hochladen
 (<code>data/index.html.gz</code>, Arduino IDE: <em>Upload LittleFS</em>).</p>
 <p>Hier hochladen: <code>data/index.html.gz</code> (Web-Oberfl&auml;che), ein LittleFS-Image oder die Firmware (.bin):</p>
 <form method="POST" action="/api/update" enctype="multipart/form-data">

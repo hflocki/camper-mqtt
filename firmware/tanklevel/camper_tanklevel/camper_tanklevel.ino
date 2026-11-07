@@ -1,5 +1,5 @@
 /*
- * Camper Tanklevel - fresh water, grey water and gas level on one ESP32
+ * Tanklevel Node - fresh water, grey water and gas level on one ESP32
  * ======================================================================
  * Hardware: ESP32-C3 / ESP32
  *   - Fresh water: Votronic analog tank sender on ADC_PIN (ESP32-C3: GPIO0)
@@ -92,7 +92,7 @@ void setup() {
 
     Serial.println();
     Serial.println("========================================");
-    Serial.println("  Camper Tanklevel v" FW_VERSION);
+    Serial.println("  Tanklevel Node v" FW_VERSION);
     Serial.println("========================================");
     Serial.println();
 

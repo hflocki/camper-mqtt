@@ -1,9 +1,9 @@
-// camper-maxxfan: VanTurtle board, buttons of the MaxxFan remote via port expander
+// maxxfan-node: VanTurtle board, buttons of the MaxxFan remote via port expander
 const M = {
   id: 'maxxfan',
-  config: {hostname: 'camper-maxxfan', ssid: 'Camper-WLAN', static_ip: false, ip: '', gw: '', sn: '255.255.255.0', dns: '',
+  config: {hostname: 'maxxfan-node', ssid: 'Camper-WLAN', static_ip: false, ip: '', gw: '', sn: '255.255.255.0', dns: '',
            mhost: '192.168.1.1', mport: 1883, muser: '', prefix: 'camper/maxxfan', disc: true, wuser: '',
-           p0: false, p1: true, pulse: 150, syncport: 1, apssid: 'Camper-MaxxFan-A1B2C3'},
+           p0: false, p1: true, pulse: 150, syncport: 1, apssid: 'MaxxFan-Node-A1B2C3'},
   ports: [{label: 'RJ11', hold: false, led: false}, {label: 'RJ45', hold: false, led: true}],
   sync: false,
   route(path, method, b) {

@@ -1,11 +1,11 @@
-# Camper Temp – DS18B20-Temperaturen per MQTT und Web-Oberfläche
+# Temp Node – DS18B20-Temperaturen per MQTT und Web-Oberfläche
 
 Firmware für einen ESP8266 (ESP-12E, NodeMCU, Wemos D1 mini) oder ESP32-C3, die bis zu **8 DS18B20-Temperatursensoren** an einem 1-Wire-Bus ausliest – z. B. Kühlschrank, Gefrierfach, Innenraum und außen.
 
 - Sensoren werden am Bus **automatisch gefunden** und in der Web-UI benannt, keine Adressen im Code
 - Werte per **MQTT** mit Home-Assistant-Discovery
 - Web-Oberfläche mit Live-Werten, Min/Max seit Start, Offset-Korrektur je Sensor
-- **Alarm-Grenzwerte** je Sensor (z. B. „Kühlschrank über 8 °C seit 15 min“), per MQTT auch ohne Home Assistant nutzbar, das [camper-display](../display) zeigt sie als Warnung
+- **Alarm-Grenzwerte** je Sensor (z. B. „Kühlschrank über 8 °C seit 15 min“), per MQTT auch ohne Home Assistant nutzbar, das [display-node](../display) zeigt sie als Warnung
 - Optionaler Login für die Web-Oberfläche
 - Access Point beim ersten Start, WLAN/MQTT im Browser einstellen, OTA-Updates
 
@@ -89,17 +89,17 @@ python3 tools/web/pack_web.py temp      # im Repo-Hauptordner
 
 Ohne das Repo-Werkzeug geht es auch so (im Sketch-Ordner `camper_temp`): `gzip -9 -n -c web/index.html > data/index.html.gz`. Die GitHub Action prüft bei jedem Push, ob die gepackte Seite zur `index.html` passt.
 
-Spätere Firmware-Updates gehen auch per OTA (`camper-temp` unter Netzwerk-Ports) oder über die Web-Oberfläche.
+Spätere Firmware-Updates gehen auch per OTA (`temp-node` unter Netzwerk-Ports) oder über die Web-Oberfläche.
 
 ## Erstbenutzung
 
-1. Beim ersten Start läuft nur der Access Point **`Camper-Temp-XXXXXX`** (Passwort aus `config.h`). `XXXXXX` sind die letzten 6 Stellen der WLAN-MAC.
+1. Beim ersten Start läuft nur der Access Point **`Temp-Node-XXXXXX`** (Passwort aus `config.h`). `XXXXXX` sind die letzten 6 Stellen der WLAN-MAC.
 2. Verbinden und `http://192.168.4.1` öffnen.
 3. Tab **WiFi**: WLAN eintragen → Neustart.
 4. Tab **MQTT**: Broker eintragen → Neustart.
 5. Tab **Sensoren**: Unter „Gefunden am 1-Wire-Bus“ jeden Sensor mit **+ Übernehmen** hinzufügen, Name und ID vergeben, **Sensoren speichern**. Welcher Sensor welcher ist: einen in der Hand anwärmen und zusehen, welcher Wert steigt.
 
-Eine feste IP vergibt man am einfachsten als DHCP-Reservierung im Router; im Netz ist das Gerät auch als `camper-temp.local` erreichbar.
+Eine feste IP vergibt man am einfachsten als DHCP-Reservierung im Router; im Netz ist das Gerät auch als `temp-node.local` erreichbar.
 
 ## MQTT / Home Assistant
 
@@ -119,7 +119,7 @@ Prefix (Web-UI) Standard `camper/temp`:
 
 Gesendet wird nach jeder Messung (Intervall in der Web-UI, Standard 10 s), spätestens jede Minute. Liefert ein Sensor keinen gültigen Wert (abgezogen, Kabelbruch, 85-°C-Startwert), wird kein Wert gesendet und die Entität in HA als nicht verfügbar markiert.
 
-In Home Assistant erscheint **ein** Gerät „Camper Temp“ mit einer Temperatur-Entität pro Sensor, einem Alarm-Binärsensor pro Sensor mit Grenzwerten, dem Gesamtalarm „Temperatur-Alarm“ und dem Alarmtext. Die `unique_id` basiert auf der Sensoradresse: Umbenennen oder eine neue ID behält die Historie. Wird ein Sensor entfernt, verschwindet auch seine Entität.
+In Home Assistant erscheint **ein** Gerät „Temp Node“ mit einer Temperatur-Entität pro Sensor, einem Alarm-Binärsensor pro Sensor mit Grenzwerten, dem Gesamtalarm „Temperatur-Alarm“ und dem Alarmtext. Die `unique_id` basiert auf der Sensoradresse: Umbenennen oder eine neue ID behält die Historie. Wird ein Sensor entfernt, verschwindet auch seine Entität.
 
 **Umstieg von ESPHome:** Das alte ESPHome-Gerät in HA unter *Einstellungen → Geräte & Dienste → ESPHome* löschen. Die Sensoradressen aus dem ESPHome-Log tauchen in der Web-UI unter „Gefunden am 1-Wire-Bus“ wieder auf (ESPHome schreibt sie in umgekehrter Byte-Reihenfolge: `0x0b000000671daa28` entspricht `28AA1D670000000B`).
 
@@ -171,6 +171,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 |---|---|
+| 1.4.0 | Neue Namen: Hostname `temp-node`, Setup-WLAN, Gerätename und Release-Datei `temp-node-….bin`. Topics `camper/…` und Home-Assistant-IDs bleiben |
 | 1.3.0 | Sicheres Update (Kennung, Prüfung im Browser und im Gerät, Fehler im Klartext), Ereignis-Log, Rückfall auf die vorherige Firmware und WLAN-Änderung mit Rückweg; auf dem ESP8266 nur Prüfung und Log |
 | 1.2.0 | Firmware (.bin) und Web-Oberfläche (index.html.gz) im Web-UI unter WiFi hochladbar, ohne USB (ESP32-C3 und ESP8266); Arduino-OTA-Dateisystem-Upload hängt LittleFS vorher aus |
 | 1.0.0 | Erste Version: bis zu 8 DS18B20, automatische Erkennung, Web-UI, MQTT mit HA-Discovery |

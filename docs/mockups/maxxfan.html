@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="de"><head>
 <script>
-// camper-maxxfan: VanTurtle board, buttons of the MaxxFan remote via port expander
+// maxxfan-node: VanTurtle board, buttons of the MaxxFan remote via port expander
 const M = {
   id: 'maxxfan',
-  config: {hostname: 'camper-maxxfan', ssid: 'Camper-WLAN', static_ip: false, ip: '', gw: '', sn: '255.255.255.0', dns: '',
+  config: {hostname: 'maxxfan-node', ssid: 'Camper-WLAN', static_ip: false, ip: '', gw: '', sn: '255.255.255.0', dns: '',
            mhost: '192.168.1.1', mport: 1883, muser: '', prefix: 'camper/maxxfan', disc: true, wuser: '',
-           p0: false, p1: true, pulse: 150, syncport: 1, apssid: 'Camper-MaxxFan-A1B2C3'},
+           p0: false, p1: true, pulse: 150, syncport: 1, apssid: 'MaxxFan-Node-A1B2C3'},
   ports: [{label: 'RJ11', hold: false, led: false}, {label: 'RJ45', hold: false, led: true}],
   sync: false,
   route(path, method, b) {
@@ -148,7 +148,7 @@ const M = {
 </script>
 
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Camper MaxxFan</title>
+<title>MaxxFan Node</title>
 <style>
 :root{--bg:#0f1419;--bg2:#1a2332;--card:#1e2d3d;--input:#0d1b2a;--acc:#4fc3f7;--acc-glow:rgba(79,195,247,.3);
 --warn:#ffb800;--danger:#ff4757;--ok:#00d4aa;--ink:#e8f0f8;--mute:#8899aa;--dim:#556677;--line:#2a3a4a;--r:12px}
@@ -216,7 +216,7 @@ progress{width:100%;margin-bottom:8px;accent-color:var(--acc)}
 .fwu-ev span{color:var(--fwu-mute);margin-right:8px;white-space:nowrap}.fwu-ev.bad{color:var(--fwu-bad)}
 button:disabled{opacity:.45;cursor:not-allowed}
 /* camper-theme:begin */
-/* camper-mqtt design (same look as the display): calm and technical, colour means state,
+/* VanNode design (same look as the display): calm and technical, colour means state,
    blue means control. Shared block, edit firmware/_common/web/camper-theme.css and run
    tools/common/sync_common.py; it overrides the page's own styles above it. */
 :root{
@@ -376,7 +376,7 @@ nav button .ico{display:inline-flex}
   <div class="btn-row"><button class="btn btn-p" type="submit">💾 Speichern &amp; Verbinden</button></div>
   <div class="card" style="margin-top:12px"><div class="ct">Firmware- &amp; Web-Update</div>
     <div class="fwu-cur" id="fwu-cur">Installiert: …</div>
-    <div class="hint" style="margin:0 0 8px">Firmware: die <code>.bin</code> aus dem Release (<code>camper-maxxfan-esp32c3.bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>camper_maxxfan.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>).<br>
+    <div class="hint" style="margin:0 0 8px">Firmware: die <code>.bin</code> aus dem Release (<code>maxxfan-node-esp32c3.bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>camper_maxxfan.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>).<br>
       Web-Oberfläche: <code>data/index.html.gz</code> (ohne Neustart). Ein LittleFS-Image (Dateiname mit „littlefs“) wird ebenfalls erkannt. Die Datei wird vor dem Hochladen geprüft.</div>
     <div class="fg"><input type="file" id="fwu-file" accept=".bin,.gz" onchange="fwChosen(true)"></div>
     <div class="fwu-chk" id="fwu-chk"></div>

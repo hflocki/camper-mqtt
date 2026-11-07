@@ -12,11 +12,11 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.3.1"
+#define FW_VERSION            "1.4.0"
 #define FW_DEVICE            "temp"   // device id in the firmware marker (fwcheck.h)
 
 #ifndef DEFAULT_AP_SSID
-#define DEFAULT_AP_SSID       "Camper-Temp"      // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
+#define DEFAULT_AP_SSID       "Temp-Node"      // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
 #endif
 #ifndef DEFAULT_AP_PASSWORD
 #define DEFAULT_AP_PASSWORD   "camptemp1234"     // Test placeholder (min. 8 characters) - change in the web UI
@@ -83,7 +83,7 @@
 #define CONFIG_FILE           "/config.json"
 #endif
 #ifndef OTA_HOSTNAME
-#define OTA_HOSTNAME          "camper-temp"
+#define OTA_HOSTNAME          "temp-node"
 #endif
 
 // ============================================================

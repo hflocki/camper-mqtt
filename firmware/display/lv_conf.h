@@ -1,4 +1,4 @@
-/* lv_conf.h for camper-display (LVGL 9.2). Copy this file next to the lvgl folder:
+/* lv_conf.h for display-node (LVGL 9.2). Copy this file next to the lvgl folder:
  *   <Arduino>/libraries/lv_conf.h
  * Changes vs. template: enabled, 16 bit colour, C library malloc (uses PSRAM),
  * QR code widget, dark default theme, 20 ms refresh. */

@@ -345,7 +345,7 @@ bool fan(const String& key, const String& value) {
     if (s < 1 || s > 10) return false;
     return publish(port + "speed/set", String(s));
   }
-  if (key == "close")    return publish(port + "close", "PRESS");   // camper-maxxfan 1.4.0+
+  if (key == "close")    return publish(port + "close", "PRESS");   // maxxfan-node 1.4.0+
   if (key == "led")      return publish(port + "led/set", value.length() ? value : "TOGGLE");
   if (key == "sync_off") return publish(settings.prefixFan + "/cmd/sync_off", "PRESS");
   return false;

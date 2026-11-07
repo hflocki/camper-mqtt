@@ -33,7 +33,7 @@
 //
 // Monitors without a current sensor (BM2) get no current, power, capacity, energy and runtime entities.
 //
-// Home Assistant: one device per battery (linked to the "Camper Battery" device),
+// Home Assistant: one device per battery (linked to the "Battery Node" device),
 // entity unique_ids use the BLE address, so renaming a battery keeps its history.
 
 #define HA_NODE_ID  "camper_battery"
@@ -126,7 +126,7 @@ void mqttLoop() {
         if (millis() - lastReconnect > 5000) {
             lastReconnect = millis();
             Serial.println("[MQTT] Connection attempt...");
-            String clientId = "camper-battery-" + WiFi.macAddress();
+            String clientId = "battery-node-" + WiFi.macAddress();
             clientId.replace(":", "");
             String willTopic = topic("status");
             bool connected;
@@ -322,7 +322,7 @@ static void publishJson(const String& configTopic, JsonDocument& doc) {
 static void addMainDevice(JsonDocument& doc) {
     JsonObject device = doc["device"].to<JsonObject>();
     device["identifiers"][0] = HA_NODE_ID;
-    device["name"] = "Camper Battery";
+    device["name"] = "Battery Node";
     device["model"] = "ESP32 BLE BMS gateway";
     device["manufacturer"] = "DIY";
     device["sw_version"] = FW_VERSION;

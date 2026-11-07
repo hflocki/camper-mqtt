@@ -1,6 +1,6 @@
 # MQTT-Topics
 
-Alle Topics der Camper-Geräte auf einen Blick. Die Tabellen nennen die Vorgaben ab Werk; das Basis-Topic jedes Geräts (`<prefix>`) lässt sich in seiner Web-Oberfläche ändern. Einzelheiten zu Werten und Einheiten stehen in der README des jeweiligen Geräts.
+Alle Topics der VanNode-Geräte auf einen Blick. Die Tabellen nennen die Vorgaben ab Werk; das Basis-Topic jedes Geräts (`<prefix>`) lässt sich in seiner Web-Oberfläche ändern. Einzelheiten zu Werten und Einheiten stehen in der README des jeweiligen Geräts.
 
 ## Gemeinsames Schema
 
@@ -107,7 +107,7 @@ Unterstruktur wie bei inetbox2mqtt. Vollständige Liste der Keys in der [README 
 
 ## Toolbox `camper/toolbox`
 
-Jedes Plugin hat eine eigene ID: `rvtech` (Dachhaube), `pump` (CaraWater), `fridge` (WCS). Gas liest camper-tanklevel. Die zweite Instanz desselben Plugins bekommt eine `2` angehängt (`rvtech2`). Befehle haben die Form `…/cmd/<plugin>/<key>/set`.
+Jedes Plugin hat eine eigene ID: `rvtech` (Dachhaube), `pump` (CaraWater), `fridge` (WCS). Gas liest tanklevel-node. Die zweite Instanz desselben Plugins bekommt eine `2` angehängt (`rvtech2`). Befehle haben die Form `…/cmd/<plugin>/<key>/set`.
 
 | Topic | Inhalt |
 | --- | --- |

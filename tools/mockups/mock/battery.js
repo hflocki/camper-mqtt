@@ -1,8 +1,8 @@
-// camper-battery: BLE gateway for Daly, Ective and BM2 battery monitors
+// battery-node: BLE gateway for Daly, Ective and BM2 battery monitors
 const M = {
   id: 'battery',
   config: {
-    version: '1.3.0', chip: 'ESP32-C3', reset_reason: 'Einschalten', wifi_ssid: 'Camper-WLAN', ap_ssid: 'Camper-Battery-A1B2C3',
+    version: '1.3.0', chip: 'ESP32-C3', reset_reason: 'Einschalten', wifi_ssid: 'Camper-WLAN', ap_ssid: 'Battery-Node-A1B2C3',
     wifi_tx_power: 70, ap_always: false, mqtt_server: '192.168.1.1', mqtt_port: 1883, mqtt_user: '',
     mqtt_prefix: 'camper/battery', web_user: '', interval: 10, max_batteries: 3,
     batteries: [{mac: 'C8:47:80:00:00:01', type: 2, name: 'Aufbau', key: 'battery1'},

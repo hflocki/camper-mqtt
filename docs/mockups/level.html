@@ -2,14 +2,14 @@
 <html lang="de">
 <head>
 <script>
-// camper-level: BNO085 spirit level with wedge heights
+// level-node: BNO085 spirit level with wedge heights
 const M = {
   id: 'level',
   config: {
     version: '2.1.0', reset_reason: 'Einschalten', pins: 'SDA GPIO8 · SCL GPIO9', track_width: 165, wheelbase: 345,
     mount: 0, tolerance: 0.5, filter_active: true, mqtt_fast: false, tare_pitch: 0, tare_roll: 0,
     mqtt_server: '192.168.1.1', mqtt_port: 1883, mqtt_user: '', mqtt_prefix: 'camper/level', web_user: '',
-    wifi_ssid: 'Camper-WLAN', ap_ssid: 'Camper-Level-A1B2C3', wifi_tx_power: 70, ap_always: false
+    wifi_ssid: 'Camper-WLAN', ap_ssid: 'Level-Node-A1B2C3', wifi_tx_power: 70, ap_always: false
   },
   wsInterval: 500,
   route(path, method, body, q) {
@@ -165,7 +165,7 @@ const M = {
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Camper Level</title>
+<title>Level Node</title>
 <style>
 :root {
     --bg-primary: #0f1419;
@@ -315,7 +315,7 @@ code { font-family: ui-monospace, Menlo, monospace; }
 .fwu-ev span{color:var(--fwu-mute);margin-right:8px;white-space:nowrap}.fwu-ev.bad{color:var(--fwu-bad)}
 button:disabled{opacity:.45;cursor:not-allowed}
 /* camper-theme:begin */
-/* camper-mqtt design (same look as the display): calm and technical, colour means state,
+/* VanNode design (same look as the display): calm and technical, colour means state,
    blue means control. Shared block, edit firmware/_common/web/camper-theme.css and run
    tools/common/sync_common.py; it overrides the page's own styles above it. */
 :root{
@@ -622,7 +622,7 @@ nav button .ico{display:inline-flex}
             <div class="enable-row">
                 <div>
                     <div style="font-size:0.85rem">Access Point immer an</div>
-                    <div class="form-hint" style="margin-top:2px">Aus = AP nur als Notfall, wenn das WLAN 60 s nicht erreichbar ist. Das Gerät ist dann über seine IP im WLAN oder <code>camper-level.local</code> erreichbar.</div>
+                    <div class="form-hint" style="margin-top:2px">Aus = AP nur als Notfall, wenn das WLAN 60 s nicht erreichbar ist. Das Gerät ist dann über seine IP im WLAN oder <code>level-node.local</code> erreichbar.</div>
                 </div>
                 <label class="toggle"><input type="checkbox" id="cfg-ap-always"><span></span></label>
             </div>
@@ -632,7 +632,7 @@ nav button .ico{display:inline-flex}
         <div class="card" style="margin-top:12px">
             <div class="card-title">Firmware- &amp; Web-Update</div>
             <div class="fwu-cur" id="fwu-cur">Installiert: …</div>
-            <div class="form-hint" style="margin:0 0 8px">Firmware: die <code>.bin</code> aus dem Release (<code>camper-level-esp32….bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>camper_level.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>), danach Neustart.<br>
+            <div class="form-hint" style="margin:0 0 8px">Firmware: die <code>.bin</code> aus dem Release (<code>level-node-esp32….bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>camper_level.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>), danach Neustart.<br>
                 Web-Oberfläche: <code>data/index.html.gz</code>, ohne Neustart. Die Einstellungen bleiben erhalten. Die Datei wird vor dem Hochladen geprüft.</div>
             <div class="form-group"><input type="file" id="fwu-file" accept=".bin,.gz" onchange="fwChosen(false)"></div>
             <div class="fwu-chk" id="fwu-chk"></div>

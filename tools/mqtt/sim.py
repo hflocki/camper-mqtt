@@ -31,7 +31,7 @@ SCENARIOS = {
     "tilt":    "parking on a slope: van tilted, after 90 s it is level",
     "empty":   "fresh water 30 -> 5 %, gas 25 -> 8 % within 3 minutes",
     "offline": "--device goes offline after 30 s and comes back after 2 minutes",
-    "fridge":  "fridge warms up from 5 to 11 degC (camper-temp alarm, Zigbee sensor with --fridge)",
+    "fridge":  "fridge warms up from 5 to 11 degC (temp-node alarm, Zigbee sensor with --fridge)",
     "battery": "battery drains from 40 to 12 % state of charge",
     "frost":   "outside temperature drops below 0 degC (needs --outdoor, a Zigbee sensor marked for the weather page)",
     "replay":  "play back a file from record.py (positional FILE, --speed)",
@@ -234,7 +234,7 @@ def main() -> int:
     ap.add_argument("--contact", help="IEEE of a Zigbee door/window contact to simulate")
     ap.add_argument("--fridge", help="IEEE of a Zigbee climate sensor in the fridge")
     ap.add_argument("--outdoor", help="IEEE of a Zigbee climate sensor outside (frost)")
-    ap.add_argument("--fridge-limit", type=float, default=8.0, help="alarm limit of the camper-temp fridge sensor")
+    ap.add_argument("--fridge-limit", type=float, default=8.0, help="alarm limit of the temp-node fridge sensor")
     ap.add_argument("--cleanup", action="store_true", help="delete the retained topics on exit")
     ap.add_argument("-v", "--verbose", action="store_true", help="print every message")
     args = ap.parse_args()
@@ -246,7 +246,7 @@ def main() -> int:
     if args.scenario not in SCENARIOS:
         ap.error(f"unknown scenario {args.scenario!r}, see --list")
 
-    c = connect(args, "camper-sim")
+    c = connect(args, "vannode-sim")
     if args.scenario == "replay":
         if not args.file:
             ap.error("replay needs a file from record.py")

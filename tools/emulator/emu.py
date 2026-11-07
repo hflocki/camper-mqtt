@@ -119,7 +119,7 @@ def zb_climate(n, on, ieee, name, t, h):
 
 
 FIELDS = [
-    # ---- tanks (camper-tanklevel) ----
+    # ---- tanks (tanklevel-node) ----
     TXT("tk_pre", D_TANK, "", FL_SET | FL_TOPIC | FL_ADV, "Basis-Topic", "camper/tanklevel"),
     NUM("w_pct", D_TANK, "Frischwasser", 0, "Füllstand", "%", 0, 100, 1, 0, 0.6, "62"),
     NUM("w_cap", D_TANK, "Frischwasser", FL_SET, "Tankgröße", "l", 10, 300, 5, 0, 0, "100"),
@@ -134,7 +134,7 @@ FIELDS = [
     NUM("gas_bat", D_TANK, "Gas", FL_ADV, "Akku Sensor", "%", 0, 100, 1, 0, 0, "87"),
     NUM("gas_rssi", D_TANK, "Gas", FL_ADV, "Bluetooth-Signal", "dBm", -110, -30, 1, 0, 3, "-72"),
 
-    # ---- level sensor (camper-level) ----
+    # ---- level sensor (level-node) ----
     TXT("lv_pre", D_LEVEL, "", FL_SET | FL_TOPIC | FL_ADV, "Basis-Topic", "camper/level"),
     NUM("pitch", D_LEVEL, "", 0, "Längsneigung (vorne höher +)", "°", -15, 15, 0.1, 1, 0.05, "0.4"),
     NUM("roll", D_LEVEL, "", 0, "Querneigung (links höher +)", "°", -15, 15, 0.1, 1, 0.05, "-0.3"),
@@ -144,7 +144,7 @@ FIELDS = [
     NUM("wb", D_LEVEL, "Fahrzeug", FL_SET | FL_ADV, "Radstand", "m", 2, 6, 0.05, 2, 0, "3.5"),
     NUM("tw", D_LEVEL, "Fahrzeug", FL_SET | FL_ADV, "Spurweite", "m", 1.2, 2.4, 0.05, 2, 0, "1.7"),
 
-    # ---- heater (camper-heater, Truma) ----
+    # ---- heater (heater-node, Truma) ----
     TXT("ht_pre", D_HEATER, "", FL_SET | FL_TOPIC | FL_ADV, "Basis-Topic", "camper/heater"),
     BOOL("alive", D_HEATER, "", 0, "CP Plus verbunden", "ON"),
     ENUM("hvac", D_HEATER, "Raum", 0, "Raumheizung", "heat", "heat=An,off=Aus"),
@@ -158,7 +158,7 @@ FIELDS = [
     BOOL("decoke", D_HEATER, "Diagnose", FL_ADV, "Freibrennen", "OFF"),
     NUM("decoke_rem", D_HEATER, "Diagnose", FL_ADV, "Freibrennen Rest", "min", 0, 120, 1, 0, 0, "0"),
 
-    # ---- roof fan (camper-maxxfan) ----
+    # ---- roof fan (maxxfan-node) ----
     TXT("mf_pre", D_FAN, "", FL_SET | FL_TOPIC | FL_ADV, "Basis-Topic", "camper/maxxfan"),
     BOOL("mf_exp", D_FAN, "", FL_ADV, "Port-Expander erreichbar", "ON"),
     BOOL("p1_on", D_FAN, "Anschluss p1", FL_SET, "Lüfter angeschlossen", "ON"),
@@ -170,19 +170,19 @@ FIELDS = [
     BOOL("p2_hold", D_FAN, "Anschluss p2", 0, "Auto-Halten", "OFF"),
     BOOL("p2_led", D_FAN, "Anschluss p2", 0, "LED", "OFF"),
 
-    # ---- temperatures (camper-temp) ----
+    # ---- temperatures (temp-node) ----
     TXT("tp_pre", D_TEMP, "", FL_SET | FL_TOPIC | FL_ADV, "Basis-Topic", "camper/temp"),
     *temp_slot(1, "ON", "fridge", "Kühlschrank", "5.0", "", "8"),
     *temp_slot(2, "ON", "freezer", "Gefrierfach", "-17.0", "", "-12"),
     *temp_slot(3, "OFF", "interior", "Innenraum", "20.0", "5", ""),
     *temp_slot(4, "OFF", "outside", "Außen", "8.0", "", ""),
 
-    # ---- batteries (camper-battery) ----
+    # ---- batteries (battery-node) ----
     TXT("bt_pre", D_BATTERY, "", FL_SET | FL_TOPIC | FL_ADV, "Basis-Topic", "camper/battery"),
     *bat_slot(1, "ON", "house", "Bordbatterie", "2", "78", "13.25", "-4.2", "100"),
     *bat_slot(2, "OFF", "starter", "Starterbatterie", "3", "90", "12.70", "0", "70"),
 
-    # ---- toolbox (camper-toolbox, roof hatch over the plugin rvtech) ----
+    # ---- toolbox (toolbox-node, roof hatch over the plugin rvtech) ----
     TXT("tb_pre", D_TOOLBOX, "", FL_SET | FL_TOPIC | FL_ADV, "Basis-Topic", "camper/toolbox"),
     BOOL("rv_on", D_TOOLBOX, "Dachhaube (Heki)", FL_SET, "Dachhaube gekoppelt", "ON"),
     BOOL("rv_conn", D_TOOLBOX, "Dachhaube (Heki)", 0, "Bluetooth verbunden", "ON"),
@@ -245,14 +245,14 @@ BUILTIN_SCEN = [
     {"id": "empty", "name": "Tanks leer", "desc": "Frischwasser 30 → 5 %, Gas 25 → 8 % in 3 Minuten",
      "tracks": {"w_pct": [[0, 30], [180, 5]], "gas_pct": [[0, 25], [180, 8]]}},
     {"id": "fridge", "name": "Kühlschrank warm",
-     "desc": "Kühlschrank (camper-temp und Zigbee-Klimasensor 1) 5 → 11 °C in 2 Minuten",
+     "desc": "Kühlschrank (temp-node und Zigbee-Klimasensor 1) 5 → 11 °C in 2 Minuten",
      "start": {"t1_on": "ON", "t1_ok": "ON"},
      "tracks": {"t1_t": [[0, 5], [120, 11]], "k1_t": [[0, 5.3], [120, 11.3]]}},
     {"id": "battery", "name": "Batterie leer", "desc": "Batterie 1 entlädt von 40 auf 12 % in 2½ Minuten",
      "start": {"b1_on": "ON", "b1_ok": "ON"},
      "tracks": {"b1_soc": [[0, 40], [140, 12]], "b1_v": [[0, 12.56], [140, 12.17]], "b1_a": [[0, -8.5]]}},
     {"id": "frost", "name": "Frost",
-     "desc": "Außen (camper-temp Sensor 4 und Zigbee-Klimasensor 2) fällt von 4 auf −2 °C",
+     "desc": "Außen (temp-node Sensor 4 und Zigbee-Klimasensor 2) fällt von 4 auf −2 °C",
      "start": {"t4_on": "ON", "t4_ok": "ON", "k2_on": "ON"},
      "tracks": {"t4_t": [[0, 4], [90, -2]], "k2_t": [[0, 4.2], [90, -1.8]]}},
     {"id": "depart", "name": "Abfahrt",
@@ -866,7 +866,7 @@ class Emu:
             emit(f"{p}/{k}/led", self.V(k + "_led"))
 
     def _b_toolbox(self, p, emit):
-        """Same topics as plugin_rvtech of camper-toolbox: <prefix>/rvtech/..."""
+        """Same topics as plugin_rvtech of toolbox-node: <prefix>/rvtech/..."""
         if not self.B("rv_on"):
             return
         r = p + "/rvtech/"

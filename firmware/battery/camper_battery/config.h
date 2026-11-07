@@ -13,11 +13,11 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.4.1"
+#define FW_VERSION            "1.5.0"
 #define FW_DEVICE            "battery"   // device id in the firmware marker (fwcheck.h)
 
 #ifndef DEFAULT_AP_SSID
-#define DEFAULT_AP_SSID       "Camper-Battery"   // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
+#define DEFAULT_AP_SSID       "Battery-Node"   // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
 #endif
 #ifndef DEFAULT_AP_PASSWORD
 #define DEFAULT_AP_PASSWORD   "campbatt1234"     // Test placeholder (min. 8 characters) - change in the web UI
@@ -84,7 +84,7 @@
 #define CONFIG_FILE           "/config.json"
 #endif
 #ifndef OTA_HOSTNAME
-#define OTA_HOSTNAME          "camper-battery"
+#define OTA_HOSTNAME          "battery-node"
 #endif
 
 // ============================================================

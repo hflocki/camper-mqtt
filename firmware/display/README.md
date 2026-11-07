@@ -2,7 +2,7 @@
 > **IN ENTWICKLUNG – kein fertiges Projekt.** Am echten LIN-Bus (Truma) noch nicht getestet. Nutzung auf eigenes Risiko.
 
 
-# Camper Display – Guition 4" Wandpanel + Webseite per MQTT
+# Display Node – Guition 4" Wandpanel + Webseite per MQTT
 
 Firmware für das **Guition ESP32-4848S040** (4", 480×480 Touch, ESP32-S3, 16 MB Flash, 8 MB PSRAM). Das Display hängt fest an der Wand und zeigt alle Camper-Werte gesammelt an; dieselben Seiten gibt es zusätzlich als **Webseite** direkt vom Display – z. B. auf Handy oder Tablet im Bett. Beide werden live über **MQTT** versorgt und können steuern. Reines **Arduino**, ohne ESPHome und ohne Home Assistant als Voraussetzung.
 
@@ -10,17 +10,17 @@ Passt zu den anderen Projekten:
 
 | Gerät | Repo | Standard-Topic |
 | --- | --- | --- |
-| Frischwasser, Grauwasser, Gas | [camper-tanklevel](../tanklevel) | `camper/tanklevel` |
-| Ausrichtung (BNO085) | [camper-level](../level) | `camper/level` ¹ |
-| Truma Combi Heizung | [camper-heater](../heater) oder CampMatic-Box, siehe [Heizung über CampMatic](#heizung-über-campmatic) | `camper/heater` ² |
-| MaxxFan (VanTurtle) | [camper-maxxfan](../maxxfan) | `camper/maxxfan` |
-| Temperaturen (DS18B20) | [camper-temp](../temp) | `camper/temp` |
-| Batterien (Daly, Ective, BM2) | [camper-battery](../battery) | `camper/battery` |
+| Frischwasser, Grauwasser, Gas | [tanklevel-node](../tanklevel) | `camper/tanklevel` |
+| Ausrichtung (BNO085) | [level-node](../level) | `camper/level` ¹ |
+| Truma Combi Heizung | [heater-node](../heater) oder CampMatic-Box, siehe [Heizung über CampMatic](#heizung-über-campmatic) | `camper/heater` ² |
+| MaxxFan (VanTurtle) | [maxxfan-node](../maxxfan) | `camper/maxxfan` |
+| Temperaturen (DS18B20) | [temp-node](../temp) | `camper/temp` |
+| Batterien (Daly, Ective, BM2) | [battery-node](../battery) | `camper/battery` |
 | Router (GPS, Mobilfunk) | Teltonika RUT956, siehe [Router-Daten](#router-daten-rut956) | frei |
 | Zigbee2MQTT & alles andere | eigene Seiten und Kacheln | frei |
 
 ¹ Wer noch die Original-Firmware von klehnst nutzt (ab Werk `wowa/level`): dort den MQTT-Prefix auf `camper/level` stellen oder hier unter *Topics der Geräte* `wowa/level` eintragen.
-² Bis camper-heater 1.0 war der Standard `service/truma`. Ältere Geräte behalten ihre Einstellung; dann hier oder im Heizungs-Web-UI angleichen.
+² Bis heater-node 1.0 war der Standard `service/truma`. Ältere Geräte behalten ihre Einstellung; dann hier oder im Heizungs-Web-UI angleichen.
 
 <p>
 <img src="docs/display-seiten.png" width="820">
@@ -40,18 +40,18 @@ Passt zu den anderen Projekten:
 - **⚡ Automationen:** Regeln wie „Tür auf → Eingangslicht an, Tür zu → nach 10 s aus, nur wenn dunkel“, siehe [Automationen](#automationen)
 - **Display aufwecken:** Ist der Bildschirm gedimmt oder aus, zeigt die Webseite oben den Knopf **💡 Display an**.
 - **Feste IP abgesichert:** Eine feste IP, die nicht funktionieren kann (Gateway außerhalb des Netzes, falsches Subnetz), wird beim Speichern abgelehnt. Verbindet sich das Display mit fester IP zwar mit dem WLAN, erreicht aber 3 Minuten lang den MQTT-Broker nicht, schaltet es bis zum nächsten Neustart auf DHCP (Hinweis auf der Systemseite). Auf der Systemseite gibt es außerdem den Knopf *Feste IP aus (DHCP)* – lange drücken, das Display startet mit DHCP neu
-- **Geräte-Links (nur Webseite):** Unter *Einstellungen → 🔗 Geräte-Links* Name und Adresse der anderen Geräte eintragen (oder „Camper-Geräte vorschlagen“ für die `.local`-Namen). Die Seite **🔗 Geräte** (über *System*) zeigt sie als Buttons, die die jeweilige Konfigurationsseite in einem neuen Tab öffnen
+- **Geräte-Links (nur Webseite):** Unter *Einstellungen → 🔗 Geräte-Links* Name und Adresse der anderen Geräte eintragen (oder „VanNode-Geräte vorschlagen“ für die `.local`-Namen). Die Seite **🔗 Geräte** (über *System*) zeigt sie als Buttons, die die jeweilige Konfigurationsseite in einem neuen Tab öffnen
 - **Anzeigename:** Unter *Einstellungen → Display & Seiten* lässt sich ein Name eintragen (z. B. „Wohnraum“), der oben in der Mitte neben dem Seitentitel steht – am Display und auf der Webseite. Leer = kein Name
 - **Übersicht ohne Scrollen:** 3 × 3 Kacheln, Standard: Frischwasser, Grauwasser, Gas, Truma, Level, MaxxFan, Temperatur (bis 3 Sensoren), Batterie (bis 3), jeweils mit Symbol statt Name (siehe *Symbole* unten) und Status (grün „OK“ oder die Warnungen auf dunklem Gelb). Antippen öffnet die jeweilige Seite. **Welche Kachel wo steht, ist frei wählbar** (*Einstellungen → Display & Seiten → Kacheln der Übersicht*): zusätzlich einzelne Batterien (Batterie 1–3 groß), **Dachhaube**, Uhr/Datum, eigene MQTT-Kacheln aus *Seiten & Kacheln* oder leer. Die Webseite übernimmt dieselbe Reihenfolge
-- **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie · **Wetter** · **Sensoren** (Fenster, Türen und weitere Sensoren) · **Warnungen** · **Licht** · **Schalter** · **Energie** und **Extra** (zwei freie Seiten für später, ab Werk aus) · **Dachhaube** (Heki über die camper-toolbox, ab Werk aus) – einzeln abschaltbar und **System** (Netzwerk, IP, Signal, MQTT, Firmware, Laufzeit, Speicher als Liste, dazu QR-Code und Helligkeit). **Name und Symbol** jeder festen Seite (auch System) lassen sich unter *Einstellungen → 🖥 Anzeige → Seiten & Symbolleiste* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
+- **Feste Seiten:** Home · Truma · MaxxFan · Level · Temperatur · Batterie · **Wetter** · **Sensoren** (Fenster, Türen und weitere Sensoren) · **Warnungen** · **Licht** · **Schalter** · **Energie** und **Extra** (zwei freie Seiten für später, ab Werk aus) · **Dachhaube** (Heki über die toolbox-node, ab Werk aus) – einzeln abschaltbar und **System** (Netzwerk, IP, Signal, MQTT, Firmware, Laufzeit, Speicher als Liste, dazu QR-Code und Helligkeit). **Name und Symbol** jeder festen Seite (auch System) lassen sich unter *Einstellungen → 🖥 Anzeige → Seiten & Symbolleiste* ändern; sie erscheinen in der Kopfzeile, auf den Kacheln der Übersicht und auf der Webseite
 - **Kopfzeile:** Seitenname · Anzeigename · Datum · Uhr. Antippen springt zur Übersicht. Bei Verbindungsproblemen steht dort „WLAN“ bzw. „MQTT“
 - **Icon-Leiste unten:** 8 Knöpfe: **Home** und **System** sind immer da, dazu bis zu 6 frei wählbare Seiten (*Einstellungen → Display & Seiten → Symbolleiste*, leer = die ersten 6). Seiten ohne Knopf erreicht man über ihre Kachel auf Home oder durch Wischen, auf der Webseite über *System → Weitere Seiten*. Die aktive Seite ist hervorgehoben. Die Webseite nutzt dieselbe Auswahl
 - **Wetter** von [Open-Meteo](https://open-meteo.com) (kostenlos, ohne Konto): aktuelles Wetter, nächste Stunde, heute und 3 Tage Vorschau. Fester Ort oder GPS per MQTT (z. B. vom Router), siehe [Wetter](#wetter)
-- **Warnungen:** Temperatur-Alarme von camper-temp, Heizungsfehler, Batterie- (mit dem Fehler des BMS im Klartext) und Wetter-Warnungen erscheinen in der Status-Kachel der Übersicht (dunkelgelb) (antippen öffnet die Seite **Warnungen** mit dem vollen Text; auf der Webseite ebenso) und als **dunkelgelbes Band mit Lauftext** in der Kopfzeile. Wer möchte, dass eine neue Warnung das Display einschaltet, setzt unter *Einstellungen → Display & Seiten* den Haken **Neue Warnung schaltet das Display ein** (Standard aus); war es dunkel, springt es dann auf die Übersicht. Optional zusätzlich als **Push-Nachricht** per Pushover
+- **Warnungen:** Temperatur-Alarme von temp-node, Heizungsfehler, Batterie- (mit dem Fehler des BMS im Klartext) und Wetter-Warnungen erscheinen in der Status-Kachel der Übersicht (dunkelgelb) (antippen öffnet die Seite **Warnungen** mit dem vollen Text; auf der Webseite ebenso) und als **dunkelgelbes Band mit Lauftext** in der Kopfzeile. Wer möchte, dass eine neue Warnung das Display einschaltet, setzt unter *Einstellungen → Display & Seiten* den Haken **Neue Warnung schaltet das Display ein** (Standard aus); war es dunkel, springt es dann auf die Übersicht. Optional zusätzlich als **Push-Nachricht** per Pushover
 - **Temperatur- und Batterie-Kachel frei belegbar:** unter *Einstellungen → Display & Seiten* für die Temperatur-Kachel bis zu 6 Sensoren (auch eigene Zigbee-/Bluetooth-Sensoren; mehr als 3 wechseln alle 4 s, unten steht „1 / 2“), für die Batterie-Kachel bis zu 3 Batterien aus einer Liste wählen und dahinter das Symbol (Batterie, Starterbatterie, Wohnraum, Sonne, Solarpanel, Fahrzeug, Landstrom, Strom, Thermometer, Kühlschrank, Gefrierfach, Innenraum, Außen, Schlafen, Wasser, Heizung, Bad, Stauraum). Die Kachel zeigt dann Symbol und Wert in dieser Reihenfolge. Leer = alle Temperatursensoren bzw. die ersten 3 Batterien, „Symbol automatisch“ wählt nach dem Namen (z. B. Kühlschrank 🧊, Gefrierfach ❄️, Außen 🌳, Aufbau 🏠, Solar ☀️, Starter 🚗). Meldet ein gewählter Sensor nichts, steht dort „--“
 - **Eigene Seiten und Kacheln** für beliebige MQTT-Topics: *Wert*, *Schalter*, *Taster*, *Regler* – erscheinen automatisch auf Display **und** Webseite
 - **Topic-Finder:** lauscht z. B. auf `zigbee2mqtt/#`, zeigt alle Geräte mit ihren JSON-Werten; ein Klick legt eine Kachel an (Temperatur, Luftfeuchte, Licht an/aus, Helligkeit …)
-- **Setup-WLAN** wie bei den anderen Projekten: ohne WLAN-Daten oder nach 1 Minute ohne Verbindung öffnet sich `Camper-Display-XXXXXX`, Captive Portal unter `http://192.168.4.1`. Das Display zeigt dazu einen QR-Code zum Verbinden.
+- **Setup-WLAN** wie bei den anderen Projekten: ohne WLAN-Daten oder nach 1 Minute ohne Verbindung öffnet sich `Display-Node-XXXXXX`, Captive Portal unter `http://192.168.4.1`. Das Display zeigt dazu einen QR-Code zum Verbinden.
 - **Stromausfallsicher:** keine SD-Karte, kein Dateisystem. Webseite und Oberfläche stecken in der Firmware, Einstellungen im NVS. Strom an → nach ca. 1–2 s läuft alles wieder.
 - Bildschirm dimmt bzw. schaltet nach einstellbarer Zeit ab (Helligkeit gedimmt 0 = ganz aus), Berühren weckt (die erste Berührung löst nichts aus). Sofort ausschalten: **Kopfzeile lange drücken**, Knopf **Aus** auf der Systemseite oder **💤** oben auf der Webseite
 - Uhrzeit per NTP, Firmware-Update über die Webseite (`.bin`-Datei, mit Fortschrittsbalken) oder Arduino-IDE-Netzwerkport
@@ -146,9 +146,9 @@ Die Webseite liegt als lesbare Datei in `web/index.html`. Nach Änderungen daran
 
 ## Einrichtung
 
-1. Nach dem ersten Flashen zeigt das Display die Seite **System** mit einem QR-Code. Scannen (oder WLAN `Camper-Display-XXXXXX`, Passwort `display1234` – in `config.h` ändern) → die Einstellungsseite öffnet sich.
+1. Nach dem ersten Flashen zeigt das Display die Seite **System** mit einem QR-Code. Scannen (oder WLAN `Display-Node-XXXXXX`, Passwort `display1234` – in `config.h` ändern) → die Einstellungsseite öffnet sich.
 2. **WLAN** eintragen (Suchen-Knopf listet Netze), **MQTT-Broker** = IP des RUT956 → *Einstellungen speichern*. Das Display startet neu und verbindet sich.
-3. Danach ist die Webseite unter `http://camper-display.local` bzw. der IP erreichbar; die System-Seite am Display zeigt die Adresse auch als QR-Code.
+3. Danach ist die Webseite unter `http://display-node.local` bzw. der IP erreichbar; die System-Seite am Display zeigt die Adresse auch als QR-Code.
 4. Unter **Topics der Geräte** prüfen, ob die Basis-Topics zu deinen Geräten passen (Standard: `camper/tanklevel`, `camper/level`, `camper/heater`, `camper/maxxfan`, `camper/temp`, `camper/battery`; MaxxFan-Port 0/1). Leeres Feld = Gerät nicht vorhanden.
 5. Optional unter **System** ein Web-Passwort setzen – dann sind Einstellungen und Firmware-Update geschützt. Die Bedienseiten bleiben im eigenen WLAN offen.
 
@@ -235,7 +235,7 @@ Das Display abonniert `<Basis-Topic>/#` jedes Geräts und die Topics der Kacheln
 | Gebläse | `<heizung>/set/fan_mode` | `eco` / `high` |
 | Warmwasser | `<heizung>/set/water_mode` | `off` / `eco` / `high` |
 | Freibrennen | `<heizung>/set/decoke` | `ON` / `OFF` (am Display lange drücken) |
-| Lüfter-Tasten | `<maxxfan>/cmd/p<n>/<taste>` | `PRESS` (`on_off`, `auto`, `faster`, `slower`, `direction`, `close` = Haube schließen, ab camper-maxxfan 1.4.0) |
+| Lüfter-Tasten | `<maxxfan>/cmd/p<n>/<taste>` | `PRESS` (`on_off`, `auto`, `faster`, `slower`, `direction`, `close` = Haube schließen, ab maxxfan-node 1.4.0) |
 | Lüfter-Stufe | `<maxxfan>/cmd/p<n>/speed/set` | `1` … `10` |
 | Sync AUS | `<maxxfan>/cmd/sync_off` | `PRESS` |
 | Tara | `<level>/cmd/tare/set` | `PRESS` (am Display lange drücken) |
@@ -260,7 +260,7 @@ Das Display abonniert `<Basis-Topic>/#` jedes Geräts und die Topics der Kacheln
 
 Beispiel: `mosquitto_pub -h <broker> -t camper/display/cmd/screen -m OFF`
 
-### Dachhaube (Heki über die camper-toolbox)
+### Dachhaube (Heki über die toolbox-node)
 
 Die Seite **Dachhaube** zeigt den Zustand („Zu“, „Offen 40 %“, „Regen“, „Lüften“, „Öffnet …“) und die Bluetooth-Verbindung der Toolbox zur Haube. Darunter die vier Voreinstellungen der Toolbox (**Auf** 100 %, **Zu**, **Regen** 12 %, **Lüften**), die aktive ist hervorgehoben, und ein Regler für die Position. Der Regler folgt der Haube, während sie fährt, aber nicht, solange man ihn anfasst.
 
@@ -272,21 +272,21 @@ Die Status-Kachel der Übersicht wird rot und zeigt die Warnungen, solange etwas
 
 | Quelle | Wann |
 | --- | --- |
-| camper-temp | `alarm_text` ist nicht leer (Grenzwert eines Sensors länger als die eingestellte Verzögerung verletzt) |
-| camper-heater | `control_status/heater_error` = `ON`, mit Fehlercode |
+| temp-node | `alarm_text` ist nicht leer (Grenzwert eines Sensors länger als die eingestellte Verzögerung verletzt) |
+| heater-node | `control_status/heater_error` = `ON`, mit Fehlercode |
 | Wetter | Böen ab dem eingestellten Wert (Standard 60 km/h) oder Gewitter, siehe [Wetter](#wetter) |
-| camper-tanklevel | Frischwasser unter 10 %, Gas unter 15 % (einstellbar) |
+| tanklevel-node | Frischwasser unter 10 %, Gas unter 15 % (einstellbar) |
 | Frost | Außentemperatur unter 3 °C (ab Werk aus): gewählter Außensensor, sonst das Wetter |
 | Markise | Markise ausgefahren und Böen ab 40 km/h (einstellbar, eigene Grenze unter der normalen Wind-Warnung) |
 | Abfahrtscheck | Während der Fahrt: Tür offen, Markise ausgefahren oder ein eigener Kontakt (Fenster, Dachhaube) offen – je Teil eine Warnung, siehe unten |
 | Eigene Klimasensoren | Temperatur über „Warnung über °C“ des Sensors, z. B. Zigbee-Sensor im Kühlschrank |
-| camper-battery | Ladestand unter 20 % (einstellbar, Vorgabe `BAT_WARN_SOC` in `config.h`, mit Restlaufzeit), BM2-Zustand „Schwach“ oder „Kritisch“ (Starterbatterie), BMS meldet einen Fehler – ab camper-battery 1.3.1 mit Text, z. B. „Bordbatterie BMS: Zellspannung zu hoch (Stufe 1)“, auch auf der Batterieseite. Batterien ohne Verbindung lösen keine Warnung aus |
+| battery-node | Ladestand unter 20 % (einstellbar, Vorgabe `BAT_WARN_SOC` in `config.h`, mit Restlaufzeit), BM2-Zustand „Schwach“ oder „Kritisch“ (Starterbatterie), BMS meldet einen Fehler – ab battery-node 1.3.1 mit Text, z. B. „Bordbatterie BMS: Zellspannung zu hoch (Stufe 1)“, auch auf der Batterieseite. Batterien ohne Verbindung lösen keine Warnung aus |
 
-Warnungen von Geräten, die `offline` sind, werden nicht gezeigt (alte retained Werte sollen keinen Fehlalarm auslösen). Grenzwerte und Verzögerung der camper-temp-Sensoren stellt man direkt in camper-temp ein, nicht am Display.
+Warnungen von Geräten, die `offline` sind, werden nicht gezeigt (alte retained Werte sollen keinen Fehlalarm auslösen). Grenzwerte und Verzögerung der temp-node-Sensoren stellt man direkt in temp-node ein, nicht am Display.
 
 **Grenzwerte und Hysterese** stehen unter *Einstellungen → 🌦 Dienste → ⚠️ Warnungen*: Frischwasser, Gas, Batterie (0 = aus), Frost (an/aus, Grenze in °C), dazu die Hysterese für Füllstände/Batterie (Standard 3 %), Temperaturen (1,0 °C) und Böen (10 km/h). Eine Warnung endet erst, wenn der Wert die Grenze um die Hysterese überschritten hat – so kommt und geht sie nicht bei jedem Messwert knapp an der Grenze.
 
-**Außentemperatur:** Im selben Abschnitt wählst du den Sensor für die Außentemperatur – einen eigenen Zigbee-/Bluetooth-Klimasensor oder einen Sensor von camper-temp. Er gilt für die Wetter-Seite, die Wetter-Kachel und die Frostwarnung. „automatisch“ nimmt wie bisher den ersten eigenen Sensor mit dem Haken „Wetter“.
+**Außentemperatur:** Im selben Abschnitt wählst du den Sensor für die Außentemperatur – einen eigenen Zigbee-/Bluetooth-Klimasensor oder einen Sensor von temp-node. Er gilt für die Wetter-Seite, die Wetter-Kachel und die Frostwarnung. „automatisch“ nimmt wie bisher den ersten eigenen Sensor mit dem Haken „Wetter“.
 
 **Markise:** Ohne Kontakt an der Markise setzt du den Zustand von Hand – Knopf auf der Wetter-Seite (Display und Webseite) oder per MQTT `camper/display/cmd/awning` = `ON`/`OFF`/`TOGGLE`. Der Zustand bleibt über einen Neustart erhalten. Gibt es später einen Kontakt (Zigbee-Tür-/Fensterkontakt an der Markise, offen = ausgefahren), wählst du ihn unter „Zustand kommt von“, dann verschwindet der Knopf. Die Böen kommen von Open-Meteo, also so aktuell wie das eingestellte Abrufintervall des Wetters.
 
@@ -417,7 +417,7 @@ Die Adresse darf die IEEE-Adresse (`0x00158d…`) oder die Short-ID (`9c68`) sei
 
 ## Heizung über CampMatic
 
-Statt der eigenen Firmware ([camper-heater](../heater)) kann das Display auch eine **CampMatic-Box** steuern: *Einstellungen → Topics der Geräte → Heizung: Steuerung über* auf **CampMatic-Box** stellen und als Basis-Topic `campmatic/<Gerätenummer>` eintragen (dreistellige Nummer aus der CampMatic-App, z. B. `campmatic/003`).
+Statt der eigenen Firmware ([heater-node](../heater)) kann das Display auch eine **CampMatic-Box** steuern: *Einstellungen → Topics der Geräte → Heizung: Steuerung über* auf **CampMatic-Box** stellen und als Basis-Topic `campmatic/<Gerätenummer>` eintragen (dreistellige Nummer aus der CampMatic-App, z. B. `campmatic/003`).
 
 Die Box redet mit dem Broker von CampMatic (`campmatic.de:8883`). Damit ihre Werte beim Display ankommen, braucht der Broker, an dem das Display hängt, eine **MQTT-Bridge** dorthin – beim Mosquitto-Add-on von Home Assistant mit der Vorlage von CampMatic, sinngemäß:
 

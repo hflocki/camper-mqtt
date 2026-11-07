@@ -12,11 +12,11 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.8.2"
+#define FW_VERSION            "1.9.0"
 #define FW_DEVICE             "tanklevel"   // device id in the firmware marker (fwcheck.h)
 
 #ifndef DEFAULT_AP_SSID
-#define DEFAULT_AP_SSID       "Camper-Tanklevel" // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
+#define DEFAULT_AP_SSID       "Tanklevel-Node" // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
 #endif
 #ifndef DEFAULT_AP_PASSWORD
 #define DEFAULT_AP_PASSWORD   "tanklevel1234"    // Test placeholder (min. 8 characters) - change in the web UI
@@ -105,7 +105,7 @@
 #define CONFIG_FILE           "/config.json"
 #endif
 #ifndef OTA_HOSTNAME
-#define OTA_HOSTNAME          "camper-tanklevel"
+#define OTA_HOSTNAME          "tanklevel-node"
 #endif
 
 // ============================================================

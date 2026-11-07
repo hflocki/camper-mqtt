@@ -1,10 +1,10 @@
-// camper-display: wall panel; the web page mirrors it over a WebSocket (t: cfg / v / f / err)
+// display-node: wall panel; the web page mirrors it over a WebSocket (t: cfg / v / f / err)
 const M = {
   gone: [],   // devices removed with ✕ on the system page
   id: 'display',
   wsInterval: 2000,
   config: {
-    hostname: 'camper-display', displayName: 'Camper', apPass: '********', webUser: '', webPass: '',
+    hostname: 'display-node', displayName: 'Camper', apPass: '********', webUser: '', webPass: '',
     wifiSsid: 'Camper-WLAN', wifiPass: '********', staticIp: false, ip: '', gateway: '', subnet: '', dns: '',
     mqttHost: '192.168.1.1', mqttPort: 1883, mqttUser: '', mqttPass: '',
     prefixSelf: 'camper/display', prefixTank: 'camper/tanklevel', prefixLevel: 'camper/level', prefixHeater: 'camper/heater',

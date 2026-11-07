@@ -19,7 +19,7 @@ OUT = ROOT / "docs" / "mockups"
 
 # id, title, description, web page source (None = built by the device's own generator)
 DEVICES = [
-    ("display", "Camper Display", "Wandpanel: Übersicht, Truma, MaxxFan, Level, Temperatur, Batterie, eigene Kacheln, Einstellungen",
+    ("display", "Display Node", "Wandpanel: Übersicht, Truma, MaxxFan, Level, Temperatur, Batterie, eigene Kacheln, Einstellungen",
      "firmware/display/camper_display/web/index.html"),
     ("heater", "Truma Heizung", "iNet-Box-Emulation am CP Plus: Heizung, Warmwasser, Timer, Modellauswahl, LIN-Log",
      None),

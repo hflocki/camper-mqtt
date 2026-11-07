@@ -5,7 +5,7 @@ Monorepo für Camper-Elektronik: jedes Gerät ist ein ESP8266/ESP32 mit reiner *
 ## Arbeitsweise (verbindlich)
 
 - **Sprache:** Code-Kommentare auf **Englisch**. Web-Oberflächen, Geräte-READMEs und sonstige Doku auf **Deutsch**. Die Haupt-README gibt es zweimal: `README.md` (Englisch) und `README.de.md` (Deutsch) – Änderungen immer in beiden.
-- **Keine persönlichen Daten** in Code, Configs oder Doku: keine Fahrzeugnamen, echten Koordinaten, Namen oder E-Mail-Adressen. Gerätenamen und IDs bleiben generisch (`camper-display`, `Camper`).
+- **Keine persönlichen Daten** in Code, Configs oder Doku: keine Fahrzeugnamen, echten Koordinaten, Namen oder E-Mail-Adressen. Gerätenamen und IDs bleiben generisch (`display-node`, `Camper`).
 - **Zugangsdaten nie ins Repo:** Passwörter, WLAN, Broker, Tokens (z. B. Pushover) nur in `config_local.h` (per `.gitignore` ausgeschlossen, Vorlage `config_local.h.example`) oder auf dem Gerät. Beim Road Buddy ist `config.h` selbst die persönliche Datei (Vorlage `config.example.h`).
 - **Git macht der Besitzer selbst.** Änderungen als Patch liefern, nicht committen oder pushen. Patch erzeugen mit `git add -A && git diff --cached --binary > name.patch`, vorher mit `git apply --check` gegen den aktuellen `main` prüfen. Angewendet wird so:
   ```

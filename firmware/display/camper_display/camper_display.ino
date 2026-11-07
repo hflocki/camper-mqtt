@@ -1,5 +1,5 @@
 // =====================================================================
-//  Camper Display
+//  Display Node
 //  Guition ESP32-4848S040 (4" 480x480 touch, ESP32-S3, 16 MB flash, 8 MB PSRAM)
 //
 //  - Wall panel with LVGL touch UI

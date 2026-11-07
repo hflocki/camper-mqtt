@@ -94,7 +94,7 @@ struct Settings {
   int8_t   wnFrost = 3;         // warn below this temperature in °C
   uint8_t  wnHystT = 10;        // temperature warnings end this far past the limit, in 0.1 °C
   uint16_t poQuiet = 30;        // minutes: a warning that ended is not sent again within this time
-  // outside temperature (weather page, frost): name of an own climate sensor or a camper-temp sensor,
+  // outside temperature (weather page, frost): name of an own climate sensor or a temp-node sensor,
   // "" = the first own sensor marked for the weather page
   String   outName;
   // awning: "" = switch on the display / web page / MQTT, otherwise the name of an own contact sensor (open = out)
@@ -111,7 +111,7 @@ struct Settings {
   bool     dpCont = true;       // own contact sensors (windows, roof vents) are part of the check
   // overview tiles temperature / battery: "name=icon" lines (see icons.cpp), "" = all / first 3
   String   ovTempSel, ovBatSel;
-  // heater source: own camper-heater firmware or a CampMatic box (topics <prefixHeater>/climate/truma_*/...)
+  // heater source: own heater-node firmware or a CampMatic box (topics <prefixHeater>/climate/truma_*/...)
   uint8_t  heaterSrc = 0;       // HEAT_SRC_*
   // display
   uint8_t  brightness, dimBrightness;

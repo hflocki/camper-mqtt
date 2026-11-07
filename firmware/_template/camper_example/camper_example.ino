@@ -1,5 +1,5 @@
 /*
- * Camper Example - template for a new VanNode device
+ * Example Node - template for a new VanNode device
  * =======================================================
  * Hardware: ESP32-C3 / ESP32-S3 (Arduino-ESP32 3.3.x)
  *

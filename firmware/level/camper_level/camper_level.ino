@@ -1,5 +1,5 @@
 /*
- * Camper Level - level sensor with wedge recommendation for motorhomes
+ * Level Node - level sensor with wedge recommendation for motorhomes
  * =====================================================================
  * Hardware: ESP32 / ESP32-S3 / ESP32-C3 + Adafruit BNO085 (I2C, pins in config.h)
  *
@@ -71,7 +71,7 @@ void setup() {
     delay(1000);
     Serial.println();
     Serial.println("========================================");
-    Serial.println("  Camper Level v" FW_VERSION);
+    Serial.println("  Level Node v" FW_VERSION);
     Serial.println("========================================");
 
     evlog::begin();

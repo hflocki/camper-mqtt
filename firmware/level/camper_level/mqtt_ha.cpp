@@ -67,7 +67,7 @@ void mqttLoop() {
         if (millis() - lastReconnect < 5000) return;
         lastReconnect = millis();
 
-        String clientId = "camper-level-" + WiFi.macAddress();
+        String clientId = "level-node-" + WiFi.macAddress();
         clientId.replace(":", "");
         String will = topic("status");
         const char* user = strlen(config.mqtt_user) ? config.mqtt_user : nullptr;
@@ -233,7 +233,7 @@ static void base(JsonDocument& doc, const char* name, const char* id, const char
     doc["availability_topic"] = topic("status");
     JsonObject dev = doc["device"].to<JsonObject>();
     dev["identifiers"][0] = HA_NODE_ID;
-    dev["name"] = "Camper Level";
+    dev["name"] = "Level Node";
     dev["model"] = "ESP32 + BNO085";
     dev["manufacturer"] = "DIY";
     dev["sw_version"] = FW_VERSION;

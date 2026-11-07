@@ -20,11 +20,11 @@ enum DpId : uint8_t {
   DP_HEAT_DECOKE, DP_HEAT_DECOKE_REM,
   // maxxfan
   DP_FAN_STATUS, DP_FAN_HOLD, DP_FAN_LED,
-  // camper-temp: JSON list of all sensors + readable alarm text
+  // temp-node: JSON list of all sensors + readable alarm text
   DP_TEMP_STATUS, DP_TEMP_LIST, DP_TEMP_ALARM,
-  // camper-battery: JSON list of all batteries
+  // battery-node: JSON list of all batteries
   DP_BAT_STATUS, DP_BAT_LIST,
-  // camper-toolbox: roof hatch (plugin rvtech)
+  // toolbox-node: roof hatch (plugin rvtech)
   DP_TB_STATUS, DP_HEKI_COVER, DP_HEKI_POS, DP_HEKI_REP, DP_HEKI_CONN,
   DP_COUNT
 };

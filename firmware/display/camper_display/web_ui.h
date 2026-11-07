@@ -8,7 +8,7 @@ const char WEB_UI[] PROGMEM = R"WEBUI(<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0D1115">
-<title>Camper Display</title>
+<title>Display Node</title>
 <style>
 /* VanNode design: calm, technical; colour means state, blue means control */
 :root{--bg:#0D1115;--side:#11161B;--card:#151B21;--hi:#1C242C;--line:#222B34;--line2:#2F3A45;--tx:#E7ECF0;--tx2:#B4BEC8;--mu:#8B98A5;
@@ -338,7 +338,7 @@ function render(){
   $('#nav').querySelectorAll('.nside button').forEach(b=>b.classList.toggle('on',b.dataset.p===page));
   const p=pages().find(x=>x.id===page);if(!p)return;
   $('#title').textContent=p.title.replace('⚙ ','');
-  $('#dname').textContent=cfg.name||'';document.title=cfg.name?cfg.name+' · Camper Display':'Camper Display';
+  $('#dname').textContent=cfg.name||'';document.title=cfg.name?cfg.name+' · Display Node':'Display Node';
   const m=$('#main');
   if(p.id==='overview')m.innerHTML=pgOverview();
   else if(p.id==='heater')m.innerHTML=pgHeater();
@@ -539,7 +539,7 @@ function updWeather(){
   set('x_st',esc(WX.status||'')+' · Daten: Open-Meteo');
 }
 function pgBat(){return `<div class="grid" id="b_list"></div><div class="mu" id="b_st" style="margin-top:12px"></div><div class="card wide" id="b_sens" hidden style="margin-top:12px"><h3>${svg('bat')} Sensor-Batterien</h3><div id="b_sens_l"></div></div><div class="card wide hist" id="h_b" hidden><h3>${svg('chart')} Ladestand, letzte 24 h</h3><div class="hc"></div></div><div class="card wide hist" id="h_v" hidden><h3>${svg('chart')} Spannung, letzte 24 h</h3><div class="hc"></div></div>`}
-// camper-battery: <prefix>/batteries = [{name,ok,soc,v,w,rt,st,p}]
+// battery-node: <prefix>/batteries = [{name,ok,soc,v,w,rt,st,p}]
 // icons of batteries and temperature sensors; keys as in icons.cpp
 const ICONS=[['bat','🔋','Batterie'],['carbat','🚙','Starterbatterie'],['home','🏠','Wohnraum / Aufbau'],['sun','☀️','Sonne'],['solar','🔆','Solarpanel'],['car','🚗','Fahrzeug'],['plug','🔌','Landstrom'],['bolt','⚡','Strom'],['therm','🌡️','Thermometer'],['fridge','🧊','Kühlschrank'],['snow','❄️','Gefrierfach'],['couch','🛋️','Innenraum'],['tree','🌳','Außen'],['bed','🛏️','Schlafen'],['water','💧','Wasser'],['fire','🔥','Heizung'],['shower','🚿','Bad'],['box','📦','Stauraum'],['door','🚪','Tür / Fenster offen'],['light','💡','Licht'],['awning','⛱️','Markise'],['lock','🔓','Schloss offen']];
 // overview slots: 'name=icon' lines (cfg.ovTempSel up to 6 / cfg.ovBatSel up to 3), icon '' = automatic
@@ -652,7 +652,7 @@ function drawHist(){
   });
 }
 function pgTemp(){return `<div class="warnbox" id="t_warn" hidden></div><div class="sgrid" id="t_list"></div><div class="mu" id="t_st" style="margin-top:12px"></div><div class="card wide hist" id="h_t" hidden><h3>${svg('chart')} Verlauf, letzte 24 h</h3><div class="hc"></div></div>`}
-// camper-temp: <prefix>/sensors = [{id,name,t,alarm}]
+// temp-node: <prefix>/sensors = [{id,name,t,alarm}]
 function temps(){try{const a=JSON.parse(V.temp_list||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
 // own Zigbee/BLE sensors (S.sen from the display): k 0 = contact, 1 = climate
 const sens=()=>Array.isArray(S.sen)?S.sen:[];
@@ -687,7 +687,7 @@ function pgFan(){
   <div class="card" style="margin:12px 0"><h3>Stufe <span id="f_sv">5</span></h3><input type="range" min="1" max="10" value="5" id="f_speed"></div>
   <div class="fanbtns">${b('auto','Auto')}${b('direction','⇅ Richtung')}${b('sync_off','Sync AUS')}</div>`;
 }
-// roof hatch on the camper-toolbox (plugin rvtech): presets like in the toolbox, slider for the position
+// roof hatch on the toolbox-node (plugin rvtech): presets like in the toolbox, slider for the position
 const HEKI_PRESETS=[['auf','▲ Auf'],['zu','▼ Zu'],['regen','Regen'],['lueften','Lüften']];
 function pgHeki(){
   return `<div class="card" style="margin-bottom:12px"><h3>⏏ ${esc(ptitle(13))}</h3><div class="big" id="k_v">--</div><div class="mu" id="k_s"></div></div>
@@ -940,13 +940,13 @@ function pgSettings(){
   <details data-g="dev"><summary>Topics der Geräte</summary>
    <p class="mu">Basis-Topic je Gerät. Leer lassen, wenn das Gerät nicht vorhanden ist.</p>
    ${inp('prefixTank','Tanks (Wasser/Gas)')}${inp('prefixLevel','Ausrichtung (Levelsensor)')}
-   <div class="f2"><div><label>Heizung: Steuerung über</label><select id="heaterSrc"><option value="0">eigene Firmware (camper-heater)</option><option value="1">CampMatic-Box</option></select></div>${inp('prefixHeater','Heizung: Basis-Topic','text','camper/heater')}</div>
-   <p class="mu" style="margin-top:-4px">CampMatic: Basis-Topic <code>campmatic/&lt;Gerätenummer&gt;</code>, z. B. <code>campmatic/003</code>. Die Box muss per Bridge auf deinem Broker ankommen (siehe README). Freibrennen gibt es dort nicht.</p>${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (camper-temp)')}${inp('prefixBattery','Batterien (camper-battery)')}${inp('prefixToolbox','Toolbox (Dachhaube Heki)','text','camper/toolbox')}
+   <div class="f2"><div><label>Heizung: Steuerung über</label><select id="heaterSrc"><option value="0">eigene Firmware (heater-node)</option><option value="1">CampMatic-Box</option></select></div>${inp('prefixHeater','Heizung: Basis-Topic','text','camper/heater')}</div>
+   <p class="mu" style="margin-top:-4px">CampMatic: Basis-Topic <code>campmatic/&lt;Gerätenummer&gt;</code>, z. B. <code>campmatic/003</code>. Die Box muss per Bridge auf deinem Broker ankommen (siehe README). Freibrennen gibt es dort nicht.</p>${inp('prefixFan','MaxxFan')}${inp('prefixTemp','Temperaturen (temp-node)')}${inp('prefixBattery','Batterien (battery-node)')}${inp('prefixToolbox','Toolbox (Dachhaube Heki)','text','camper/toolbox')}
    <div class="f2"><div><label>MaxxFan-Port</label><select id="fanPort"><option value="0">0 (RJ11)</option><option value="1">1 (RJ45)</option></select></div>${inp('prefixSelf','Eigenes Topic (Display)')}</div></details>
   <details data-g="dev"><summary>Geräte-Links</summary>
-   <p class="mu" style="margin:4px 0 8px">Buttons auf der Seite „Geräte“, die die Web-Oberfläche des jeweiligen Geräts öffnen. Adresse z. B. <code>192.168.8.13</code> oder <code>camper-tanklevel.local</code>.</p>
+   <p class="mu" style="margin:4px 0 8px">Buttons auf der Seite „Geräte“, die die Web-Oberfläche des jeweiligen Geräts öffnen. Adresse z. B. <code>192.168.8.13</code> oder <code>tanklevel-node.local</code>.</p>
    <div id="lnk"></div>
-   <div class="row" style="gap:8px;margin-top:8px"><button class="btn" type="button" id="lnkadd">+ Link</button><button class="btn" type="button" id="lnksug">Camper-Geräte vorschlagen</button></div></details>
+   <div class="row" style="gap:8px;margin-top:8px"><button class="btn" type="button" id="lnkadd">+ Link</button><button class="btn" type="button" id="lnksug">VanNode-Geräte vorschlagen</button></div></details>
   <details data-g="dev" id="fd"><summary>Topic-Finder</summary>
    <p class="mu">Hört kurz auf einem Topic-Filter mit und zeigt, was ankommt. Aus jedem Wert lässt sich direkt eine Kachel machen.</p>
    <div class="row"><input type="text" id="ffilter" class="grow" value="camper/zigbee/data/#" style="flex:1"><button class="btn pri" id="fstart">Start</button></div>
@@ -982,7 +982,7 @@ function pgSettings(){
    <div class="row"><button class="btn" id="potest">Testnachricht</button><span class="mu grow" id="postat"></span></div>
    <p class="mu">Erst speichern, dann testen.</p></details>
   <details data-g="svc"><summary>Warnungen</summary>
-   <p class="mu">Grenzwerte für die eingebauten Warnungen. Sie erscheinen oben im Display und gehen per Pushover raus. 0 schaltet eine Warnung ab. Die Hysterese verhindert, dass eine Warnung bei einem Wert knapp an der Grenze ständig kommt und geht. Kühl- und Gefrierschrank stellst du beim jeweiligen Sensor ein (Sensoren, „Warnung über °C“) bzw. im camper-temp.</p>
+   <p class="mu">Grenzwerte für die eingebauten Warnungen. Sie erscheinen oben im Display und gehen per Pushover raus. 0 schaltet eine Warnung ab. Die Hysterese verhindert, dass eine Warnung bei einem Wert knapp an der Grenze ständig kommt und geht. Kühl- und Gefrierschrank stellst du beim jeweiligen Sensor ein (Sensoren, „Warnung über °C“) bzw. im temp-node.</p>
    <div class="f2">${inp('wnWater','Frischwasser unter (%)','number')}${inp('wnGas','Gas unter (%)','number')}</div>
    <div class="f2">${inp('wnBat','Batterie unter (% Ladung)','number')}${inp('wnHystPct','Hysterese Füllstände/Batterie (%)','number')}</div>
    <div><label for="outName">Sensor für die Außentemperatur (Wetter-Seite, Frost)</label><select id="outName"></select></div>
@@ -1007,7 +1007,7 @@ function pgSettings(){
    <div class="f2">${inp('ntpServer','Zeitserver')}${inp('tz','Zeitzone (POSIX)')}</div>
    <label>Firmware-Update (.bin)</label>
    <div class="fwu-cur" id="fwu-cur">Installiert: …</div>
-   <p class="mu" style="margin-top:0">Die <code>.bin</code> aus dem Release (<code>camper-display-esp32s3.bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>camper_display.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>). Die Datei wird vor dem Hochladen geprüft.</p>
+   <p class="mu" style="margin-top:0">Die <code>.bin</code> aus dem Release (<code>display-node-esp32s3.bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>camper_display.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>). Die Datei wird vor dem Hochladen geprüft.</p>
    <div class="row"><input type="file" id="fwu-file" accept=".bin" class="grow" onchange="fwChosen(false)"><button class="btn" id="fwu-btn" disabled>Hochladen</button></div>
    <div class="fwu-chk" id="fwu-chk"></div>
    <label class="chk fwu-force" id="fwu-force-row" style="display:none"><input type="checkbox" id="fwu-force" onchange="fwForce()"> Ohne Kennung hochladen</label>
@@ -1100,7 +1100,7 @@ async function post(url,body){
 }
 // ---- device links editor ----
 let LINKS=[];
-const SUGGEST=[['Tanklevel','camper-tanklevel'],['Temperatur','camper-temp'],['Truma','truma-heater'],['MaxxFan','camper-maxxfan'],['Level','camper-level'],['Batterie','camper-battery']];
+const SUGGEST=[['Tanklevel','tanklevel-node'],['Temperatur','temp-node'],['Truma','heater-node'],['MaxxFan','maxxfan-node'],['Level','level-node'],['Batterie','battery-node']];
 function renderLinks(){
   const b=$('#lnk');if(!b)return;
   b.innerHTML=LINKS.map((x,i)=>`<div class="row" style="gap:6px;margin:4px 0"><input type="text" data-ln="${i}" value="${esc(x.n)}" placeholder="Name" maxlength="24" style="flex:1;min-width:0"><input type="text" data-lu="${i}" value="${esc(x.u)}" placeholder="http://192.168.8.13/" maxlength="120" style="flex:2;min-width:0"><button class="btn" type="button" data-ld="${i}" title="Entfernen">✕</button></div>`).join('')||'<p class="mu">Noch keine Links.</p>';
@@ -1187,13 +1187,13 @@ async function loadUnknown(){
   b.innerHTML=a.length?`<label>Gefunden, aber noch nicht eingetragen</label>${a.map(u=>`<div class="row" style="margin:4px 0"><span class="grow">${u.bus?'Bluetooth':'Zigbee'} · <code>${esc(u.addr)}</code> <span class="mu">vor ${u.ago<120?u.ago+' s':Math.round(u.ago/60)+' min'}</span></span><button class="btn sm" type="button" data-su="${u.bus}|${esc(u.addr)}">+ übernehmen</button></div>`).join('')}`:'';
   b.querySelectorAll('[data-su]').forEach(e=>e.onclick=()=>{readSensors();const [bus,addr]=e.dataset.su.split('|');SN.devices.push({name:'',bus:+bus,kind:1,addr,alt:'',icon:'door',warn:false,invert:false,show:1});renderSensors()});
 }
-// selections for the outside temperature (own climate sensors + camper-temp) and the awning (contacts)
+// selections for the outside temperature (own climate sensors + temp-node) and the awning (contacts)
 function fillOutAwn(){
   const opt=(v,t,sel)=>`<option value="${esc(v)}"${v===sel?' selected':''}>${esc(t)}</option>`;
   const own=sens().filter(x=>x.k===1).map(x=>x.n),ct=temps().map(x=>x.name).filter(Boolean);
   const names=[...new Set([...own,...ct])],cur=ST.outName||'';
   if(cur&&!names.includes(cur))names.push(cur);
-  $('#outName').innerHTML=opt('','automatisch (erster Sensor mit Haken „Wetter“)',cur)+names.map(n=>opt(n,n+(ct.includes(n)&&!own.includes(n)?' (camper-temp)':''),cur)).join('');
+  $('#outName').innerHTML=opt('','automatisch (erster Sensor mit Haken „Wetter“)',cur)+names.map(n=>opt(n,n+(ct.includes(n)&&!own.includes(n)?' (temp-node)':''),cur)).join('');
   const con=sens().filter(x=>x.k===0).map(x=>x.n),ac=ST.awnSrc||'';
   if(ac&&!con.includes(ac))con.push(ac);
   $('#awnSrc').innerHTML=opt('','Schalter von Hand',ac)+con.map(n=>opt(n,'Kontakt: '+n,ac)).join('');
@@ -1252,7 +1252,7 @@ async function backupExport(){
     BK_SECRET.concat(BK_READONLY).forEach(k=>delete s[k]);
     const b={type:'camper-display-backup',version:1,fw:ST.fw||'',date:new Date().toISOString(),settings:s,pages:p,rules:ru,sensors:sn};
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(b,null,1)],{type:'application/json'}));
-    a.download=`${(s.hostname||'camper-display')}-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();
+    a.download=`${(s.hostname||'display-node')}-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();
     toast('Sicherung gespeichert');
   }catch(e){toast('Sichern fehlgeschlagen')}
 }

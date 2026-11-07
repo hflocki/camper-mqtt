@@ -40,7 +40,7 @@ def collect(args, filters, wait):
             with lock:
                 seen[msg.topic] = msg.payload
 
-    c = connect(args, "camper-clean", on_connect=on_connect, on_message=on_message)
+    c = connect(args, "vannode-clean", on_connect=on_connect, on_message=on_message)
     time.sleep(wait)   # the broker sends all retained messages right after the subscribe
     c.loop_stop()
     c.disconnect()
@@ -110,7 +110,7 @@ def main() -> int:
         print("nothing deleted")
         return 0
 
-    c = connect(args, "camper-clean")
+    c = connect(args, "vannode-clean")
     for t in sorted(seen):
         c.publish(t, b"", qos=1, retain=True).wait_for_publish(5)
     c.loop_stop()

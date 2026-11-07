@@ -1,4 +1,4 @@
-/* camper-mqtt design (same look as the display): calm and technical, colour means state,
+/* VanNode design (same look as the display): calm and technical, colour means state,
    blue means control. Shared block, edit firmware/_common/web/camper-theme.css and run
    tools/common/sync_common.py; it overrides the page's own styles above it. */
 :root{

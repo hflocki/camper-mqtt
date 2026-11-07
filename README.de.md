@@ -61,7 +61,7 @@ Die Doku der einzelnen Geräte ist auf Deutsch.
 
 1. **Firmware holen:** Unter [Releases](https://github.com/hflocki/vannode/releases) die `.bin` des Geräts laden – oder selbst bauen (Arduino IDE oder `arduino-cli`, Board und Bibliotheken stehen in der README des Geräts).
 2. **Einmal per USB flashen.** Danach gehen Updates über die Web-Oberfläche.
-3. **Einrichten:** Ohne WLAN-Daten startet ein Access Point `Camper-<Gerät>-XXXXXX`. Verbinden, `http://192.168.4.1` öffnen, WLAN und MQTT-Broker eintragen.
+3. **Einrichten:** Ohne WLAN-Daten startet ein Access Point `<Gerät>-Node-XXXXXX`. Verbinden, `http://192.168.4.1` öffnen, WLAN und MQTT-Broker eintragen.
 4. Das Gerät meldet sich unter `camper/<gerät>/…` am Broker, das Display findet es von selbst.
 
 ## Gemeinsame Regeln
@@ -75,7 +75,7 @@ Alle Geräte halten sich an dasselbe Schema, damit Displays und Home Assistant s
 | Diagnose | `camper/<gerät>/info`: JSON mit Version, IP, Signal, Laufzeit |
 | Befehle | `…/cmd/…` bzw. `…/set/…`, nicht retained |
 | Home Assistant | Auto-Discovery unter `homeassistant/…`, ein Gerät pro Firmware |
-| Einrichtung | Access Point `Camper-<Gerät>-XXXXXX`, Einstellungen im Browser unter `http://192.168.4.1` |
+| Einrichtung | Access Point `<Gerät>-Node-XXXXXX`, Einstellungen im Browser unter `http://192.168.4.1` |
 | Web-Oberfläche | Gleiche Optik auf allen Geräten, optionaler Login (HTTP Basic Auth); Login vergessen → `noauth` im seriellen Monitor bzw. Werkseinstellungen |
 | Updates | Im Browser, mit Prüfung (falsches Gerät, `.merged.bin`, zu groß), Ereignis-Log und Rückfall auf die vorherige Firmware |
 | Firmware-Version | `FW_VERSION` in der `config.h` des Geräts, sichtbar im Web-UI und in HA |
@@ -121,6 +121,8 @@ git push origin temp-v1.1.0
 ```
 
 Dann wird nur dieses Gerät gebaut und die `.bin` ans Release gehängt. Alle Geräte spielen sie über ihre Web-Oberfläche ein (Road Buddy über seine Update-Seite). Bei temp, tanklevel, level, battery, maxxfan und toolbox liegt die Web-Oberfläche außerdem als `data/index.html.gz` im Sketch-Ordner und wird nach einem Update separat hochgeladen.
+
+**Namen:** Jedes Gerät heißt `<gerät>-node` – Hostname (`temp-node.local`), Setup-WLAN (`Temp-Node-XXXXXX`) und Release-Datei (`temp-node-esp32c3.bin`). Die MQTT-Topics bleiben `camper/<gerät>/…`, die Home-Assistant-IDs bleiben gleich.
 
 ## Nur ein Gerät nachbauen
 

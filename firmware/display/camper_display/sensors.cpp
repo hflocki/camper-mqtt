@@ -359,7 +359,7 @@ std::vector<TempOut> climate() {
 }
 
 bool outdoor(TempOut& out) {
-  // chosen sensor (Einstellungen > Warnungen): own climate sensor or a camper-temp sensor by name
+  // chosen sensor (Einstellungen > Warnungen): own climate sensor or a temp-node sensor by name
   if (settings.outName.length()) {
     {
       Lock lock;

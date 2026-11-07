@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Camper Toolbox</title>
+    <title>Toolbox Node</title>
     <style>
-      /* Same look as the other camper-mqtt devices (battery, tanklevel, temp ...) */
+      /* Same look as the other VanNode devices (battery, tanklevel, temp ...) */
       :root {
         --bg-primary: #0f1419;
         --bg-secondary: #1a2332;
@@ -168,7 +168,7 @@
       .fwu-ev span { color: var(--mute); margin-right: 8px; white-space: nowrap; }
       .fwu-ev.bad { color: var(--bad); }
     /* camper-theme:begin */
-/* camper-mqtt design (same look as the display): calm and technical, colour means state,
+/* VanNode design (same look as the display): calm and technical, colour means state,
    blue means control. Shared block, edit firmware/_common/web/camper-theme.css and run
    tools/common/sync_common.py; it overrides the page's own styles above it. */
 :root{
@@ -342,7 +342,7 @@ nav button .ico{display:inline-flex}
         sliders: "M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4",
         sys: "M7 7h10v10H7zM10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4",
       };
-      // stroke icons as in all camper-mqtt pages (no emoji)
+      // stroke icons as in all VanNode pages (no emoji)
       const svg = (k) => `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SVGP[k] || SVGP.plug}"/></svg>`;
       const ICONS = { rvtech: "hatch", pump: "pump", fridge: "snow" };
       function tabs() {
@@ -1033,7 +1033,7 @@ nav button .ico{display:inline-flex}
         const upd = el("div", { className: "card" });
         upd.innerHTML = `<h2>Firmware- &amp; Web-Update</h2>
           <div class="fwu-cur" id="fwu-cur">Installiert: …</div>
-          <div class="fwu-hint">Firmware: die <code>.bin</code> aus dem Release (<code>camper-toolbox-esp32c3.bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>camper_toolbox.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>), danach Neustart.<br>
+          <div class="fwu-hint">Firmware: die <code>.bin</code> aus dem Release (<code>toolbox-node-esp32c3.bin</code>) oder aus der Arduino IDE (Sketch → Kompilierte Binärdatei exportieren → <code>camper_toolbox.ino.bin</code>, <b>nicht</b> die <code>.merged.bin</code>), danach Neustart.<br>
           Web-Oberfläche: <code>data/index.html.gz</code>, ohne Neustart. Die Datei wird vor dem Hochladen geprüft.</div>
           <div class="f"><input type="file" id="fwu-file" accept=".bin,.gz"></div>
           <div class="fwu-chk" id="fwu-chk"></div>

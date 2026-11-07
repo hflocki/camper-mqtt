@@ -33,8 +33,8 @@
 #endif
 #endif
 
-#define FW_NAME "camper-heater"
-#define FW_VERSION "1.5.1"
+#define FW_NAME "heater-node"
+#define FW_VERSION "1.6.0"
 #define FW_DEVICE "heater"   // device id in the firmware marker (fwcheck.h)
 #ifndef WIFI_TRIAL_MS
 #define WIFI_TRIAL_MS 50000   // a changed WiFi must connect this fast, else the old one returns
@@ -78,7 +78,7 @@
 #elif defined(BOARD_ESP32_DEVKIT)
 // ESP32 DevKit V4 (ESP32-WROOM-32) + TJA1020 module (e.g. FST T151), supplied with 5 V from a buck converter.
 // ESP TX GPIO16 -> module TX (TXD), module RX (RXD) -> ESP RX GPIO17. Module SLP to 3V3.
-#define BOARD_NAME "Camper Heater (ESP32 DevKit + LIN module)"
+#define BOARD_NAME "Heater Node (ESP32 DevKit + LIN module)"
 #ifndef LIN_UART_NUM
 #define LIN_UART_NUM UART_NUM_2
 #endif
@@ -119,7 +119,7 @@
 // ESP32-C3 Super Mini (perfboard build, see docs/lochraster_c3.png). All used pins are on the header next to
 // 5V/GND/3V3. GPIO20/21 are avoided: the ROM bootloader prints its boot log on GPIO21, which would end up on
 // the LIN bus during every boot.
-#define BOARD_NAME "Camper Heater (ESP32-C3 Super Mini)"
+#define BOARD_NAME "Heater Node (ESP32-C3 Super Mini)"
 #ifndef LIN_UART_NUM
 #define LIN_UART_NUM UART_NUM_1
 #endif
@@ -143,7 +143,7 @@
 
 #elif defined(BOARD_CAMPER_LIN_C3)
 // Own LIN board: ESP32-C3-WROOM-02, TJA1021, RECOM 12 V -> 5 V, LDO 3.3 V. Same LIN pins as the Super Mini build.
-#define BOARD_NAME "Camper Heater LIN board (ESP32-C3-WROOM-02)"
+#define BOARD_NAME "Heater Node LIN board (ESP32-C3-WROOM-02)"
 #ifndef LIN_UART_NUM
 #define LIN_UART_NUM UART_NUM_1
 #endif
@@ -226,7 +226,7 @@
 // Defaults for runtime settings
 // ---------------------------------------------------------------------------------------------
 #ifndef DEFAULT_HOSTNAME
-#define DEFAULT_HOSTNAME "truma-heater"
+#define DEFAULT_HOSTNAME "heater-node"
 #endif
 #ifndef DEFAULT_AP_PASSWORD
 #define DEFAULT_AP_PASSWORD "truma1234"  // min. 8 characters

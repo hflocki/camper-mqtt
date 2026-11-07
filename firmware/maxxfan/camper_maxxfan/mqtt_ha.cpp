@@ -42,7 +42,7 @@ void sendConfig(const char* component, const String& object, JsonDocument& doc) 
   doc["has_entity_name"]    = true;
   JsonObject dev = doc["device"].to<JsonObject>();
   dev["identifiers"].add(nodeId + "_" + wifimgr::macSuffix());
-  dev["name"]              = "Camper MaxxFan";
+  dev["name"]              = "MaxxFan Node";
   dev["manufacturer"]      = "DIY";
   dev["model"]             = "VanTurtle + ESP32-C3";
   dev["sw_version"]        = FW_VERSION;

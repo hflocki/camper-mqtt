@@ -1,4 +1,4 @@
-# Camper Battery – BMS per Bluetooth auslesen, Werte per MQTT
+# Battery Node – BMS per Bluetooth auslesen, Werte per MQTT
 
 Firmware für einen ESP32-C3, der sich per Bluetooth mit bis zu **3 Batterie-BMS bzw. Batteriemonitoren** verbindet und ihre Werte per MQTT und in einer Web-Oberfläche bereitstellt – ohne ESPHome-Bluetooth-Proxy und ohne Home Assistant.
 
@@ -108,11 +108,11 @@ Ohne das Repo-Werkzeug geht es auch so (im Sketch-Ordner `camper_battery`): `gzi
 | `….ino.bin` (*Sketch → Kompilierte Binärdatei exportieren*) | neue Firmware, danach Neustart |
 | `data/index.html.gz` | nur die Web-Oberfläche wird ersetzt, ohne Neustart, Einstellungen bleiben |
 
-Ein komplettes LittleFS-Image nimmt das Web-UI absichtlich nicht an: Es würde auch `config.json` mit allen Einstellungen ersetzen. Firmware-Updates gehen außerdem per Arduino-OTA (`camper-battery` unter Netzwerk-Ports).
+Ein komplettes LittleFS-Image nimmt das Web-UI absichtlich nicht an: Es würde auch `config.json` mit allen Einstellungen ersetzen. Firmware-Updates gehen außerdem per Arduino-OTA (`battery-node` unter Netzwerk-Ports).
 
 ## Erstbenutzung
 
-1. Beim ersten Start läuft nur der Access Point **`Camper-Battery-XXXXXX`**. `XXXXXX` sind die letzten 6 Stellen der WLAN-MAC.
+1. Beim ersten Start läuft nur der Access Point **`Battery-Node-XXXXXX`**. `XXXXXX` sind die letzten 6 Stellen der WLAN-MAC.
 2. Verbinden und `http://192.168.4.1` öffnen.
 3. Tab **WiFi**: WLAN eintragen → Neustart.
 4. Tab **MQTT**: Broker eintragen → Neustart.
@@ -149,7 +149,7 @@ Prefix (Web-UI) Standard `camper/battery`, `<id>` ist die ID aus dem Tab Batteri
 
 Alle Werte sind retained und werden nach jeder Abfrage gesendet, spätestens jede Minute. Antwortet ein BMS 2 Minuten lang nicht, wird es als nicht verfügbar gemeldet; die letzten Werte bleiben auf dem Broker stehen.
 
-In Home Assistant erscheint ein Gerät „Camper Battery“ und darunter **ein Gerät pro Batterie** mit den Entitäten oben. Zellspannungen, Temperatur und Zyklen erscheinen nach der ersten Abfrage, wenn das BMS sie liefert. Die `unique_id` basiert auf der Bluetooth-Adresse: Umbenennen oder eine neue ID behält die Historie. Wird eine Batterie entfernt, verschwinden auch ihre Entitäten.
+In Home Assistant erscheint ein Gerät „Battery Node“ und darunter **ein Gerät pro Batterie** mit den Entitäten oben. Zellspannungen, Temperatur und Zyklen erscheinen nach der ersten Abfrage, wenn das BMS sie liefert. Die `unique_id` basiert auf der Bluetooth-Adresse: Umbenennen oder eine neue ID behält die Historie. Wird eine Batterie entfernt, verschwinden auch ihre Entitäten.
 
 ## Hinweise zu den BMS
 
@@ -184,6 +184,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 |---|---|
+| 1.5.0 | Neue Namen: Hostname `battery-node`, Setup-WLAN, Gerätename und Release-Datei `battery-node-….bin`. Topics `camper/…` und Home-Assistant-IDs bleiben |
 | 1.4.0 | Sicheres Update (Kennung, Prüfung im Browser und im Gerät, Fehler im Klartext), Ereignis-Log, Rückfall auf die vorherige Firmware und WLAN-Änderung mit Rückweg |
 | 1.3.1 | BMS-Fehler im Klartext: Web-UI, Topic `<id>/problem_text` und `pt` in der Batterieliste (Display) |
 | 1.2.2 | Batterieliste `batteries` mit Restlaufzeit, Typ und Fehler-Flag (für Road Buddy und Display) |

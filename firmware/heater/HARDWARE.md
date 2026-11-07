@@ -73,7 +73,7 @@ Vom RJ12-Kabel werden nur **LIN** und **GND** gebraucht. Die Aderfarben und die 
 
 ## Aufbau: ESP32 DevKit V4 (WROOM-32) + FST-T151-Modul
 
-Profil `BOARD_ESP32_DEVKIT` (Standard, wenn für „ESP32 Dev Module“ gebaut wird; Release `camper-heater-esp32.bin`). Versorgung mit einem Step-down 12 V → 5 V auf den **5V**-Pin des DevKits.
+Profil `BOARD_ESP32_DEVKIT` (Standard, wenn für „ESP32 Dev Module“ gebaut wird; Release `heater-node-esp32.bin`). Versorgung mit einem Step-down 12 V → 5 V auf den **5V**-Pin des DevKits.
 
 | Von | Nach |
 | --- | --- |
@@ -148,7 +148,7 @@ Pins, die auf dem N8R8 tabu sind: **GPIO 35–37** (vom PSRAM belegt), **19/20**
 
 ### Inbetriebnahme in drei Stufen
 
-1. **Nur USB, nichts angeschlossen:** Flashen, Setup-WLAN `truma-heater-XXXX`, WLAN und MQTT einrichten. Die Weboberfläche zeigt „LIN-Verkehr: nein“, das ist hier richtig.
+1. **Nur USB, nichts angeschlossen:** Flashen, Setup-WLAN `heater-node-XXXX`, WLAN und MQTT einrichten. Die Weboberfläche zeigt „LIN-Verkehr: nein“, das ist hier richtig.
 2. **12 V auf dem Tisch, ohne Bus und ohne USB:** Netzteil oder Batterie an die 12-V-Klemme. Messen:
    - Traco-Ausgang ≈ 5 V, DevKit 3V3 ≈ 3,3 V
    - **RX am LIN-Modul ≈ 3,3 V, niemals 5 V.** Bei 5 V hat das Modul einen eigenen Pull-up auf 5 V. Den entfernen, sonst nimmt der S3 Schaden.

@@ -26,7 +26,7 @@ namespace mqttc {
 namespace cmd {
   bool heater(const String& key, const String& value);
   bool fan(const String& key, const String& value = "");
-  // roof hatch on the camper-toolbox: position (0..100), open, close, or a preset auf / zu / regen / lueften
+  // roof hatch on the toolbox-node: position (0..100), open, close, or a preset auf / zu / regen / lueften
   bool heki(const String& key, const String& value = "");
   bool level(const String& key);
   bool tile(size_t index, const String& action);   // on / off / toggle / press / <number>

@@ -61,7 +61,7 @@ The documentation of the individual devices and the web interfaces are in German
 
 1. **Get the firmware:** download the device's `.bin` from [Releases](https://github.com/hflocki/vannode/releases) – or build it yourself (Arduino IDE or `arduino-cli`; board and libraries are listed in the device README).
 2. **Flash once over USB.** After that, updates go through the web interface.
-3. **Set up:** without WiFi credentials the device opens an access point `Camper-<device>-XXXXXX`. Connect, open `http://192.168.4.1`, enter WiFi and MQTT broker.
+3. **Set up:** without WiFi credentials the device opens an access point `<device>-Node-XXXXXX`. Connect, open `http://192.168.4.1`, enter WiFi and MQTT broker.
 4. The device appears under `camper/<device>/…` on the broker; the display finds it by itself.
 
 ## Common rules
@@ -75,7 +75,7 @@ All devices follow the same scheme, so the displays and Home Assistant understan
 | Diagnostics | `camper/<device>/info`: JSON with version, IP, signal, uptime |
 | Commands | `…/cmd/…` or `…/set/…`, not retained |
 | Home Assistant | auto discovery under `homeassistant/…`, one device per firmware |
-| Setup | access point `Camper-<device>-XXXXXX`, settings in the browser at `http://192.168.4.1` |
+| Setup | access point `<device>-Node-XXXXXX`, settings in the browser at `http://192.168.4.1` |
 | Web interface | same look on every device, optional login (HTTP basic auth); forgot the login → `noauth` in the serial monitor or factory reset |
 | Updates | in the browser, with checks (wrong device, `.merged.bin`, too large), event log and fallback to the previous firmware |
 | Firmware version | `FW_VERSION` in the device's `config.h`, shown in the web UI and in HA |
@@ -121,6 +121,8 @@ git push origin temp-v1.1.0
 ```
 
 Then only this device is built and the `.bin` is attached to the release. All devices install it through their web interface (Road Buddy through its update page). For temp, tanklevel, level, battery, maxxfan and toolbox the web interface also lives as `data/index.html.gz` in the sketch folder and is uploaded separately after an update.
+
+**Names:** every device is called `<device>-node` – hostname (`temp-node.local`), setup access point (`Temp-Node-XXXXXX`) and release file (`temp-node-esp32c3.bin`). MQTT topics stay `camper/<device>/…`, Home Assistant IDs stay unchanged.
 
 ## Build just one device
 

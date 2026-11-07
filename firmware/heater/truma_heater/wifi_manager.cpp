@@ -11,7 +11,7 @@
 #include "logger.h"
 #include "settings.h"
 
-// WiFi handling modelled on camper-tanklevel, which runs stable on the ESP32-C3 Super Mini:
+// WiFi handling modelled on tanklevel-node, which runs stable on the ESP32-C3 Super Mini:
 // - no SSID: access point only
 // - SSID set: station; the access point is only a fallback after 60 s without WiFi (or always on, if set)
 // - fallback: pure AP mode, a station attempt (10 s) only every 30 s and never while a phone is

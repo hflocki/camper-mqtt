@@ -35,7 +35,7 @@ const char PAGE[] PROGMEM = R"HTML(<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>RoadBuddy</title>
 <style>
-/* same look as all camper-mqtt pages (firmware/_common/web/camper-theme.css) */
+/* same look as all VanNode pages (firmware/_common/web/camper-theme.css) */
 :root{--bg:#0D1115;--card:#151B21;--hi:#1C242C;--line:#222B34;--line2:#2F3A45;--text:#E7ECF0;--text2:#B4BEC8;--muted:#8B98A5;
  --ok:#46B97C;--warn:#E5A23B;--bad:#E5534B;--accent:#4DA3F0;--acx:#06131F;color-scheme:dark}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
@@ -70,7 +70,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 <div class="card">
 <b>Firmware-Update</b>
 <div class="fwu-cur" id="fwu-cur" style="margin-top:6px">Installiert: …</div>
-<div class="hint">Die .bin aus dem Release (camper-roadbuddy-core2.bin) oder aus der Arduino IDE (roadbuddy.ino.bin, nicht die .merged.bin). Die Datei wird vor dem Hochladen geprüft.</div>
+<div class="hint">Die .bin aus dem Release (roadbuddy-node-core2.bin) oder aus der Arduino IDE (roadbuddy.ino.bin, nicht die .merged.bin). Die Datei wird vor dem Hochladen geprüft.</div>
 <input type="file" id="fwu-file" accept=".bin" onchange="fwChosen(false)">
 <div class="fwu-chk" id="fwu-chk"></div>
 <label class="fwu-force" id="fwu-force-row" style="display:none"><input type="checkbox" id="fwu-force" onchange="fwForce()">Ohne Kennung hochladen</label>

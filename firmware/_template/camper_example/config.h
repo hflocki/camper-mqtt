@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 // =====================================================================
-//  Camper Example - template for a new VanNode device
+//  Example Node - template for a new VanNode device
 //  Copy with tools/new_device.py, then fill the places marked "TODO".
 // =====================================================================
 
@@ -17,12 +17,12 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.1.0"
+#define FW_VERSION            "1.2.0"
 #define FW_DEVICE            "example"   // device id in the firmware marker (fwcheck.h)
-#define DEVICE_NAME           "Camper Example"   // web UI title, HA device name, serial banner
+#define DEVICE_NAME           "Example Node"   // web UI title, HA device name, serial banner
 
 #ifndef DEFAULT_AP_SSID
-#define DEFAULT_AP_SSID       "Camper-Example"   // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
+#define DEFAULT_AP_SSID       "Example-Node"   // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
 #endif
 #ifndef DEFAULT_AP_PASSWORD
 #define DEFAULT_AP_PASSWORD   "example1234"      // Test placeholder (min. 8 characters) - change in config_local.h
@@ -89,7 +89,7 @@
 #define CONFIG_FILE           "/config.json"
 #endif
 #ifndef OTA_HOSTNAME
-#define OTA_HOSTNAME          "camper-example"   // also the mDNS name: camper-example.local
+#define OTA_HOSTNAME          "example-node"   // also the mDNS name: example-node.local
 #endif
 
 // ============================================================

@@ -1,4 +1,4 @@
-# Camper Level – Ausrichtung mit Keil-Empfehlung per MQTT
+# Level Node – Ausrichtung mit Keil-Empfehlung per MQTT
 
 Firmware für einen ESP32 (ESP32-S3, ESP32-C3 oder klassischer ESP32) mit einem **Adafruit BNO085**, die Längs- und Querneigung des Wohnmobils misst und für **jedes der vier Räder** anzeigt, wie hoch der Keil sein muss, damit das Fahrzeug waagerecht steht.
 
@@ -87,7 +87,7 @@ Ohne das Repo-Werkzeug geht es auch so (im Sketch-Ordner `camper_level`): `gzip 
 
 ## Erstbenutzung
 
-1. Ohne WLAN-Daten startet der Access Point **`Camper-Level-XXXXXX`** (Passwort aus `config.h` bzw. `config_local.h`). Verbinden, `http://192.168.4.1` öffnen.
+1. Ohne WLAN-Daten startet der Access Point **`Level-Node-XXXXXX`** (Passwort aus `config.h` bzw. `config_local.h`). Verbinden, `http://192.168.4.1` öffnen.
 2. Reiter **WiFi**: WLAN eintragen, speichern. Reiter **MQTT**: Broker eintragen.
 3. Reiter **Fahrzeug**: Spurweite, Radstand und Einbaulage eintragen. Prüfen: Fahrzeug vorne anheben → Längsneigung wird positiv; links anheben → Querneigung wird positiv. Stimmt eine Richtung nicht, andere Einbaulage wählen.
 4. Reiter **Tara**: Fahrzeug auf einem sicher ebenen Platz mit einer Wasserwaage ausrichten, **Tara setzen**.
@@ -127,7 +127,7 @@ Prefix (Web-UI) Standard `camper/level`:
 | `<prefix>/cmd/tare_pitch/set`, `tare_roll/set` | `-10` … `10` |
 | `<prefix>/cmd/filter/set`, `mqtt_speed/set` | `ON` / `OFF` / `TOGGLE` |
 
-In Home Assistant erscheint ein Gerät „Camper Level“. Beim ersten Verbinden löscht die Firmware die Einträge der Original-Firmware (`wowa_level`), damit kein zweites, totes Gerät stehen bleibt.
+In Home Assistant erscheint ein Gerät „Level Node“. Beim ersten Verbinden löscht die Firmware die Einträge der Original-Firmware (`wowa_level`), damit kein zweites, totes Gerät stehen bleibt.
 
 ## Home-Assistant-Kachel
 
@@ -179,6 +179,7 @@ Der Schutz greift erst bei Updates, die von dieser Version **aus** gemacht werde
 
 | Version | Änderungen |
 |---|---|
+| 2.4.0 | Neue Namen: Hostname `level-node`, Setup-WLAN, Gerätename und Release-Datei `level-node-….bin`. Topics `camper/…` und Home-Assistant-IDs bleiben |
 | 2.3.1 | Update-Prüfung vergleicht auch den Chip in der Kennung (gleich wie im Browser); ein Update über den Setup-AP löst keinen WLAN-Rückfall mehr aus |
 | 2.3.0 | Sichere Updates: Firmware-Kennung, Prüfung der Datei im Browser und im Gerät (falsches Gerät, falscher Chip, .merged.bin, zu groß), Fehlergrund im Klartext, installierte Version und Ereignis-Log im Web-UI |
 | 2.2.0 | Absicherung gegen Aussperren: Rückfall auf die vorherige Firmware, wenn ein Update kein WLAN bekommt; geänderte WLAN-Daten werden zurückgesetzt, wenn sie nicht funktionieren |

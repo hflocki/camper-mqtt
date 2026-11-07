@@ -56,7 +56,7 @@ def main() -> int:
             c.subscribe(f)
         print(f"recording {', '.join(filters)} -> {args.out}", file=sys.stderr)
 
-    c = connect(args, "camper-record", on_connect, on_message)
+    c = connect(args, "vannode-record", on_connect, on_message)
 
     stop = False
 

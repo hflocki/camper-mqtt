@@ -1,5 +1,5 @@
 /*
- * Camper Toolbox - one ESP32, several camper devices as plugins
+ * Toolbox Node - one ESP32, several camper devices as plugins
  * ==============================================================
  * Which plugins are built in is chosen in config.h (PLUGIN_xxx = number of instances):
  *   - Water pump: CaraWater (e.g. ISP 15), BLE connection (status + control)
@@ -96,7 +96,7 @@ void setup() {
 
     Serial.println();
     Serial.println("========================================");
-    Serial.println("  Camper Toolbox v" FW_VERSION);
+    Serial.println("  Toolbox Node v" FW_VERSION);
     Serial.println("========================================");
     Serial.println();
 

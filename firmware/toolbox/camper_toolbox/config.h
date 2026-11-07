@@ -20,7 +20,7 @@
 // can additionally be switched on / off in the web UI (the device then restarts).
 //
 // Bluetooth limits of one ESP32:
-//   - passive sensors (none at the moment; gas and tanks are read by camper-tanklevel) only listen
+//   - passive sensors (none at the moment; gas and tanks are read by tanklevel-node) only listen
 //   - connecting devices (pump, roof hatch, fridge) keep a BLE connection each:
 //     PLUGIN_CARAWATER + PLUGIN_RVTECH + PLUGIN_WCS_FRIDGE <= 3
 //     (NimBLE default CONFIG_BT_NIMBLE_MAX_CONNECTIONS), e.g.
@@ -57,7 +57,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.1.0"
+#define FW_VERSION            "1.2.0"
 #define FW_DEVICE             "toolbox"   // device id in the firmware marker (fwcheck.h)
 
 // Network upload from the Arduino IDE (port in the IDE, password DEFAULT_OTA_PASSWORD).
@@ -67,10 +67,10 @@
 #endif
 
 #ifndef DEVICE_NAME
-#define DEVICE_NAME           "Camper Toolbox"      // Name in Home Assistant and in the web UI
+#define DEVICE_NAME           "Toolbox Node"      // Name in Home Assistant and in the web UI
 #endif
 #ifndef DEFAULT_AP_SSID
-#define DEFAULT_AP_SSID       "Camper-Toolbox"      // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
+#define DEFAULT_AP_SSID       "Toolbox-Node"      // Base name; "-XXXXXX" (last 3 MAC bytes) is appended
 #endif
 #ifndef DEFAULT_AP_PASSWORD
 #define DEFAULT_AP_PASSWORD   "campertoolbox1234"   // Test placeholder (min. 8 characters) - change in the web UI
@@ -142,7 +142,7 @@
 #define CONFIG_FILE           "/config.json"
 #endif
 #ifndef OTA_HOSTNAME
-#define OTA_HOSTNAME          "camper-toolbox"
+#define OTA_HOSTNAME          "toolbox-node"
 #endif
 
 // ============================================================

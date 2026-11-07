@@ -1,11 +1,11 @@
-// camper-level: BNO085 spirit level with wedge heights
+// level-node: BNO085 spirit level with wedge heights
 const M = {
   id: 'level',
   config: {
     version: '2.1.0', reset_reason: 'Einschalten', pins: 'SDA GPIO8 · SCL GPIO9', track_width: 165, wheelbase: 345,
     mount: 0, tolerance: 0.5, filter_active: true, mqtt_fast: false, tare_pitch: 0, tare_roll: 0,
     mqtt_server: '192.168.1.1', mqtt_port: 1883, mqtt_user: '', mqtt_prefix: 'camper/level', web_user: '',
-    wifi_ssid: 'Camper-WLAN', ap_ssid: 'Camper-Level-A1B2C3', wifi_tx_power: 70, ap_always: false
+    wifi_ssid: 'Camper-WLAN', ap_ssid: 'Level-Node-A1B2C3', wifi_tx_power: 70, ap_always: false
   },
   wsInterval: 500,
   route(path, method, body, q) {

@@ -1,4 +1,4 @@
-// Camper MaxxFan - VanTurtle board (TCA9555) on an ESP32-C3, controlled via MQTT.
+// MaxxFan Node - VanTurtle board (TCA9555) on an ESP32-C3, controlled via MQTT.
 // Arduino IDE sketch, no ESPHome. See README.md for setup.
 
 #include "config.h"

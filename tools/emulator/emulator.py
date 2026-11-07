@@ -102,7 +102,7 @@ class Broker:
         k = self.conns[c]
         k.prefix = self.conn_prefix(c)
         name = "self" if c == SELF else DEVS[c][0]
-        cl = self.mqtt.Client(self.mqtt.CallbackAPIVersion.VERSION2, client_id=f"camper-emu-{name}-{self.tag}")
+        cl = self.mqtt.Client(self.mqtt.CallbackAPIVersion.VERSION2, client_id=f"vannode-emu-{name}-{self.tag}")
         cl.will_set(k.prefix + "/status", "offline", qos=1, retain=True)
         if self.args.user:
             cl.username_pw_set(self.args.user, os.environ.get("MQTT_PASSWORD", ""))

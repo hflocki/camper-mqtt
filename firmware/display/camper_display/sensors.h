@@ -59,7 +59,7 @@ String unknownJson();                  // addresses seen but not configured (to 
 // for the UI
 struct TempOut { String name; float temp; float hum; bool stale; };
 std::vector<TempOut> climate();        // climate sensors shown on the temperature page, with a temperature
-bool outdoor(TempOut& out);            // outside temperature: the sensor chosen in the settings (own or camper-temp),
+bool outdoor(TempOut& out);            // outside temperature: the sensor chosen in the settings (own or temp-node),
                                        // without a choice the first own sensor marked for the weather page
 int8_t contactState(const String& name, bool& stale);   // contact by name: -1 unknown/not found, 0 closed, 1 open
 struct ContactOut { String name; int8_t open; float batt; bool stale; };

@@ -1,5 +1,5 @@
 /*
- * Camper Battery - BLE gateway for battery management systems (BMS)
+ * Battery Node - BLE gateway for battery management systems (BMS)
  * ==================================================================
  * Hardware: ESP32-C3 (e.g. Super Mini) or any other ESP32 with Bluetooth LE
  *
@@ -117,7 +117,7 @@ void setup() {
 
     Serial.println();
     Serial.println("========================================");
-    Serial.println("  Camper Battery v" FW_VERSION);
+    Serial.println("  Battery Node v" FW_VERSION);
     Serial.println("========================================");
     Serial.println();
 

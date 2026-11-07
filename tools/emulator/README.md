@@ -1,4 +1,4 @@
-# Camper Emulator
+# VanNode Emulator
 
 Python-Werkzeug mit lokaler Webseite für den Verbund [VanNode](../../README.md): Es sendet die MQTT-Topics der fest im Camper verbauten Geräte mit Beispielwerten. So lassen sich das Display, der Road Buddy und Home Assistant zu Hause testen, während Tanks, Heizung & Co. im Fahrzeug bleiben. Werte, Geräte und Szenarien stellst du im Browser ein. Gedacht zum Testen, nicht als Dauerbetrieb.
 

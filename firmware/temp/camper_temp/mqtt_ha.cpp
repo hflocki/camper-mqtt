@@ -23,7 +23,7 @@
 //                                 [{"id":"fridge","name":"Fridge","t":4.31,"alarm":0}, ...]
 //                                 t = null without a valid reading, alarm 0 = none, 1 = low, 2 = high
 //
-// Home Assistant: one device "Camper Temp" with one entity per sensor,
+// Home Assistant: one device "Temp Node" with one entity per sensor,
 // plus one alarm binary_sensor per sensor with limits and an overall alarm.
 // The unique_id uses the 1-Wire address, so renaming a sensor keeps its HA history.
 
@@ -87,7 +87,7 @@ void mqttLoop() {
             lastReconnect = millis();
             Serial.println("[MQTT] Connection attempt...");
 
-            String clientId = "camper-temp-" + WiFi.macAddress();
+            String clientId = "temp-node-" + WiFi.macAddress();
             clientId.replace(":", "");
 
             String willTopic = topic("status");
@@ -274,7 +274,7 @@ void mqttPublishDiscovery() {
 static void addDeviceBlock(JsonDocument& doc) {
     JsonObject device = doc["device"].to<JsonObject>();
     device["identifiers"][0] = HA_NODE_ID;
-    device["name"] = "Camper Temp";
+    device["name"] = "Temp Node";
 #if defined(ESP8266)
     device["model"] = "ESP8266 DS18B20";
 #else
