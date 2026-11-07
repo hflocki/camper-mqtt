@@ -184,6 +184,7 @@ Mit Discovery erscheint ein Gerät **„MaxxFan Node“** mit Tasten-Entitäten 
 
 | Version | Änderungen |
 | --- | --- |
+| 1.8.1 | VanNode-Symbol links neben der Überschrift der Webseite und als Favicon |
 | 1.8.0 | Neue Namen: Standard-Hostname `maxxfan-node` (ein gespeicherter Hostname bleibt), Setup-WLAN, Gerätename und Release-Datei `maxxfan-node-….bin`. Topics `camper/…` und Home-Assistant-IDs bleiben |
 | 1.7.1 | Update-Prüfung vergleicht auch den Chip in der Kennung (gleich wie im Browser); ein Update über den Setup-AP löst keinen WLAN-Rückfall mehr aus |
 | 1.7.0 | Sichere Updates: Firmware-Kennung, Prüfung der Datei im Browser und im Gerät (falsches Gerät, falscher Chip, .merged.bin, zu groß), Fehlergrund im Klartext, installierte Version und Ereignis-Log im Web-UI |

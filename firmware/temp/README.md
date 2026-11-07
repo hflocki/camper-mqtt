@@ -171,6 +171,7 @@ Die laufende Version steht in der Web-UI im Tab **WiFi** und in Home Assistant i
 
 | Version | Änderungen |
 |---|---|
+| 1.4.1 | VanNode-Symbol links neben der Überschrift der Webseite und als Favicon |
 | 1.4.0 | Neue Namen: Hostname `temp-node`, Setup-WLAN, Gerätename und Release-Datei `temp-node-….bin`. Topics `camper/…` und Home-Assistant-IDs bleiben |
 | 1.3.0 | Sicheres Update (Kennung, Prüfung im Browser und im Gerät, Fehler im Klartext), Ereignis-Log, Rückfall auf die vorherige Firmware und WLAN-Änderung mit Rückweg; auf dem ESP8266 nur Prüfung und Log |
 | 1.2.0 | Firmware (.bin) und Web-Oberfläche (index.html.gz) im Web-UI unter WiFi hochladbar, ohne USB (ESP32-C3 und ESP8266); Arduino-OTA-Dateisystem-Upload hängt LittleFS vorher aus |

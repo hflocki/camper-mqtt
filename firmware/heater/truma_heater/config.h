@@ -34,7 +34,7 @@
 #endif
 
 #define FW_NAME "heater-node"
-#define FW_VERSION "1.6.0"
+#define FW_VERSION "1.6.1"
 #define FW_DEVICE "heater"   // device id in the firmware marker (fwcheck.h)
 #ifndef WIFI_TRIAL_MS
 #define WIFI_TRIAL_MS 50000   // a changed WiFi must connect this fast, else the old one returns

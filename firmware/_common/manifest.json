@@ -138,6 +138,42 @@
         "tools/emulator/web/index.html",
         "firmware/heater/truma_heater/web/index.html"
       ]
+    },
+    "web/vannode.css": {
+      "begin": "/* vannode-symbol:begin */",
+      "end": "/* vannode-symbol:end */",
+      "before": "</style>",
+      "files": [
+        "firmware/_template/camper_example/web/index.html",
+        "firmware/tanklevel/camper_tanklevel/web/index.html",
+        "firmware/temp/camper_temp/web/index.html",
+        "firmware/level/camper_level/web/index.html",
+        "firmware/maxxfan/camper_maxxfan/web/index.html",
+        "firmware/battery/camper_battery/web/index.html",
+        "firmware/toolbox/camper_toolbox/web/index.html",
+        "firmware/heater/truma_heater/web/index.html",
+        "firmware/display/camper_display/web/index.html",
+        "firmware/roadbuddy/roadbuddy/webota.cpp",
+        "tools/emulator/web/index.html"
+      ]
+    },
+    "web/vannode-icon.html": {
+      "begin": "<!-- vannode-icon:begin -->",
+      "end": "<!-- vannode-icon:end -->",
+      "before": "</head>",
+      "files": [
+        "firmware/_template/camper_example/web/index.html",
+        "firmware/tanklevel/camper_tanklevel/web/index.html",
+        "firmware/temp/camper_temp/web/index.html",
+        "firmware/level/camper_level/web/index.html",
+        "firmware/maxxfan/camper_maxxfan/web/index.html",
+        "firmware/battery/camper_battery/web/index.html",
+        "firmware/toolbox/camper_toolbox/web/index.html",
+        "firmware/heater/truma_heater/web/index.html",
+        "firmware/display/camper_display/web/index.html",
+        "firmware/roadbuddy/roadbuddy/webota.cpp",
+        "tools/emulator/web/index.html"
+      ]
     }
   }
 }

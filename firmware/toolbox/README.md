@@ -146,6 +146,7 @@ Ein Update ersetzt nur das Programm: WLAN, MQTT, Login, Plugin-Einstellungen (MA
 
 | Version | Änderungen |
 | --- | --- |
+| 1.2.2 | VanNode-Symbol links neben der Überschrift der Webseite und als Favicon |
 | 1.2.1 | Pumpe: dritte GATT-Variante FFE0/FFE1, „läuft“ aus dem Statusbit, Druck aus psi × 10 umgerechnet, Statusrahmen anderer Pumpen werden angenommen. Dachhaube: robusteres Zusammensetzen der Telegramme. Kühlschrank: ohne eingetragene UUIDs FFE0/FFE1 statt aller Characteristics |
 | 1.2.0 | Neue Namen: Hostname `toolbox-node`, Setup-WLAN, Gerätename und Release-Datei `toolbox-node-….bin`. Topics `camper/…` und Home-Assistant-IDs bleiben |
 | 1.1.0 | Gas-Plugins entfernt (DIMES, Mopeka Pro, Mopeka Standard, gemeinsamer Gas-Teil): Gasflasche und Tanks liest camper-tanklevel. Übrig: Dachhaube, Wasserpumpe, Kühlschrank |

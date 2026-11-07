@@ -9,7 +9,7 @@
 //  MaxxFan Node - VanTurtle board (TCA9555) -> MQTT / Home Assistant
 // =====================================================================
 
-#define FW_VERSION              "1.8.0"
+#define FW_VERSION              "1.8.1"
 #define FW_DEVICE               "maxxfan"   // device id in the firmware marker (fwcheck.h)
 
 // ---- Device / access point ------------------------------------------

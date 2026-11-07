@@ -83,6 +83,7 @@ Seit 1.1.0 hat jede Firmware eine Kennung (`CAMPER-FW:example:<version>:<chip>;`
 
 | Version | Änderungen |
 |---|---|
+| 1.2.1 | VanNode-Symbol links neben der Überschrift der Webseite und als Favicon |
 | 1.2.0 | Neue Namen: Hostname `example-node`, Setup-WLAN, Gerätename und Release-Datei `example-node-….bin`. Topics `camper/…` und Home-Assistant-IDs bleiben |
 | 1.1.0 | Sicheres Update (Kennung, Prüfung im Browser und im Gerät, Fehler im Klartext), Ereignis-Log, Rückfall auf die vorherige Firmware und WLAN-Änderung mit Rückweg |
 | 1.0.0 | Erste Version aus der VanNode-Vorlage |

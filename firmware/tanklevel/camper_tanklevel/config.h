@@ -12,7 +12,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.9.0"
+#define FW_VERSION            "1.9.1"
 #define FW_DEVICE             "tanklevel"   // device id in the firmware marker (fwcheck.h)
 
 #ifndef DEFAULT_AP_SSID

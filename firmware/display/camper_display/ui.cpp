@@ -25,6 +25,8 @@ LV_FONT_DECLARE(font_de_18);
 LV_FONT_DECLARE(font_de_22);
 LV_FONT_DECLARE(font_de_28);
 LV_FONT_DECLARE(font_de_56);
+LV_IMAGE_DECLARE(vn_logo_hdr);   // logo_img.c (tools/logo/make_logo.py)
+LV_IMAGE_DECLARE(vn_logo_qr);
 
 // Icons that are part of the generated fonts (Font Awesome 5)
 #define ICON_FIRE         "\xEF\x81\xAD"
@@ -82,7 +84,8 @@ const int HDR_H = 40;                   // header: page title left, date + clock
 const int NAV_H = 56;                   // icon bar at the bottom, one button per page
 const int PAGE_W = LCD_WIDTH;
 const int PAGE_H = LCD_HEIGHT - HDR_H - NAV_H;
-const int TITLE_X = 14;
+const int LOGO_X = 14;                  // VanNode symbol left of the page title
+const int TITLE_X = LOGO_X + 28 + 8;    // 28 px symbol (logo_img.c) + gap
 
 // ---- page bookkeeping ----------------------------------------------------
 enum : int { PG_SYSTEM = 100 };
@@ -1645,6 +1648,10 @@ void buildSystem(lv_obj_t* tab) {
   lv_obj_set_style_border_color(sQr, lv_color_white(), 0);
   lv_obj_set_style_border_width(sQr, 4, 0);
   lv_obj_align(sQr, LV_ALIGN_TOP_MID, 0, 0);
+  // VanNode symbol in the middle (with white margin); error correction M keeps the code readable
+  lv_obj_t* qrLogo = lv_image_create(sQr);
+  lv_image_set_src(qrLogo, &vn_logo_qr);
+  lv_obj_center(qrLogo);
   sQrLbl = label(qc, &font_de_14, C_MUTED, "");
   lv_obj_set_style_text_align(sQrLbl, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_set_width(sQrLbl, 134);
@@ -2852,6 +2859,12 @@ void begin() {
   lv_obj_add_event_cb(hdr, onHome, LV_EVENT_CLICKED, nullptr);
   lv_obj_add_event_cb(hdr, onHeaderLong, LV_EVENT_LONG_PRESSED, nullptr);
   lv_obj_add_event_cb(hdr, onHeaderReleased, LV_EVENT_RELEASED, nullptr);
+
+  // VanNode symbol (transparent background, also fits the warning banner)
+  lv_obj_t* hdrLogo = lv_image_create(hdr);
+  lv_image_set_src(hdrLogo, &vn_logo_hdr);
+  lv_obj_remove_flag(hdrLogo, LV_OBJ_FLAG_CLICKABLE);   // taps go to the header
+  lv_obj_align(hdrLogo, LV_ALIGN_LEFT_MID, LOGO_X, 0);
 
   hdrTitle = label(hdr, &font_de_22, C_TEXT, "");
   lv_obj_align(hdrTitle, LV_ALIGN_LEFT_MID, TITLE_X, 0);

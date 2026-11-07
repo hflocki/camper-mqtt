@@ -17,7 +17,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.2.0"
+#define FW_VERSION            "1.2.1"
 #define FW_DEVICE            "example"   // device id in the firmware marker (fwcheck.h)
 #define DEVICE_NAME           "Example Node"   // web UI title, HA device name, serial banner
 

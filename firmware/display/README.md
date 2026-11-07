@@ -89,6 +89,7 @@ docs/                      Screenshots
 | `weather.*` | Wetter von Open-Meteo (eigener Task), GPS-Position per MQTT, Wetter-Warnungen |
 | `depart.*` | Abfahrtscheck: Fahrt aus dem GPS des Routers, Tür, Markise, Kontakte |
 | `font_de_*.c` | Montserrat mit Umlauten + Font-Awesome-Icons, erzeugt mit `tools/make_fonts.py` |
+| `logo_img.c` | VanNode-Symbol für Kopfzeile und QR-Code, erzeugt mit `tools/logo/make_logo.py` im Repo |
 
 ## Hardware
 
