@@ -1,6 +1,7 @@
 # Builds every device on each push / pull request.
 # A tag "<device>-v<version>" (e.g. temp-v1.1.0) builds only that device and
-# creates a GitHub release with its .bin file.
+# creates a GitHub release with its .bin file. A tag "bundle-v<version>" builds every
+# device and creates one release with the files listed in .github/bundle.txt.
 name: Build
 
 on:
@@ -114,10 +115,11 @@ jobs:
 
     steps:
       # On a device tag only that device is built, all other matrix jobs end right away
+      # (a bundle tag builds everything)
       - name: Select
         id: sel
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != ${{ matrix.device }}-v* ]]; then
+          if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != bundle-v* && "$GITHUB_REF_NAME" != ${{ matrix.device }}-v* ]]; then
             echo "skip=1" >> "$GITHUB_OUTPUT"
           fi
 
@@ -167,7 +169,27 @@ jobs:
           path: ${{ matrix.device }}-node-${{ matrix.target }}.bin
 
       - name: Release
-        if: steps.sel.outputs.skip != '1' && startsWith(github.ref, 'refs/tags/')
+        if: steps.sel.outputs.skip != '1' && startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref, 'refs/tags/bundle-v')
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ matrix.device }}-node-${{ matrix.target }}.bin
+
+  # Tag bundle-v<version>: one release with the firmware files from .github/bundle.txt
+  bundle:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/bundle-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - run: python3 tools/release/bundle.py artifacts dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: VanNode ${{ github.ref_name }}
+          body_path: dist/NOTES.md
+          files: |
+            dist/*.bin
+            dist/*.gz

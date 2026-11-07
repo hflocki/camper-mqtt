@@ -1,0 +1,11 @@
+# Devices for the bundle release (tag bundle-v<version>): one "<device> <target>" per line,
+# as in the build matrix of .github/workflows/build.yml. Lines starting with # are ignored.
+display   esp32s3
+heater    esp32
+maxxfan   esp32c3
+tanklevel esp32c3
+temp      esp32c3
+level     esp32s3
+battery   atoms3
+toolbox   esp32c3
+roadbuddy core2

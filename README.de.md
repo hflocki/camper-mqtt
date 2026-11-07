@@ -124,6 +124,13 @@ Dann wird nur dieses Gerät gebaut und die `.bin` ans Release gehängt. Alle Ger
 
 **Namen:** Jedes Gerät heißt `<gerät>-node` – Hostname (`temp-node.local`), Setup-WLAN (`Temp-Node-XXXXXX`) und Release-Datei (`temp-node-esp32c3.bin`). Die MQTT-Topics bleiben `camper/<gerät>/…`, die Home-Assistant-IDs bleiben gleich.
 
+**Alle Geräte in einem Release:** Ein Tag `bundle-v<version>` baut alle Geräte und legt ein Release mit den Dateien an, die in [`.github/bundle.txt`](.github/bundle.txt) stehen (ein Gerät mit Ziel pro Zeile, z. B. `heater esp32`). Dazu kommen die Webseiten als `<gerät>-node-web.html.gz` und eine Tabelle mit allen Versionen.
+
+```bash
+git tag bundle-v2026.11.07
+git push origin bundle-v2026.11.07
+```
+
 ## Nur ein Gerät nachbauen
 
 Einfach den Ordner des Geräts nehmen und dessen README folgen. Wer nicht das ganze Repo laden will:

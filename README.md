@@ -124,6 +124,13 @@ Then only this device is built and the `.bin` is attached to the release. All de
 
 **Names:** every device is called `<device>-node` – hostname (`temp-node.local`), setup access point (`Temp-Node-XXXXXX`) and release file (`temp-node-esp32c3.bin`). MQTT topics stay `camper/<device>/…`, Home Assistant IDs stay unchanged.
 
+**All devices in one release:** a tag `bundle-v<version>` builds every device and creates one release with the files listed in [`.github/bundle.txt`](.github/bundle.txt) (one device and target per line, e.g. `heater esp32`), plus the web pages as `<device>-node-web.html.gz` and a table of all versions.
+
+```bash
+git tag bundle-v2026.11.07
+git push origin bundle-v2026.11.07
+```
+
 ## Build just one device
 
 Take the device folder and follow its README. If you do not want the whole repo:
