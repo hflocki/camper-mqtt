@@ -49,7 +49,8 @@ nav .nbar button.on .ic{background:rgba(77,163,240,.18);color:var(--ac)}
  nav .nside button.on .ic{color:var(--ac)}
  nav .nh{font-size:12px;color:var(--mu);padding:0 10px 6px}
  nav .brand{display:flex;align-items:center;gap:10px;padding:2px 10px 4px}
- nav .brand .bi{width:34px;height:34px;border-radius:10px;background:var(--hi);display:inline-flex;align-items:center;justify-content:center;color:var(--ac)}
+ nav .brand .vn{width:40px;height:40px;vertical-align:0}
+ header .top .vn{display:none}
  nav .brand span{display:flex;flex-direction:column;font-size:12px;color:var(--mu)}nav .brand b{font-size:15px;color:var(--tx)}
  header{padding:14px 32px}
  main{padding:24px 32px 48px!important;max-width:1240px!important}
@@ -328,7 +329,7 @@ const NAV_GROUPS=[['',['overview','warn']],['Steuern',['heater','fan','heki','li
 function buildNav(){
   navW=navRoom();
   const P=pages(),btn=p=>`<button type="button" data-p="${p.id}" title="${esc(p.title)}"><span class="ic">${p.icon||svg('box')}</span><span class="lb">${esc(p.title)}</span></button>`;
-  let side=`<div class="brand"><span class="bi">${svg('car')}</span><span><b>${esc((cfg&&cfg.name)||'Camper')}</b>Display</span></div>`;
+  let side=`<div class="brand"><i class="vn" aria-hidden="true"></i><span><b>${esc((cfg&&cfg.name)||'Camper')}</b>Display</span></div>`;
   NAV_GROUPS.forEach(([t,ids])=>{const l=ids?ids.map(id=>P.find(p=>p.id===id)).filter(x=>x):P.filter(p=>p.custom!==undefined);
     if(l.length)side+=`<div class="ng">${t?`<div class="nh">${t}</div>`:''}${l.map(btn).join('')}</div>`});
   $('#nav').innerHTML=`<div class="nbar">${navItems().map(btn).join('')}</div><div class="nside">${side}</div>`;
