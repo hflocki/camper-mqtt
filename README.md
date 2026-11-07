@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/logo/vannode-logo-dark.png">
-    <img src="docs/logo/vannode-logo.png" alt="VanNode" width="300">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo/vannode-logo-dark.svg">
+    <img src="docs/logo/vannode-logo.svg" alt="VanNode" width="420">
   </picture>
 </p>
 

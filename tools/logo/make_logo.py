@@ -1,101 +1,164 @@
 #!/usr/bin/env python3
-"""Build the VanNode logo files from tools/logo/source.jpg.
+"""Build all VanNode logo files.
 
-  docs/logo/vannode-logo.png        dark logo on transparent background (light pages)
-  docs/logo/vannode-logo-dark.png   light logo on transparent background (dark pages)
-  firmware/roadbuddy/roadbuddy/logo_img.h   RGB565 image for the Road Buddy start page
+Symbol: hexagon with van, network and antenna. Wordmark: "vannode" in Poppins Bold
+(converted to paths, so the SVGs need no font), the "o" is a node.
 
-Run in a venv:  pip install -r tools/logo/requirements.txt && python3 tools/logo/make_logo.py
+Output:
+  docs/logo/vannode-logo.svg / .png          symbol + wordmark, for light backgrounds
+  docs/logo/vannode-logo-dark.svg / .png     the same for dark backgrounds
+  docs/logo/vannode-symbol.svg / .png        symbol only (icons, favicon)
+  docs/logo/vannode-wordmark(-dark).svg      wordmark only
+  firmware/roadbuddy/roadbuddy/logo_img.h    Road Buddy start page (symbol above wordmark, RGB565)
+
+Run in a venv (cairosvg needs the cairo library of the system):
+  python3 -m venv .venv && . .venv/bin/activate
+  pip install -r tools/logo/requirements.txt
+  python3 tools/logo/make_logo.py
 """
+from io import BytesIO
 from pathlib import Path
+
+import cairosvg
+from fontTools.pens.boundsPen import BoundsPen
+from fontTools.pens.svgPathPen import SVGPathPen
+from fontTools.ttLib import TTFont
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "tools" / "logo" / "source.jpg"
-LIGHT_INK = (0xE7, 0xEC, 0xF0)      # text color of the dark theme
-DARK_BLUE = (0x2F, 0x8A, 0xE0)      # blue accent on dark backgrounds
-RB_BG = (0x0D, 0x11, 0x15)          # Road Buddy background (COL_BG)
-RB_MAX = (240, 164)                 # Road Buddy: max size of the logo area
-ALPHA_CUT = 0.10                    # paper texture below this counts as background
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[1]
+OUT = ROOT / "docs" / "logo"
+RB_HEADER = ROOT / "firmware" / "roadbuddy" / "roadbuddy" / "logo_img.h"
+
+NAVY, BLUE, LIGHT = "#1E2A36", "#2F8AE0", "#E7ECF0"
+RB_BG = (0x0D, 0x11, 0x15)      # Road Buddy page background (COL_BG)
+RB_MAX = (240, 164)             # Road Buddy: space between header and footer
+
+font = TTFont(HERE / "poppins-latin-700-normal.woff")
+glyphs, cmap = font.getGlyphSet(), font.getBestCmap()
+UPM = font["head"].unitsPerEm
 
 
-def border_median(img):
-    w, h = img.size
-    px = [img.getpixel((x, y)) for x in range(0, w, 7) for y in (0, 1, h - 2, h - 1)]
-    px += [img.getpixel((x, y)) for y in range(0, h, 7) for x in (0, 1, w - 2, w - 1)]
-    return tuple(sorted(p[i] for p in px)[len(px) // 2] for i in range(3))
+def glyph(ch, x, color, size):
+    pen = SVGPathPen(glyphs)
+    g = glyphs[cmap[ord(ch)]]
+    g.draw(pen)
+    s = size / UPM
+    return (f'<path transform="translate({x:.2f},0) scale({s:.5f},{-s:.5f})" '
+            f'd="{pen.getCommands()}" fill="{color}"/>'), g.width * s
 
 
-def color_to_alpha(img, bg):
-    """Remove the paper color: ink = bg blended with a darker color at some alpha."""
-    out = Image.new("RGBA", img.size)
-    src, dst = img.load(), out.load()
-    for y in range(img.size[1]):
-        for x in range(img.size[0]):
-            c = src[x, y]
-            a = max(max(0.0, (bg[i] - c[i]) / bg[i]) for i in range(3))
-            if a < ALPHA_CUT:
-                dst[x, y] = (0, 0, 0, 0)
-                continue
-            a = min(1.0, (a - ALPHA_CUT) / (1 - ALPHA_CUT) * 1.15)
-            col = tuple(max(0, min(255, round(bg[i] + (c[i] - bg[i]) / max(a, 0.05)))) for i in range(3))
-            dst[x, y] = (*col, round(a * 255))
-    return out
+def glyph_bounds(ch):
+    pen = BoundsPen(glyphs)
+    glyphs[cmap[ord(ch)]].draw(pen)
+    return pen.bounds
 
 
-def to_dark(img):
-    """Navy parts become light, blue accents stay blue; edges in between are blended
-    by saturation, so no dark seams remain around the blue lines."""
-    out = img.copy()
-    px = out.load()
-    for y in range(out.size[1]):
-        for x in range(out.size[0]):
-            r, g, b, a = px[x, y]
-            if not a:
-                continue
-            t = max(0.0, min(1.0, (max(r, g, b) - min(r, g, b) - 30) / 100))
-            px[x, y] = (*(round(LIGHT_INK[i] + (DARK_BLUE[i] - LIGHT_INK[i]) * t) for i in range(3)), a)
-    return out
+def wordmark(dark, size=100, track=-2):
+    """Returns (svg body with baseline at y=0, width, top y)."""
+    ink = LIGHT if dark else NAVY
+    parts, x, o_x = [], 0.0, 0.0
+    for ch, col in (("v", ink), ("a", ink), ("n", ink), ("n", BLUE), ("o", BLUE), ("d", BLUE), ("e", BLUE)):
+        p, adv = glyph(ch, x, col, size)
+        parts.append(p)
+        if ch == "o":
+            o_x = x
+        x += adv + track
+    s = size / UPM
+    xmin, ymin, xmax, ymax = glyph_bounds("o")
+    cx, cy, top = o_x + (xmin + xmax) / 2 * s, -(ymin + ymax) / 2 * s, -ymax * s
+    dot, node, stem = size * 0.05, size * 0.075, size * 0.055
+    up = top - size * 0.13
+    parts.append(
+        f'<circle cx="{cx:.2f}" cy="{cy:.2f}" r="{dot:.2f}" fill="{BLUE}"/>'
+        f'<g stroke="{BLUE}" stroke-width="{stem:.2f}" stroke-linecap="round">'
+        f'<line x1="{cx:.2f}" y1="{top + stem:.2f}" x2="{cx:.2f}" y2="{up:.2f}"/>'
+        f'<line x1="{cx + size * 0.17:.2f}" y1="{top + size * 0.08:.2f}" '
+        f'x2="{cx + size * 0.27:.2f}" y2="{top - size * 0.05:.2f}"/></g>'
+        f'<circle cx="{cx:.2f}" cy="{up - node * 0.6:.2f}" r="{node:.2f}" fill="{BLUE}"/>'
+        f'<circle cx="{cx + size * 0.29:.2f}" cy="{top - size * 0.08:.2f}" r="{node:.2f}" fill="{BLUE}"/>')
+    return "".join(parts), x - track, up - node * 1.6
 
 
-def crop(img, margin=24):
-    box = img.getchannel("A").point(lambda v: 255 if v > 40 else 0).getbbox()
-    l, t, r, b = box
-    return img.crop((max(0, l - margin), max(0, t - margin), min(img.size[0], r + margin), min(img.size[1], b + margin)))
+def symbol():
+    """200 x 200: pointy-top hexagon, van side view with network, short antenna."""
+    return f'''<polygon points="100,8 182,54 182,146 100,192 18,146 18,54" fill="{NAVY}" stroke="{BLUE}" stroke-width="9" stroke-linejoin="round"/>
+<path d="M42 132 V96 Q42 82 56 81 H128 Q140 81 147 90 L162 111 Q166 116 166 123 V132 Z" fill="{LIGHT}"/>
+<path d="M131 89 H139 L153 110 H131 Z" fill="{NAVY}"/>
+<circle cx="70" cy="134" r="13" fill="{LIGHT}" stroke="{NAVY}" stroke-width="5"/>
+<circle cx="140" cy="134" r="13" fill="{LIGHT}" stroke="{NAVY}" stroke-width="5"/>
+<g stroke="{BLUE}" stroke-width="4"><line x1="60" y1="110" x2="86" y2="96"/><line x1="86" y1="96" x2="112" y2="113"/><line x1="60" y1="110" x2="112" y2="113"/></g>
+<g fill="{BLUE}"><circle cx="60" cy="110" r="7"/><circle cx="86" cy="96" r="7"/><circle cx="112" cy="113" r="7"/></g>
+<line x1="100" y1="81" x2="100" y2="70" stroke="{LIGHT}" stroke-width="4.5"/>
+<circle cx="100" cy="66" r="6.5" fill="{BLUE}"/>
+<path d="M88 58 Q100 46 112 58" fill="none" stroke="{BLUE}" stroke-width="4.5" stroke-linecap="round"/>
+<path d="M80 50 Q100 30 120 50" fill="none" stroke="{BLUE}" stroke-width="4.5" stroke-linecap="round" opacity=".6"/>'''
+
+
+def svg(body, w, h, x=0.0, y=0.0):
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w:.0f}" height="{h:.0f}" '
+            f'viewBox="{x:.1f} {y:.1f} {w:.1f} {h:.1f}">{body}</svg>\n')
+
+
+def horizontal(dark):
+    wm, ww, top = wordmark(dark)
+    y = 100 - top / 2 - 4                       # wordmark vertically centered next to the symbol
+    w = 225 + ww + 10
+    return svg(symbol() + f'<g transform="translate(225,{y:.1f})">{wm}</g>', w, 200)
+
+
+def stacked(dark):
+    """Symbol above the wordmark (Road Buddy)."""
+    wm, ww, top = wordmark(dark)
+    w = max(200, ww) + 20
+    body = (f'<g transform="translate({(w - 200) / 2:.1f},0)">{symbol()}</g>'
+            f'<g transform="translate({(w - ww) / 2:.1f},{215 - top:.1f})">{wm}</g>')
+    return svg(body, w, 215 - top + 8)
+
+
+def png(svg_text, path=None, width=None):
+    data = cairosvg.svg2png(bytestring=svg_text.encode(), output_width=width)
+    if path:
+        Path(path).write_bytes(data)
+    return Image.open(BytesIO(data)).convert("RGBA")
 
 
 def write_rgb565(img, path):
-    w, h = img.size
     flat = Image.new("RGB", img.size, RB_BG)
     flat.paste(img, mask=img.getchannel("A"))
     raw = flat.tobytes()
     vals = [((raw[i] & 0xF8) << 8) | ((raw[i + 1] & 0xFC) << 3) | (raw[i + 2] >> 3)
             for i in range(0, len(raw), 3)]
-    lines = [", ".join(f"0x{v:04X}" for v in vals[i:i + 12]) for i in range(0, len(vals), 12)]
+    rows = [", ".join(f"0x{v:04X}" for v in vals[i:i + 12]) for i in range(0, len(vals), 12)]
     path.write_text(
         "// VanNode logo for the start page, generated by tools/logo/make_logo.py - do not edit\n"
         "#pragma once\n#include <stdint.h>\n\n"
-        f"#define LOGO_W {w}\n#define LOGO_H {h}\n\n"
+        f"#define LOGO_W {img.size[0]}\n#define LOGO_H {img.size[1]}\n\n"
         "// RGB565, drawn on the page background color\n"
         "static const uint16_t LOGO_IMG[LOGO_W * LOGO_H] PROGMEM = {\n  "
-        + ",\n  ".join(lines) + "\n};\n", encoding="utf-8")
+        + ",\n  ".join(rows) + "\n};\n", encoding="utf-8")
 
 
 def main():
-    src = Image.open(SRC).convert("RGB")
-    # work on half size: plenty for all outputs and four times faster
-    src = src.resize((src.size[0] // 2, src.size[1] // 2), Image.LANCZOS)
-    logo = crop(color_to_alpha(src, border_median(src)))
-    dark = to_dark(logo)
-    out = ROOT / "docs" / "logo"
-    out.mkdir(parents=True, exist_ok=True)
-    logo.save(out / "vannode-logo.png", optimize=True)
-    dark.save(out / "vannode-logo-dark.png", optimize=True)
+    OUT.mkdir(parents=True, exist_ok=True)
+    files = {
+        "vannode-logo.svg": horizontal(False),
+        "vannode-logo-dark.svg": horizontal(True),
+        "vannode-symbol.svg": svg(symbol(), 200, 200),
+    }
+    for dark in (False, True):
+        wm, ww, top = wordmark(dark)
+        files[f"vannode-wordmark{'-dark' if dark else ''}.svg"] = svg(wm, ww + 16, -top + 14, -8, top - 8)
+    for name, text in files.items():
+        (OUT / name).write_text(text, encoding="utf-8")
+    png(files["vannode-logo.svg"], OUT / "vannode-logo.png", 1200)
+    png(files["vannode-logo-dark.svg"], OUT / "vannode-logo-dark.png", 1200)
+    png(files["vannode-symbol.svg"], OUT / "vannode-symbol.png", 512)
 
-    rb = dark.copy()
+    rb = png(stacked(True), width=600)
     rb.thumbnail(RB_MAX, Image.LANCZOS)
-    write_rgb565(rb, ROOT / "firmware" / "roadbuddy" / "roadbuddy" / "logo_img.h")
-    print(f"logo {logo.size}, road buddy {rb.size}")
+    write_rgb565(rb, RB_HEADER)
+    print(f"docs/logo: {len(files)} SVG + 3 PNG, Road Buddy {rb.size[0]}x{rb.size[1]}")
 
 
 if __name__ == "__main__":

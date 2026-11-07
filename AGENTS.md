@@ -34,7 +34,7 @@ Monorepo für Camper-Elektronik: jedes Gerät ist ein ESP8266/ESP32 mit reiner *
 | `tools/emulator/` | Emulator mit lokaler Webseite: sendet die Topics aller fest verbauten Geräte mit änderbaren Werten und Szenarien, Python mit venv |
 | `tools/web/` | `pack_web.py`: packt `web/index.html` → `data/index.html.gz` aller Geräte, `--check` für CI |
 | `tools/mockups/` | Generator der Mockups: `python3 tools/mockups/make_mockups.py`, Beispieldaten je Gerät in `mock/<gerät>.js` |
-| `tools/logo/` | Logo: aus `source.jpg` erzeugt `make_logo.py` (Pillow, venv) `docs/logo/vannode-logo.png`, `vannode-logo-dark.png` und `firmware/roadbuddy/roadbuddy/logo_img.h` (Startseite Road Buddy) |
+| `tools/logo/` | Logo (Sechseck-Symbol + Schriftzug in Poppins Bold, als Pfade): `make_logo.py` (fonttools, cairosvg, Pillow, venv) erzeugt `docs/logo/*.svg` / `*.png` und `firmware/roadbuddy/roadbuddy/logo_img.h` (Startseite Road Buddy). Schrift unter OFL (`Poppins-OFL.txt`) |
 | `.github/workflows/build.yml` | baut bei jedem Push alle Geräte; Tag `<gerät>-v<version>` erzeugt ein Release mit `.bin` |
 
 Gemeinsames MQTT-Schema: `camper/<gerät>/…` retained, `…/status` = `online`/`offline` als Last Will, `…/info` = Diagnose-JSON (`devinfo.*` aus `firmware/_common`), Befehle unter `…/cmd/…` bzw. `…/set/…` nicht retained. Alle Topics stehen in [`docs/TOPICS.md`](docs/TOPICS.md); neue oder geänderte Topics dort mitpflegen.
