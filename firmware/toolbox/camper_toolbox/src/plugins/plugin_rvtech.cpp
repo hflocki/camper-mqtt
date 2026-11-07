@@ -75,16 +75,20 @@ public:
 
     uint8_t bleUse() const override { return BLE_LINK; }
     const char* bleAddress() const override { return c.mac; }
+
+    // Check BLE UUID advertising candidate (looking for UART service FFE0)
     bool bleCandidate(int32_t company, const char* uuid, const char* name) const override {
         return strstr(uuid, "ffe0") != nullptr;
     }
-    // Advertisements: signal strength also without a connection (NimBLE host task)
+
+    // Update RSSI from advertising packets even when disconnected
     void onAdvertisement(const NimBLEAdvertisedDevice* dev, const char* addr) override {
         if (c.mac[0] && strcmp(addr, c.mac) == 0) advRssi = dev->getRSSI();
     }
     const char* manufacturer() const override { return "RV Tech"; }
 
     void begin() override {
+        // Initialize BLE link using Service FFE0 and Characteristic FFE1
         link.begin(id, RVTECH_SERVICE_UUID, RVTECH_CHAR_UUID, RVTECH_CHAR_UUID);
         begun = true;
         link.setTarget(c.mac, pinValue);
@@ -92,22 +96,25 @@ public:
 
     void loop() override {
         link.loop();
+
+        // New connection or disconnect: empty telegram buffer, publish the state right away
         if (link.changes != lastLinkChanges) {
             lastLinkChanges = link.changes;
-            rxLen = 0;   // New connection: start with an empty telegram buffer
+            rxLen = 0;
             updates++;
         }
 
+        // Process incoming BLE UART packets from ESP32 BLE task
         BlePacket pkt;
         while (link.receive(pkt)) feed(pkt.data, pkt.len);
 
-        // A sent target counts as "moving" for at most RVTECH_TARGET_TIMEOUT_MS
+        // Reset target position state if timeout reached
         if (target >= 0 && millis() - targetSince > RVTECH_TARGET_TIMEOUT_MS) {
             target = -1;
             updates++;
         }
 
-        // Command waiting for the connection, one retry after a write error
+        // Retry or queue outgoing write commands over BLE
         if (sendValue >= 0) {
             if (link.canWrite() && millis() >= sendNotBefore) {
                 if (writeValue(sendValue)) {
@@ -126,6 +133,7 @@ public:
             }
         }
 
+        // Periodic RSSI publish rate limiter
         int rssi = link.connected() ? link.rssi() : advRssi;
         if (rssi != lastRssi && millis() - lastRssiPublish > 10000) {
             lastRssi = rssi;
@@ -209,7 +217,7 @@ public:
             if (!strcmp(key, p.key)) v = p.value;
         }
         if (v < 0 || v > RV_MAX_POSITION) return;
-        // Sent from loop(): waits up to RVTECH_SEND_WAIT_MS for a (re)connection
+        // Queue target value to be transmitted inside loop()
         sendValue = v;
         sendAttempts = 0;
         sendQueued = millis();
@@ -224,7 +232,7 @@ private:
     int32_t pinValue = BLE_NO_PIN;
     uint32_t lastLinkChanges = 0;
 
-    int position = -1;               // Reported position, -1 = unknown
+    int position = -1;               // Reported position (0-102), -1 = unknown
     int target = -1;                 // Sent target while moving, -1 = none
     unsigned long targetSince = 0;
     volatile int advRssi = 0;
@@ -236,11 +244,12 @@ private:
     unsigned long sendQueued = 0;
     unsigned long sendNotBefore = 0;
 
-    // Telegram reassembly: BLE UART bridges split telegrams or bundle several in one packet
-    char rx[24];
+    // Buffer for assembling fragmented UART ASCII telegrams from ESP32 BLE link
+    char rx[32];
     size_t rxLen = 0;
 
-    int displayPosition() const { return position > 100 ? 100 : position; }   // "Lüften" reports 102
+    // Cap position display at 100% (preset 102 represents "vent" state)
+    int displayPosition() const { return position > 100 ? 100 : position; }
 
     const char* coverState() const {
         if (position < 0) return "unbekannt";
@@ -255,6 +264,7 @@ private:
         updates++;
     }
 
+    // Format target command into ASCII payload "P_d=NNN\r\n" and send via BLE UART
     bool writeValue(int v) {
         char buf[12];
         snprintf(buf, sizeof(buf), "P_d=%03d\r\n", v);
@@ -269,24 +279,37 @@ private:
         updates++;
     }
 
-    // Collects all complete, valid "P_a=NNN\r\n" telegrams
+    // Reassemble incoming BLE byte stream and parse "P_a=NNN\r\n" status telegrams
     void feed(const uint8_t* d, size_t n) {
         for (size_t i = 0; i < n; i++) {
-            if (rxLen >= sizeof(rx)) {
-                // Keep the last 8 bytes (an incomplete telegram start is at most 8 bytes)
-                memmove(rx, rx + rxLen - 8, 8);
-                rxLen = 8;
+            // Prevent buffer overflow while preserving room for null terminator
+            if (rxLen >= sizeof(rx) - 1) {
+                memmove(rx, rx + 1, sizeof(rx) - 2);
+                rxLen = sizeof(rx) - 2;
             }
             rx[rxLen++] = (char)d[i];
-            if (rxLen >= 9 && rx[rxLen - 2] == '\r' && rx[rxLen - 1] == '\n') {
-                const char* t = rx + rxLen - 9;
-                if (!strncmp(t, "P_a=", 4) && isdigit((unsigned char)t[4]) &&
-                    isdigit((unsigned char)t[5]) && isdigit((unsigned char)t[6])) {
-                    int v = (t[4] - '0') * 100 + (t[5] - '0') * 10 + (t[6] - '0');
-                    if (v <= RV_MAX_POSITION) onPosition(v);
-                    else Serial.printf("[%s] Invalid position %d ignored\n", id, v);
+            rx[rxLen] = '\0';
+
+            // Scan buffer for line end indicator "\r\n"
+            char* lineEnd = strstr(rx, "\r\n");
+            if (lineEnd) {
+                char* match = strstr(rx, "P_a=");
+                if (match && match < lineEnd && (lineEnd - match) >= 7) {
+                    if (isdigit((unsigned char)match[4]) &&
+                        isdigit((unsigned char)match[5]) &&
+                        isdigit((unsigned char)match[6])) {
+                        int v = (match[4] - '0') * 100 + (match[5] - '0') * 10 + (match[6] - '0');
+                        if (v <= RV_MAX_POSITION) {
+                            onPosition(v);
+                        } else {
+                            Serial.printf("[%s] Invalid position %d ignored\n", id, v);
+                        }
+                    }
                 }
-                rxLen = 0;
+                // Shift processed line out of buffer
+                size_t processed = (lineEnd + 2) - rx;
+                memmove(rx, rx + processed, rxLen - processed);
+                rxLen -= processed;
             }
         }
     }

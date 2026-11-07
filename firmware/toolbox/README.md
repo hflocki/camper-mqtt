@@ -18,8 +18,8 @@ Zahl = Anzahl der Geräte, `0` = nicht einkompiliert. Ab Werk (und in der Releas
 | Schalter | Gerät | Bluetooth | Ab Werk | Einstellungen in der Web-UI |
 | --- | --- | --- | --- | --- |
 | `PLUGIN_RVTECH` | Dachhaube RV Tech (Heki-Motorsteuerung) | Verbindung, ggf. mit PIN | **1** | MAC, PIN |
-| `PLUGIN_CARAWATER` | Wasserpumpe CaraWater (ISP 15) | Verbindung | 0 | MAC |
-| `PLUGIN_WCS_FRIDGE` | WCS Kompressor-Kühlschrank | Verbindung, ggf. mit PIN | 0 | MAC, PIN, optional UUIDs / Abfrage |
+| `PLUGIN_CARAWATER` | Wasserpumpe CaraWater (ISP 15; GATT FF00, FFF0 oder FFE0 wird selbst erkannt) | Verbindung | 0 | MAC |
+| `PLUGIN_WCS_FRIDGE` | WCS Kompressor-Kühlschrank | Verbindung, ggf. mit PIN | 0 | MAC, PIN, optional UUIDs (Standard FFE0/FFE1) / Abfrage |
 
 - Passive Sensoren: beliebig viele. Geräte mit Verbindung: höchstens **3** pro ESP32 (sonst bricht der Build mit einer Meldung ab).
 - Zweite Instanz, z. B. zwei Dachhauben: `#define PLUGIN_RVTECH 2` → „Dachhaube“ und „Dachhaube 2“ mit eigener MAC und PIN.
@@ -146,6 +146,7 @@ Ein Update ersetzt nur das Programm: WLAN, MQTT, Login, Plugin-Einstellungen (MA
 
 | Version | Änderungen |
 | --- | --- |
+| 1.2.1 | Pumpe: dritte GATT-Variante FFE0/FFE1, „läuft“ aus dem Statusbit, Druck aus psi × 10 umgerechnet, Statusrahmen anderer Pumpen werden angenommen. Dachhaube: robusteres Zusammensetzen der Telegramme. Kühlschrank: ohne eingetragene UUIDs FFE0/FFE1 statt aller Characteristics |
 | 1.2.0 | Neue Namen: Hostname `toolbox-node`, Setup-WLAN, Gerätename und Release-Datei `toolbox-node-….bin`. Topics `camper/…` und Home-Assistant-IDs bleiben |
 | 1.1.0 | Gas-Plugins entfernt (DIMES, Mopeka Pro, Mopeka Standard, gemeinsamer Gas-Teil): Gasflasche und Tanks liest camper-tanklevel. Übrig: Dachhaube, Wasserpumpe, Kühlschrank |
 | 1.0.1 | Web-Oberfläche im Aussehen der übrigen VanNode-Geräte (Farben, Kopfzeile mit Statuspunkten, Tab-Leiste mit Symbolen, Werte als Kacheln, Schalter statt Häkchen) |

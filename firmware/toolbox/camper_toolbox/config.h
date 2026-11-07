@@ -57,7 +57,7 @@
 // ============================================================
 // GENERAL CONSTANTS
 // ============================================================
-#define FW_VERSION            "1.2.0"
+#define FW_VERSION            "1.2.1"
 #define FW_DEVICE             "toolbox"   // device id in the firmware marker (fwcheck.h)
 
 // Network upload from the Arduino IDE (port in the IDE, password DEFAULT_OTA_PASSWORD).
@@ -192,6 +192,9 @@
 #define PUMP_ALT_SERVICE_UUID "0000fff0-0000-1000-8000-00805f9b34fb"
 #define PUMP_ALT_NOTIFY_UUID  "0000fff1-0000-1000-8000-00805f9b34fb"
 #define PUMP_ALT_WRITE_UUID   "0000fff2-0000-1000-8000-00805f9b34fb"
+// Third layout (BLE UART bridge FFE0/FFE1), tried after the two above
+#define PUMP_UART_SERVICE_UUID "0000ffe0-0000-1000-8000-00805f9b34fb"
+#define PUMP_UART_CHAR_UUID    "0000ffe1-0000-1000-8000-00805f9b34fb"
 #ifndef PUMP_OFFLINE_MS
 #define PUMP_OFFLINE_MS       10000  // No status frame for 10 s = pump offline
 #endif
@@ -225,10 +228,12 @@
 // ------------------------------------------------------------
 // The fridge sends ASCII status messages "/SC0/t0,t1,t2,<temp zone 1>,<temp zone 2>,
 // <set zone 1>,<set zone 2>,t7,<voltage x10>,t9,<battery %>,...".
-// The GATT UUIDs are not documented: by default the plugin subscribes to every
-// characteristic that can notify. Fixed UUIDs, the Bluetooth PIN and an optional
-// poll command are set in the web UI (not in config_local.h).
+// The fridge talks over a BLE UART bridge (service FFE0, characteristic FFE1). Other
+// UUIDs, the Bluetooth PIN and an optional poll command are set in the web UI
+// (not in config_local.h); empty UUID fields mean FFE0/FFE1.
 // ============================================================
+#define WCS_SERVICE_UUID      "0000ffe0-0000-1000-8000-00805f9b34fb"
+#define WCS_CHAR_UUID         "0000ffe1-0000-1000-8000-00805f9b34fb"
 #ifndef WCS_OFFLINE_MS
 #define WCS_OFFLINE_MS        120000 // No status message for 2 min = fridge offline
 #endif

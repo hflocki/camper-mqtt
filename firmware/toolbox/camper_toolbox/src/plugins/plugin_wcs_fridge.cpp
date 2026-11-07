@@ -2,8 +2,8 @@
 // The fridge sends ASCII status messages (comma separated, possibly split over several
 // notifications):
 //   /SC0/t0,t1,t2,<temp zone 1>,<temp zone 2>,<set zone 1>,<set zone 2>,t7,<voltage x10>,t9,<battery %>,...
-// Field positions as in the ESPHome example of the fridge; the GATT layout is not
-// documented, so by default every characteristic that can notify is subscribed.
+// Field positions as in the ESPHome example of the fridge. GATT: BLE UART bridge,
+// service FFE0 with characteristic FFE1 (notify and write), unless set in the web UI.
 
 #include "../core/plugin.h"
 
@@ -32,9 +32,9 @@ static const Field WCS_FIELDS[] = {
     FLD_TEXT(WcsCfg, pin, "pin", "Bluetooth-PIN", "Nur Ziffern (1-6, auch 000000), wie in der Kühlschrank-App. "
                                              "Leer lassen, wenn keine nötig ist. Handy-App dabei trennen."),
     FLD_BOOL(WcsCfg, zone2, "zone2", "Zweite Zone", "Kühlschrank mit zweitem Fach / Gefrierfach"),
-    FLD_TEXT(WcsCfg, service, "service", "Service-UUID", "Leer = alle Services (Standard)"),
-    FLD_TEXT(WcsCfg, notify, "notify", "Notify-UUID", "Leer = jede Characteristic, die senden kann (Standard)"),
-    FLD_TEXT(WcsCfg, write, "write", "Write-UUID", "Nur für einen Abfragebefehl nötig"),
+    FLD_TEXT(WcsCfg, service, "service", "Service-UUID", "Leer = FFE0 (Standard)"),
+    FLD_TEXT(WcsCfg, notify, "notify", "Notify-UUID", "Leer = FFE1 (Standard)"),
+    FLD_TEXT(WcsCfg, write, "write", "Write-UUID", "Leer = FFE1 (Standard), nur für einen Abfragebefehl nötig"),
     FLD_TEXT(WcsCfg, poll, "poll", "Abfragebefehl", "Leer = der Kühlschrank sendet von selbst. \\r und \\n erlaubt"),
     FLD_INT(WcsCfg, poll_s, "poll_s", "Abfrage alle", "s", 1, 3600, nullptr),
 };
@@ -76,7 +76,7 @@ public:
         unescape(c.poll, pollCmd, sizeof(pollCmd));
         pinValue = blePinParse(c.pin);
         if (begun) {
-            link.setUuids(c.service, c.notify, c.write);
+            link.setUuids(svcUuid(), notifyUuid(), writeUuid());
             link.setTarget(c.mac, pinValue);
         }
     }
@@ -89,7 +89,7 @@ public:
     const char* manufacturer() const override { return "WCS"; }
 
     void begin() override {
-        link.begin(id, c.service, c.notify, c.write);
+        link.begin(id, svcUuid(), notifyUuid(), writeUuid());
         link.setSilenceTimeout(WCS_OFFLINE_MS);   // Connected but silent: reconnect
         begun = true;
         link.setTarget(c.mac, pinValue);
@@ -204,6 +204,11 @@ private:
     float temp1 = NAN, temp2 = NAN, set1 = NAN, set2 = NAN, voltage = NAN, battery = NAN;
     unsigned long lastMsg = 0;
     uint32_t messages = 0;
+
+    // Empty UUID fields: the BLE UART bridge of the fridge (FFE0 / FFE1)
+    const char* svcUuid() const { return c.service[0] ? c.service : WCS_SERVICE_UUID; }
+    const char* notifyUuid() const { return c.notify[0] ? c.notify : WCS_CHAR_UUID; }
+    const char* writeUuid() const { return c.write[0] ? c.write : WCS_CHAR_UUID; }
 
     const char* stateText() {
         if (link.connected() && !hasData) return "Warte auf Daten";
